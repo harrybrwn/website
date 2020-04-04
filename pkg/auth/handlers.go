@@ -29,7 +29,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResp = map[string]string{"code": query.Get("code")}
 		w.WriteHeader(200)
 	} else {
-		log.Println("redirect login failed:", query)
+		log.Println("redirect login failed:", query, os.Getenv("HARRYBRWN_REDIRECTS_KEY"))
 		w.WriteHeader(403)
 	}
 	json.NewEncoder(w).Encode(jsonResp)
@@ -45,6 +45,7 @@ func validate(r *http.Request) bool {
 			hash,
 			[]byte(os.Getenv("HARRYBRWN_REDIRECTS_KEY")),
 		)
+		log.Println(err)
 		if err == nil {
 			return true
 		}
