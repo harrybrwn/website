@@ -1,8 +1,12 @@
 package auth
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"os"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // RedirectHandler handles Oauth 2.0 redirects.
@@ -26,4 +30,21 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
 	}
 	json.NewEncoder(w).Encode(jsonResp)
+}
+
+func validate(r *http.Request) bool {
+	if key, ok := r.URL.Query()["state"]; ok {
+		hash, err := base64.StdEncoding.DecodeString(key[0])
+		if err != nil {
+			return false
+		}
+		err = bcrypt.CompareHashAndPassword(
+			hash,
+			[]byte(os.Getenv("HARRYBRWN_REDIRECTS_KEY")),
+		)
+		if err == nil {
+			return true
+		}
+	}
+	return false
 }
