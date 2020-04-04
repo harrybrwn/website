@@ -29,6 +29,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 		jsonResp = map[string]string{"code": query.Get("code")}
 		w.WriteHeader(200)
 	} else {
+		log.Println("redirect login failed:", query)
 		w.WriteHeader(403)
 	}
 	json.NewEncoder(w).Encode(jsonResp)
