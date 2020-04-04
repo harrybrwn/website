@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 
@@ -24,6 +25,7 @@ func RedirectHandler(w http.ResponseWriter, r *http.Request) {
 
 	var jsonResp = map[string]string{"error": "redirect server refused request"}
 	if validate(r) {
+		log.Println("redirect login successful")
 		jsonResp = map[string]string{"code": query.Get("code")}
 		w.WriteHeader(200)
 	} else {
