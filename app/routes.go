@@ -35,17 +35,11 @@ var Routes = []web.Route{
 		},
 		HotReload: Debug,
 	},
-	&web.Page{
-		Title:     "Freelancing",
-		Template:  "pages/freelance.html",
-		RoutePath: "/freelance",
-	},
-	&web.Page{
-		Title:     "Resume",
-		Template:  "pages/resume.html",
-		RoutePath: "/resume",
-		Data:      getResume("./static/data/resume.json"),
-	},
+	// &web.Page{
+	// 	Title:     "Freelancing",
+	// 	Template:  "pages/freelance.html",
+	// 	RoutePath: "/freelance",
+	// },
 	web.NewRoute("/static/", NewFileServer("static")), // handle file server
 	web.NewNestedRoute("/api", apiroutes...).SetHandler(&web.JSONRoute{
 		Static: func() interface{} { return info{Error: "Not implimented"} },
@@ -57,7 +51,6 @@ var apiroutes = []web.Route{
 	web.APIRoute("info", func(w http.ResponseWriter, r *http.Request) interface{} {
 		return info{Age: time.Since(bday).Hours() / 24 / 365}
 	}),
-	web.StaticAPIRoute("testing", func() interface{} { return map[string]string{"testing": "testing the api"} }),
 }
 
 var bday = time.Date(1998, time.August, 4, 4, 0, 0, 0, time.UTC)

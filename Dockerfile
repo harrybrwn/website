@@ -1,6 +1,6 @@
 FROM heroku/heroku:18-build as build
 
-LABEL maintainer="Harry Brown <harrybrown98@gmail.com"
+LABEL maintainer="Harry Brown <harrybrown98@gmail.com>"
 
 COPY . /app
 WORKDIR /app

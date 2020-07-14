@@ -45,10 +45,10 @@ func validate(r *http.Request) bool {
 			hash,
 			[]byte(os.Getenv("HARRYBRWN_REDIRECTS_KEY")),
 		)
-		log.Println(err)
 		if err == nil {
 			return true
 		}
+		log.Println(err)
 	}
 	return false
 }
