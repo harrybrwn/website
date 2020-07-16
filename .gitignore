@@ -9,6 +9,7 @@ static/bootstrap-4.3.1-dist
 
 # Config
 config.json
+.vscode
 .env
 
 # Testing
@@ -19,8 +20,10 @@ tests/*
 # Images
 *.ico
 
-# Dev
-.vscode
-.env
+# Tools
 NOTES
 TODO
+
+# Dev
+*.crt
+*.key
