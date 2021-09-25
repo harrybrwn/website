@@ -49,7 +49,10 @@ var Routes = []web.Route{
 
 var apiroutes = []web.Route{
 	web.APIRoute("info", func(w http.ResponseWriter, r *http.Request) interface{} {
-		return info{Age: time.Since(bday).Hours() / 24 / 365}
+		return info{
+			Age:    time.Since(bday).Hours() / 24 / 365,
+			Uptime: time.Since(serverStart),
+		}
 	}),
 }
 
@@ -86,6 +89,8 @@ type resumeItem struct {
 }
 
 type info struct {
-	Age   float64 `json:"age,omitempty"`
-	Error string  `json:"error,omitempty"`
+	Age       float64       `json:"age,omitempty"`
+	Uptime    time.Duration `json:"uptime,omitempty"`
+	GOVersion string        `json:"goversion,omitempty"`
+	Error     string        `json:"error,omitempty"`
 }

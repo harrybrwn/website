@@ -36,7 +36,10 @@ func main() {
 		go cmd.Run(app.Commands)
 	}
 
-	router.HandleFunc("/oauth/redirect", auth.RedirectHandler)
+	router.HandleFunc("/keys", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Write([]byte("not done with this feature yet..."))
+	})
+
 	if err := router.ListenAndServe(":" + port); err != nil {
 		log.Fatal(err)
 	}
