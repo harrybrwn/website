@@ -47,8 +47,6 @@ var Routes = []web.Route{
 	// 	Template:  "pages/resume.html",
 	// 	RoutePath: "/resume",
 	// },
-	web.NewRoute("/static/", NewFileServer("static")), // handle file server
-	// web.NewRoute("/static/", http.FileServer(http.FS(static))),
 	web.NewNestedRoute("/api", apiroutes...).SetHandler(&web.JSONRoute{
 		Static: func() interface{} { return info{Error: "Not implimented"} },
 	}),
