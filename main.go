@@ -1,10 +1,11 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
+	"net/http"
 
 	"harrybrown.com/app"
-	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/cmd"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
@@ -13,6 +14,11 @@ import (
 var (
 	router = web.NewRouter()
 	port   = "8080"
+)
+
+var (
+	//go:embed embeds/harry.html
+	harryStaticPage []byte
 )
 
 func init() {
@@ -39,6 +45,10 @@ func main() {
 	router.HandleFunc("/keys", func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte("not done with this feature yet..."))
 	})
+
+	router.AddRoute("/~harry", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(harryStaticPage)
+	}))
 
 	if err := router.ListenAndServe(":" + port); err != nil {
 		log.Fatal(err)

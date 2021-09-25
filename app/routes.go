@@ -14,7 +14,9 @@ import (
 )
 
 // Debug cooresponds with the debug flag
-var Debug = false
+var (
+	Debug = false
+)
 
 func init() {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.PanicOnError)
@@ -40,7 +42,13 @@ var Routes = []web.Route{
 	// 	Template:  "pages/freelance.html",
 	// 	RoutePath: "/freelance",
 	// },
+	// &web.Page{
+	// 	Title:     "Resume",
+	// 	Template:  "pages/resume.html",
+	// 	RoutePath: "/resume",
+	// },
 	web.NewRoute("/static/", NewFileServer("static")), // handle file server
+	// web.NewRoute("/static/", http.FileServer(http.FS(static))),
 	web.NewNestedRoute("/api", apiroutes...).SetHandler(&web.JSONRoute{
 		Static: func() interface{} { return info{Error: "Not implimented"} },
 	}),
