@@ -24,6 +24,9 @@ var (
 	//go:embed embeds/keys/pub.asc
 	pubkey []byte
 
+	//go:embed embeds/robots.txt
+	robots []byte
+
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
 )
@@ -60,6 +63,9 @@ func main() {
 	router.AddRoute("/~harry", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(harryStaticPage)
 	}))
+	router.HandleFunc("/robots.txt", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Write(robots)
+	})
 
 	if err := router.ListenAndServe(":" + port); err != nil {
 		log.Fatal(err)
