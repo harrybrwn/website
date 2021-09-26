@@ -17,7 +17,9 @@
 }
 
 #home-profile.jumbotron {
-	background: #040404 url(../img/me_sm.jpg?size=sm) center top/900px no-repeat padding-box border-box fixed;
+	background: #040404 url(../img/1125x1500/me_sm.jpg) center top/900px no-repeat padding-box border-box fixed;
+	background-color: #040404;
+	background-image: url(../img/1125x1500/me_sm.jpg);
 	height: 100vh;
 }
 
