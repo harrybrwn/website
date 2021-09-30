@@ -1,6 +1,6 @@
 # Build
-bin/
-bin/harrybrown.com
+/bin/
+/node_modules/
 *.log
 build
 Makefile

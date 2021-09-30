@@ -74,3 +74,9 @@ var (
 	_ Route        = (*JSONRoute)(nil)
 	_ http.Handler = (*JSONRoute)(nil)
 )
+
+func APIHandler(fn func(rw http.ResponseWriter, r *http.Request) interface{}) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		ServeJSON(rw, fn(rw, r))
+	})
+}

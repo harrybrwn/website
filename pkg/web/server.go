@@ -42,6 +42,10 @@ func NewRouter() *Router {
 	}
 }
 
+func (r *Router) SetMux(m *http.ServeMux) {
+	r.mux = m
+}
+
 // CreateRouter will make a new router from a ServeMux interface.
 func CreateRouter(mux ServeMux) *Router {
 	return &Router{
@@ -49,6 +53,10 @@ func CreateRouter(mux ServeMux) *Router {
 		server:      nil,
 		HandlerHook: DefaultHandlerHook,
 	}
+}
+
+func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	r.mux.ServeHTTP(rw, req)
 }
 
 // ListenAndServe will run the server.
@@ -110,3 +118,5 @@ func (r *Router) AddRoute(path string, h http.Handler) {
 func (r *Router) AddRouteFunc(path string, h http.HandlerFunc) {
 	r.HandleRoute(NewRouteFunc(path, h))
 }
+
+var _ http.Handler = (*Router)(nil)

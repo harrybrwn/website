@@ -9,7 +9,9 @@
 <div id="home-profile" class="jumbotron">
 	<div class="container text-center">
 		<div class="overlay"></div>
-		<h1>Do more</h1><i>- Casey Neistat</i>
+		<h1>{{.Data.Quote.Body}}</h1>
+		<i>- {{.Data.Quote.Author}}</i>
+		<!-- <h1>Do more</h1><i>- Casey Neistat</i> -->
 		<!-- <h1>Imagination is something you do alone.</h1><i>- Steve Wozniak</i> -->
 		<!-- <h2>I was never really good at anything except for the ability to learn.</h2><i>- Kanye West</i> -->
 		<!-- <div id="arrow" class="animated bounce-arrow"> -->
@@ -23,15 +25,17 @@
 		</div>
 	</div>
 </div>
+
 <div id="home-about" class="container">
 	<h1 class="text-center">This is Me</h1>
 	<br>
 	<div class="row">
 		<div class="col-lg-5 col-md-4 col-sm-8 col-sm-12">
 			<h4>About Me</h4>
-			<p>I am a fourth year undergraduate student studying Computer Science and Engineering and the University of
-				California Merced.
-				I have a goofy sense of humor. I love playing the guitar and going for runs.</p>
+			<p>I am a fourth year undergraduate student studying Computer
+			Science and Engineering and the University of California Merced.  I
+			have a goofy sense of humor. I love playing the guitar and going for
+			runs.</p>
 		</div>
 		<div class="col-lg-5 col-md-4"></div>
 		<div class="col-lg-2 col-md-6">
@@ -45,17 +49,17 @@
 	<div>
 		<div id="experience-body">
 			<h4>Experience</h4>
-			<p>I started programming my freshman year of college in a Data Science
-				and Statistics course and I couldn't stop once I started. I may have
-				started with an odd language like R but now after almost two years I
-				can say that I am an expert in Python, Go, and C with proficient knowledge of
-				Java, C++ and, JavaScript. My knowledge is not only limited to programming
-				languages, I have a very good grasp on tools such as Git, Docker, and Linux.</p>
+			<p>I started programming my freshman year of college in a Data
+			Science and Statistics course and I couldn't stop once I started. I
+			may have started with an odd language like R but now after almost
+			two years I can say that I am an expert in Python, Go, and C with
+			proficient knowledge of Java, C++ and, JavaScript. My knowledge is
+			not only limited to programming languages, I have a very good grasp
+			on tools such as Git, Docker, and Linux.</p>
 		</div>
-		<!-- <h4>Other Stuff</h4> -->
-		<!-- <p>This is where my other stuff goes.</p> -->
 	</div>
 </div>
+
 <div id="forest" class="jumbotron"></div>
 	<div id="tech-expertise" class="container text-center">
 		<h3>Tech Expertise</h3>
@@ -87,10 +91,18 @@
 			</div>
 		</div>
 	</div>
+
 	<div id="home-projects" class="container text-center">
 		<h3>Talk is cheap. Show me the code.</h3><i> - Linus Torvalds</i>
 		<div class="row">
 			<div id="projects" class="col-lg-5 col-md-5 col-sm-9 col-xs-12">
+				<div class="card">
+					<div class="card-body">
+						<h5 class="card-title">apizza</h5>
+						<h6 class="card-subtitle">Order Dominos pizza from your terminal.</h6>
+						<a class="card-link" href="https://github.com/harrybrwn/apizza">github</a>
+					</div>
+				</div>
 				<table>
 					<tr>
 						<th>Project</th>

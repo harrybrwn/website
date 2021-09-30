@@ -18,7 +18,7 @@ var Name = "harrybrown.com"
 
 func init() {
 	// log.DefaultLogger = log.NewPlainLogger(os.Stdout)
-	web.DefaultHandlerHook = NewLogger
+	// web.DefaultHandlerHook = NewLogger
 	web.DefaultErrorHandler = http.HandlerFunc(NotFound)
 }
 
