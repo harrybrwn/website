@@ -1,11 +1,9 @@
 package app
 
 import (
-	"encoding/json"
 	"flag"
 	"html/template"
 	"io/fs"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"net/http"
@@ -19,11 +17,7 @@ import (
 )
 
 // Debug cooresponds with the debug flag
-var (
-	Debug = false
-
-	serverStart = time.Now()
-)
+var Debug = false
 
 func init() {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.PanicOnError)
@@ -107,13 +101,23 @@ var (
 	quotes   = []Quote{
 		{Body: "Do More", Author: "Casey Neistat"},
 		{Body: "Imagination is something you do alone.", Author: "Steve Wazniak"},
-		{Body: "I am so clever that sometimes I don't understand a single word of what I am saying.", Author: "Oscar Wilde"},
-		{Body: "I did not have sexual relations with that woman.", Author: "Bill Clinton"},
 		{Body: "I was never really good at anything except for the ability to learn.", Author: "Kanye West"},
 		{Body: "I love sleep; It's my favorite.", Author: "Kanye West"},
 		{Body: "I'm gunna be the next hokage!", Author: "Naruto Uzumaki"},
-		{Body: "Bush did 911.", Author: "A very intelligent internet user"},
-		{Body: "Have you ever had a dream that, that, um, that you had, uh, that you had to, you could, you do, you wit, you wa, you could do so, you do you could, you want, you wanted him to do you so much you could do anything?", Author: "That one kid"},
+		{
+			Body: "I am so clever that sometimes I don't understand a single word of " +
+				"what I am saying.",
+			Author: "Oscar Wilde",
+		},
+		{
+			Body: "Have you ever had a dream that, that, um, that you had, uh, " +
+				"that you had to, you could, you do, you wit, you wa, you could " +
+				"do so, you do you could, you want, you wanted him to do you so much " +
+				"you could do anything?",
+			Author: "That one kid",
+		},
+		// {Body: "I did not have sexual relations with that woman.", Author: "Bill Clinton"},
+		// {Body: "Bush did 911.", Author: "A very intelligent internet user"},
 	}
 )
 
@@ -125,29 +129,4 @@ func RandomQuote() Quote {
 
 func GetQuotes() []Quote {
 	return quotes
-}
-
-func getResume(file string) *resumeContent {
-	b, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	c := &resumeContent{}
-
-	if err = json.Unmarshal(b, c); err != nil {
-		log.Println(err)
-		return nil
-	}
-	return c
-}
-
-type resumeContent struct {
-	Experience []resumeItem
-	Education  []resumeItem
-}
-
-type resumeItem struct {
-	Name, Title, Date, Content string
-	BulletPoints               []string
 }
