@@ -3,8 +3,7 @@ DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
 build:
 	go build            \
 		-trimpath       \
-		-ldflags "-s -w \
-			-X 'main.built=$(DATE)'" \
+		-ldflags "-s -w" \
 		-o bin/harrybrown.com
 
 run: build

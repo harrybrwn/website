@@ -15,8 +15,6 @@ var (
 	mux    = http.NewServeMux()
 	router = web.NewRouter()
 	port   = "8080"
-
-	built string
 )
 
 var (
@@ -101,13 +99,11 @@ func logger(logger log.PrintLogger, h http.Handler) http.Handler {
 	})
 }
 
+var startup = time.Now()
+
 func staticCache(h http.Handler) http.Handler {
-	t, err := time.Parse(time.RFC1123, built)
-	if err != nil {
-		panic(err)
-	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Last-Modified", t.Format(time.RFC1123))
+		rw.Header().Set("Last-Modified", startup.Format(time.RFC1123))
 		rw.Header().Set("Cache-Control", "public, max-age=31919000")
 		h.ServeHTTP(rw, r)
 	})
