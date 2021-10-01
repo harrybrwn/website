@@ -3,11 +3,14 @@ package app
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
+	"html/template"
+	"io/fs"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -18,6 +21,8 @@ import (
 // Debug cooresponds with the debug flag
 var (
 	Debug = false
+
+	serverStart = time.Now()
 )
 
 func init() {
@@ -28,62 +33,69 @@ func init() {
 	web.BaseTemplates = []string{"/index.html", "/nav.html"} // included in all pages
 }
 
-// Routes is a list of all the app's routes
-var Routes = []web.Route{
-	&web.Page{
-		Title:     "Harry Brown",
-		Template:  "pages/home.html",
-		RoutePath: "/",
-		RequestHook: func(self *web.Page, w http.ResponseWriter, r *http.Request) {
-			self.Data = &struct {
-				Age   string
-				Quote Quote
-			}{
-				Age:   getAge(),
-				Quote: randomQuote(),
-			}
-		},
-		HotReload: Debug,
-	},
-	// &web.Page{
-	// 	Title:     "Freelancing",
-	// 	Template:  "pages/freelance.html",
-	// 	RoutePath: "/freelance",
-	// },
-	// &web.Page{
-	// 	Title:     "Resume",
-	// 	Template:  "pages/resume.html",
-	// 	RoutePath: "/resume",
-	// },
-	web.NewNestedRoute("/api", apiroutes...).SetHandler(&web.JSONRoute{
-		Static: func() interface{} { return info{Error: "Not implimented"} },
-	}),
-	// web.NewRoute("/github", http.RedirectHandler("https://github.com/harrybrwn", 301)),
-}
-
-var apiroutes = []web.Route{
-	web.APIRoute("info", func(w http.ResponseWriter, r *http.Request) interface{} {
-		return info{
-			Age:    time.Since(bday).Hours() / 24 / 365,
-			Uptime: time.Since(serverStart),
+func HomepageHandler(fs fs.FS) http.HandlerFunc {
+	type Data struct {
+		Title string
+		Age   string
+		Quote Quote
+	}
+	t, err := template.ParseFS(fs, "*/pages/home.html", "*/index.html", "*/nav.html")
+	if err != nil {
+		panic(err) // panic on server startup
+	}
+	return func(rw http.ResponseWriter, r *http.Request) {
+		err := t.ExecuteTemplate(rw, "base", &struct {
+			Title string
+			Data  Data
+		}{
+			Data: Data{
+				Age:   strconv.FormatInt(int64(GetAge()), 10),
+				Quote: RandomQuote(),
+			},
+			Title: "Harry Brown",
+		})
+		if err != nil {
+			log.Error(err)
+			rw.Write([]byte("something went wrong"))
+			rw.WriteHeader(500)
 		}
-	}),
-	web.APIRoute("quote", func(rw http.ResponseWriter, r *http.Request) interface{} {
-		return randomQuote()
-	}),
-	web.APIRoute("quotes", func(rw http.ResponseWriter, r *http.Request) interface{} {
-		quotesMu.Lock()
-		defer quotesMu.Unlock()
-		return quotes
-	}),
+	}
 }
 
-var bday = time.Date(1998, time.August, 4, 4, 0, 0, 0, time.UTC)
-
-func getAge() string {
-	age := time.Since(bday).Hours() / 24 / 365
-	return fmt.Sprintf("%d", int(age))
+func HandleInfo(w http.ResponseWriter, r *http.Request) interface{} {
+	return info{
+		Name: "Harry Brown",
+		Age:  math.Round(GetAge()),
+	}
 }
+
+type info struct {
+	Name      string        `json:"name,omitempty"`
+	Age       float64       `json:"age,omitempty"`
+	Uptime    time.Duration `json:"uptime,omitempty"`
+	GOVersion string        `json:"goversion,omitempty"`
+	Error     string        `json:"error,omitempty"`
+}
+
+var birthTimestamp = time.Date(
+	1998, time.August, 4, // 1998-08-04
+	4, 40, 0, 0, // 4:40 AM
+	mustLoadLocation("America/Los_Angeles"),
+)
+
+func mustLoadLocation(name string) *time.Location {
+	l, err := time.LoadLocation(name)
+	if err != nil {
+		panic(err)
+	}
+	return l
+}
+
+func GetAge() float64 {
+	return time.Since(birthTimestamp).Seconds() / 60 / 60 / 24 / 365
+}
+
+func GetBirthday() time.Time { return birthTimestamp }
 
 type Quote struct {
 	Body   string `json:"body"`
@@ -105,10 +117,14 @@ var (
 	}
 )
 
-func randomQuote() Quote {
+func RandomQuote() Quote {
 	quotesMu.Lock()
 	defer quotesMu.Unlock()
 	return quotes[rand.Intn(len(quotes))]
+}
+
+func GetQuotes() []Quote {
+	return quotes
 }
 
 func getResume(file string) *resumeContent {
@@ -134,11 +150,4 @@ type resumeContent struct {
 type resumeItem struct {
 	Name, Title, Date, Content string
 	BulletPoints               []string
-}
-
-type info struct {
-	Age       float64       `json:"age,omitempty"`
-	Uptime    time.Duration `json:"uptime,omitempty"`
-	GOVersion string        `json:"goversion,omitempty"`
-	Error     string        `json:"error,omitempty"`
 }

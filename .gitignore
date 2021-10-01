@@ -3,7 +3,6 @@
 /node_modules/
 *.log
 build
-Makefile
 test-cover
 static/bootstrap-4.3.1-dist
 

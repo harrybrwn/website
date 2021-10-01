@@ -4,6 +4,7 @@ import (
 	"embed"
 	"net/http"
 	"os"
+	"time"
 
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/log"
@@ -14,6 +15,8 @@ var (
 	mux    = http.NewServeMux()
 	router = web.NewRouter()
 	port   = "8080"
+
+	built string
 )
 
 var (
@@ -25,30 +28,37 @@ var (
 	robots []byte
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
-
-	//go :embed templates
-	//templates embed.FS
+	//go:embed templates
+	templates embed.FS
 )
 
 func init() {
 	app.StringFlag(&port, "port", "the port to run the server on")
 	app.ParseFlags()
+	web.DefaultErrorHandler = app.NotFoundHandler(templates)
 
 	router.SetMux(mux)
-	router.HandleRoutes(app.Routes)
 }
 
 func main() {
 	if app.Debug {
 		log.Printf("running on localhost:%s\n", port)
-		router.AddRoute("/static/", app.NewFileServer("static")) // handle file server
+		mux.Handle("/static/", app.NewFileServer("static"))
 	} else {
-		router.AddRoute("/static/", http.FileServer(http.FS(static)))
+		mux.Handle("/static/", staticCache(http.FileServer(http.FS(static))))
 	}
 
 	mux.HandleFunc("/~harry", harry)
 	mux.HandleFunc("/robots.txt", robotsHandler)
 	mux.HandleFunc("/pub.asc", keys)
+	mux.HandleFunc("/", app.HomepageHandler(templates))
+	mux.Handle("/api/info", web.APIHandler(app.HandleInfo))
+	mux.Handle("/api/quotes", web.APIHandler(func(rw http.ResponseWriter, r *http.Request) interface{} {
+		return app.GetQuotes()
+	}))
+	mux.Handle("/api/quote", web.APIHandler(func(rw http.ResponseWriter, r *http.Request) interface{} {
+		return app.RandomQuote()
+	}))
 
 	handler := logger(log.NewPlainLogger(os.Stdout), mux)
 	server := http.Server{
@@ -64,15 +74,18 @@ func main() {
 }
 
 func keys(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Cache-Control", "public, max-age=31919000")
 	rw.Write(pubkey)
 }
 
-func harry(wr http.ResponseWriter, r *http.Request) {
-	wr.Header().Set("Content-Type", "text/html")
-	wr.Write(harryStaticPage)
+func harry(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "text/html")
+	rw.Header().Set("Cache-Control", "public, max-age=31919000")
+	rw.Write(harryStaticPage)
 }
 
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Cache-Control", "public, max-age=31919000")
 	rw.Write(robots)
 }
 
@@ -84,6 +97,18 @@ func logger(logger log.PrintLogger, h http.Handler) http.Handler {
 			r.Method, r.RequestURI,
 			country,
 		)
+		h.ServeHTTP(rw, r)
+	})
+}
+
+func staticCache(h http.Handler) http.Handler {
+	t, err := time.Parse(time.RFC1123, built)
+	if err != nil {
+		panic(err)
+	}
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Last-Modified", t.Format(time.RFC1123))
+		rw.Header().Set("Cache-Control", "public, max-age=31919000")
 		h.ServeHTTP(rw, r)
 	})
 }

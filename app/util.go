@@ -4,13 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
 
 	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/web"
 )
 
 // Name is the name of the application.
@@ -18,8 +18,7 @@ var Name = "harrybrown.com"
 
 func init() {
 	// log.DefaultLogger = log.NewPlainLogger(os.Stdout)
-	// web.DefaultHandlerHook = NewLogger
-	web.DefaultErrorHandler = http.HandlerFunc(NotFound)
+	// web.DefaultErrorHandler = http.HandlerFunc(NotFound)
 }
 
 // NewLogger creates a new logger that will intercept a handler and replace it
@@ -39,6 +38,21 @@ type pageLogger struct {
 func (p *pageLogger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p.l.Printf("%s %s%s\n", r.Method, r.Host, r.URL)
 	p.wrapped.ServeHTTP(w, r)
+}
+
+func NotFoundHandler(fs fs.FS) http.Handler {
+	t, err := template.ParseFS(fs, "*/index.html", "*/pages/404.html")
+	if err != nil {
+		panic(err)
+	}
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("X-Content-Type-Options", "nosniff")
+		rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		err = t.ExecuteTemplate(rw, "base", nil)
+		if err != nil {
+			log.Println(err)
+		}
+	})
 }
 
 // NotFound handles requests that generate a 404 error

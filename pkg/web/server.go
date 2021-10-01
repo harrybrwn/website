@@ -29,7 +29,6 @@ type ServeMux interface {
 // Router is an http router.
 type Router struct {
 	mux         ServeMux
-	server      *http.Server
 	HandlerHook func(http.Handler) http.Handler
 }
 
@@ -37,7 +36,6 @@ type Router struct {
 func NewRouter() *Router {
 	return &Router{
 		mux:         new(http.ServeMux),
-		server:      nil,
 		HandlerHook: DefaultHandlerHook,
 	}
 }
@@ -50,23 +48,12 @@ func (r *Router) SetMux(m *http.ServeMux) {
 func CreateRouter(mux ServeMux) *Router {
 	return &Router{
 		mux:         mux,
-		server:      nil,
 		HandlerHook: DefaultHandlerHook,
 	}
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(rw, req)
-}
-
-// ListenAndServe will run the server.
-func (r *Router) ListenAndServe(addr string) error {
-	r.server = &http.Server{Addr: addr, Handler: r.mux}
-	if r.HandlerHook != nil {
-		r.server.Handler = r.HandlerHook(r.mux)
-	}
-
-	return r.server.ListenAndServe()
 }
 
 // Handle registers the a path and a handler using the standard library interface.

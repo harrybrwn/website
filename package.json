@@ -1,0 +1,15 @@
+{
+  "name": "harrybrwn.com",
+  "version": "0.0.1",
+  "description": "My personal website",
+  "main": "main.go",
+  "scripts": {
+    "test": "go test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/harrybrwn/harrybrwn.com"
+  },
+  "author": "Harry Brown",
+  "license": "UNLICENSED"
+}
