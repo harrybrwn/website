@@ -13,8 +13,9 @@ config.json
 
 # Testing
 /tests/
-tests/*
+/scripts/
 /inspiration/
+tests/*
 
 # Images
 *.ico

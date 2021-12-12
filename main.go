@@ -2,19 +2,22 @@ package main
 
 import (
 	"embed"
+	"flag"
+	"net"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	_ "github.com/lib/pq"
 	"harrybrown.com/app"
+	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
 )
 
 var (
-	mux    = http.NewServeMux()
-	router = web.NewRouter()
-	port   = "8080"
+	port = "8080"
 )
 
 var (
@@ -31,42 +34,40 @@ var (
 )
 
 func init() {
-	app.StringFlag(&port, "port", "the port to run the server on")
-	app.ParseFlags()
-	web.DefaultErrorHandler = app.NotFoundHandler(templates)
-
-	router.SetMux(mux)
+	flag.StringVar(&port, "port", port, "the port to run the server on")
+	flag.Parse()
 }
 
 func main() {
-	if app.Debug {
-		log.Printf("running on localhost:%s\n", port)
-		mux.Handle("/static/", app.NewFileServer("static"))
-	} else {
-		mux.Handle("/static/", staticCache(http.FileServer(http.FS(static))))
+	e := echo.New()
+	db, err := db.Connect()
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer db.Close()
 
-	mux.HandleFunc("/~harry", harry)
-	mux.HandleFunc("/robots.txt", robotsHandler)
-	mux.HandleFunc("/pub.asc", keys)
-	mux.HandleFunc("/", app.HomepageHandler(templates))
-	mux.Handle("/api/info", web.APIHandler(app.HandleInfo))
-	mux.Handle("/api/quotes", web.APIHandler(func(rw http.ResponseWriter, r *http.Request) interface{} {
-		return app.GetQuotes()
-	}))
-	mux.Handle("/api/quote", web.APIHandler(func(rw http.ResponseWriter, r *http.Request) interface{} {
-		return app.RandomQuote()
-	}))
+	e.Use(middleware.Logger())
+	e.GET("/", echo.WrapHandler(http.HandlerFunc(harry)))
+	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
+	e.GET("/~harry", echo.WrapHandler(http.HandlerFunc(harry)))
+	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
 
-	handler := logger(log.NewPlainLogger(os.Stdout), mux)
-	server := http.Server{
-		Addr:    ":" + port,
-		Handler: handler,
-	}
-	if router.HandlerHook != nil {
-		server.Handler = router.HandlerHook(handler)
-	}
-	if err := server.ListenAndServe(); err != nil {
+	e.GET("/static/*",
+		echo.WrapHandler(staticCache(http.FileServer(http.FS(static)))),
+		middleware.Rewrite(map[string]string{"/static/*": "/static/$1"}),
+	)
+
+	api := e.Group("/api")
+	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
+	api.GET("/quotes", func(c echo.Context) error {
+		return c.JSON(200, app.GetQuotes())
+	})
+	api.GET("/quote", func(c echo.Context) error {
+		return c.JSON(200, app.RandomQuote())
+	})
+
+	err = e.Start(net.JoinHostPort("", port))
+	if err != nil {
 		log.Fatal(err)
 	}
 }
