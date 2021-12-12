@@ -17,9 +17,6 @@ config.json
 /inspiration/
 tests/*
 
-# Images
-*.ico
-
 # Tools
 NOTES
 TODO
