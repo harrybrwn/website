@@ -68,7 +68,10 @@ func RequestLogRecorder(db *sql.DB, logger logrus.FieldLogger) echo.MiddlewareFu
 			start := time.Now()
 			req := c.Request()
 			res := c.Response()
-			ip, _, _ := net.SplitHostPort(req.RemoteAddr)
+			ip := req.Header.Get("CF-Connecting-IP")
+			if ip == "" {
+				ip, _, _ = net.SplitHostPort(req.RemoteAddr)
+			}
 			err := next(c)
 			l := RequestLog{
 				Method:    req.Method,
