@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -8,8 +9,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/uuid"
 	"harrybrown.com/pkg/web"
 )
+
+func Test(t *testing.T) {
+	id := uuid.New()
+	fmt.Println(id)
+}
 
 func TestFindUrl(t *testing.T) {
 	u, err := url.Parse("http://harrybrwn.com")

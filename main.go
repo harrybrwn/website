@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"flag"
+	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
@@ -29,8 +31,9 @@ var (
 	robots []byte
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
-	//go:embed templates
-	templates embed.FS
+
+	// go :embed templates
+	//templates embed.FS
 )
 
 func init() {
@@ -40,6 +43,7 @@ func init() {
 
 func main() {
 	e := echo.New()
+	logger := logrus.New()
 	db, err := db.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -47,6 +51,14 @@ func main() {
 	defer db.Close()
 
 	e.Use(middleware.Logger())
+	e.Use(app.RequestLogRecorder(db, logger))
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			r := c.Request()
+			fmt.Println(r.RemoteAddr, r.URL.String(), c.RealIP())
+			return next(c)
+		}
+	})
 	e.GET("/", echo.WrapHandler(http.HandlerFunc(harry)))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
 	e.GET("/~harry", echo.WrapHandler(http.HandlerFunc(harry)))
@@ -66,6 +78,7 @@ func main() {
 		return c.JSON(200, app.RandomQuote())
 	})
 
+	logger.WithField("time", time.Now()).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
 		log.Fatal(err)
