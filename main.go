@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"flag"
-	"fmt"
 	"net"
 	"net/http"
 	"time"
@@ -50,15 +49,7 @@ func main() {
 	}
 	defer db.Close()
 
-	e.Use(middleware.Logger())
 	e.Use(app.RequestLogRecorder(db, logger))
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			r := c.Request()
-			fmt.Println(r.RemoteAddr, r.URL.String(), c.RealIP())
-			return next(c)
-		}
-	})
 	e.GET("/", echo.WrapHandler(http.HandlerFunc(harry)))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
 	e.GET("/~harry", echo.WrapHandler(http.HandlerFunc(harry)))
