@@ -1,8 +1,8 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
 
 build:
-	go build            \
-		-trimpath       \
+	go build             \
+		-trimpath        \
 		-ldflags "-s -w" \
 		-o bin/harrybrown.com
 

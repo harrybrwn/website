@@ -15,6 +15,7 @@ type RequestLog struct {
 	Status      int
 	IP          string
 	URI         string
+	Referer     string
 	UserAgent   string
 	Latency     time.Duration
 	Error       error
@@ -23,9 +24,9 @@ type RequestLog struct {
 
 const insertLogQuery = `
 INSERT INTO request_log
-	(method, status, ip, uri, user_agent, latency, error)
+	(method, status, ip, uri, referer, user_agent, latency, error)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7)`
+	($1, $2, $3, $4, $5, $6, $7, $8)`
 
 func RecordRequest(db *sql.DB, l *RequestLog) error {
 	var errmsg string
@@ -38,6 +39,7 @@ func RecordRequest(db *sql.DB, l *RequestLog) error {
 		l.Status,
 		l.IP,
 		l.URI,
+		l.Referer,
 		l.UserAgent,
 		l.Latency,
 		errmsg,
@@ -51,6 +53,7 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 		"status":     l.Status,
 		"ip":         l.IP,
 		"uri":        l.URI,
+		"referer":    l.Referer,
 		"user_agent": l.UserAgent,
 		"latency":    l.Latency,
 	}
@@ -78,6 +81,7 @@ func RequestLogRecorder(db *sql.DB, logger logrus.FieldLogger) echo.MiddlewareFu
 				Status:    res.Status,
 				IP:        ip,
 				URI:       req.RequestURI,
+				Referer:   req.Header.Get("Referer"),
 				UserAgent: req.Header.Get("User-Agent"),
 				Latency:   time.Since(start),
 				Error:     err,

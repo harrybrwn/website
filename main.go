@@ -8,17 +8,12 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
-)
-
-var (
-	port = "8080"
 )
 
 var (
@@ -33,16 +28,21 @@ var (
 
 	// go :embed templates
 	//templates embed.FS
+
+	// debug bool
 )
 
-func init() {
-	flag.StringVar(&port, "port", port, "the port to run the server on")
-	flag.Parse()
-}
-
 func main() {
-	e := echo.New()
-	logger := logrus.New()
+	var (
+		port   = "8080"
+		e      = echo.New()
+		logger = logrus.New()
+	)
+	flag.StringVar(&port, "port", port, "the port to run the server on")
+	// flag.BoolVar(&debug, "d", debug, "run the app in debugging mode")
+	flag.Parse()
+
+	e.HideBanner = true
 	db, err := db.Connect()
 	if err != nil {
 		log.Fatal(err)
@@ -50,15 +50,20 @@ func main() {
 	defer db.Close()
 
 	e.Use(app.RequestLogRecorder(db, logger))
-	e.GET("/", echo.WrapHandler(http.HandlerFunc(harry)))
+	e.GET("/", echo.WrapHandler(harry()))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
-	e.GET("/~harry", echo.WrapHandler(http.HandlerFunc(harry)))
+	e.GET("/~harry", echo.WrapHandler(harry()))
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
-
-	e.GET("/static/*",
-		echo.WrapHandler(staticCache(http.FileServer(http.FS(static)))),
-		middleware.Rewrite(map[string]string{"/static/*": "/static/$1"}),
-	)
+	e.GET("/favicon.ico", func(c echo.Context) error {
+		icon, err := static.ReadFile("static/img/favicon.ico")
+		if err != nil {
+			return c.NoContent(404)
+		}
+		header := c.Request().Header
+		header.Set("Cache-Control", "public, max-age=31919000")
+		return c.Blob(200, "image/x-icon", icon)
+	})
+	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
@@ -69,7 +74,7 @@ func main() {
 		return c.JSON(200, app.RandomQuote())
 	})
 
-	logger.WithField("time", time.Now()).Info("server starting")
+	logger.WithField("time", startup).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
 		log.Fatal(err)
@@ -81,10 +86,19 @@ func keys(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(pubkey)
 }
 
-func harry(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "text/html")
-	rw.Header().Set("Cache-Control", "public, max-age=31919000")
-	rw.Write(harryStaticPage)
+func harry() http.Handler {
+	if app.Debug {
+		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.Header().Set("Content-Type", "text/html")
+			rw.Header().Set("Cache-Control", "public, max-age=31919000")
+			http.ServeFile(rw, r, "embeds/harry.html")
+		})
+	}
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
+		rw.Header().Set("Cache-Control", "public, max-age=31919000")
+		rw.Write(harryStaticPage)
+	})
 }
 
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
@@ -92,16 +106,8 @@ func robotsHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(robots)
 }
 
-func logger(logger log.PrintLogger, h http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		country := r.Header.Get("CF-IPCountry")
-		logger.Printf(
-			"[%s] %s country=%s\n",
-			r.Method, r.RequestURI,
-			country,
-		)
-		h.ServeHTTP(rw, r)
-	})
+func handleStatic() http.Handler {
+	return staticCache(http.FileServer(http.FS(static)))
 }
 
 var startup = time.Now()
