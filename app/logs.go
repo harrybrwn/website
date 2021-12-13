@@ -33,13 +33,19 @@ func RecordRequest(db *sql.DB, l *RequestLog) error {
 	if l.Error != nil {
 		errmsg = l.Error.Error()
 	}
+	var referer interface{}
+	if len(l.Referer) != 0 {
+		referer = l.Referer
+	} else {
+		referer = nil
+	}
 	_, err := db.Exec(
 		insertLogQuery,
 		l.Method,
 		l.Status,
 		l.IP,
 		l.URI,
-		l.Referer,
+		referer,
 		l.UserAgent,
 		l.Latency,
 		errmsg,

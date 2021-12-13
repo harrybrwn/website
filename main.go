@@ -19,17 +19,17 @@ import (
 var (
 	//go:embed embeds/harry.html
 	harryStaticPage []byte
-	//go:embed embeds/keys/pub.asc
+	//go:embed embeds/pub.asc
 	pubkey []byte
 	//go:embed embeds/robots.txt
 	robots []byte
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
+	//go:embed embeds/favicon.ico
+	favicon []byte
 
 	// go :embed templates
 	//templates embed.FS
-
-	// debug bool
 )
 
 func main() {
@@ -39,7 +39,6 @@ func main() {
 		logger = logrus.New()
 	)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
-	// flag.BoolVar(&debug, "d", debug, "run the app in debugging mode")
 	flag.Parse()
 
 	e.HideBanner = true
@@ -55,13 +54,8 @@ func main() {
 	e.GET("/~harry", echo.WrapHandler(harry()))
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
 	e.GET("/favicon.ico", func(c echo.Context) error {
-		icon, err := static.ReadFile("static/img/favicon.ico")
-		if err != nil {
-			return c.NoContent(404)
-		}
-		header := c.Request().Header
-		header.Set("Cache-Control", "public, max-age=31919000")
-		return c.Blob(200, "image/x-icon", icon)
+		c.Response().Header().Set("Cache-Control", "public, max-age=31919000")
+		return c.Blob(200, "image/x-icon", favicon)
 	})
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 
