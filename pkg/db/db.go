@@ -8,7 +8,15 @@ import (
 	"time"
 )
 
-func Connect() (*sql.DB, error) {
+type logger interface {
+	Info(...interface{})
+}
+
+func Connect(loggers ...logger) (*sql.DB, error) {
+	var logger logger = new(lg)
+	if len(loggers) > 0 {
+		logger = loggers[0]
+	}
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -29,8 +37,10 @@ func Connect() (*sql.DB, error) {
 	for {
 		select {
 		case <-ticker.C:
+			logger.Info("connecting to database")
 			err = db.Ping()
 			if err == nil {
+				logger.Info("database connected")
 				return db, nil
 			}
 		case <-ctx.Done():
@@ -38,3 +48,7 @@ func Connect() (*sql.DB, error) {
 		}
 	}
 }
+
+type lg struct{}
+
+func (*lg) Info(...interface{}) {}

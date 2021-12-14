@@ -11,13 +11,15 @@ import (
 	"strings"
 	"syscall"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/joho/godotenv"
 	"golang.org/x/term"
 	"harrybrown.com/app"
+	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 )
 
 func main() {
+	godotenv.Load()
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
@@ -38,17 +40,26 @@ func run() error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	roles := strings.Split(rolesflag, ",")
-	if !strings.Contains(rolesflag, ",") {
-		roles = []string{"default"}
+	roles := make([]auth.Role, 0)
+	for _, r := range strings.Split(rolesflag, ",") {
+		roles = append(roles, auth.Role(strings.Trim(r, "\t\n ")))
+	}
+
+	if !strings.Contains(rolesflag, ",") && len(roles) == 0 {
+		roles = []auth.Role{auth.RoleDefault}
+	}
+
+	if username == "" {
+		fmt.Printf("username: ")
+		fmt.Scanln(&username)
+	}
+	if email == "" {
+		fmt.Printf("email: ")
+		fmt.Scanln(&email)
 	}
 
 	fmt.Print("Password: ")
 	pw, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return err
-	}
-	pwhash, err := bcrypt.GenerateFromPassword(pw, bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -60,6 +71,14 @@ func run() error {
 	default:
 		return nil
 	}
+	user := app.User{
+		Username: username,
+		Email:    email,
+		// Roles:    roles,
+	}
+	for _, r := range roles {
+		user.Roles = append(user.Roles, auth.Role(r))
+	}
 
 	db, err := db.Connect()
 	if err != nil {
@@ -67,15 +86,11 @@ func run() error {
 	}
 	defer db.Close()
 	store := app.NewUserStore(db)
-	u, err := store.Put(ctx, &app.User{
-		Username: username,
-		Email:    email,
-		PWHash:   pwhash,
-	})
+	u, err := store.Create(ctx, string(pw), &user)
 	if err != nil {
 		return err
 	}
-	b, err := json.Marshal(u)
+	b, err := json.MarshalIndent(u, "", "  ")
 	if err != nil {
 		return err
 	}

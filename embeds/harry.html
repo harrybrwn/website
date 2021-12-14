@@ -43,6 +43,10 @@
             text-decoration: none;
             color: inherit;
         }
+        .login-panel {
+            display: none;
+            float: right;
+        }
     </style>
     <noscript>
         <span><!-- javascript is disabled --></span>
@@ -50,7 +54,14 @@
 </head>
 <body>
     <header></header>
-    <h1>Harry Brown</h1>
+    <h1 id="login-btn">Harry Brown</h1>
+    <div id="login-panel" class="login-panel">
+        <form method="POST" action="/api/token" id="login-form">
+            <input type="email" name="email">
+            <input type="password" name="password">
+            <input type="submit">
+        </form>
+    </div>
     <p>I do computers and stuff.</p>
     <h2>Links</h2>
     <ul>
@@ -58,8 +69,7 @@
         <li><a href="https://www.linkedin.com/in/harrison-brown-88823b185/">linkedin</a></li>
         <li><a href="/static/files/HarrisonBrown.pdf">resume</a></li>
     </ul>
-    <script>
-        console.log("hey bro, no one said you could poke around in here... go away");
-    </script>
+    <script src="/static/js/main.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", main);</script>
 </body>
 </html>

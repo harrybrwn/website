@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS "user" (
 	id         SERIAL PRIMARY KEY,
 	uuid       UUID UNIQUE,
+	username   VARCHAR(256),
 	email      VARCHAR(256),
 	pw_hash    BYTEA,
 	totp_code  VARCHAR(32),

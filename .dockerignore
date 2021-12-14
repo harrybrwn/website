@@ -1,0 +1,15 @@
+/.git/
+/scripts/
+/static/bootstrap-*
+/node_modules/
+
+/.env
+/.dockerignore
+/.gitignore
+/Dockerfile
+/docker-compose.yml
+/Procfile
+/Makefile
+/README.md
+/TODO
+/NOTES
