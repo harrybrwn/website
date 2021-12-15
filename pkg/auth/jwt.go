@@ -162,7 +162,10 @@ func GetBearerToken(r *http.Request) (string, error) {
 }
 
 type edDSATokenConfig struct {
-	key ed25519.PrivateKey
+	// key ed25519.PrivateKey
+	// pub ed25519.PublicKey
+	key crypto.PrivateKey
+	pub crypto.PublicKey
 }
 
 func (tc *edDSATokenConfig) GetToken(r *http.Request) (string, error) {
@@ -174,19 +177,35 @@ func (tc *edDSATokenConfig) Private() crypto.PrivateKey {
 }
 
 func (tc *edDSATokenConfig) Public() crypto.PublicKey {
-	return tc.key.Public()
+	return tc.pub
 }
 
 func (tc *edDSATokenConfig) Type() jwt.SigningMethod {
 	return jwt.SigningMethodEdDSA
 }
 
+func NewEdDSATokenConfig(priv, pub []byte) (TokenConfig, error) {
+	var (
+		cfg edDSATokenConfig
+		err error
+	)
+	cfg.key, err = jwt.ParseEdPrivateKeyFromPEM(priv)
+	if err != nil {
+		return nil, err
+	}
+	cfg.pub, err = jwt.ParseEdPublicKeyFromPEM(pub)
+	if err != nil {
+		return nil, err
+	}
+	return &cfg, nil
+}
+
 func GenEdDSATokenConfig() TokenConfig {
-	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		panic(err)
 	}
-	return &edDSATokenConfig{key: priv}
+	return &edDSATokenConfig{key: priv, pub: pub}
 }
 
 func GenerateECDSATokenConfig() TokenConfig {

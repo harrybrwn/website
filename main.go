@@ -3,8 +3,10 @@ package main
 import (
 	"embed"
 	"flag"
+	"io/fs"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -18,17 +20,24 @@ import (
 	"harrybrown.com/pkg/web"
 )
 
-var (
-	//go:embed embeds/harry.html
-	harryStaticPage []byte
-	//go:embed public/pub.asc
-	pubkey []byte
-	//go:embed public/robots.txt
-	robots []byte
-	//go:embed public/favicon.ico
-	favicon []byte
+//go:generate go run ./cmd/key-gen -o ./embeds/jwt-signer
+//go:generate yarn build
 
-	//go:embed static/css static/data static/files static/img static/js
+var (
+	//go:embed embeds/jwt-signer.pub
+	pubkeyPem []byte
+	//go:embed embeds/jwt-signer.key
+	privkeyPem []byte
+
+	//go:embed build/index.html
+	harryStaticPage []byte
+	//go:embed build/pub.asc
+	gpgPubkey []byte
+	//go:embed build/robots.txt
+	robots []byte
+	//go:embed build/favicon.ico
+	favicon []byte
+	//go:embed build/static
 	static embed.FS
 
 	//go:embed templates
@@ -41,13 +50,19 @@ func main() {
 	var (
 		port = "8080"
 		e    = echo.New()
+		env  bool
 	)
 	e.Logger = log.WrapLogrus(logger)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
+	flag.BoolVar(&env, "env", env, "read environment files from .env")
 	flag.Parse()
 
-	if app.Debug {
+	if env {
 		godotenv.Load()
+	}
+	if app.Debug {
+		auth.Expiration = time.Hour * 24
+		auth.RefreshExpiration = auth.Expiration * 2
 	}
 
 	e.HideBanner = true
@@ -57,10 +72,11 @@ func main() {
 	}
 	defer db.Close()
 
-	jwtConf := &tokenConfig{auth.GenEdDSATokenConfig()}
+	jwtConf := NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Use(app.RequestLogRecorder(db, logger))
 	e.GET("/", echo.WrapHandler(harry()))
+	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
 	e.GET("/~harry", echo.WrapHandler(harry()))
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
@@ -68,22 +84,22 @@ func main() {
 		c.Response().Header().Set("Cache-Control", "public, max-age=31919000")
 		return c.Blob(200, "image/x-icon", favicon)
 	})
-	e.GET("/static/*", echo.WrapHandler(handleStatic()))
+	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 	e.GET("/secret", func(c echo.Context) error {
 		return c.HTML(200, `<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Secret</title>
 </head>
 <body>
 	<h1>This is a Secret</h1>
 </body>
 </html>`)
-	}, guard)
-	e.GET("/secret/admin", func(c echo.Context) error {
+	}, guard, admin())
+	e.GET("/balls", func(c echo.Context) error {
 		return c.HTML(200, `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,12 +109,11 @@ func main() {
     <title>Secret</title>
 </head>
 <body>
-	<h1>This is a Secret for only the admins</h1>
+	<canvas id="canvas"></canvas>
+	<script src="/static/js/balls.js"></script>
 </body>
 </html>`)
-	}, guard, admin())
-
-	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+	})
 
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
@@ -117,6 +132,8 @@ func main() {
 	}
 }
 
+const tokenKey = "_token"
+
 func admin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -134,12 +151,20 @@ func admin() echo.MiddlewareFunc {
 	}
 }
 
+func NewTokenConfig() auth.TokenConfig {
+	conf, err := auth.NewEdDSATokenConfig(privkeyPem, pubkeyPem)
+	if err != nil {
+		panic(err) // happens at startup
+	}
+	return &tokenConfig{conf}
+}
+
 type tokenConfig struct {
 	auth.TokenConfig
 }
 
 func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
-	c, err := r.Cookie("token")
+	c, err := r.Cookie(tokenKey)
 	if err != nil {
 		return auth.GetBearerToken(r)
 	}
@@ -153,10 +178,13 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 		Password string `json:"password"`
 	}
 	return func(c echo.Context) error {
-		ctx := c.Request().Context()
 		var (
-			err  error
-			body userbody
+			err         error
+			body        userbody
+			req         = c.Request()
+			ctx         = req.Context()
+			cookieQuery = req.URL.Query().Get("cookie")
+			setCookie   bool
 		)
 		switch err = c.Bind(&body); err {
 		case nil:
@@ -167,6 +195,13 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 			err = errors.Wrap(err, "failed to bind user data")
 			return wrap(err, http.StatusInternalServerError)
 		}
+		if len(cookieQuery) > 0 {
+			setCookie, err = strconv.ParseBool(cookieQuery)
+			if err != nil {
+				return &echo.HTTPError{Code: http.StatusBadRequest}
+			}
+		}
+		req.URL.Query().Get("cookie")
 		logger.WithFields(logrus.Fields{
 			"username": body.Username,
 			"email":    body.Email,
@@ -198,12 +233,14 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 			err = errors.Wrap(err, "could not create token response")
 			return wrap(err, http.StatusInternalServerError)
 		}
-		c.SetCookie(&http.Cookie{
-			Name:    "token",
-			Value:   resp.Token,
-			Expires: time.Unix(resp.Expires, 0),
-			Path:    "/",
-		})
+		if setCookie {
+			c.SetCookie(&http.Cookie{
+				Name:    tokenKey,
+				Value:   resp.Token,
+				Expires: time.Unix(resp.Expires, 0),
+				Path:    "/",
+			})
+		}
 		return c.JSON(200, resp)
 	}
 }
@@ -232,7 +269,7 @@ func failure(status int, internal string) error {
 
 func keys(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Cache-Control", "public, max-age=31919000")
-	rw.Write(pubkey)
+	rw.Write(gpgPubkey)
 }
 
 func harry() http.Handler {
@@ -240,7 +277,7 @@ func harry() http.Handler {
 		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Header().Set("Content-Type", "text/html")
 			rw.Header().Set("Cache-Control", "public, max-age=31919000")
-			http.ServeFile(rw, r, "embeds/harry.html")
+			http.ServeFile(rw, r, "build/index.html")
 		})
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
@@ -257,9 +294,13 @@ func robotsHandler(rw http.ResponseWriter, r *http.Request) {
 
 func handleStatic() http.Handler {
 	if app.Debug {
-		return http.StripPrefix("/static/", http.FileServer(http.Dir("static")))
+		return http.StripPrefix("/static/", http.FileServer(http.Dir("build/static")))
 	}
-	return staticCache(http.FileServer(http.FS(static)))
+	fs, err := fs.Sub(static, "build")
+	if err != nil {
+		fs = static
+	}
+	return staticCache(http.FileServer(http.FS(fs)))
 }
 
 var startup = time.Now()

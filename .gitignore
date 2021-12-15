@@ -27,3 +27,4 @@ TODO
 # Dev
 *.crt
 *.key
+*.pub

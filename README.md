@@ -2,13 +2,24 @@
 
 This is the repo for my personal website.
 
+## Build
+
+```
+yarn install
+go generate
+go build -o bin/harrybrwn.com
+```
+
 ### Run locally
 
-First, build the binary
-`go build -o harrybrwn.com`
+Once the binary is built, you can start the database and run the server in debug
+mode.
 
-If you have the heroku cli run `haroku local`, otherwise run the binary regularly with `./harrybrwn.com -d`
+```
+docker-compose up -d db
+bin/harrybrwn.com -env -d
+```
 
-#### Refrences
 
-* See [this repository](https://github.com/simple-icons/simple-icons) for my icons.
+If you have the heroku cli, you can start the serer with `haroku local web`.
+
