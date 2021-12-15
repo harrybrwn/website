@@ -9,10 +9,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
@@ -29,19 +27,19 @@ var (
 	robots []byte
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
-	//go:embed embeds/favicon.ico
-	favicon []byte
 
-	// go :embed templates
-	//templates embed.FS
+	//go:embed templates
+	templates embed.FS
+
+	logger = logrus.New()
 )
 
 func main() {
 	var (
-		port   = "8080"
-		e      = echo.New()
-		logger = logrus.New()
+		port = "8080"
+		e    = echo.New()
 	)
+	e.Logger = log.WrapLogrus(logger)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
 	flag.Parse()
 
@@ -56,14 +54,8 @@ func main() {
 	}
 	defer db.Close()
 
-	jwtConf := &tokenConfig{auth.GenerateECDSATokenConfig()}
+	jwtConf := &tokenConfig{auth.GenEdDSATokenConfig()}
 	guard := auth.Guard(jwtConf)
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("logger", logger)
-			return next(c)
-		}
-	})
 	e.Use(app.RequestLogRecorder(db, logger))
 	e.GET("/", echo.WrapHandler(harry()))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
@@ -103,6 +95,8 @@ func main() {
 </html>`)
 	}, guard, admin())
 
+	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
 	api.GET("/quotes", func(c echo.Context) error {
@@ -111,7 +105,7 @@ func main() {
 	api.GET("/quote", func(c echo.Context) error {
 		return c.JSON(200, app.RandomQuote())
 	})
-	api.POST("/token", token(jwtConf, app.NewUserStore(db)))
+	api.POST("/token", TokenHandler(jwtConf, app.NewUserStore(db)))
 
 	logger.WithField("time", startup).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
@@ -149,57 +143,57 @@ func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 	return c.Value, nil
 }
 
-func token(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
+func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 	type userbody struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	return func(c echo.Context) error {
-		logger := c.Get("logger").(logrus.FieldLogger)
 		ctx := c.Request().Context()
-		var body userbody
-		err := c.Bind(&body)
-		if err != nil {
-			logger.WithField("error", err).Error("failed to load user data")
+		var (
+			err  error
+			body userbody
+		)
+		switch err = c.Bind(&body); err {
+		case nil:
+			break
+		case echo.ErrUnsupportedMediaType:
 			return err
+		default:
+			err = errors.Wrap(err, "failed to bind user data")
+			return wrap(err, http.StatusInternalServerError)
 		}
 		logger.WithFields(logrus.Fields{
-			"username":  body.Username,
-			"email":     body.Email,
-			"pw_length": len(body.Password),
+			"username": body.Username,
+			"email":    body.Email,
 		}).Info("getting token")
-
 		if len(body.Password) == 0 {
-			logger.Warn("no password")
-			return echo.ErrBadRequest
+			return failure(http.StatusBadRequest, "user gave zero length password")
 		}
+
 		var u *app.User
 		if len(body.Email) > 0 {
 			u, err = store.Find(ctx, body.Email)
 		} else if len(body.Username) > 0 {
 			u, err = store.Find(ctx, body.Username)
 		} else {
-			return &echo.HTTPError{Code: http.StatusBadRequest, Message: "unable to find username"}
+			return failure(404, "unable to find user")
 		}
 		if err != nil {
 			return wrap(err, 404, "could not find user")
 		}
 		if u == nil {
-			logger.Error("returned nil user on store.find")
-			return echo.ErrInternalServerError
+			return failure(404, "user store returned nil user on store.Find")
 		}
-		err = bcrypt.CompareHashAndPassword(u.PWHash, []byte(body.Password))
+		err = u.VerifyPassword(body.Password)
 		if err != nil {
-			return echo.ErrForbidden
+			return wrap(err, http.StatusForbidden)
 		}
-		resp, err := auth.NewTokenResponse(conf, &auth.Claims{
-			ID:    u.ID,
-			UUID:  u.UUID,
-			Roles: u.Roles,
-		})
+		resp, err := auth.NewTokenResponse(conf, u.NewClaims())
 		if err != nil {
-			return wrap(errors.Wrap(err, "could not generate token"), 500, "Internal server error")
+			err = errors.Wrap(err, "could not create token response")
+			return wrap(err, http.StatusInternalServerError)
 		}
 		c.SetCookie(&http.Cookie{
 			Name:    "token",
@@ -211,11 +205,25 @@ func token(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 	}
 }
 
-func wrap(err error, status int, message string) error {
+func wrap(err error, status int, message ...string) error {
+	var msg string
+	if len(message) < 1 {
+		msg = http.StatusText(status)
+	} else {
+		msg = message[0]
+	}
 	return &echo.HTTPError{
 		Code:     status,
-		Message:  message,
+		Message:  msg,
 		Internal: err,
+	}
+}
+
+func failure(status int, internal string) error {
+	return &echo.HTTPError{
+		Code:     status,
+		Message:  http.StatusText(status),
+		Internal: errors.New(internal),
 	}
 }
 
