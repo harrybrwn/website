@@ -21,10 +21,13 @@ import (
 var (
 	//go:embed embeds/harry.html
 	harryStaticPage []byte
-	//go:embed embeds/pub.asc
+	//go:embed public/pub.asc
 	pubkey []byte
-	//go:embed embeds/robots.txt
+	//go:embed public/robots.txt
 	robots []byte
+	//go:embed public/favicon.ico
+	favicon []byte
+
 	//go:embed static/css static/data static/files static/img static/js
 	static embed.FS
 

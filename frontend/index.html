@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harry Brown</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+    <link rel="author" href="/">
+    <meta name="subject"     content="personal webpage" />
+    <meta name="referrer"    content="no-referrer" />
+    <meta name="title"       content="Harry Brown" />
+    <meta name="description" content="The home page of a humble backend software engineer." />
+    <meta name="robots"      content="index,archive,follow" />
+    <meta name="googlebot"   content="index,archive,follow" />
+    <meta property="og:url"          content="https://harrybrwn.com" />
+    <meta property="og:type"         content="website" />
+    <meta property="og:title"        content="Harry Brown" />
+    <meta property="og:description"  content="The home page of a humble backend software engineer." />
+    <meta property="og:image"        content="https://harrybrwn.com/static/img/goofy.jpg" />
+    <mata property="og:site_name"    content="Harry Brown" />
+    <meta property="og:locale"       content="en_US" />
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:domain"      content="harrybrwn.com" />
+    <meta name="twitter:site"        content="@harryb998" />
+    <meta name="twitter:creator"     content="@harryb998" />
+    <meta name="twitter:description" content="The home page of a humble backend software engineer." />
+    <meta name="twitter:image"       content="https://harrybrwn.com/static/img/goofy.jpg" />
+    <meta name="twitter:image:src"   content="https://harrybrwn.com/static/img/goofy.jpg" />
+
+    <style>
+        body {
+           margin-top: 3em;
+           margin-left: 5em;
+        }
+        nav li {
+            float: left;
+            list-style: none;
+            margin-left: 10px;
+        }
+        nav li a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .login-panel {
+            display: none;
+            float: right;
+        }
+    </style>
+    <noscript>
+        <span><!-- javascript is disabled --></span>
+    </noscript>
+</head>
+<body>
+    <header></header>
+    <h1 id="login-btn">Harry Brown</h1>
+    <div id="login-panel" class="login-panel">
+        <form method="POST" action="/api/token" id="login-form">
+            <input type="email" name="email">
+            <input type="password" name="password">
+            <input type="submit">
+        </form>
+    </div>
+    <p>I do computers and stuff.</p>
+    <h2>Links</h2>
+    <ul>
+        <li><a href="https://github.com/harrybrwn">github</a></li>
+        <li><a href="https://www.linkedin.com/in/harrison-brown-88823b185/">linkedin</a></li>
+        <li><a href="/static/files/HarrisonBrown.pdf">resume</a></li>
+    </ul>
+    <!-- <script src="/static/js/main.js"></script>
+    <script>document.addEventListener("DOMContentLoaded", main);</script> -->
+</body>
+</html>
