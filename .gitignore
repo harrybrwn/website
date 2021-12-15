@@ -5,6 +5,7 @@
 build
 test-cover
 static/bootstrap-4.3.1-dist
+!scripts/build.js
 
 # Config
 config.json
@@ -13,9 +14,11 @@ config.json
 
 # Testing
 /tests/
-/scripts/
+#/scripts/
 /inspiration/
 tests/*
+/scripts/*.sql
+/scripts/psql.sh
 
 # Tools
 NOTES

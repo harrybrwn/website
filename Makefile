@@ -16,5 +16,6 @@ test:
 clean:
 	$(RM) bin -r
 	$(RM) test.html test-cover
+	yarn clean
 
 .PHONY: build clean
