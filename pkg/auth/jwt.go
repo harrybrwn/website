@@ -184,7 +184,7 @@ func (tc *edDSATokenConfig) Type() jwt.SigningMethod {
 	return jwt.SigningMethodEdDSA
 }
 
-func NewEdDSATokenConfig(priv, pub []byte) (TokenConfig, error) {
+func DecodeEdDSATokenConfig(priv, pub []byte) (TokenConfig, error) {
 	var (
 		cfg edDSATokenConfig
 		err error
@@ -198,6 +198,11 @@ func NewEdDSATokenConfig(priv, pub []byte) (TokenConfig, error) {
 		return nil, err
 	}
 	return &cfg, nil
+}
+
+func EdDSATokenConfigFromSeed(seed []byte) TokenConfig {
+	key := ed25519.NewKeyFromSeed(seed)
+	return &edDSATokenConfig{key: key, pub: key.Public}
 }
 
 func GenEdDSATokenConfig() TokenConfig {

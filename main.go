@@ -2,10 +2,12 @@ package main
 
 import (
 	"embed"
+	"encoding/hex"
 	"flag"
 	"io/fs"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -24,9 +26,9 @@ import (
 //go:generate yarn build
 
 var (
-	//go:embed embeds/jwt-signer.pub
+	// go :embed embeds/jwt-signer.pub
 	pubkeyPem []byte
-	//go:embed embeds/jwt-signer.key
+	// go :embed embeds/jwt-signer.key
 	privkeyPem []byte
 
 	//go:embed build/index.html
@@ -81,7 +83,11 @@ func main() {
 	e.GET("/~harry", echo.WrapHandler(harry()))
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
 	e.GET("/favicon.ico", func(c echo.Context) error {
-		c.Response().Header().Set("Cache-Control", "public, max-age=31919000")
+		h := c.Response().Header()
+		staticLastModified(h)
+		h.Set("Cache-Control", "public, max-age=31919000")
+		h.Set("Content-Length", strconv.FormatInt(int64(len(favicon)), 10))
+		h.Set("Accept-Ranges", "bytes")
 		return c.Blob(200, "image/x-icon", favicon)
 	})
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
@@ -152,11 +158,24 @@ func admin() echo.MiddlewareFunc {
 }
 
 func NewTokenConfig() auth.TokenConfig {
-	conf, err := auth.NewEdDSATokenConfig(privkeyPem, pubkeyPem)
-	if err != nil {
-		panic(err) // happens at startup
+	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
+	if hasSeed {
+		logger.Info("creating token config from seed")
+		seed, err := hex.DecodeString(hexseed)
+		if err != nil {
+			panic(errors.Wrap(err, "could not decode private key seed from hex"))
+		}
+		return &tokenConfig{auth.EdDSATokenConfigFromSeed(seed)}
+	} else if len(privkeyPem) > 0 && len(pubkeyPem) > 0 {
+		logger.Info("creating token config from embedded key pair")
+		conf, err := auth.DecodeEdDSATokenConfig(privkeyPem, pubkeyPem)
+		if err != nil {
+			panic(err) // happens at startup
+		}
+		return &tokenConfig{conf}
 	}
-	return &tokenConfig{conf}
+	logger.Warn("generating new key pair for token config")
+	return &tokenConfig{auth.GenEdDSATokenConfig()}
 }
 
 type tokenConfig struct {
@@ -201,7 +220,6 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 				return &echo.HTTPError{Code: http.StatusBadRequest}
 			}
 		}
-		req.URL.Query().Get("cookie")
 		logger.WithFields(logrus.Fields{
 			"username": body.Username,
 			"email":    body.Email,
@@ -268,6 +286,7 @@ func failure(status int, internal string) error {
 }
 
 func keys(rw http.ResponseWriter, r *http.Request) {
+	staticLastModified(rw.Header())
 	rw.Header().Set("Cache-Control", "public, max-age=31919000")
 	rw.Write(gpgPubkey)
 }
@@ -281,13 +300,18 @@ func harry() http.Handler {
 		})
 	}
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "text/html")
-		rw.Header().Set("Cache-Control", "public, max-age=31919000")
+		h := rw.Header()
+		staticLastModified(h)
+		h.Set("Content-Type", "text/html")
+		h.Set("Cache-Control", "public, max-age=31919000")
+		h.Set("Content-Length", strconv.FormatInt(int64(len(harryStaticPage)), 10))
+		h.Set("Accept-Ranges", "bytes")
 		rw.Write(harryStaticPage)
 	})
 }
 
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
+	staticLastModified(rw.Header())
 	rw.Header().Set("Cache-Control", "public, max-age=31919000")
 	rw.Write(robots)
 }
@@ -305,9 +329,13 @@ func handleStatic() http.Handler {
 
 var startup = time.Now()
 
+func staticLastModified(h http.Header) {
+	h.Set("Last-Modified", startup.UTC().Format(http.TimeFormat))
+}
+
 func staticCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Last-Modified", startup.Format(time.RFC1123))
+		staticLastModified(rw.Header())
 		rw.Header().Set("Cache-Control", "public, max-age=31919000")
 		h.ServeHTTP(rw, r)
 	})
