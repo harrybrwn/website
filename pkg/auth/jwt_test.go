@@ -10,43 +10,55 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/matryer/is"
 )
 
-func Test(t *testing.T) {
+func TestTokenConfig(t *testing.T) {
 	is := is.New(t)
-	// key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
-	conf := GenerateECDSATokenConfig()
-	now := time.Now().UTC()
-	tok := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.StandardClaims{
-		ExpiresAt: now.Add(time.Hour).Unix(),
-		IssuedAt:  now.Unix(),
+	for _, conf := range []TokenConfig{
+		GenEdDSATokenConfig(),
+		GenerateECDSATokenConfig(),
+	} {
+		now := time.Now().UTC()
+		tok := jwt.NewWithClaims(conf.Type(), jwt.StandardClaims{
+			ExpiresAt: now.Add(time.Hour).Unix(),
+			IssuedAt:  now.Unix(),
+		})
+		token, err := tok.SignedString(conf.Private())
+		is.NoErr(err)
+		claims := Claims{}
+		parsed, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
+			return conf.Public(), nil
+		})
+		is.NoErr(err)
+		is.True(parsed.Valid)
+		is.Equal(now.Add(time.Hour).Unix(), claims.ExpiresAt)
+		is.Equal(now.Unix(), claims.IssuedAt)
+	}
+}
+
+func TestGuard(t *testing.T) {
+	is := is.New(t)
+	e := echo.New()
+	conf := GenEdDSATokenConfig()
+	e.Use(Guard(conf))
+	e.GET("/protected", func(c echo.Context) error {
+		claims := GetClaims(c)
+		is.True(claims != nil)
+		return nil
 	})
-	token, err := tok.SignedString(conf.Private())
-	is.NoErr(err)
-	// claims := jwt.StandardClaims{}
-	claims := Claims{}
-	parsed, err := jwt.ParseWithClaims(token, &claims, func(t *jwt.Token) (interface{}, error) {
-		return conf.Public(), nil
-		// return &conf.(*tokenConfig).key.PublicKey, nil
-	})
-	is.NoErr(err)
-	is.True(parsed.Valid)
-	is.Equal(now.Add(time.Hour).Unix(), claims.ExpiresAt)
-	is.Equal(now.Unix(), claims.IssuedAt)
-	time.Sleep(time.Millisecond * 10)
-	fmt.Println(now.Unix(), time.Now().UTC().Unix())
-	fmt.Println(now.Unix() < time.Now().UTC().Add(Expiration).Unix())
+	tok := newToken(t, conf)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", fmt.Sprintf("%s %s", tok.TokenType, tok.Token))
+	c := e.NewContext(req, rec)
+	e.Router().Find("GET", "/protected", c)
 }
 
 func TestLogin(t *testing.T) {
 	e := echo.New()
-	// mid := middleware.JWT("key")
-	// e.Use(mid)
 	req := httptest.NewRequest("POST", "/login", asBody(map[string]string{
 		"username": "testuser",
 		"password": "pw",
@@ -61,6 +73,33 @@ func TestLogin(t *testing.T) {
 	err := h(c)
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func newToken(t *testing.T, conf TokenConfig) *TokenResponse {
+	t.Helper()
+	resp, err := NewTokenResponse(conf, &Claims{
+		ID:    1,
+		UUID:  uuid.New(),
+		Roles: []Role{RoleDefault},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}
+
+func testingToken(conf TokenConfig) func(echo.Context) error {
+	return func(c echo.Context) error {
+		resp, err := NewTokenResponse(conf, &Claims{
+			ID:    1,
+			UUID:  uuid.New(),
+			Roles: []Role{RoleDefault},
+		})
+		if err != nil {
+			return err
+		}
+		return c.JSON(200, resp)
 	}
 }
 

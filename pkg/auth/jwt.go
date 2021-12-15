@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"database/sql/driver"
@@ -158,6 +159,34 @@ func GetBearerToken(r *http.Request) (string, error) {
 		return "", errAuthHeaderTokenMissing
 	}
 	return h[i+1+len(JWTScheme):], nil
+}
+
+type edDSATokenConfig struct {
+	key ed25519.PrivateKey
+}
+
+func (tc *edDSATokenConfig) GetToken(r *http.Request) (string, error) {
+	return GetBearerToken(r)
+}
+
+func (tc *edDSATokenConfig) Private() crypto.PrivateKey {
+	return tc.key
+}
+
+func (tc *edDSATokenConfig) Public() crypto.PublicKey {
+	return tc.key.Public()
+}
+
+func (tc *edDSATokenConfig) Type() jwt.SigningMethod {
+	return jwt.SigningMethodEdDSA
+}
+
+func GenEdDSATokenConfig() TokenConfig {
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+	return &edDSATokenConfig{key: priv}
 }
 
 func GenerateECDSATokenConfig() TokenConfig {
