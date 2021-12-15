@@ -23,6 +23,18 @@ type User struct {
 	UpdatedAt time.Time   `json:"updated_at"`
 }
 
+func (u *User) NewClaims() *auth.Claims {
+	return &auth.Claims{
+		ID:    u.ID,
+		UUID:  u.UUID,
+		Roles: u.Roles,
+	}
+}
+
+func (u *User) VerifyPassword(pw string) error {
+	return bcrypt.CompareHashAndPassword(u.PWHash, []byte(pw))
+}
+
 type UserStore interface {
 	Find(context.Context, interface{}) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
@@ -114,9 +126,11 @@ func (s *userStore) Update(ctx context.Context, u *User) error {
 	).Scan(&u.UpdatedAt)
 }
 
+const hashCost = bcrypt.DefaultCost
+
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
-	u.PWHash, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	u.PWHash, err = bcrypt.GenerateFromPassword([]byte(password), hashCost)
 	if err != nil {
 		return nil, err
 	}
