@@ -202,7 +202,7 @@ func DecodeEdDSATokenConfig(priv, pub []byte) (TokenConfig, error) {
 
 func EdDSATokenConfigFromSeed(seed []byte) TokenConfig {
 	key := ed25519.NewKeyFromSeed(seed)
-	return &edDSATokenConfig{key: key, pub: key.Public}
+	return &edDSATokenConfig{key: key, pub: key.Public()}
 }
 
 func GenEdDSATokenConfig() TokenConfig {
