@@ -13,6 +13,7 @@ config.json
 .env
 
 # Testing
+/db/data/
 /tests/
 #/scripts/
 /inspiration/

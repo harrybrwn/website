@@ -2,6 +2,7 @@
 /scripts/
 /static/bootstrap-*
 /node_modules/
+/build/
 
 /.env
 /.dockerignore
