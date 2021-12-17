@@ -145,8 +145,6 @@ module.exports = function (webpackEnv) {
         {
           test: /\.gif$/,
           type: "asset/resource",
-          // use: ["url-loader"],
-          // use: [{ loader: "url-loader" }],
         },
         {
           test: /\.(g_if|png|jpe?g|svg)$/i,
@@ -163,22 +161,8 @@ module.exports = function (webpackEnv) {
         },
         {
           test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
-          // use: [
-          //   // "url-loader",
-          //   {
-          //     loader: "file-loader",
-          //     options: {
-          //       name: "static/font/[name].[ext]",
-          //     },
-          //   },
-          // ],
           type: "asset/resource",
         },
-        // {
-        //   test: /\.html$/,
-        //   // use: "html-loader",
-        //   type: "asset/resource",
-        // },
       ],
     },
 
