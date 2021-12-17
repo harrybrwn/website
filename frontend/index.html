@@ -4,70 +4,78 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Harry Brown</title>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+    <title><%= title %></title>
 
     <link rel="author" href="/">
+    <meta name="author" content="<%= author %>">
     <meta name="subject"     content="personal webpage"/>
     <meta name="referrer"    content="no-referrer"/>
-    <meta name="title"       content="Harry Brown"/>
-    <meta name="description" content="The home page of a humble backend software engineer."/>
+    <meta name="title"       content="<%= title %>"/>
+    <meta name="description" content="<%= description %>"/>
     <meta name="robots"      content="index,archive,follow"/>
     <meta name="googlebot"   content="index,archive,follow"/>
-    <meta property="og:url"          content="https://harrybrwn.com"/>
+    <meta property="og:url"          content="https://<%= domain %>"/>
     <meta property="og:type"         content="website"/>
-    <meta property="og:title"        content="Harry Brown"/>
-    <meta property="og:description"  content="The home page of a humble backend software engineer."/>
-    <meta property="og:image"        content="https://harrybrwn.com/static/img/goofy.jpg"/>
+    <meta property="og:title"        content="<%= title %>"/>
+    <meta property="og:description"  content="<%= description %>"/>
+    <meta property="og:image"        content="<%= previewImage %>"/>
     <meta property="og:locale"       content="en_US"/>
-    <meta property="og:site_name"    content="HarryBrown"/>
+    <meta property="og:site_name"    content="<%= title %>"/>
     <meta name="twitter:card"        content="summary_large_image"/>
-    <meta name="twitter:domain"      content="harrybrwn.com"/>
+    <meta name="twitter:domain"      content="<%= domain %>"/>
     <meta name="twitter:site"        content="@harryb998"/>
     <meta name="twitter:creator"     content="@harryb998"/>
-    <meta name="twitter:description" content="The home page of a humble backend software engineer."/>
-    <meta name="twitter:image"       content="https://harrybrwn.com/static/img/goofy.jpg"/>
-    <meta name="twitter:image:src"   content="https://harrybrwn.com/static/img/goofy.jpg"/>
-
-    <style>
-        body {
-           margin-top: 3em;
-           margin-left: 5em;
-        }
-        nav li {
-            float: left;
-            list-style: none;
-            margin-left: 10px;
-        }
-        nav li a {
-            text-decoration: none;
-            color: inherit;
-        }
-        .login-panel {
-            display: none;
-            float: right;
-        }
-    </style>
+    <meta name="twitter:description" content="<%= description %>"/>
+    <meta name="twitter:image"       content="<%= previewImage %>"/>
+    <meta name="twitter:image:src"   content="<%= previewImage %>"/>
 </head>
 <body>
     <noscript>
         <span><!-- javascript is disabled --></span>
     </noscript>
-    <h1 id="login-btn">Harry Brown</h1>
-    <div id="login-panel" class="login-panel">
-        <form method="POST" action="/api/token" id="login-form">
-            <input type="email" name="email">
-            <input type="password" name="password">
-            <input type="submit">
-        </form>
-        <button id="logout-btn">Logout</button>
-    </div>
-    <p>I do computers and stuff.</p>
-    <h2>Links</h2>
-    <ul>
-        <li><a target="_blank" href="https://github.com/harrybrwn">github</a></li>
-        <li><a target="_blank" href="https://www.linkedin.com/in/harrison-brown-88823b185/">linkedin</a></li>
-        <li><a target="_blank" href="/static/files/HarrisonBrown.pdf">resume</a></li>
-    </ul>
+    <main>
+        <center>
+            <h1 id="login-btn">Harry Brown</h1>
+            <h2 class="welcome-banner"><marquee behavior="alternate">Welcome</marquee></h2>
+            <img src="<%=require('./img/spinning-world.gif')%>">
+            <div id="login-panel" class="login-panel">
+                <form method="POST" action="/api/token" id="login-form">
+                    <input type="email" name="email">
+                    <input type="password" name="password">
+                    <input type="submit">
+                </form>
+                <button id="logout-btn">Logout</button>
+            </div>
+
+        </center>
+        <p>I do computers and stuff.</p>
+        <h2>Links</h2>
+        <ul>
+            <li><a target="_blank" href="https://github.com/harrybrwn">github</a></li>
+            <li><a target="_blank" href="https://www.linkedin.com/in/harrison-brown-88823b185/">linkedin</a></li>
+            <li><a target="_blank" href="/static/files/HarrisonBrown.pdf">resume</a></li>
+        </ul>
+        <a href="http://www.theoldnet.com/#frombadge" title="Are you tired of this new Internet yet? Time to Get TheOldNet!">
+            <img src="<%=require('./img/88x31/theoldnet.gif')%>" width="88" height="31" border=0>
+        </a>
+        <a href="https://geocities.restorativland.org/">
+            <img src="<%=require('./img/88x31/geo-cities.gif')%>" width="88" height="31">
+        </a>
+        <a href="https://code.visualstudio.com/" title="VS Code">
+            <img src="<%=require('./img/88x31/vscode.gif')%>" width="88" height="31">
+        </a>
+        <a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git">
+            <img src="<%= require('./img/88x31/linux.gif') %>" width="88" height="31">
+        </a>
+        <a href="https://en.wikipedia.org/wiki/Netscape">
+            <img src="<%= require('./img/88x31/netnow2.gif') %>" width="88" height="31">
+        </a>
+        <a href=""><img src="<%= require('./img/88x31/rfc1876-now.gif') %>" width="88" height="31"></a>
+        <a href=""><img src="<%= require('./img/88x31/vi_now.gif') %>" width="88" height="31"></a>
+        <a href=""><img src="<%= require('./img/88x31/vim.gif') %>" width="88" height="31"></a>
+        <div>
+            Last updated <%= built.toDateString() %>
+        </div>
+    </main>
 </body>
 </html>

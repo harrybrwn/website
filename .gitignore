@@ -6,6 +6,10 @@ build
 test-cover
 static/bootstrap-4.3.1-dist
 !scripts/build.js
+/public/static/img/563x750
+/public/static/img/1688x2251
+/public/static/img/2250x3000
+
 
 # Config
 config.json
@@ -29,3 +33,4 @@ TODO
 *.crt
 *.key
 *.pub
+

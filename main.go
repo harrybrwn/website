@@ -22,8 +22,8 @@ import (
 	"harrybrown.com/pkg/web"
 )
 
-//go:generate go run ./cmd/key-gen -o ./embeds/jwt-signer
-//go:generate yarn build
+// go :generate go run ./cmd/key-gen -o ./embeds/jwt-signer
+// go :generate yarn build
 
 var (
 	// go :embed embeds/jwt-signer.pub
@@ -138,7 +138,10 @@ func main() {
 	}
 }
 
-const tokenKey = "_token"
+const (
+	tokenKey     = "_token"
+	maxCookieAge = 2147483647
+)
 
 func admin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {

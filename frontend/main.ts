@@ -5,120 +5,193 @@ import {
   isExpired,
   login,
   deleteToken,
+  storeToken,
+  setCookie,
 } from "./auth";
 import { clearCookie } from "./util";
+import UnderConstruction from "./img/under_construction.gif";
+
+import "./main.css";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
-  let form = document.getElementById(formID) as HTMLFormElement | null;
-  if (form == null) {
+  let formOrNull = document.getElementById(formID) as HTMLFormElement | null;
+  if (formOrNull == null) {
     throw new Error("could not find element " + formID);
   }
+  let form: HTMLFormElement = formOrNull;
   form.addEventListener("submit", function (event: SubmitEvent) {
     event.preventDefault();
-    if (form == null) {
-      throw new Error("could not find form element");
-    }
     let formData = new FormData(form);
     login({
       username: formData.get("username") as string,
       email: formData.get("email") as string,
       password: formData.get("password") as string,
     })
-      .then(callback)
-      .catch(console.error);
+      .then((tok: Token) => {
+        callback(tok);
+        form.reset();
+      })
+      .catch((error) => {
+        console.error(error);
+        let e = document.createElement("p");
+        e.innerHTML = `${JSON.stringify(error)}`;
+        form.appendChild(e);
+      });
   });
 }
 
-function handleLogout(id: string) {
+function handleLogout(id: string, callback: () => void) {
   let btn = document.getElementById(id);
   if (btn == null) {
     console.error("could not find logout button");
     return;
   }
   btn.addEventListener("click", (ev: MouseEvent) => {
-    clearCookie(TOKEN_KEY);
-    deleteToken();
-    console.log("tokens cleared");
+    callback();
   });
 }
 
-const onExpired = (token: Token): boolean => {
-  if (token == null) {
-    return false;
-  }
-  if (isExpired(token)) {
-    // TODO get new token using refresh token
-    console.log("token is expired");
-    return false;
-  } else {
-    console.log("token still valid");
-    return true;
-  }
-};
-
 const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
 
-function handleLoginPopup() {
-  let loginBtn = document.getElementById("login-btn");
-  let loginPanel = document.getElementById("login-panel");
-  if (loginBtn == null) {
-    throw new Error("could not find login button");
+const loginButtonID = "login-btn";
+const loginPanelID = "login-panel";
+
+class LoginPopup {
+  loginBtn: HTMLElement;
+  loginPanel: HTMLElement;
+  open: boolean;
+  constructor() {
+    this.open = false;
+    this.loginBtn =
+      document.getElementById(loginButtonID) ||
+      document.createElement("button");
+    this.loginPanel =
+      document.getElementById(loginPanelID) || document.createElement("div");
   }
 
-  let open = false;
-  loginBtn.addEventListener("click", (event: MouseEvent) => {
-    if (loginPanel == null) {
-      throw new Error("could not find login panel");
+  toggle() {
+    this.loginPanel.style.display = this.open ? "none" : "block";
+    this.open = !this.open;
+  }
+
+  listen() {
+    this.loginBtn.addEventListener("click", () => {
+      this.toggle();
+    });
+  }
+}
+
+interface LoginManagerOptions {
+  // The interval at which the manager checks to see if we are expired
+  // TODO use setTimeout on a login event to handle this so we don't have to poll
+  interval?: number;
+
+  target?: EventTarget;
+}
+
+class LoginManager {
+  private expirationCheckTimer: NodeJS.Timer;
+  private target: EventTarget;
+
+  private tokenChange<K extends keyof TokenChangeEventHandlersEventMap>(
+    name: K,
+    tok: Token | null
+  ): TokenChangeEvent {
+    return new CustomEvent(name, {
+      detail: {
+        signedIn: tok != null,
+        token: tok,
+        action: tok == null ? "logout" : "login",
+      },
+    });
+  }
+
+  constructor(options: LoginManagerOptions) {
+    this.target = options.target || document;
+    // load the token and check expiration on startup
+    let token = loadToken();
+    if (token != null && !isExpired(token)) {
+      this.login(token);
     }
-    if (open) {
-      loginPanel.style.display = "none";
-      open = false;
-    } else {
-      loginPanel.style.display = "block";
-      open = true;
-    }
-  });
+    this.expirationCheckTimer = setInterval(() => {
+      let token = loadToken();
+      if (token == null) {
+        return;
+      }
+      if (isExpired(token)) {
+        this.logout();
+      } else {
+        console.log("token still valid");
+      }
+    }, options.interval || 60 * SECOND);
+  }
+
+  logout() {
+    console.log("logging out");
+    this.target.dispatchEvent(this.tokenChange("tokenChange", null));
+    this.target.dispatchEvent(this.tokenChange("loggedIn", null));
+  }
+
+  login(tk: Token) {
+    console.log("logging in:", tk);
+    this.target.dispatchEvent(this.tokenChange("tokenChange", tk));
+    this.target.dispatchEvent(this.tokenChange("loggedIn", tk));
+  }
+
+  stop() {
+    clearInterval(this.expirationCheckTimer);
+  }
 }
 
 const main = () => {
-  let signedIn = false;
-  let refreshTokenTimer: NodeJS.Timer;
-  let token: Token | null;
-  handleLogin("login-form", (tok: Token) => {
-    signedIn = true;
-    token = tok;
-  });
-  handleLogout("logout-btn");
+  let loginManager = new LoginManager({ interval: 30 * SECOND });
+  let loginPanel = new LoginPopup();
+  let main = document.getElementsByTagName("main")[0];
 
-  token = loadToken();
-  if (token == null) {
-    console.error("could not load token");
-  } else {
-    if (!isExpired(token)) {
-      signedIn = true;
-      onExpired(token);
+  document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
+    console.log("login status changed:", ev.detail);
+    const e = ev.detail;
+    if (e.action == "login") {
+      storeToken(e.token);
+      setCookie(e.token);
+    } else {
+      clearCookie(TOKEN_KEY);
+      deleteToken();
     }
-  }
+  });
+  // let construction = document.createElement("img");
+  let construction = new Image();
+  construction.src = UnderConstruction;
+  main.appendChild(construction);
 
-  refreshTokenTimer = setInterval(() => {
-    let token = loadToken();
-    if (token == null) return;
-    onExpired(token);
-  }, 30 * SECOND);
-  //clearInterval(refreshTokenTimer);
-  handleLoginPopup();
+  loginPanel.listen();
+  handleLogout("logout-btn", () => {
+    loginManager.logout();
+  });
+  handleLogin("login-form", (tok: Token) => {
+    loginManager.login(tok);
+  });
 
-  // document.addEventListener("keydown", (ev: KeyboardEvent) => {
-  //   const e = ev.target as HTMLElement;
-  //   console.log(e, e.tagName);
-  //   if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
-  //     return;
-  //   }
-  //   ev.preventDefault();
-  //   console.log(ev);
-  // });
+  document.addEventListener("keydown", (ev: KeyboardEvent) => {
+    const e = ev.target as HTMLElement;
+    if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
+      return;
+    }
+    if (ev.key == "/" && ev.ctrlKey) {
+      loginPanel.toggle();
+      ev.preventDefault();
+    }
+  });
+
+  let welcomeTicker = 0;
+  let welcomeBanner = document.getElementsByClassName(
+    "welcome-banner"
+  )[0] as HTMLElement;
+  let colors = ["red", "blue", "mediumspringgreen", "purple", "pink", "yellow"];
+  setInterval(() => {
+    welcomeBanner.style.color = colors[welcomeTicker % colors.length];
+    welcomeTicker++;
+  }, 500);
 };
 
 main();

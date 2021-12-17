@@ -21,7 +21,14 @@ export function login(user: Login, callback?: TokenCallback): Promise<Token> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),
   })
-    .then((resp: Response) => resp.json())
+    .then(async (resp: Response) => {
+      if (!resp.ok) {
+        const message = await resp.json();
+        throw message;
+        // throw new Error(resp.statusText);
+      }
+      return resp.json();
+    })
     .then((blob: any) => {
       storeToken(blob);
       if (callback) callback(blob);

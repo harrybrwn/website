@@ -6,6 +6,9 @@ const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const path = require("path");
 const fs = require("fs");
 
+// Used for build-time template parameters
+const site = require("./site");
+
 const paths = {
   public: "./public",
   source: "./frontend",
@@ -20,28 +23,78 @@ const findIndex = () => {
   return path.join(paths.source, "index.html");
 };
 
+const copy = (name) => {
+  return {
+    from: path.join(paths.public, name),
+    to: name,
+  };
+};
+
+const fileCompressionLoader = {
+  loader: "image-webpack-loader",
+  options: {
+    disable: false, // webpack@2.x and newer
+    // Compress jpeg images
+    mozjpeg: {
+      progressive: true,
+    },
+    // Compress gif
+    gifsicle: {
+      interlaced: true,
+    },
+  },
+};
+
+class InjectImagesPlugin {
+  apply(compiler) {
+    const name = "InjectImagesPlugin";
+    compiler.hooks.compilation.tap(name, (compilation) => {
+      console.log("starting compiler hook");
+      HtmlWebpackPlugin.getHooks(compilation).alterAssetTags.tapAsync(
+        name,
+        (data, cb) => {
+          console.log(data.assetTags);
+          cb(null, data);
+        }
+      );
+
+      HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
+        name,
+        (data, cb) => {
+          console.log(data);
+          cb(null, data);
+        }
+      );
+    });
+  }
+}
+
 module.exports = function (webpackEnv) {
   const isDev = webpackEnv.dev || false;
   const isProd = webpackEnv.prod || false;
+  console.log(MiniCssExtractPlugin.loader);
 
   return {
     entry: {
       index: {
         import: path.resolve(__dirname, paths.source, "main.ts"),
       },
+      // tester: {import: path.resolve(__dirname, paths.source, "main.js")},
     },
     resolve: {
       extensions: [".tsx", ".ts", ".js"],
     },
     output: {
+      clean: true, // remove old files before build
       // publicPath: 'public',
+      path: path.resolve(__dirname, paths.build),
       filename: isProd
         ? "static/js/[name].[contenthash:8].bundle.js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
         ? "static/js/[name].[contenthash:8].chunk.js"
         : "static/js/[name].chunk.js",
-      path: path.resolve(__dirname, paths.build),
+      assetModuleFilename: "static/a/[hash:4].[id][ext][query][fragment]",
     },
 
     optimization: {
@@ -77,13 +130,55 @@ module.exports = function (webpackEnv) {
         {
           test: /\.tsx?$/,
           use: "ts-loader",
-          exclude: /node_modules/,
           include: [path.resolve(__dirname, paths.source)],
         },
         {
           test: /\.s?css$/,
-          use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"],
+          use: [
+            //
+            // MiniCssExtractPlugin.loader,
+            "style-loader",
+            "css-loader",
+          ],
+          include: [path.resolve(__dirname, paths.source)],
         },
+        {
+          test: /\.gif$/,
+          type: "asset/resource",
+          // use: ["url-loader"],
+          // use: [{ loader: "url-loader" }],
+        },
+        {
+          test: /\.(g_if|png|jpe?g|svg)$/i,
+          use: [
+            fileCompressionLoader,
+            // "url-loader",
+            {
+              loader: "file-loader",
+              options: { name: "static/img/[name].[contenthash].[ext]" },
+              // options: { name: "[name].[contenthash].[ext]" },
+            },
+          ],
+          include: [path.resolve(__dirname, paths.source)],
+        },
+        {
+          test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+          // use: [
+          //   // "url-loader",
+          //   {
+          //     loader: "file-loader",
+          //     options: {
+          //       name: "static/font/[name].[ext]",
+          //     },
+          //   },
+          // ],
+          type: "asset/resource",
+        },
+        // {
+        //   test: /\.html$/,
+        //   // use: "html-loader",
+        //   type: "asset/resource",
+        // },
       ],
     },
 
@@ -94,6 +189,8 @@ module.exports = function (webpackEnv) {
           {
             inject: true,
             template: findIndex(),
+            templateParameters: site,
+            favicon: path.join(paths.public, "favicon.ico"),
           },
           isProd
             ? {
@@ -108,11 +205,38 @@ module.exports = function (webpackEnv) {
                   minifyURLs: true,
                 },
               }
-            : undefined
+            : {
+                cache: true,
+              }
         )
       ),
-      new MiniCssExtractPlugin(),
-      new CopyWebpackPlugin({ patterns: [{ from: paths.public }] }),
+      // new InjectImagesPlugin(),
+      new CopyWebpackPlugin({
+        patterns: [
+          // Copy over the legacy site... just for the lols
+          copy("static/js/bootstrap.min.js"),
+          copy("static/js/popper.min.js"),
+          copy("static/js/jquery-3.4.1.min.js"),
+          copy("static/js/home.js"),
+          copy("static/css/bootstrap.min.css"),
+          copy("static/css/animate.css"),
+          copy("static/css/base.css"),
+          copy("static/css/home.css"),
+          copy("static/img/linkedin.svg"),
+          copy("static/img/github.svg"),
+          copy("static/img/1125x1500/me_sm.jpg"),
+
+          // I actually need these
+          copy("static/files"),
+          {
+            from: path.join(paths.source, "img/goofy.jpg"),
+            to: path.resolve(__dirname, paths.build, "static/img/goofy.jpg"),
+          },
+          { from: path.join(paths.public, "robots.txt") },
+          { from: path.join(paths.public, "pub.asc") },
+        ],
+      }),
+      // new MiniCssExtractPlugin(),
     ],
   };
 };

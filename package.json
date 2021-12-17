@@ -4,8 +4,8 @@
   "description": "My personal website",
   "scripts": {
     "test": "go test",
-    "build": "webpack --env prod --mode=production",
-    "dev": "webpack -w --mode development --env dev",
+    "build": "webpack --env prod --mode=production --progress",
+    "dev": "webpack -w --mode development --env dev --progress",
     "dev-build": "webpack --mode development --env dev",
     "clean": "rm -rf ./build"
   },
@@ -22,13 +22,22 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "copy-webpack-plugin": "^10.1.0",
+    "css-loader": "^6.5.1",
     "css-minimizer-webpack-plugin": "^3.2.0",
-    "fs-extra": "^9.0.1",
+    "file-loader": "^6.2.0",
+    "html-loader": "^3.0.1",
     "html-webpack-plugin": "^5.3.2",
+    "image-webpack-loader": "^8.0.1",
     "mini-css-extract-plugin": "^2.4.5",
+    "sass-loader": "^12.4.0",
+    "style-loader": "^3.3.1",
+    "terser-webpack-plugin": "^5.2.5",
     "ts-loader": "^9.2.5",
     "typescript": "^4.4.2",
     "webpack": "^5.52.0",
     "webpack-cli": "^4.8.0"
+  },
+  "dependencies": {
+    "url-loader": "^4.1.1"
   }
 }
