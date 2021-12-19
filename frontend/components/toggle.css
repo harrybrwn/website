@@ -1,0 +1,68 @@
+:root {
+	--toggle-size: 1;
+	--toggle-on-bg: grey;
+	--toggle-off-bg: grey;
+	--toggle-nub-color: #fff;
+}
+
+.toggle-switch input[type=checkbox] {
+	height: 0;
+	width: 0;
+	visibility: hidden;
+}
+
+/* Big part */
+.toggle-switch label {
+	cursor: pointer;
+	text-indent: -9999px;
+	/* width: 200px;
+	height: 100px; */
+
+	/* width: 50px; */
+	/* height: 25px; */
+
+	width: 2.5em;
+	height: 1.25em;
+
+	background: var(--toggle-off-bg);
+	display: block;
+	border-radius: 100px;
+	position: relative;
+}
+
+/* Small "nub" */
+.toggle-switch label:after {
+	content: '';
+	position: absolute;
+	/* top: 5px;
+	left: 5px; */
+	/* top: 1.25px;
+	left: 1.25px; */
+
+	/* width: 90px;
+	height: 90px; */
+	/* width: 22.5px; */
+	/* height: 22.5px; */
+
+	top:    0.075em;
+	left:   0.075em;
+	width:  1.10em;
+	height: 1.10em;
+
+	background: var(--toggle-nub-color);
+	border-radius: 90px;
+	transition: 0.3s;
+}
+
+.toggle-switch input:checked + label {
+	background: var(--toggle-on-bg);
+}
+
+.toggle-switch input:checked + label:after {
+	left: calc(100% - 5px);
+	transform: translateX(-100%);
+}
+
+.toggle-switch label:active:after {
+	width: 32.5px;
+}

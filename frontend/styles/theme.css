@@ -1,0 +1,30 @@
+:root {
+	/* color-scheme: light dark; */
+	--win95-bg-color: #297F81;
+	--hacker-green: #20c20e;
+
+	--theme-dark-bg: black;
+	--theme-dark-fg: var(--hacker-green);
+	--theme-light-bg: white;
+	--theme-light-fg: black;
+}
+
+body {
+	color: var(--theme-light-fg);
+	background-color: var(--theme-light-bg);
+}
+body.dark-theme {
+	color: var(--theme-dark-fg);
+	background-color: var(--theme-dark-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+	body {
+		color: var(--theme-dark-fg);
+		background-color: var(--theme-dark-bg);
+	}
+	body.light-theme {
+		color: var(--theme-light-fg);
+		background-color: var(--theme-light-bg);
+	}
+}

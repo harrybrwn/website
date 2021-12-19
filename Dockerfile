@@ -33,7 +33,7 @@ FROM alpine:3.14 as harrybrwn
 LABEL maintainer="Harry Brown <harrybrown98@gmail.com>"
 RUN apk update && apk upgrade && apk add -l tzdata
 COPY --from=build /app/bin/harrybrwn /app/harrybrwn
-CMD ["/app/harrybrwn"]
+CMD ["/app/harrybrwn", "-gzip"]
 
 # User Creation Tool
 FROM alpine:3.14 as user-gen

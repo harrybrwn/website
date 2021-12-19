@@ -3,6 +3,9 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const SitemapPlugin = require("sitemap-webpack-plugin").default;
+const CompressionPlugin = require("compression-webpack-plugin");
+const package = require("./package.json");
 const path = require("path");
 const fs = require("fs");
 
@@ -14,6 +17,15 @@ const paths = {
   source: "./frontend",
   build: "./build",
 };
+
+const sitemap = [
+  {
+    path: "/old/",
+  },
+  {
+    path: "/static/files/HarrisonBrown.pdf",
+  },
+];
 
 const findIndex = () => {
   let p = path.join(paths.public, "index.html");
@@ -43,6 +55,17 @@ const fileCompressionLoader = {
       interlaced: true,
     },
   },
+};
+
+const htmlMinify = {
+  collapseWhitespace: true,
+  removeComments: true,
+  keepClosingSlash: true,
+  removeRedundantAttributes: true,
+  removeStyleLinkTypeAttributes: true,
+  minifyJS: true,
+  minifyCSS: true,
+  minifyURLs: true,
 };
 
 class InjectImagesPlugin {
@@ -79,13 +102,16 @@ module.exports = function (webpackEnv) {
       index: {
         import: path.resolve(__dirname, paths.source, "main.ts"),
       },
+      remora: {
+        import: path.resolve(__dirname, paths.source, "remora.ts"),
+      },
       // tester: {import: path.resolve(__dirname, paths.source, "main.js")},
     },
     resolve: {
       extensions: [".tsx", ".ts", ".js"],
     },
     output: {
-      clean: true, // remove old files before build
+      clean: isProd, // remove old files before build
       // publicPath: 'public',
       path: path.resolve(__dirname, paths.build),
       filename: isProd
@@ -144,7 +170,8 @@ module.exports = function (webpackEnv) {
         },
         {
           test: /\.gif$/,
-          type: "asset/resource",
+          // type: "asset/resource",
+          type: "asset/inline",
         },
         {
           test: /\.(g_if|png|jpe?g|svg)$/i,
@@ -161,6 +188,11 @@ module.exports = function (webpackEnv) {
         },
         {
           test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
+          // type: "asset/resource",
+          type: "asset/inline",
+        },
+        {
+          test: /\.pdf$/,
           type: "asset/resource",
         },
       ],
@@ -171,23 +203,36 @@ module.exports = function (webpackEnv) {
         Object.assign(
           {},
           {
+            title: site.title,
             inject: true,
-            template: findIndex(),
+            template: path.join(paths.source, "index.html"),
             templateParameters: site,
             favicon: path.join(paths.public, "favicon.ico"),
+            chunks: ["index"],
           },
           isProd
             ? {
-                minify: {
-                  collapseWhitespace: true,
-                  removeComments: true,
-                  keepClosingSlash: true,
-                  removeRedundantAttributes: true,
-                  removeStyleLinkTypeAttributes: true,
-                  minifyJS: true,
-                  minifyCSS: true,
-                  minifyURLs: true,
-                },
+                minify: htmlMinify,
+              }
+            : {
+                cache: true,
+              }
+        )
+      ),
+      new HtmlWebpackPlugin(
+        Object.assign(
+          {},
+          {
+            template: path.join(paths.source, "pages/remora.html"),
+            // path: path.resolve(__dirname, paths.build, "pages"),
+            filename: "pages/remora.html",
+            templateParameters: site.pages.remora,
+            favicon: path.join(paths.public, "favicon.ico"),
+            chunks: ["remora"],
+          },
+          isProd
+            ? {
+                minify: htmlMinify,
               }
             : {
                 cache: true,
@@ -195,6 +240,17 @@ module.exports = function (webpackEnv) {
         )
       ),
       // new InjectImagesPlugin(),
+      new CompressionPlugin({
+        deleteOriginalAssets: true,
+        filename: "[path][base]",
+        test: isProd ? /index\.html/ : /^$/,
+        exclude: [
+          /sitemap\.xml$/,
+          /robots\.txt$/,
+          /favicon\.ico/,
+          /.*\.asc$/, // all public keys
+        ],
+      }),
       new CopyWebpackPlugin({
         patterns: [
           // Copy over the legacy site... just for the lols
@@ -203,13 +259,12 @@ module.exports = function (webpackEnv) {
           copy("static/js/jquery-3.4.1.min.js"),
           copy("static/js/home.js"),
           copy("static/css/bootstrap.min.css"),
-          copy("static/css/animate.css"),
+          copy("static/css/animate.min.css"),
           copy("static/css/base.css"),
           copy("static/css/home.css"),
           copy("static/img/linkedin.svg"),
           copy("static/img/github.svg"),
           copy("static/img/1125x1500/me_sm.jpg"),
-
           // I actually need these
           copy("static/files"),
           {
@@ -221,6 +276,11 @@ module.exports = function (webpackEnv) {
         ],
       }),
       // new MiniCssExtractPlugin(),
+      new SitemapPlugin({
+        base: "https://harrybrwn.com",
+        paths: sitemap,
+        options: { skipgzip: false },
+      }),
     ],
   };
 };

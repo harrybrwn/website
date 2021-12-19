@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -33,6 +34,8 @@ var (
 
 	//go:embed build/index.html
 	harryStaticPage []byte
+	//go:embed build/pages/remora.html
+	remoraStaticPage []byte
 	//go:embed build/pub.asc
 	gpgPubkey []byte
 	//go:embed build/robots.txt
@@ -42,10 +45,17 @@ var (
 	//go:embed build/static
 	static embed.FS
 
+	//go:embed build/sitemap.xml
+	sitemap []byte
+	// go :embed build/sitemap.xml.gz
+	sitemapgz []byte
+
 	//go:embed templates
 	templates embed.FS
 
 	logger = logrus.New()
+
+	assetsGziped bool
 )
 
 func main() {
@@ -57,6 +67,7 @@ func main() {
 	e.Logger = log.WrapLogrus(logger)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
 	flag.BoolVar(&env, "env", env, "read environment files from .env")
+	flag.BoolVar(&assetsGziped, "gzip", assetsGziped, "use this flag when all assets have been gzip ahead of time")
 	flag.Parse()
 
 	if env {
@@ -77,19 +88,21 @@ func main() {
 	jwtConf := NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Use(app.RequestLogRecorder(db, logger))
-	e.GET("/", echo.WrapHandler(harry()))
+
+	e.GET("/", echo.WrapHandler(index()))
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
-	e.GET("/~harry", echo.WrapHandler(harry()))
+	e.GET("/~harry", echo.WrapHandler(index()))
+	e.GET("/remora", remoraPage(), staticMiddleware)
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
+	e.GET("/sitemap.xml", echo.WrapHandler(http.HandlerFunc(sitemapHandler)))
+	e.GET("/sitemap.xml.gz", echo.WrapHandler(http.HandlerFunc(sitemapGZHandler)))
 	e.GET("/favicon.ico", func(c echo.Context) error {
 		h := c.Response().Header()
-		staticLastModified(h)
-		h.Set("Cache-Control", "public, max-age=31919000")
 		h.Set("Content-Length", strconv.FormatInt(int64(len(favicon)), 10))
 		h.Set("Accept-Ranges", "bytes")
 		return c.Blob(200, "image/x-icon", favicon)
-	})
+	}, staticMiddleware)
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 	e.GET("/secret", func(c echo.Context) error {
 		return c.HTML(200, `<!DOCTYPE html>
@@ -105,21 +118,6 @@ func main() {
 </body>
 </html>`)
 	}, guard, admin())
-	e.GET("/balls", func(c echo.Context) error {
-		return c.HTML(200, `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secret</title>
-</head>
-<body>
-	<canvas id="canvas"></canvas>
-	<script src="/static/js/balls.js"></script>
-</body>
-</html>`)
-	})
 
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
@@ -130,6 +128,7 @@ func main() {
 		return c.JSON(200, app.RandomQuote())
 	})
 	api.POST("/token", TokenHandler(jwtConf, app.NewUserStore(db)))
+	api.Any("/ping", echo.WrapHandler(http.HandlerFunc(ping)))
 
 	logger.WithField("time", startup).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
@@ -201,8 +200,9 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 	}
 	return func(c echo.Context) error {
 		var (
-			err         error
-			body        userbody
+			err error
+			// body        userbody
+			body        app.Login
 			req         = c.Request()
 			ctx         = req.Context()
 			cookieQuery = req.URL.Query().Get("cookie")
@@ -230,24 +230,9 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 		if len(body.Password) == 0 {
 			return failure(http.StatusBadRequest, "user gave zero length password")
 		}
-
-		var u *app.User
-		if len(body.Email) > 0 {
-			u, err = store.Find(ctx, body.Email)
-		} else if len(body.Username) > 0 {
-			u, err = store.Find(ctx, body.Username)
-		} else {
-			return failure(404, "unable to find user")
-		}
+		u, err := store.Login(ctx, &body)
 		if err != nil {
 			return wrap(err, 404, "could not find user")
-		}
-		if u == nil {
-			return failure(404, "user store returned nil user on store.Find")
-		}
-		err = u.VerifyPassword(body.Password)
-		if err != nil {
-			return wrap(err, http.StatusForbidden)
 		}
 		resp, err := auth.NewTokenResponse(conf, u.NewClaims())
 		if err != nil {
@@ -294,23 +279,40 @@ func keys(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(gpgPubkey)
 }
 
-func harry() http.Handler {
+func index() http.Handler {
+	var hf http.Handler
 	if app.Debug {
-		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		hf = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 			rw.Header().Set("Content-Type", "text/html")
 			rw.Header().Set("Cache-Control", "public, max-age=31919000")
 			http.ServeFile(rw, r, "build/index.html")
 		})
+	} else {
+		hf = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			h := rw.Header()
+			staticLastModified(h)
+			h.Set("Content-Type", "text/html")
+			h.Set("Cache-Control", "public, max-age=31919000")
+			h.Set("Content-Length", strconv.FormatInt(int64(len(harryStaticPage)), 10))
+			h.Set("Accept-Ranges", "bytes")
+			rw.Write(harryStaticPage)
+		})
+		if http.DetectContentType(harryStaticPage) == "application/x-gzip" {
+			hf = wrapAsGzip(hf)
+		}
 	}
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		h := rw.Header()
-		staticLastModified(h)
-		h.Set("Content-Type", "text/html")
-		h.Set("Cache-Control", "public, max-age=31919000")
-		h.Set("Content-Length", strconv.FormatInt(int64(len(harryStaticPage)), 10))
-		h.Set("Accept-Ranges", "bytes")
-		rw.Write(harryStaticPage)
-	})
+	return hf
+}
+
+func remoraPage() echo.HandlerFunc {
+	if app.Debug {
+		return func(c echo.Context) error {
+			return c.File("./build/pages/remora.html")
+		}
+	}
+	return func(c echo.Context) error {
+		return c.HTMLBlob(200, remoraStaticPage)
+	}
 }
 
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
@@ -319,18 +321,70 @@ func robotsHandler(rw http.ResponseWriter, r *http.Request) {
 	rw.Write(robots)
 }
 
+func sitemapHandler(rw http.ResponseWriter, r *http.Request) {
+	h := rw.Header()
+	staticLastModified(h)
+	h.Set("Cache-Control", "public, max-age=31919000")
+	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemap)), 10))
+	h.Set("Content-Type", "text/xml")
+	rw.Write(sitemap)
+}
+
+func sitemapGZHandler(rw http.ResponseWriter, r *http.Request) {
+	h := rw.Header()
+	staticLastModified(h)
+	h.Set("Cache-Control", "public, max-age=31919000")
+	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemapgz)), 10))
+	h.Set("Content-Encoding", "gzip")
+	h.Set("Content-Type", "text/xml")
+	rw.Write(sitemapgz)
+}
+
 func handleStatic() http.Handler {
 	if app.Debug {
-		return http.StripPrefix("/static/", http.FileServer(http.Dir("build/static")))
+		h := http.StripPrefix("/static/", http.FileServer(http.Dir("build/static")))
+		if assetsGziped {
+			return wrapAsGzip(h)
+		}
+		return h
 	}
 	fs, err := fs.Sub(static, "build")
 	if err != nil {
 		fs = static
 	}
+	if assetsGziped {
+		return wrapAsGzip(staticCache(http.FileServer(http.FS(fs))))
+	}
 	return staticCache(http.FileServer(http.FS(fs)))
 }
 
+func ping(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(200)
+}
+
+func wrapAsGzip(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		accept := r.Header.Get("Accept-Encoding")
+		if !strings.Contains(accept, "gzip") {
+			logger.WithField("accept-encoding", accept).Error("browser encoding not supported")
+			rw.WriteHeader(500)
+			return
+		}
+		rw.Header().Set("Content-Encoding", "gzip")
+		h.ServeHTTP(rw, r)
+	})
+}
+
 var startup = time.Now()
+
+func staticMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		h := c.Response().Header()
+		staticLastModified(h)
+		h.Set("Cache-Control", "public, max-age=31919000")
+		return next(c)
+	}
+}
 
 func staticLastModified(h http.Header) {
 	h.Set("Last-Modified", startup.UTC().Format(http.TimeFormat))
@@ -338,8 +392,9 @@ func staticLastModified(h http.Header) {
 
 func staticCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		staticLastModified(rw.Header())
-		rw.Header().Set("Cache-Control", "public, max-age=31919000")
+		header := rw.Header()
+		staticLastModified(header)
+		header.Set("Cache-Control", "public, max-age=31919000")
 		h.ServeHTTP(rw, r)
 	})
 }

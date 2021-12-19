@@ -1,3 +1,4 @@
+import "./main.css";
 import {
   TOKEN_KEY,
   Token,
@@ -9,9 +10,8 @@ import {
   setCookie,
 } from "./auth";
 import { clearCookie } from "./util";
-import UnderConstruction from "./img/under_construction.gif";
-
-import "./main.css";
+import { applyTheme } from "./theme";
+import "./components/toggle";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
   let formOrNull = document.getElementById(formID) as HTMLFormElement | null;
@@ -127,13 +127,11 @@ class LoginManager {
   }
 
   logout() {
-    console.log("logging out");
     this.target.dispatchEvent(this.tokenChange("tokenChange", null));
     this.target.dispatchEvent(this.tokenChange("loggedIn", null));
   }
 
   login(tk: Token) {
-    console.log("logging in:", tk);
     this.target.dispatchEvent(this.tokenChange("tokenChange", tk));
     this.target.dispatchEvent(this.tokenChange("loggedIn", tk));
   }
@@ -144,12 +142,12 @@ class LoginManager {
 }
 
 const main = () => {
-  let loginManager = new LoginManager({ interval: 30 * SECOND });
+  applyTheme();
+  let loginManager = new LoginManager({ interval: 5 * 60 * SECOND });
   let loginPanel = new LoginPopup();
   let main = document.getElementsByTagName("main")[0];
 
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
-    console.log("login status changed:", ev.detail);
     const e = ev.detail;
     if (e.action == "login") {
       storeToken(e.token);
@@ -159,10 +157,6 @@ const main = () => {
       deleteToken();
     }
   });
-  // let construction = document.createElement("img");
-  let construction = new Image();
-  construction.src = UnderConstruction;
-  main.appendChild(construction);
 
   loginPanel.listen();
   handleLogout("logout-btn", () => {
@@ -170,6 +164,7 @@ const main = () => {
   });
   handleLogin("login-form", (tok: Token) => {
     loginManager.login(tok);
+    loginPanel.toggle();
   });
 
   document.addEventListener("keydown", (ev: KeyboardEvent) => {
@@ -178,8 +173,8 @@ const main = () => {
       return;
     }
     if (ev.key == "/" && ev.ctrlKey) {
-      loginPanel.toggle();
       ev.preventDefault();
+      loginPanel.toggle();
     }
   });
 

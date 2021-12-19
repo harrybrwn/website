@@ -1,2 +1,3 @@
 User-Agent: *
 Disallow: /pub.asc
+Sitemap: https://harrybrwn.com/sitemap.xml

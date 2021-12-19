@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"harrybrown.com/pkg/auth"
 )
@@ -37,6 +39,7 @@ func (u *User) VerifyPassword(pw string) error {
 
 type UserStore interface {
 	Find(context.Context, interface{}) (*User, error)
+	Login(context.Context, *Login) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
 	Update(context.Context, *User) error
 	Create(context.Context, string, *User) (*User, error)
@@ -48,8 +51,42 @@ func NewUserStore(db *sql.DB) *userStore {
 	}
 }
 
+type Login struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (s *userStore) Login(ctx context.Context, l *Login) (*User, error) {
+	if len(l.Password) == 0 {
+		return nil, errors.New("user gave zero length password")
+	}
+	var (
+		err error
+		u   *User
+	)
+	if len(l.Email) > 0 {
+		const query = selectQueryHead + `WHERE email = $1`
+		u, err = s.get(ctx, query, l.Email)
+	} else if len(l.Username) > 0 {
+		const query = selectQueryHead + `WHERE username = $1`
+		u, err = s.get(ctx, query, l.Username)
+	} else {
+		return nil, errors.New("unable to find user")
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find user")
+	}
+	err = u.VerifyPassword(l.Password)
+	if err != nil {
+		return nil, errors.New("incorrect password")
+	}
+	return u, nil
+}
+
 type userStore struct {
-	db *sql.DB
+	db     *sql.DB
+	logger logrus.FieldLogger
 }
 
 const selectQueryHead = `SELECT
@@ -78,27 +115,25 @@ func scanUser(row *sql.Row, u *User) error {
 	)
 }
 
-func (s *userStore) Find(ctx context.Context, identifier interface{}) (*User, error) {
+func (s *userStore) get(ctx context.Context, q string, args ...interface{}) (*User, error) {
 	var u User
+	row := s.db.QueryRowContext(ctx, q, args...)
+	err := scanUser(row, &u)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (s *userStore) Find(ctx context.Context, identifier interface{}) (*User, error) {
 	switch id := identifier.(type) {
 	case uuid.UUID:
 		return s.Get(ctx, id)
 	case int:
-		const query = selectQueryHead + `WHERE id = $1`
-		row := s.db.QueryRowContext(ctx, query, id)
-		err := scanUser(row, &u)
-		if err != nil {
-			return nil, err
-		}
-		return &u, nil
+		return s.get(ctx, selectQueryHead+`WHERE id = $1`, id)
 	default:
 		const query = selectQueryHead + `WHERE email = $1 OR username = $1`
-		row := s.db.QueryRowContext(ctx, query, identifier)
-		err := scanUser(row, &u)
-		if err != nil {
-			return nil, err
-		}
-		return &u, nil
+		return s.get(ctx, query, identifier)
 	}
 }
 

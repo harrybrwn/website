@@ -1,50 +1,44 @@
-:root {
-	--win95-bg-color: #297F81;
-	--site-bg: #ffffff;
-	--site-fg: black;
-
-	/* --site-bg: #363636;
-	--site-fg: #ffffff; */
-}
-
-@font-face {
-	font-family: "Space Mono";
-	font-style: normal;
-	src: url("./font/SpaceMono-Regular.ttf") format("truetype");
-}
-
-body {
-	font-family: 'Space Mono', monospace;
-	/* background-color: var(--win95-bg-color); */
-	/* background-image: url("/static/img/green.gif"); */
-	color: var(--site-fg);
-	margin-top: 3em;
-	margin-left: 5em;
-	font-size: 1.2em;
-}
-
-nav li {
-	float: left;
-	list-style: none;
-	margin-left: 10px;
-}
-
-nav li a {
-	text-decoration: none;
-	color: inherit;
-}
+@import "./styles/theme.css";
+@import "./styles/font.css";
 
 main {
 	margin-right: auto;
 	margin-left: auto;
-	max-width: 850px;
+
+	/* max-width: 750px; */
+	max-width: max-content;
 }
 
-.login-panel {
-	display: none;
-	float: right;
+a:visited {
+	text-decoration: none;
 }
 
 .welcome-banner {
 	width: 30%;
+}
+
+.settings {
+	margin-bottom: 1.15em;
+}
+
+.cards a {
+	/* Hide the underlines for 88x31 cards */
+	text-decoration: none;
+}
+
+.dark-theme a {
+	color: rgb(230, 230, 230);
+}
+
+main ul li {
+	padding-top: 4px;
+	padding-bottom: 4px;
+
+	/* border-top: 8px; */
+	/* padding: .8em; */
+
+	/* padding-top: .8em;
+	padding-bottom: .8em;
+	margin-top: .8em;
+	margin-bottom: .8em; */
 }

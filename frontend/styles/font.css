@@ -1,0 +1,10 @@
+@font-face {
+	font-family: "Space Mono";
+	font-style: normal;
+	src: url("../font/SpaceMono-Regular.woff2") format("woff2");
+}
+
+body {
+	font-family: 'Space Mono', monospace;
+	font-size: 18px;
+}
