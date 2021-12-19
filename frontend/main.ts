@@ -1,4 +1,5 @@
-import "./main.css";
+import "./styles/font.css";
+import "./styles/main.css";
 import {
   TOKEN_KEY,
   Token,
@@ -10,7 +11,7 @@ import {
   setCookie,
 } from "./auth";
 import { clearCookie } from "./util";
-import { applyTheme } from "./theme";
+import { applyTheme } from "./components/theme";
 import "./components/toggle";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
@@ -145,7 +146,6 @@ const main = () => {
   applyTheme();
   let loginManager = new LoginManager({ interval: 5 * 60 * SECOND });
   let loginPanel = new LoginPopup();
-  let main = document.getElementsByTagName("main")[0];
 
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
     const e = ev.detail;

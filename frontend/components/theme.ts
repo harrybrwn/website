@@ -1,3 +1,5 @@
+import "./theme.css";
+
 const DEFAULT_TOGGLE_ID = "theme-toggle";
 
 export const getToggle = (id?: string): HTMLElement | null => {

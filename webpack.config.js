@@ -20,20 +20,12 @@ const paths = {
 
 const sitemap = [
   {
-    path: "/old/",
+    path: "/",
   },
   {
     path: "/static/files/HarrisonBrown.pdf",
   },
 ];
-
-const findIndex = () => {
-  let p = path.join(paths.public, "index.html");
-  if (fs.existsSync(p)) {
-    return p;
-  }
-  return path.join(paths.source, "index.html");
-};
 
 const copy = (name) => {
   return {
@@ -99,17 +91,18 @@ module.exports = function (webpackEnv) {
 
   return {
     entry: {
-      index: {
+      main: {
         import: path.resolve(__dirname, paths.source, "main.ts"),
       },
       remora: {
         import: path.resolve(__dirname, paths.source, "remora.ts"),
       },
-      // tester: {import: path.resolve(__dirname, paths.source, "main.js")},
     },
+
     resolve: {
       extensions: [".tsx", ".ts", ".js"],
     },
+
     output: {
       clean: isProd, // remove old files before build
       // publicPath: 'public',
@@ -161,23 +154,22 @@ module.exports = function (webpackEnv) {
         {
           test: /\.s?css$/,
           use: [
-            //
-            // MiniCssExtractPlugin.loader,
+            // for importing css in js/ts and injecting it into the DOM
             "style-loader",
+            // for @import in css
             "css-loader",
+            //MiniCssExtractPlugin.loader,
           ],
           include: [path.resolve(__dirname, paths.source)],
         },
         {
-          test: /\.gif$/,
-          // type: "asset/resource",
+          test: /\.(gif|svg)$/i,
           type: "asset/inline",
         },
         {
-          test: /\.(g_if|png|jpe?g|svg)$/i,
+          test: /\.(png|jpe?g)$/i,
           use: [
             fileCompressionLoader,
-            // "url-loader",
             {
               loader: "file-loader",
               options: { name: "static/img/[name].[contenthash].[ext]" },
@@ -187,8 +179,8 @@ module.exports = function (webpackEnv) {
           include: [path.resolve(__dirname, paths.source)],
         },
         {
-          test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
-          // type: "asset/resource",
+          // Fonts
+          test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
           type: "asset/inline",
         },
         {
@@ -208,15 +200,9 @@ module.exports = function (webpackEnv) {
             template: path.join(paths.source, "index.html"),
             templateParameters: site,
             favicon: path.join(paths.public, "favicon.ico"),
-            chunks: ["index"],
+            chunks: ["main"],
           },
-          isProd
-            ? {
-                minify: htmlMinify,
-              }
-            : {
-                cache: true,
-              }
+          isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
       new HtmlWebpackPlugin(
@@ -224,22 +210,14 @@ module.exports = function (webpackEnv) {
           {},
           {
             template: path.join(paths.source, "pages/remora.html"),
-            // path: path.resolve(__dirname, paths.build, "pages"),
             filename: "pages/remora.html",
             templateParameters: site.pages.remora,
             favicon: path.join(paths.public, "favicon.ico"),
             chunks: ["remora"],
           },
-          isProd
-            ? {
-                minify: htmlMinify,
-              }
-            : {
-                cache: true,
-              }
+          isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
-      // new InjectImagesPlugin(),
       new CompressionPlugin({
         deleteOriginalAssets: true,
         filename: "[path][base]",
@@ -275,7 +253,6 @@ module.exports = function (webpackEnv) {
           { from: path.join(paths.public, "pub.asc") },
         ],
       }),
-      // new MiniCssExtractPlugin(),
       new SitemapPlugin({
         base: "https://harrybrwn.com",
         paths: sitemap,
