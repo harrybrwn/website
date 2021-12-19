@@ -7,7 +7,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"database/sql/driver"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -84,18 +84,30 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			now := time.Now().UTC()
 			auth, err := conf.GetToken(c.Request())
 			if err != nil {
-				return err
+				return &echo.HTTPError{
+					Code:     http.StatusUnauthorized,
+					Message:  "not authorized",
+					Internal: errors.Wrap(err, "could not get token from requst"),
+				}
 			}
 			var claims Claims
 			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
 			if err != nil {
-				return err
+				return &echo.HTTPError{
+					Code:     http.StatusUnauthorized,
+					Message:  "not authorized",
+					Internal: errors.Wrap(err, "could not parse token with claims"),
+				}
 			}
 			if !token.Valid {
 				return errors.New("invalid token")
 			}
 			if now.After(time.Unix(claims.ExpiresAt, 0)) {
-				return ErrTokenExpired
+				return &echo.HTTPError{
+					Code:     http.StatusUnauthorized,
+					Message:  "not authorized",
+					Internal: ErrTokenExpired,
+				}
 			}
 			c.Set(ClaimsContextKey, &claims)
 			return next(c)
