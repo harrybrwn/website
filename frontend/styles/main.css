@@ -29,17 +29,18 @@ main ul li {
 .login-panel {
 	top: 27%;
 	left: 50%;
-	transform: translate(-50%, -50%);
 	float: left;
 	width: 18em;
 	text-align: center;
+	transform: translate(-50%, -50%);
 }
 
 .login-panel .win95-window-body p {
 	margin-top: .6em;
 	margin-bottom: .6em;
 }
-body.dark-theme .login-panel .win95-window-body p {
+
+body.dark-theme .win95-window-body p,th,td {
 	color: black;
 }
 
@@ -49,6 +50,25 @@ body.dark-theme .login-panel {
 
 body.light-theme .login-panel {
 	box-shadow: 5px 5px #2c2c2c;
+}
+
+body {
+	padding-left: 1em;
+	padding-right: 1em;
+}
+
+.help-window {
+	float: left;
+	top: 50%;
+	left: 50%;
+	width: 32em;
+	transform: translate(-50%, -50%);
+}
+
+@media only screen and (max-width: 600px) {
+	.help-window {
+		width: 18em;
+	}
 }
 
 /* Windows 95 Window Panel */

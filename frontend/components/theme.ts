@@ -10,7 +10,7 @@ const getToggle = (id?: string): HTMLElement | null => {
   return btn;
 };
 
-const loadTheme = (key: string): Theme | null => {
+const loadTheme = (key: string): Theme => {
   let res = localStorage.getItem(key);
   if (res == null) {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
@@ -24,33 +24,49 @@ export enum Theme {
   Light,
 }
 
-export const applyTheme = () => {
-  let toggle = getToggle() as HTMLInputElement | null;
-  if (toggle == null) {
-    toggle = document.createElement("input");
+export class ThemeManager {
+  theme: Theme;
+  themeToggle: HTMLInputElement;
+
+  constructor() {
+    this.theme = loadTheme("theme");
+    this.themeToggle = getToggle() as HTMLInputElement;
+    if (!this.themeToggle) {
+      console.error("could not find theme toggle");
+    }
+    switch (this.theme) {
+      case Theme.Dark:
+        document.body.classList.toggle("dark-theme");
+        break;
+      case Theme.Light:
+        document.body.classList.toggle("light-theme");
+        this.themeToggle.checked = true;
+        break;
+    }
   }
-  let currentTheme = loadTheme("theme");
-  switch (currentTheme) {
-    case Theme.Dark:
-      document.body.classList.toggle("dark-theme");
-      break;
-    case Theme.Light:
-      document.body.classList.toggle("light-theme");
-      toggle.checked = true;
-      break;
-  }
-  toggle.addEventListener("change", (ev: Event) => {
-    let theme: Theme;
-    if (currentTheme == Theme.Dark) {
-      theme = Theme.Light;
+
+  toggle() {
+    if (this.theme == Theme.Dark) {
       document.body.classList.remove("dark-theme");
       document.body.classList.add("light-theme");
+      this.theme = Theme.Light;
     } else {
-      theme = Theme.Dark;
       document.body.classList.remove("light-theme");
       document.body.classList.add("dark-theme");
+      this.theme = Theme.Dark;
     }
-    currentTheme = theme;
-    localStorage.setItem("theme", theme.toString());
+    // this.themeToggle.checked = !this.themeToggle.checked;
+    localStorage.setItem("theme", this.theme.toString());
+  }
+
+  onChange(fn: (ev: Event) => void) {
+    this.themeToggle.addEventListener("change", fn);
+  }
+}
+
+export const applyTheme = () => {
+  let man = new ThemeManager();
+  man.onChange((ev: Event) => {
+    man.toggle();
   });
 };

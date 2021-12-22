@@ -43,8 +43,8 @@
             <div class="win95-window">
                 <div class="win95-window-head">
                     <p>Login</p>
-                    <button>&#x2715;</button>
-                    <button>&#8211;</button>
+                    <button id="login-window-close">&#x2715;</button>
+                    <button id="login-window-minimize">&#8211;</button>
                 </div>
                 <div class="win95-window-body">
                     <p>User Login</p>
@@ -117,12 +117,13 @@
         </ul>
 
         <section class="settings">
-            <span>Toggle theme:</span>
-            <span class="theme-toggle toggle-switch">
-                <input type="checkbox" id="theme-toggle">
-                <label for="theme-toggle">Theme</label>
-            </span>
+                <span>Toggle theme:</span>
+                <span class="theme-toggle toggle-switch">
+                    <input type="checkbox" id="theme-toggle">
+                    <label for="theme-toggle">Theme</label>
+                </span>
             <button id="logout-btn">Logout</button>
+            <button id="help-btn">Help</button>
         </section>
 
         <footer class="cards">
@@ -190,5 +191,37 @@
             <center><img src="<%=require('./img/under_construction.gif')%>" alt="Under Construction" width="110" height="60"></center>
         </footer>
     </main>
+    <div id="help-window" class="win95-window help-window modal" style="display: none;">
+        <div class="win95-window-head">
+            <p>Help</p>
+            <button id="help-window-close">&#x2715;</button>
+            <button id="help-window-minimize">&#8211;</button>
+        </div>
+        <div class="win95-window-body">
+            <p>Keyboard shortcuts</p>
+            <table>
+                <tr>
+                    <th>Shortcut</th>
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <td>?</td>
+                    <td>Show the help menu</td>
+                </tr>
+                <tr>
+                    <td>l</td>
+                    <td>Show login window</td>
+                </tr>
+                <tr>
+                    <td>t</td>
+                    <td>Toggle the theme</td>
+                </tr>
+                <tr>
+                    <td>esc</td>
+                    <td>Close a pop-up such as this one</td>
+                </tr>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

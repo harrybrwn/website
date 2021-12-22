@@ -11,7 +11,8 @@ import {
   setCookie,
 } from "./api/auth";
 import { clearCookie } from "./util";
-import { applyTheme } from "./components/theme";
+import { ThemeManager } from "./components/theme";
+import { Modal } from "./components/modal";
 import "./components/toggle";
 import * as api from "./api";
 
@@ -33,10 +34,10 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
         callback(tok);
         form.reset();
       })
-      .catch((error) => {
+      .catch((error: Error) => {
         console.error(error);
         let e = document.createElement("p");
-        e.innerHTML = `${JSON.stringify(error)}`;
+        e.innerHTML = `${error}`;
         form.appendChild(e);
       });
   });
@@ -202,14 +203,46 @@ class LoginManager {
   }
 }
 
+const anchor = (href: string, text: string): HTMLAnchorElement => {
+  let a = document.createElement("a");
+  a.href = href;
+  a.innerText = text;
+  return a;
+};
+
+const privateLinks = (): HTMLLIElement[] => {
+  // let els = [document.createElement("li"), document.createElement("li")];
+  const n = 2;
+  let els = new Array<HTMLLIElement>();
+  for (let i = 0; i < n; i++) els[i] = document.createElement("li");
+  els[0].appendChild(anchor("/tanya/hyt", "tanya y harry"));
+  els[1].appendChild(anchor("/old", "old site"));
+  return els;
+};
+
 const main = () => {
-  applyTheme();
+  let themeManager = new ThemeManager();
   let loginManager = new LoginManager({ interval: 5 * 60 * SECOND });
   let loginPanel = new LoginPopup();
   let showLoginBtn = document.getElementById("show-login-btn");
   showLoginBtn?.addEventListener("click", (ev: MouseEvent) => {
     loginPanel.toggle();
   });
+
+  themeManager.onChange((ev: Event) => {
+    themeManager.toggle();
+  });
+
+  let helpWindow = new Modal({
+    open: false,
+    buttonID: "help-btn",
+    modalID: "help-window",
+  });
+  document
+    .getElementById("help-btn")
+    ?.addEventListener("click", (ev: MouseEvent) => {
+      helpWindow.toggle();
+    });
 
   // Logged in stuff
   let links = document.querySelector(".links");
@@ -222,8 +255,13 @@ const main = () => {
   tanya.innerText = "tanya y harry";
   let li = document.createElement("li");
   li.appendChild(tanya);
+
+  let privLinks = privateLinks();
   if (loginManager.isLoggedIn()) {
-    links?.appendChild(li);
+    // links?.appendChild(li);
+    for (let li of privLinks) {
+      links?.appendChild(li);
+    }
   }
 
   // Handle login and logout
@@ -232,11 +270,17 @@ const main = () => {
     if (e.action == "login") {
       storeToken(e.token);
       setCookie(e.token);
-      links?.appendChild(li);
+      // links?.appendChild(li);
+      for (let li of privLinks) {
+        links?.appendChild(li);
+      }
     } else {
       clearCookie(TOKEN_KEY);
       deleteToken();
-      links?.removeChild(li);
+      // links?.removeChild(li);
+      for (let li of privLinks) {
+        links?.removeChild(li);
+      }
     }
   });
 
@@ -249,14 +293,35 @@ const main = () => {
     loginPanel.toggle();
   });
 
+  // Close login window when the minimize or close buttons are pressed
+  for (let id of ["login-window-close", "login-window-minimize"]) {
+    document.getElementById(id)?.addEventListener("click", (ev: MouseEvent) => {
+      if (loginPanel.open) loginPanel.toggle();
+    });
+  }
+  for (let id of ["help-window-close", "help-window-minimize"]) {
+    document.getElementById(id)?.addEventListener("click", (ev: MouseEvent) => {
+      if (loginPanel.open) helpWindow.toggle();
+    });
+  }
+
   document.addEventListener("keydown", (ev: KeyboardEvent) => {
     const e = ev.target as HTMLElement;
     if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
       return;
     }
-    if (ev.key == "/" && ev.ctrlKey) {
-      ev.preventDefault();
-      loginPanel.toggle();
+    switch (ev.key) {
+      case "l":
+        ev.preventDefault();
+        loginPanel.toggle();
+        break;
+      case "t":
+        themeManager.toggle();
+        themeManager.themeToggle.checked = !themeManager.themeToggle.checked;
+        break;
+      case "?":
+        helpWindow.toggle();
+        break;
     }
   });
 
