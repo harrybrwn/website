@@ -9,10 +9,11 @@ import {
   deleteToken,
   storeToken,
   setCookie,
-} from "./auth";
+} from "./api/auth";
 import { clearCookie } from "./util";
 import { applyTheme } from "./components/theme";
 import "./components/toggle";
+import * as api from "./api";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
   let formOrNull = document.getElementById(formID) as HTMLFormElement | null;
@@ -52,6 +53,17 @@ function handleLogout(id: string, callback: () => void) {
   });
 }
 
+const applyPageCount = () => {
+  let countBox = document.getElementById("hit-count");
+  if (countBox == null) {
+    return;
+  }
+  let container = countBox;
+  api.hits("/").then((hits) => {
+    container.innerText = `page visits: ${hits.count}`;
+  });
+};
+
 const SECOND = 1000;
 
 const loginButtonID = "login-btn";
@@ -61,8 +73,11 @@ class LoginPopup {
   loginBtn: HTMLElement;
   loginPanel: HTMLElement;
   open: boolean;
+
   constructor() {
     this.open = false;
+    this.escCloser = (ev: KeyboardEvent) => {};
+    this.clickCloser = (ev: MouseEvent) => {};
     this.loginBtn =
       document.getElementById(loginButtonID) ||
       document.createElement("button");
@@ -70,9 +85,49 @@ class LoginPopup {
       document.getElementById(loginPanelID) || document.createElement("div");
   }
 
-  toggle() {
+  private escCloser: (ev: KeyboardEvent) => void;
+  private clickCloser: (ev: MouseEvent) => void;
+
+  private _toggle() {
     this.loginPanel.style.display = this.open ? "none" : "block";
     this.open = !this.open;
+  }
+
+  private cleanup() {
+    window.removeEventListener("click", this.clickCloser);
+    window.removeEventListener("keydown", this.escCloser);
+  }
+
+  toggle() {
+    if (!this.open) {
+      this.clickCloser = (ev: MouseEvent) => {
+        let el = ev.target as HTMLElement | null;
+        if (el != null && el.id == "show-login-btn") return;
+        while (el != null && el != document.body) {
+          if (el == this.loginPanel || el.id == "show-login-btn") {
+            return;
+          }
+          el = el.parentElement;
+        }
+        this._toggle();
+        this.cleanup();
+      };
+      this.escCloser = (ev: KeyboardEvent) => {
+        if (ev.key != "Escape") {
+          return;
+        }
+        this._toggle();
+        this.cleanup();
+      };
+    }
+
+    this._toggle();
+    if (this.open) {
+      window.addEventListener("click", this.clickCloser);
+      window.addEventListener("keydown", this.escCloser);
+    } else {
+      this.cleanup();
+    }
   }
 
   listen() {
@@ -140,21 +195,48 @@ class LoginManager {
   stop() {
     clearInterval(this.expirationCheckTimer);
   }
+
+  isLoggedIn(): boolean {
+    let token = loadToken();
+    return token != null;
+  }
 }
 
 const main = () => {
   applyTheme();
   let loginManager = new LoginManager({ interval: 5 * 60 * SECOND });
   let loginPanel = new LoginPopup();
+  let showLoginBtn = document.getElementById("show-login-btn");
+  showLoginBtn?.addEventListener("click", (ev: MouseEvent) => {
+    loginPanel.toggle();
+  });
 
+  // Logged in stuff
+  let links = document.querySelector(".links");
+  if (!links) {
+    console.error("could not find .links");
+  }
+  let tanya = document.createElement("a");
+  tanya.href = "/tanya/hyt";
+  tanya.className = "tanya-link";
+  tanya.innerText = "tanya y harry";
+  let li = document.createElement("li");
+  li.appendChild(tanya);
+  if (loginManager.isLoggedIn()) {
+    links?.appendChild(li);
+  }
+
+  // Handle login and logout
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
     const e = ev.detail;
     if (e.action == "login") {
       storeToken(e.token);
       setCookie(e.token);
+      links?.appendChild(li);
     } else {
       clearCookie(TOKEN_KEY);
       deleteToken();
+      links?.removeChild(li);
     }
   });
 
@@ -187,6 +269,8 @@ const main = () => {
     welcomeBanner.style.color = colors[welcomeTicker % colors.length];
     welcomeTicker++;
   }, 500);
+
+  applyPageCount();
 };
 
 main();

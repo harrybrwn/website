@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -42,10 +44,14 @@ func run() error {
 
 	roles := make([]auth.Role, 0)
 	for _, r := range strings.Split(rolesflag, ",") {
-		roles = append(roles, auth.Role(strings.Trim(r, "\t\n ")))
+		switch auth.Role(strings.ToLower(strings.Trim(r, "\n\t "))) {
+		case auth.RoleAdmin:
+			roles = append(roles, auth.RoleAdmin)
+		case auth.RoleDefault:
+			roles = append(roles, auth.RoleDefault)
+		}
 	}
-
-	if !strings.Contains(rolesflag, ",") && len(roles) == 0 {
+	if len(roles) == 0 {
 		roles = []auth.Role{auth.RoleDefault}
 	}
 
@@ -62,6 +68,14 @@ func run() error {
 	pw, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return err
+	}
+	fmt.Print("Confirm Password: ")
+	confirmPw, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(confirmPw, pw) {
+		return errors.New("passwords were different!")
 	}
 	fmt.Printf("\nusername: %q\nemail: %q\nroles: %v\n", username, email, roles)
 	fmt.Print("Create User (y/N): ")

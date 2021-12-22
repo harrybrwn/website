@@ -1,17 +1,9 @@
-main {
-	margin-right: auto;
-	margin-left: auto;
-
-	/* max-width: 750px; */
-	max-width: max-content;
-}
-
 a:visited {
 	text-decoration: none;
 }
 
 .welcome-banner {
-	width: 30%;
+	width: 45%;
 }
 
 .settings {
@@ -23,11 +15,84 @@ a:visited {
 	text-decoration: none;
 }
 
-body.dark-theme a {
-	color: rgb(220, 220, 220);
-}
-
 main ul li {
 	padding-top: 4px;
 	padding-bottom: 4px;
+}
+
+.modal {
+	position: absolute;
+	z-index: 100;
+	overflow: auto;
+}
+
+.login-panel {
+	top: 27%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	float: left;
+	width: 18em;
+	text-align: center;
+}
+
+.login-panel .win95-window-body p {
+	margin-top: .6em;
+	margin-bottom: .6em;
+}
+body.dark-theme .login-panel .win95-window-body p {
+	color: black;
+}
+
+body.dark-theme .login-panel {
+	box-shadow: 5px 5px var(--win95-bg-color);
+}
+
+body.light-theme .login-panel {
+	box-shadow: 5px 5px #2c2c2c;
+}
+
+/* Windows 95 Window Panel */
+
+.win95-window {
+	background-color: #c0c0c0;
+	border-width: 0.15em;
+	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
+	border-style: solid;
+}
+
+.win95-window-head {
+	background-color: #000080;
+	width: 100%;
+	height: 18px;
+	margin: 0px;
+}
+
+.win95-window-head p {
+	color: white;
+	float: left;
+	margin: 0;
+	display: block;
+	font-size: 0.7em;
+}
+
+.win95-window-head button {
+	float: right;
+	text-align: center;
+	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
+	margin-top: 2px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    margin-left: 0px;
+    padding: 0;
+	width: 14px;
+    height: 14px;
+	border-width: 1px;
+	font-size: .5em;
+    font-weight: bold;
+}
+
+.win95-window-body {
+	display: inline-block;
+	width: calc(100% - .5em);
+	margin-bottom: 0.4em;
 }

@@ -27,3 +27,13 @@ body.dark-theme {
 		background-color: var(--theme-light-bg);
 	}
 }
+
+body {
+	margin-right: auto;
+	margin-left: auto;
+	max-width: 750px;
+}
+
+body.dark-theme a {
+	color: rgb(220, 220, 220);
+}

@@ -24,8 +24,7 @@ export function login(user: Login, callback?: TokenCallback): Promise<Token> {
     .then(async (resp: Response) => {
       if (!resp.ok) {
         const message = await resp.json();
-        throw message;
-        // throw new Error(resp.statusText);
+        throw new Error(message.message);
       }
       return resp.json();
     })

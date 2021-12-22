@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"encoding/hex"
 	"flag"
@@ -23,19 +24,13 @@ import (
 	"harrybrown.com/pkg/web"
 )
 
-// go :generate go run ./cmd/key-gen -o ./embeds/jwt-signer
-// go :generate yarn build
-
 var (
-	// go :embed embeds/jwt-signer.pub
-	pubkeyPem []byte
-	// go :embed embeds/jwt-signer.key
-	privkeyPem []byte
-
 	//go:embed build/index.html
 	harryStaticPage []byte
 	//go:embed build/pages/remora.html
 	remoraStaticPage []byte
+	//go:embed build/pages/harry-y-tanya.html
+	harryYTanyaStaticPage []byte
 	//go:embed build/pub.asc
 	gpgPubkey []byte
 	//go:embed build/robots.txt
@@ -44,7 +39,6 @@ var (
 	favicon []byte
 	//go:embed build/static
 	static embed.FS
-
 	//go:embed build/sitemap.xml
 	sitemap []byte
 	// go :embed build/sitemap.xml.gz
@@ -53,9 +47,8 @@ var (
 	//go:embed templates
 	templates embed.FS
 
-	logger = logrus.New()
-
 	assetsGziped bool
+	logger       = logrus.New()
 )
 
 func main() {
@@ -90,10 +83,15 @@ func main() {
 	e.Use(app.RequestLogRecorder(db, logger))
 
 	e.GET("/", echo.WrapHandler(index()))
-	e.GET("/static/*", echo.WrapHandler(handleStatic()))
-	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
 	e.GET("/~harry", echo.WrapHandler(index()))
 	e.GET("/remora", remoraPage(), staticMiddleware)
+	e.GET("/tanya/hyt", echo.WrapHandler(page(harryYTanyaStaticPage, "build/pages/harry-y-tanya.html")), guard)
+	e.GET("/~tanya", func(c echo.Context) error {
+		return c.HTML(http.StatusNotImplemented, "<p>This is not finished yet</p>")
+	}, guard)
+
+	e.GET("/static/*", echo.WrapHandler(handleStatic()))
+	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
 	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
 	e.GET("/sitemap.xml", echo.WrapHandler(http.HandlerFunc(sitemapHandler)))
 	e.GET("/sitemap.xml.gz", echo.WrapHandler(http.HandlerFunc(sitemapGZHandler)))
@@ -117,7 +115,7 @@ func main() {
 	<h1>This is a Secret</h1>
 </body>
 </html>`)
-	}, guard, admin())
+	}, guard, auth.AdminOnly())
 
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
@@ -127,7 +125,14 @@ func main() {
 	api.GET("/quote", func(c echo.Context) error {
 		return c.JSON(200, app.RandomQuote())
 	})
+	api.GET("/hits", hits(db))
 	api.POST("/token", TokenHandler(jwtConf, app.NewUserStore(db)))
+	api.GET("/runtime", func(c echo.Context) error {
+		return c.JSON(200, map[string]interface{}{
+			"debug":    app.Debug,
+			"birthday": app.GetBirthday(),
+		})
+	}, guard, auth.AdminOnly())
 	api.Any("/ping", echo.WrapHandler(http.HandlerFunc(ping)))
 
 	logger.WithField("time", startup).Info("server starting")
@@ -142,23 +147,6 @@ const (
 	maxCookieAge = 2147483647
 )
 
-func admin() echo.MiddlewareFunc {
-	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			claims := auth.GetClaims(c)
-			if claims == nil {
-				return echo.ErrForbidden
-			}
-			for _, r := range claims.Roles {
-				if r == auth.RoleAdmin {
-					return next(c)
-				}
-			}
-			return echo.ErrForbidden
-		}
-	}
-}
-
 func NewTokenConfig() auth.TokenConfig {
 	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
 	if hasSeed {
@@ -168,21 +156,12 @@ func NewTokenConfig() auth.TokenConfig {
 			panic(errors.Wrap(err, "could not decode private key seed from hex"))
 		}
 		return &tokenConfig{auth.EdDSATokenConfigFromSeed(seed)}
-	} else if len(privkeyPem) > 0 && len(pubkeyPem) > 0 {
-		logger.Info("creating token config from embedded key pair")
-		conf, err := auth.DecodeEdDSATokenConfig(privkeyPem, pubkeyPem)
-		if err != nil {
-			panic(err) // happens at startup
-		}
-		return &tokenConfig{conf}
 	}
 	logger.Warn("generating new key pair for token config")
 	return &tokenConfig{auth.GenEdDSATokenConfig()}
 }
 
-type tokenConfig struct {
-	auth.TokenConfig
-}
+type tokenConfig struct{ auth.TokenConfig }
 
 func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 	c, err := r.Cookie(tokenKey)
@@ -193,15 +172,9 @@ func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 }
 
 func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
-	type userbody struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
 	return func(c echo.Context) error {
 		var (
-			err error
-			// body        userbody
+			err         error
 			body        app.Login
 			req         = c.Request()
 			ctx         = req.Context()
@@ -251,6 +224,24 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 	}
 }
 
+func hits(db *sql.DB) echo.HandlerFunc {
+	const query = `select count(*) from request_log where uri = $1`
+	return func(c echo.Context) error {
+		var (
+			n int
+			u = c.QueryParam("u")
+		)
+		if len(u) == 0 {
+			u = "/"
+		}
+		row := db.QueryRowContext(c.Request().Context(), query, u)
+		if err := row.Scan(&n); err != nil {
+			return echo.ErrInternalServerError
+		}
+		return c.JSON(200, map[string]int{"count": n})
+	}
+}
+
 func wrap(err error, status int, message ...string) error {
 	var msg string
 	if len(message) < 1 {
@@ -294,6 +285,34 @@ func index() http.Handler {
 			h.Set("Content-Type", "text/html")
 			h.Set("Cache-Control", "public, max-age=31919000")
 			h.Set("Content-Length", strconv.FormatInt(int64(len(harryStaticPage)), 10))
+			h.Set("Accept-Ranges", "bytes")
+			rw.Write(harryStaticPage)
+		})
+		if http.DetectContentType(harryStaticPage) == "application/x-gzip" {
+			hf = wrapAsGzip(hf)
+		}
+	}
+	return hf
+}
+
+func page(raw []byte, filename string) http.Handler {
+	var (
+		hf     http.Handler
+		length = int64(len(raw))
+	)
+	if app.Debug {
+		hf = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			rw.Header().Set("Content-Type", "text/html")
+			rw.Header().Set("Cache-Control", "public, max-age=31919000")
+			http.ServeFile(rw, r, filename)
+		})
+	} else {
+		hf = http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			h := rw.Header()
+			staticLastModified(h)
+			h.Set("Content-Type", "text/html")
+			h.Set("Cache-Control", "public, max-age=31919000")
+			h.Set("Content-Length", strconv.FormatInt(length, 10))
 			h.Set("Accept-Ranges", "bytes")
 			rw.Write(harryStaticPage)
 		})

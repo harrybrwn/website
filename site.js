@@ -11,11 +11,21 @@ const common = {
 };
 
 module.exports = {
-  title: "Harry Brown",
-  ...common,
   pages: {
+    index: {
+      title: "Harry Brown",
+      ...common,
+    },
     remora: {
-      title: "Remora",
+      title: "Remora | Harry Brown",
+      ...common,
+    },
+    blog: {
+      title: "Blog | Harry Brown",
+      ...common,
+    },
+    tanya: {
+      title: "Tanya y Harry",
       ...common,
     },
   },

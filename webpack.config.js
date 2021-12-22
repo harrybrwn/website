@@ -18,9 +18,14 @@ const paths = {
   build: "./build",
 };
 
+paths.favicon = path.join(paths.public, "favicon.ico");
+
 const sitemap = [
   {
     path: "/",
+  },
+  {
+    path: "/~harry",
   },
   {
     path: "/static/files/HarrisonBrown.pdf",
@@ -97,6 +102,9 @@ module.exports = function (webpackEnv) {
       remora: {
         import: path.resolve(__dirname, paths.source, "remora.ts"),
       },
+      tanya: {
+        import: path.resolve(__dirname, paths.source, "pages/harry-y-tanya.ts"),
+      },
     },
 
     resolve: {
@@ -105,7 +113,6 @@ module.exports = function (webpackEnv) {
 
     output: {
       clean: isProd, // remove old files before build
-      // publicPath: 'public',
       path: path.resolve(__dirname, paths.build),
       filename: isProd
         ? "static/js/[name].[contenthash:8].bundle.js"
@@ -117,8 +124,10 @@ module.exports = function (webpackEnv) {
     },
 
     optimization: {
-      // runtimeChunk: "single",
+      runtimeChunk: "single",
+      concatenateModules: true,
       minimize: true,
+      //runtimeChunk: { name: "runtime" },
       minimizer: [
         new TerserPlugin({
           terserOptions: {
@@ -173,7 +182,6 @@ module.exports = function (webpackEnv) {
             {
               loader: "file-loader",
               options: { name: "static/img/[name].[contenthash].[ext]" },
-              // options: { name: "[name].[contenthash].[ext]" },
             },
           ],
           include: [path.resolve(__dirname, paths.source)],
@@ -195,11 +203,9 @@ module.exports = function (webpackEnv) {
         Object.assign(
           {},
           {
-            title: site.title,
-            inject: true,
             template: path.join(paths.source, "index.html"),
-            templateParameters: site,
-            favicon: path.join(paths.public, "favicon.ico"),
+            templateParameters: site.pages["index"],
+            favicon: paths.favicon,
             chunks: ["main"],
           },
           isProd ? { minify: htmlMinify } : { cache: true }
@@ -211,13 +217,27 @@ module.exports = function (webpackEnv) {
           {
             template: path.join(paths.source, "pages/remora.html"),
             filename: "pages/remora.html",
-            templateParameters: site.pages.remora,
-            favicon: path.join(paths.public, "favicon.ico"),
+            templateParameters: site.pages["remora"],
             chunks: ["remora"],
+            favicon: paths.favicon,
           },
           isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
+      new HtmlWebpackPlugin(
+        Object.assign(
+          {},
+          {
+            template: path.join(paths.source, "pages/harry-y-tanya.html"),
+            filename: "pages/harry-y-tanya.html",
+            templateParameters: site.pages["tanya"],
+            chunks: ["tanya"],
+            favicon: paths.favicon,
+          },
+          isProd ? { minify: htmlMinify } : { cache: true }
+        )
+      ),
+
       new CompressionPlugin({
         deleteOriginalAssets: true,
         filename: "[path][base]",

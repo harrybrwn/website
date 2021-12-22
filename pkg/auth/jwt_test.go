@@ -67,7 +67,6 @@ func TestLogin(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/login")
 	h := func(c echo.Context) error {
-		// fmt.Println(c.Request().RequestURI)
 		return nil
 	}
 	err := h(c)

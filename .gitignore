@@ -24,6 +24,7 @@ config.json
 tests/*
 /scripts/*.sql
 /scripts/psql.sh
+/requests.http
 
 # Tools
 NOTES

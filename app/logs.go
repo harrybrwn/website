@@ -62,6 +62,7 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 		"referer":    l.Referer,
 		"user_agent": l.UserAgent,
 		"latency":    l.Latency,
+		"latency_ms": float64(l.Latency) / 1.0e6,
 	}
 	if l.Error != nil {
 		fields["error"] = l.Error

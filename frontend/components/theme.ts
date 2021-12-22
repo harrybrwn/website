@@ -2,7 +2,7 @@ import "./theme.css";
 
 const DEFAULT_TOGGLE_ID = "theme-toggle";
 
-export const getToggle = (id?: string): HTMLElement | null => {
+const getToggle = (id?: string): HTMLElement | null => {
   if (!id) {
     id = DEFAULT_TOGGLE_ID;
   }
@@ -10,23 +10,26 @@ export const getToggle = (id?: string): HTMLElement | null => {
   return btn;
 };
 
+const loadTheme = (key: string): Theme | null => {
+  let res = localStorage.getItem(key);
+  if (res == null) {
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+    return prefersDark.matches ? Theme.Dark : Theme.Light;
+  }
+  return parseInt(res);
+};
+
 export enum Theme {
   Dark,
   Light,
 }
 
-const loadTheme = (key: string, def?: Theme): Theme => {
-  let res = localStorage.getItem(key);
-  if (!res) {
-    return def || Theme.Dark;
-  }
-  return parseInt(res);
-};
-
 export const applyTheme = () => {
-  let toggle = getToggle() as HTMLInputElement;
+  let toggle = getToggle() as HTMLInputElement | null;
+  if (toggle == null) {
+    toggle = document.createElement("input");
+  }
   let currentTheme = loadTheme("theme");
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
   switch (currentTheme) {
     case Theme.Dark:
       document.body.classList.toggle("dark-theme");
@@ -38,17 +41,16 @@ export const applyTheme = () => {
   }
   toggle.addEventListener("change", (ev: Event) => {
     let theme: Theme;
-    if (prefersDark.matches) {
-      document.body.classList.toggle("light-theme");
-      theme = document.body.classList.contains("light-theme")
-        ? Theme.Light
-        : Theme.Dark;
+    if (currentTheme == Theme.Dark) {
+      theme = Theme.Light;
+      document.body.classList.remove("dark-theme");
+      document.body.classList.add("light-theme");
     } else {
-      document.body.classList.toggle("dark-theme");
-      theme = document.body.classList.contains("dark-theme")
-        ? Theme.Dark
-        : Theme.Light;
+      theme = Theme.Dark;
+      document.body.classList.remove("light-theme");
+      document.body.classList.add("dark-theme");
     }
+    currentTheme = theme;
     localStorage.setItem("theme", theme.toString());
   });
 };

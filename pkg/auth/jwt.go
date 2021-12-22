@@ -6,7 +6,6 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
-	"database/sql/driver"
 	"net/http"
 	"strings"
 	"time"
@@ -20,32 +19,6 @@ import (
 var (
 	ErrTokenExpired = jwt.NewValidationError("token expired", jwt.ValidationErrorExpired)
 )
-
-type Role string
-
-const (
-	RoleAdmin   Role = "admin"
-	RoleDefault Role = "default"
-
-	ClaimsContextKey = "jwt-ctx-claims"
-	TokenContextKey  = "jwt-ctx-token"
-)
-
-func (r *Role) Scan(src interface{}) error {
-	switch v := src.(type) {
-	case string:
-		*r = Role(v)
-	case []uint8:
-		*r = Role(v)
-	default:
-		return errors.New("unknown type cannot become type auth.Role")
-	}
-	return nil
-}
-
-func (r *Role) Value() (driver.Value, error) {
-	return string(*r), nil
-}
 
 type getter interface {
 	Get(string) interface{}
@@ -87,7 +60,7 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 				return &echo.HTTPError{
 					Code:     http.StatusUnauthorized,
 					Message:  "not authorized",
-					Internal: errors.Wrap(err, "could not get token from requst"),
+					Internal: errors.Wrap(err, "could not get token from request"),
 				}
 			}
 			var claims Claims
@@ -165,7 +138,6 @@ func GetBearerToken(r *http.Request) (string, error) {
 	if len(h) == 0 {
 		return "", errAuthHeaderTokenMissing
 	}
-
 	i := strings.Index(h, JWTScheme)
 	if i < 0 {
 		return "", errAuthHeaderTokenMissing
@@ -174,8 +146,6 @@ func GetBearerToken(r *http.Request) (string, error) {
 }
 
 type edDSATokenConfig struct {
-	// key ed25519.PrivateKey
-	// pub ed25519.PublicKey
 	key crypto.PrivateKey
 	pub crypto.PublicKey
 }
