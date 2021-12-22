@@ -314,9 +314,9 @@ func page(raw []byte, filename string) http.Handler {
 			h.Set("Cache-Control", "public, max-age=31919000")
 			h.Set("Content-Length", strconv.FormatInt(length, 10))
 			h.Set("Accept-Ranges", "bytes")
-			rw.Write(harryStaticPage)
+			rw.Write(raw)
 		})
-		if http.DetectContentType(harryStaticPage) == "application/x-gzip" {
+		if http.DetectContentType(raw) == "application/x-gzip" {
 			hf = wrapAsGzip(hf)
 		}
 	}
