@@ -60,26 +60,19 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			now := time.Now().UTC()
-			auth, err := conf.GetToken(c.Request())
+			req := c.Request()
+			auth, err := conf.GetToken(req)
 			if err != nil {
-				return &echo.HTTPError{
-					Code:     http.StatusUnauthorized,
-					Message:  "not authorized",
-					Internal: errors.Wrap(err, "could not get token from request"),
-				}
+				return wrap(http.StatusUnauthorized, err, "could not get token from request")
 			}
 			var claims Claims
 			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
 			if err != nil {
-				return &echo.HTTPError{
-					Code:     http.StatusUnauthorized,
-					Message:  "not authorized",
-					Internal: errors.Wrap(err, "could not parse token with claims"),
-				}
+				return wrap(http.StatusUnauthorized, err, "could not parse token with claims")
 			}
 
 			if !token.Valid {
-				return errors.New("invalid token")
+				return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
 			}
 			if now.After(time.Unix(claims.ExpiresAt, 0)) {
 				return &echo.HTTPError{
@@ -236,4 +229,12 @@ func (c *tokenConfig) Public() crypto.PublicKey {
 
 func (c *tokenConfig) Type() jwt.SigningMethod {
 	return jwt.SigningMethodES256
+}
+
+func wrap(status int, err error, msg string) *echo.HTTPError {
+	return &echo.HTTPError{
+		Code:     status,
+		Message:  http.StatusText(status),
+		Internal: errors.Wrap(err, msg),
+	}
 }

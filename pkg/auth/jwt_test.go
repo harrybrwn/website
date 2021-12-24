@@ -44,17 +44,17 @@ func TestGuard(t *testing.T) {
 	e := echo.New()
 	conf := GenEdDSATokenConfig()
 	e.Use(Guard(conf))
-	e.GET("/protected", func(c echo.Context) error {
-		claims := GetClaims(c)
-		is.True(claims != nil)
-		return nil
-	})
 	tok := newToken(t, conf)
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/protected", nil)
 	req.Header.Set("Authorization", fmt.Sprintf("%s %s", tok.TokenType, tok.Token))
+	fn := func(c echo.Context) error {
+		claims := GetClaims(c)
+		is.True(claims != nil)
+		return nil
+	}
 	c := e.NewContext(req, rec)
-	e.Router().Find("GET", "/protected", c)
+	is.NoErr(fn(c))
 }
 
 func TestLogin(t *testing.T) {

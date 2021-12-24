@@ -7,6 +7,15 @@ export interface Token {
   type: string;
 }
 
+export interface Claims {
+  id: number;
+  uuid: string;
+  roles: string[];
+  aud: string;
+  exp: number;
+  iat: number;
+}
+
 export interface Login {
   username: string;
   email: string;
@@ -29,10 +38,21 @@ export function login(user: Login, callback?: TokenCallback): Promise<Token> {
       return resp.json();
     })
     .then((blob: any) => {
-      storeToken(blob);
-      if (callback) callback(blob);
-      return blob;
+      let tok: Token = {
+        token: blob.token,
+        expires: blob.expires,
+        refresh: blob.refresh_token,
+        type: blob.token_type,
+      };
+      storeToken(tok);
+      if (callback) callback(tok);
+      return tok;
     });
+}
+
+export function parseClaims(raw: string): Claims {
+  let blob = atob(raw.split(".")[1]);
+  return JSON.parse(blob);
 }
 
 export function isExpired(tok: Token): boolean {

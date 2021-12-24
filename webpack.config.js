@@ -5,9 +5,8 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
 const CompressionPlugin = require("compression-webpack-plugin");
-const package = require("./package.json");
 const path = require("path");
-const fs = require("fs");
+const build = require("./scripts/build");
 
 // Used for build-time template parameters
 const site = require("./site");
@@ -39,21 +38,6 @@ const copy = (name) => {
   };
 };
 
-const fileCompressionLoader = {
-  loader: "image-webpack-loader",
-  options: {
-    disable: false, // webpack@2.x and newer
-    // Compress jpeg images
-    mozjpeg: {
-      progressive: true,
-    },
-    // Compress gif
-    gifsicle: {
-      interlaced: true,
-    },
-  },
-};
-
 const htmlMinify = {
   collapseWhitespace: true,
   removeComments: true,
@@ -65,34 +49,9 @@ const htmlMinify = {
   minifyURLs: true,
 };
 
-class InjectImagesPlugin {
-  apply(compiler) {
-    const name = "InjectImagesPlugin";
-    compiler.hooks.compilation.tap(name, (compilation) => {
-      console.log("starting compiler hook");
-      HtmlWebpackPlugin.getHooks(compilation).alterAssetTags.tapAsync(
-        name,
-        (data, cb) => {
-          console.log(data.assetTags);
-          cb(null, data);
-        }
-      );
-
-      HtmlWebpackPlugin.getHooks(compilation).beforeEmit.tapAsync(
-        name,
-        (data, cb) => {
-          console.log(data);
-          cb(null, data);
-        }
-      );
-    });
-  }
-}
-
 module.exports = function (webpackEnv) {
   const isDev = webpackEnv.dev || false;
   const isProd = webpackEnv.prod || false;
-  console.log(MiniCssExtractPlugin.loader);
 
   return {
     entry: {
@@ -102,7 +61,7 @@ module.exports = function (webpackEnv) {
       remora: {
         import: path.resolve(__dirname, paths.source, "remora.ts"),
       },
-      tanya: {
+      harry_y_tanya: {
         import: path.resolve(__dirname, paths.source, "pages/harry-y-tanya.ts"),
       },
     },
@@ -115,10 +74,10 @@ module.exports = function (webpackEnv) {
       clean: isProd, // remove old files before build
       path: path.resolve(__dirname, paths.build),
       filename: isProd
-        ? "static/js/[name].[contenthash:8].bundle.js"
+        ? "static/js/[name].[contenthash:16].bundle.js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
-        ? "static/js/[name].[contenthash:8].chunk.js"
+        ? "static/js/[name].[contenthash:16].chunk.js"
         : "static/js/[name].chunk.js",
       assetModuleFilename: "static/a/[hash:4].[id][ext][query][fragment]",
     },
@@ -134,7 +93,7 @@ module.exports = function (webpackEnv) {
             parse: { ecma: 8 },
             compress: {
               ecma: 5,
-              warnings: false,
+              warnings: true,
               comparisons: false,
             },
             output: {
@@ -172,19 +131,9 @@ module.exports = function (webpackEnv) {
           include: [path.resolve(__dirname, paths.source)],
         },
         {
+          // Embed these right into the html
           test: /\.(gif|svg)$/i,
           type: "asset/inline",
-        },
-        {
-          test: /\.(png|jpe?g)$/i,
-          use: [
-            fileCompressionLoader,
-            {
-              loader: "file-loader",
-              options: { name: "static/img/[name].[contenthash].[ext]" },
-            },
-          ],
-          include: [path.resolve(__dirname, paths.source)],
         },
         {
           // Fonts
@@ -192,7 +141,8 @@ module.exports = function (webpackEnv) {
           type: "asset/inline",
         },
         {
-          test: /\.pdf$/,
+          // Load these as static resources
+          test: /\.(pdf|jpe?g|png)$/i,
           type: "asset/resource",
         },
       ],
@@ -205,20 +155,8 @@ module.exports = function (webpackEnv) {
           {
             template: path.join(paths.source, "index.html"),
             templateParameters: site.pages["index"],
-            favicon: paths.favicon,
+            meta: build.metaTags(site.pages["index"]),
             chunks: ["main"],
-          },
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          {
-            template: path.join(paths.source, "pages/remora.html"),
-            filename: "pages/remora.html",
-            templateParameters: site.pages["remora"],
-            chunks: ["remora"],
             favicon: paths.favicon,
           },
           isProd ? { minify: htmlMinify } : { cache: true }
@@ -227,13 +165,23 @@ module.exports = function (webpackEnv) {
       new HtmlWebpackPlugin(
         Object.assign(
           {},
-          {
-            template: path.join(paths.source, "pages/harry-y-tanya.html"),
-            filename: "pages/harry-y-tanya.html",
-            templateParameters: site.pages["tanya"],
-            chunks: ["tanya"],
-            favicon: paths.favicon,
-          },
+          // {
+          //   template: path.join(paths.source, "pages/remora.html"),
+          //   filename: "pages/remora.html",
+          //   templateParameters: site.pages["remora"],
+          //   chunks: ["remora"],
+          //   meta: build.metaTags(site.pages["remora"]),
+          //   favicon: paths.favicon,
+          // },
+          // { favicon: paths.favicon },
+          build.page(paths, "remora", site.pages["remora"]),
+          isProd ? { minify: htmlMinify } : { cache: true }
+        )
+      ),
+      new HtmlWebpackPlugin(
+        Object.assign(
+          {},
+          build.page(paths, "harry-y-tanya", site.pages["harrytanya"]),
           isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
@@ -266,6 +214,7 @@ module.exports = function (webpackEnv) {
           // I actually need these
           copy("static/files"),
           {
+            // Harry's Preview Image
             from: path.join(paths.source, "img/goofy.jpg"),
             to: path.resolve(__dirname, paths.build, "static/img/goofy.jpg"),
           },
