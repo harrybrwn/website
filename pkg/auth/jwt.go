@@ -68,18 +68,14 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			var claims Claims
 			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
 			if err != nil {
-				return wrap(http.StatusUnauthorized, err, "could not parse token with claims")
+				return echo.ErrUnauthorized.SetInternal(err)
 			}
 
 			if !token.Valid {
 				return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
 			}
 			if now.After(time.Unix(claims.ExpiresAt, 0)) {
-				return &echo.HTTPError{
-					Code:     http.StatusUnauthorized,
-					Message:  "not authorized",
-					Internal: ErrTokenExpired,
-				}
+				return echo.ErrUnauthorized.SetInternal(ErrTokenExpired)
 			}
 			if claims.Issuer != Issuer || claims.Audience != TokenAudience {
 				return &echo.HTTPError{
@@ -115,28 +111,46 @@ func NewTokenResponse(
 	now := time.Now()
 	key := conf.Private()
 	expires := now.Add(Expiration).Unix()
+	// These should persist past the call.
 	claims.IssuedAt = now.Unix()
 	claims.ExpiresAt = expires
+	// Copy the claims so changes while creating the
+	// refresh token are only local.
 	c := *claims
-	tok := jwt.NewWithClaims(conf.Type(), &c)
-	token, err := tok.SignedString(key)
+	resp, err := newTokenResp(conf, &c)
 	if err != nil {
 		return nil, err
 	}
 
 	c.Audience = "refresh"
 	c.ExpiresAt = now.Add(RefreshExpiration).Unix()
-	tok = jwt.NewWithClaims(conf.Type(), &c)
+	tok := jwt.NewWithClaims(conf.Type(), &c)
 	refresh, err := tok.SignedString(key)
 	if err != nil {
 		return nil, err
 	}
+	resp.RefreshToken = refresh
+	return resp, nil
+}
+
+func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
+	tok := jwt.NewWithClaims(conf.Type(), claims)
+	token, err := tok.SignedString(conf.Private())
+	if err != nil {
+		return nil, err
+	}
 	return &TokenResponse{
-		Token:        token,
-		Expires:      expires,
-		RefreshToken: refresh,
-		TokenType:    JWTScheme,
+		Token:     token,
+		Expires:   claims.ExpiresAt,
+		TokenType: JWTScheme,
 	}, nil
+}
+
+func mustCreateToken(t *TokenResponse, e error) *TokenResponse {
+	if e != nil {
+		panic(e)
+	}
+	return t
 }
 
 var errAuthHeaderTokenMissing = errors.New("token missing from authorization header")

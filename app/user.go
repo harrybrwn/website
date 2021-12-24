@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/db"
 )
 
 type User struct {
@@ -42,56 +43,34 @@ func (u *User) VerifyPassword(pw string) error {
 	return bcrypt.CompareHashAndPassword(u.PWHash, []byte(pw))
 }
 
+var (
+	ErrEmptyPassword = errors.New("zero length password")
+	ErrUserNotFound  = errors.New("could not find user")
+	ErrWrongPassword = errors.New("password was incorrect")
+)
+
 type UserStore interface {
-	Find(context.Context, interface{}) (*User, error)
 	Login(context.Context, *Login) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
-	Update(context.Context, *User) error
 	Create(context.Context, string, *User) (*User, error)
 }
 
-func NewUserStore(db *sql.DB) *userStore {
+func NewUserStore(db db.DB) *userStore {
 	return &userStore{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
+}
+
+type userStore struct {
+	db     db.DB
+	logger logrus.FieldLogger
 }
 
 type Login struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-}
-
-func (s *userStore) Login(ctx context.Context, l *Login) (*User, error) {
-	if len(l.Password) == 0 {
-		return nil, errors.New("user gave zero length password")
-	}
-	var (
-		err error
-		u   *User
-	)
-	if len(l.Email) > 0 {
-		const query = selectQueryHead + `WHERE email = $1`
-		u, err = s.get(ctx, query, l.Email)
-	} else if len(l.Username) > 0 {
-		const query = selectQueryHead + `WHERE username = $1`
-		u, err = s.get(ctx, query, l.Username)
-	} else {
-		return nil, errors.New("unable to find user")
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "could not find user")
-	}
-	err = u.VerifyPassword(l.Password)
-	if err != nil {
-		return nil, errors.New("incorrect password")
-	}
-	return u, nil
-}
-
-type userStore struct {
-	db     *sql.DB
-	logger logrus.FieldLogger
 }
 
 const selectQueryHead = `SELECT
@@ -106,8 +85,20 @@ const selectQueryHead = `SELECT
 	updated_at
 FROM "user" `
 
-func scanUser(row *sql.Row, u *User) error {
-	return row.Scan(
+func scanUser(rows db.Rows, u *User) (err error) {
+	defer func() {
+		e := rows.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+	if !rows.Next() {
+		if err = rows.Err(); err != nil {
+			return err
+		}
+		return sql.ErrNoRows
+	}
+	err = rows.Scan(
 		&u.ID,
 		&u.UUID,
 		&u.Username,
@@ -118,52 +109,53 @@ func scanUser(row *sql.Row, u *User) error {
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	)
+	return err
 }
 
 func (s *userStore) get(ctx context.Context, q string, args ...interface{}) (*User, error) {
 	var u User
-	row := s.db.QueryRowContext(ctx, q, args...)
-	err := scanUser(row, &u)
+	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
-	return &u, nil
+	return &u, scanUser(rows, &u)
 }
 
-func (s *userStore) Find(ctx context.Context, identifier interface{}) (*User, error) {
-	switch id := identifier.(type) {
-	case uuid.UUID:
-		return s.Get(ctx, id)
-	case int:
-		return s.get(ctx, selectQueryHead+`WHERE id = $1`, id)
-	default:
-		const query = selectQueryHead + `WHERE email = $1 OR username = $1`
-		return s.get(ctx, query, identifier)
+func (s *userStore) Login(ctx context.Context, l *Login) (*User, error) {
+	if len(l.Password) == 0 {
+		return nil, ErrEmptyPassword
 	}
+	var (
+		err error
+		u   *User
+	)
+	if len(l.Email) > 0 {
+		const query = selectQueryHead + `WHERE email = $1`
+		u, err = s.get(ctx, query, l.Email)
+	} else if len(l.Username) > 0 {
+		const query = selectQueryHead + `WHERE username = $1`
+		u, err = s.get(ctx, query, l.Username)
+	} else {
+		return nil, ErrUserNotFound
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find user")
+	}
+	err = u.VerifyPassword(l.Password)
+	if err != nil {
+		return nil, ErrWrongPassword
+	}
+	return u, nil
 }
 
 func (s *userStore) Get(ctx context.Context, id uuid.UUID) (*User, error) {
 	const query = selectQueryHead + `WHERE uuid = $1`
 	var u User
-	row := s.db.QueryRowContext(ctx, query, id)
-	return &u, scanUser(row, &u)
-}
-
-func (s *userStore) Update(ctx context.Context, u *User) error {
-	const query = `
-	UPDATE "user"
-	SET username = $3,
-		email = $4,
-		updated_at = CURRENT_TIMESTAMP
-	WHERE id = $1 AND uuid = $2
-	RETURNING updated_at`
-	return s.db.QueryRowContext(
-		ctx, query,
-		u.ID,
-		u.UUID,
-		u.Username,
-		u.Email,
-	).Scan(&u.UpdatedAt)
+	rows, err := s.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	return &u, scanUser(rows, &u)
 }
 
 const hashCost = bcrypt.DefaultCost
@@ -182,7 +174,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_code)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING created_at, updated_at`
-	row := s.db.QueryRowContext(
+	rows, err := s.db.QueryContext(
 		ctx,
 		query,
 		u.UUID,
@@ -192,5 +184,41 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 		pq.Array(u.Roles),
 		u.TOTPCode,
 	)
-	return u, row.Scan(&u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return u, db.ScanOne(rows, &u.CreatedAt, u.UpdatedAt)
+}
+
+func (s *userStore) Update(ctx context.Context, u *User) error {
+	const query = `
+	UPDATE "user"
+	SET username = $3,
+		email = $4,
+		updated_at = CURRENT_TIMESTAMP
+	WHERE id = $1 AND uuid = $2
+	RETURNING updated_at`
+	rows, err := s.db.QueryContext(
+		ctx, query,
+		u.ID,
+		u.UUID,
+		u.Username,
+		u.Email,
+	)
+	if err != nil {
+		return err
+	}
+	return db.ScanOne(rows, &u.UpdatedAt)
+}
+
+func (s *userStore) Find(ctx context.Context, identifier interface{}) (*User, error) {
+	switch id := identifier.(type) {
+	case uuid.UUID:
+		return s.Get(ctx, id)
+	case int:
+		return s.get(ctx, selectQueryHead+`WHERE id = $1`, id)
+	default:
+		const query = selectQueryHead + `WHERE email = $1 OR username = $1`
+		return s.get(ctx, query, identifier)
+	}
 }

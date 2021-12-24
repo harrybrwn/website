@@ -185,6 +185,21 @@ module.exports = function (webpackEnv) {
           isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
+      new HtmlWebpackPlugin(
+        Object.assign(
+          {},
+          // build.page(paths, "404", site.pages["404"]),
+          {
+            filename: "pages/404.html",
+            template: path.join(paths.source, "pages/404.html"),
+            favicon: paths.favicon,
+            chunks: [],
+            templateParameters: site.pages["404"],
+            meta: build.metaTags(site.pages["404"]),
+          },
+          isProd ? { minify: htmlMinify } : { cache: true }
+        )
+      ),
 
       new CompressionPlugin({
         deleteOriginalAssets: true,

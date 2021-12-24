@@ -1,12 +1,13 @@
 package app
 
 import (
-	"database/sql"
+	"context"
 	"net"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	"harrybrown.com/pkg/db"
 )
 
 type RequestLog struct {
@@ -28,7 +29,7 @@ INSERT INTO request_log
 VALUES
 	($1, $2, $3, $4, $5, $6, $7, $8)`
 
-func RecordRequest(db *sql.DB, l *RequestLog) error {
+func RecordRequest(db db.DB, l *RequestLog) error {
 	var errmsg string
 	if l.Error != nil {
 		errmsg = l.Error.Error()
@@ -39,7 +40,8 @@ func RecordRequest(db *sql.DB, l *RequestLog) error {
 	} else {
 		referer = nil
 	}
-	_, err := db.Exec(
+	_, err := db.ExecContext(
+		context.Background(),
 		insertLogQuery,
 		l.Method,
 		l.Status,
@@ -72,7 +74,7 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 	}
 }
 
-func RequestLogRecorder(db *sql.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
+func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()

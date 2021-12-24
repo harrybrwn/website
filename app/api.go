@@ -4,23 +4,138 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"runtime"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/db"
 )
 
+const (
+	tokenKey     = "_token"
+	maxCookieAge = 2147483647
+)
+
+var logger = logrus.New()
+
+func SetLogger(l *logrus.Logger) { logger = l }
+
+func TokenHandler(conf auth.TokenConfig, store UserStore) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var (
+			err         error
+			body        Login
+			req         = c.Request()
+			ctx         = req.Context()
+			cookieQuery = req.URL.Query().Get("cookie")
+			setCookie   bool
+		)
+		switch err = c.Bind(&body); err {
+		case nil:
+			break
+		case echo.ErrUnsupportedMediaType:
+			return err
+		default:
+			err = errors.Wrap(err, "failed to bind user data")
+			return wrap(err, http.StatusInternalServerError)
+		}
+		logger := logger.WithFields(logrus.Fields{
+			"username": body.Username,
+			"email":    body.Email,
+		})
+		if len(cookieQuery) > 0 {
+			setCookie, err = strconv.ParseBool(cookieQuery)
+			if err != nil {
+				return echo.ErrBadRequest.SetInternal(err)
+			}
+		} else {
+			setCookie = false
+		}
+		logger.Info("getting token")
+		u, err := store.Login(ctx, &body)
+		if err != nil {
+			return echo.ErrNotFound.SetInternal(errors.Wrap(err, "failed to login"))
+		}
+		claims := u.NewClaims()
+		resp, err := auth.NewTokenResponse(conf, claims)
+		if err != nil {
+			return echo.ErrInternalServerError.SetInternal(
+				errors.Wrap(err, "could not create token response"))
+		}
+		c.Set(auth.ClaimsContextKey, claims)
+		if setCookie {
+			logger.Info("setting cookie")
+			c.SetCookie(&http.Cookie{
+				Name:    tokenKey,
+				Value:   resp.Token,
+				Expires: time.Unix(resp.Expires, 0),
+				Path:    "/",
+			})
+		} else {
+			logger.Info("not sending cookie")
+		}
+		return c.JSON(200, resp)
+	}
+}
+
+const hitsQuery = `select count(*) from request_log where uri = $1`
+
+func Hits(d db.DB) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var (
+			n   int
+			u   = c.QueryParam("u")
+			ctx = c.Request().Context()
+		)
+		if len(u) == 0 {
+			u = "/"
+		}
+		rows, err := d.QueryContext(ctx, hitsQuery, u)
+		if err != nil {
+			return wrap(err, 500, "could not execute query hits")
+		}
+		if err = db.ScanOne(rows, &n); err != nil {
+			return wrap(err, 500, "could not scan row")
+		}
+		return c.JSON(200, map[string]int{"count": n})
+	}
+}
+
 func HandleInfo(w http.ResponseWriter, r *http.Request) interface{} {
-	return info{
+	return Info{
 		Name: "Harry Brown",
 		Age:  math.Round(GetAge()),
 	}
 }
 
-type info struct {
+func RuntimeInfo(start time.Time) *Info {
+	return &Info{
+		Name:      "Harry Brown",
+		Age:       GetAge(),
+		Birthday:  GetBirthday(),
+		GOVersion: runtime.Version(),
+		Uptime:    time.Since(start),
+		Debug:     Debug,
+		GOOS:      runtime.GOOS,
+		GOARCH:    runtime.GOARCH,
+	}
+}
+
+type Info struct {
 	Name      string        `json:"name,omitempty"`
 	Age       float64       `json:"age,omitempty"`
 	Uptime    time.Duration `json:"uptime,omitempty"`
 	GOVersion string        `json:"goversion,omitempty"`
 	Error     string        `json:"error,omitempty"`
+	Birthday  time.Time     `json:"birthday,omitempty"`
+	Debug     bool          `json:"debug"`
+	GOOS      string        `json:"GOOS,omitempty"`
+	GOARCH    string        `json:"GOARCH,omitempty"`
 }
 
 var birthTimestamp = time.Date(
@@ -81,4 +196,22 @@ func RandomQuote() Quote {
 
 func GetQuotes() []Quote {
 	return quotes
+}
+
+func wrap(err error, status int, message ...string) error {
+	var msg string
+	if len(message) < 1 {
+		msg = http.StatusText(status)
+	} else {
+		msg = message[0]
+	}
+	if err == nil {
+		err = errors.New(msg)
+		msg = ""
+	}
+	return &echo.HTTPError{
+		Code:     status,
+		Message:  msg,
+		Internal: err,
+	}
 }

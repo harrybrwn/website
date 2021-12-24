@@ -16,11 +16,6 @@ import (
 // Name is the name of the application.
 var Name = "harrybrown.com"
 
-func init() {
-	// log.DefaultLogger = log.NewPlainLogger(os.Stdout)
-	// web.DefaultErrorHandler = http.HandlerFunc(NotFound)
-}
-
 // NewLogger creates a new logger that will intercept a handler and replace it
 // with one that has logging functionality.
 func NewLogger(h http.Handler) http.Handler {

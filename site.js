@@ -54,5 +54,9 @@ module.exports = {
         type: "website",
       },
     },
+    404: {
+      title: "404 Not Found",
+      ...common,
+    },
   },
 };

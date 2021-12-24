@@ -4,15 +4,55 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"io"
 	"os"
 	"time"
 )
+
+type DB interface {
+	io.Closer
+	QueryContext(context.Context, string, ...interface{}) (Rows, error)
+	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+}
+
+type Scanner interface {
+	Scan(...interface{}) error
+}
+
+type Rows interface {
+	Scanner
+	io.Closer
+	Next() bool
+	Err() error
+}
+
+func ScanOne(r Rows, dest ...interface{}) (err error) {
+	if !r.Next() {
+		if err = r.Err(); err != nil {
+			r.Close()
+			return err
+		}
+		r.Close()
+		return sql.ErrNoRows
+	}
+	if err = r.Scan(dest...); err != nil {
+		r.Close()
+		return err
+	}
+	return r.Close()
+}
+
+type database struct{ *sql.DB }
+
+func (db *database) QueryContext(ctx context.Context, query string, v ...interface{}) (Rows, error) {
+	return db.DB.QueryContext(ctx, query, v...)
+}
 
 type logger interface {
 	Info(...interface{})
 }
 
-func Connect(loggers ...logger) (*sql.DB, error) {
+func Connect(loggers ...logger) (DB, error) {
 	var logger logger = new(lg)
 	if len(loggers) > 0 {
 		logger = loggers[0]
@@ -30,7 +70,7 @@ func Connect(loggers ...logger) (*sql.DB, error) {
 		return nil, err
 	}
 	if err = db.Ping(); err == nil {
-		return db, nil
+		return &database{DB: db}, nil
 	}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -41,7 +81,7 @@ func Connect(loggers ...logger) (*sql.DB, error) {
 			err = db.Ping()
 			if err == nil {
 				logger.Info("database connected")
-				return db, nil
+				return &database{DB: db}, nil
 			}
 		case <-ctx.Done():
 			return nil, errors.New("database ping timeout")
