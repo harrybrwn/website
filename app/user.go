@@ -32,8 +32,8 @@ func (u *User) NewClaims() *auth.Claims {
 		ID:    u.ID,
 		UUID:  u.UUID,
 		Roles: u.Roles,
-		StandardClaims: jwt.StandardClaims{
-			Audience: auth.TokenAudience,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience: []string{auth.TokenAudience},
 			Issuer:   auth.Issuer,
 		},
 	}

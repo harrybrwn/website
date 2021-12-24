@@ -16,16 +16,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestTokenConfig(t *testing.T) {
+func TestTokenConfigs(t *testing.T) {
 	is := is.New(t)
 	for _, conf := range []TokenConfig{
 		GenEdDSATokenConfig(),
 		GenerateECDSATokenConfig(),
 	} {
 		now := time.Now().UTC()
-		tok := jwt.NewWithClaims(conf.Type(), jwt.StandardClaims{
-			ExpiresAt: now.Add(time.Hour).Unix(),
-			IssuedAt:  now.Unix(),
+		tok := jwt.NewWithClaims(conf.Type(), jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(now),
 		})
 		token, err := tok.SignedString(conf.Private())
 		is.NoErr(err)
@@ -35,8 +35,8 @@ func TestTokenConfig(t *testing.T) {
 		})
 		is.NoErr(err)
 		is.True(parsed.Valid)
-		is.Equal(now.Add(time.Hour).Unix(), claims.ExpiresAt)
-		is.Equal(now.Unix(), claims.IssuedAt)
+		is.Equal(jwt.NewNumericDate(now.Add(time.Hour)), jwt.NewNumericDate(claims.ExpiresAt.UTC()))
+		is.Equal(jwt.NewNumericDate(now), jwt.NewNumericDate(claims.IssuedAt.UTC()))
 	}
 }
 
@@ -50,18 +50,20 @@ func TestGuard(t *testing.T) {
 
 	for i, tt := range []table{
 		{
-			errs: []error{echo.ErrUnauthorized},
-			cfg:  GenEdDSATokenConfig(),
+			errs: []error{
+				echo.ErrUnauthorized,
+				// jwt.ValidationError{},
+			},
+			cfg: GenEdDSATokenConfig(),
 			claims: Claims{
 				ID:    1,
 				UUID:  uuid.New(),
 				Roles: []Role{RoleDefault},
-				StandardClaims: jwt.StandardClaims{
-					Audience: TokenAudience,
-					Issuer:   Issuer,
-					IssuedAt: time.Now().UTC().Unix(),
-					// ExpiresAt: time.Now().UTC().Add(time.Hour).Unix(),
-					ExpiresAt: time.Now().UTC().Add(-time.Second).Unix(),
+				RegisteredClaims: jwt.RegisteredClaims{
+					Audience:  []string{TokenAudience},
+					Issuer:    Issuer,
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(-time.Second)),
 				},
 			},
 		},

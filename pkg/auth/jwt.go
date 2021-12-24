@@ -42,7 +42,8 @@ type Claims struct {
 	ID    int       `json:"id"`
 	UUID  uuid.UUID `json:"uuid"`
 	Roles []Role    `json:"roles"`
-	jwt.StandardClaims
+	// jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 type TokenConfig interface {
@@ -74,10 +75,11 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			if !token.Valid {
 				return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
 			}
-			if now.After(time.Unix(claims.ExpiresAt, 0)) {
+			if now.After(claims.ExpiresAt.Time) {
+				// if now.After(time.Unix(claims.ExpiresAt, 0)) {
 				return echo.ErrUnauthorized.SetInternal(ErrTokenExpired)
 			}
-			if claims.Issuer != Issuer || claims.Audience != TokenAudience {
+			if claims.Issuer != Issuer || claims.Audience[0] != TokenAudience {
 				return &echo.HTTPError{
 					Code:     http.StatusBadRequest,
 					Message:  "bad request",
@@ -110,10 +112,10 @@ func NewTokenResponse(
 ) (*TokenResponse, error) {
 	now := time.Now()
 	key := conf.Private()
-	expires := now.Add(Expiration).Unix()
+	expires := now.Add(Expiration)
 	// These should persist past the call.
-	claims.IssuedAt = now.Unix()
-	claims.ExpiresAt = expires
+	claims.IssuedAt = jwt.NewNumericDate(now)
+	claims.ExpiresAt = jwt.NewNumericDate(expires)
 	// Copy the claims so changes while creating the
 	// refresh token are only local.
 	c := *claims
@@ -122,8 +124,8 @@ func NewTokenResponse(
 		return nil, err
 	}
 
-	c.Audience = "refresh"
-	c.ExpiresAt = now.Add(RefreshExpiration).Unix()
+	c.Audience = []string{"refresh"}
+	c.ExpiresAt = jwt.NewNumericDate(now.Add(RefreshExpiration))
 	tok := jwt.NewWithClaims(conf.Type(), &c)
 	refresh, err := tok.SignedString(key)
 	if err != nil {
@@ -141,16 +143,9 @@ func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
 	}
 	return &TokenResponse{
 		Token:     token,
-		Expires:   claims.ExpiresAt,
+		Expires:   claims.ExpiresAt.Unix(),
 		TokenType: JWTScheme,
 	}, nil
-}
-
-func mustCreateToken(t *TokenResponse, e error) *TokenResponse {
-	if e != nil {
-		panic(e)
-	}
-	return t
 }
 
 var errAuthHeaderTokenMissing = errors.New("token missing from authorization header")
