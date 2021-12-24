@@ -31,6 +31,9 @@ var (
 	remoraStaticPage []byte
 	//go:embed build/pages/harry-y-tanya.html
 	harryYTanyaStaticPage []byte
+	//TODO go:embed build/pages/tanya.html
+	tanyaStaticPage []byte
+
 	//go:embed build/pub.asc
 	gpgPubkey []byte
 	//go:embed build/robots.txt
@@ -47,8 +50,7 @@ var (
 	//go:embed templates
 	templates embed.FS
 
-	assetsGziped bool
-	logger       = logrus.New()
+	logger = logrus.New()
 )
 
 func main() {
@@ -60,7 +62,6 @@ func main() {
 	e.Logger = log.WrapLogrus(logger)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
 	flag.BoolVar(&env, "env", env, "read environment files from .env")
-	flag.BoolVar(&assetsGziped, "gzip", assetsGziped, "use this flag when all assets have been gzip ahead of time")
 	flag.Parse()
 
 	if env {
@@ -84,11 +85,9 @@ func main() {
 
 	e.GET("/", echo.WrapHandler(index()))
 	e.GET("/~harry", echo.WrapHandler(index()))
-	e.GET("/remora", remoraPage(), staticMiddleware)
+	e.GET("/~tanya", echo.WrapHandler(page(tanyaStaticPage, "build/pages/tanya.html")))
 	e.GET("/tanya/hyt", echo.WrapHandler(page(harryYTanyaStaticPage, "build/pages/harry-y-tanya.html")), guard)
-	e.GET("/~tanya", func(c echo.Context) error {
-		return c.HTML(http.StatusNotImplemented, "<p>This is not finished yet</p>")
-	}, guard)
+	e.GET("/remora", remoraPage(), staticMiddleware)
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
@@ -195,6 +194,8 @@ func TokenHandler(conf auth.TokenConfig, store app.UserStore) echo.HandlerFunc {
 			if err != nil {
 				return &echo.HTTPError{Code: http.StatusBadRequest}
 			}
+		} else {
+			setCookie = false
 		}
 		logger.WithFields(logrus.Fields{
 			"username": body.Username,
@@ -362,17 +363,11 @@ func sitemapGZHandler(rw http.ResponseWriter, r *http.Request) {
 func handleStatic() http.Handler {
 	if app.Debug {
 		h := http.StripPrefix("/static/", http.FileServer(http.Dir("build/static")))
-		if assetsGziped {
-			return wrapAsGzip(h)
-		}
 		return h
 	}
 	fs, err := fs.Sub(static, "build")
 	if err != nil {
 		fs = static
-	}
-	if assetsGziped {
-		return wrapAsGzip(staticCache(http.FileServer(http.FS(fs))))
 	}
 	return staticCache(http.FileServer(http.FS(fs)))
 }

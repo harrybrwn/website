@@ -16,6 +16,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	Issuer        = "harrybrwn.com"
+	TokenAudience = "user"
+)
+
 var (
 	ErrTokenExpired = jwt.NewValidationError("token expired", jwt.ValidationErrorExpired)
 )
@@ -72,6 +77,7 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 					Internal: errors.Wrap(err, "could not parse token with claims"),
 				}
 			}
+
 			if !token.Valid {
 				return errors.New("invalid token")
 			}
@@ -82,6 +88,13 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 					Internal: ErrTokenExpired,
 				}
 			}
+			if claims.Issuer != Issuer || claims.Audience != TokenAudience {
+				return &echo.HTTPError{
+					Code:     http.StatusBadRequest,
+					Message:  "bad request",
+					Internal: errors.New("jwt token issuer or audience is missmatched"),
+				}
+			}
 			c.Set(ClaimsContextKey, &claims)
 			return next(c)
 		}
@@ -90,7 +103,7 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 
 var (
 	SigningMethod     = jwt.SigningMethodES256
-	Expiration        = time.Hour
+	Expiration        = time.Hour * 2
 	RefreshExpiration = Expiration * 12
 	JWTScheme         = "Bearer"
 )
@@ -111,14 +124,16 @@ func NewTokenResponse(
 	expires := now.Add(Expiration).Unix()
 	claims.IssuedAt = now.Unix()
 	claims.ExpiresAt = expires
-	tok := jwt.NewWithClaims(conf.Type(), claims)
+	c := *claims
+	tok := jwt.NewWithClaims(conf.Type(), &c)
 	token, err := tok.SignedString(key)
 	if err != nil {
 		return nil, err
 	}
-	claims.Audience = "refresh"
-	claims.ExpiresAt = now.Add(RefreshExpiration).Unix()
-	tok = jwt.NewWithClaims(conf.Type(), claims)
+
+	c.Audience = "refresh"
+	c.ExpiresAt = now.Add(RefreshExpiration).Unix()
+	tok = jwt.NewWithClaims(conf.Type(), &c)
 	refresh, err := tok.SignedString(key)
 	if err != nil {
 		return nil, err

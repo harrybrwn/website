@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -30,6 +31,10 @@ func (u *User) NewClaims() *auth.Claims {
 		ID:    u.ID,
 		UUID:  u.UUID,
 		Roles: u.Roles,
+		StandardClaims: jwt.StandardClaims{
+			Audience: auth.TokenAudience,
+			Issuer:   auth.Issuer,
+		},
 	}
 }
 
