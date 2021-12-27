@@ -211,9 +211,14 @@ const anchor = (href: string, text: string): HTMLAnchorElement => {
 };
 
 const privateLinks = (): HTMLLIElement[] => {
-  let els = [document.createElement("li"), document.createElement("li")];
+  let els = [
+    document.createElement("li"),
+    document.createElement("li"),
+    document.createElement("li"),
+  ];
   els[0].appendChild(anchor("/tanya/hyt", "tanya y harry"));
   els[1].appendChild(anchor("/old", "old site"));
+  els[2].appendChild(anchor("./admin", "admin"));
   return els;
 };
 

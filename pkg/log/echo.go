@@ -21,7 +21,7 @@ func (l *logrusLogger) Level() echolog.Lvl {
 }
 
 func (l *logrusLogger) SetLevel(lvl echolog.Lvl) {
-	l.Logger.SetLevel(logrus.Level(lvl))
+	l.Logger.SetLevel(echoLvlToLogrusLevel(lvl))
 }
 
 func (l *logrusLogger) Output() io.Writer {
@@ -39,3 +39,20 @@ func (l *logrusLogger) Warnj(j echolog.JSON)  { l.WithFields(logrus.Fields(j)).W
 func (l *logrusLogger) Errorj(j echolog.JSON) { l.WithFields(logrus.Fields(j)).Error("") }
 func (l *logrusLogger) Fatalj(j echolog.JSON) { l.WithFields(logrus.Fields(j)).Fatal("") }
 func (l *logrusLogger) Panicj(j echolog.JSON) { l.WithFields(logrus.Fields(j)).Panic("") }
+
+func echoLvlToLogrusLevel(lvl echolog.Lvl) logrus.Level {
+	switch lvl {
+	case echolog.DEBUG:
+		return logrus.DebugLevel
+	case echolog.INFO:
+		return logrus.InfoLevel
+	case echolog.WARN:
+		return logrus.WarnLevel
+	case echolog.ERROR:
+		return logrus.ErrorLevel
+	case echolog.OFF:
+		return logrus.FatalLevel
+	default:
+		return logrus.TraceLevel
+	}
+}

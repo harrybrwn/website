@@ -34,6 +34,8 @@ var (
 	harryYTanyaStaticPage []byte
 	//go:embed build/pages/404.html
 	staticPage404 []byte
+	//go:embed build/pages/admin.html
+	adminPageStatic []byte
 	//TODO go:embed build/pages/tanya.html
 	tanyaStaticPage []byte
 
@@ -68,39 +70,43 @@ func main() {
 	e.Logger = log.WrapLogrus(logger)
 	e.Debug = app.Debug
 	e.DisableHTTP2 = false
+	e.HideBanner = true
 
 	if app.Debug {
 		godotenv.Load()
 		auth.Expiration = time.Hour * 24
 		auth.RefreshExpiration = auth.Expiration * 2
+		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	// echo.NotFoundHandler = echo.NotFoundHandler
+	echo.NotFoundHandler = func(c echo.Context) error {
+		if strings.HasPrefix(c.Request().RequestURI, "/api") {
+			return echo.ErrNotFound
+		}
+		return c.HTMLBlob(404, staticPage404)
+	}
 
-	e.HideBanner = true
 	db, err := db.Connect(logger)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer db.Close()
 
 	jwtConf := NewTokenConfig()
 	guard := auth.Guard(jwtConf)
-	e.Use(app.RequestLogRecorder(db, logger))
+	e.Pre(app.RequestLogRecorder(db, logger))
 
-	// e.GET("/", echo.WrapHandler(index()))
 	e.GET("/", page(harryStaticPage, "build/index.html"))
 	e.GET("/~harry", page(harryStaticPage, "build/index.html"))
 	//e.GET("/~tanya", page(tanyaStaticPage, "build/pages/tanya.html"))
 	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, "build/pages/harry-y-tanya.html"), guard)
 	e.GET("/remora", page(remoraStaticPage, "build/pages/remora.html"))
-	e.GET("/notfound", page(staticPage404, "build/pages/404.html"))
-
+	e.GET("/admin", page(adminPageStatic, "build/pages/admin.html"), guard, auth.AdminOnly())
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
-	e.GET("/pub.asc", echo.WrapHandler(http.HandlerFunc(keys)))
-	e.GET("/robots.txt", echo.WrapHandler(http.HandlerFunc(robotsHandler)))
-	e.GET("/sitemap.xml", echo.WrapHandler(http.HandlerFunc(sitemapHandler)))
-	e.GET("/sitemap.xml.gz", echo.WrapHandler(http.HandlerFunc(sitemapGZHandler)))
+	e.GET("/pub.asc", WrapHandler(keys))
+	e.GET("/robots.txt", WrapHandler(robotsHandler))
+	e.GET("/sitemap.xml", WrapHandler(sitemapHandler))
+	e.GET("/sitemap.xml.gz", WrapHandler(sitemapGZHandler))
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 	e.GET("/secret", func(c echo.Context) error {
@@ -109,23 +115,20 @@ func main() {
 
 	api := e.Group("/api")
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
-	api.GET("/quotes", func(c echo.Context) error {
-		return c.JSON(200, app.GetQuotes())
-	})
-	api.GET("/quote", func(c echo.Context) error {
-		return c.JSON(200, app.RandomQuote())
-	})
+	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
+	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
 	api.GET("/hits", app.Hits(db))
 	api.POST("/token", app.TokenHandler(jwtConf, app.NewUserStore(db)))
 	api.GET("/runtime", func(c echo.Context) error {
 		return c.JSON(200, app.RuntimeInfo(startup))
 	}, guard, auth.AdminOnly())
-	api.Any("/ping", echo.WrapHandler(http.HandlerFunc(ping)))
+	api.Any("/ping", WrapHandler(ping))
+	api.GET("/logs", app.LogListHandler(db))
 
 	logger.WithField("time", startup).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 }
 
@@ -279,4 +282,8 @@ func staticCache(h http.Handler) http.Handler {
 		header.Set("Cache-Control", "public, max-age=31919000")
 		h.ServeHTTP(rw, r)
 	})
+}
+
+func WrapHandler(h http.HandlerFunc) echo.HandlerFunc {
+	return echo.WrapHandler(h)
 }

@@ -4,22 +4,27 @@
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><%= title %></title>
+	<title>Admin Panel</title>
 	<style>
-		body {
-			font-family: 'Courier New', Courier, monospace;
-			margin-left: auto;
-			margin-right: auto;
-			width: 50%;
+		tr {
+			border: 1px solid #ccc;
+		}
+		tr:nth-of-type(odd) {
+			background: #eee;
+		}
+		th {
+			background-color: #3498db;
+			color: white;
+			font-weight: bold;
 		}
 	</style>
 </head>
 <body>
 	<header>
-		<h1>Not Found</h1>
-		<p>Unfortunately, I can't find what you are looking for.</p>
+		<h1>Admin Panel</h1>
 	</header>
 	<main>
+		<section class="logs" id="logs"></section>
 	</main>
 </body>
 </html>

@@ -62,12 +62,16 @@ func TestHits(t *testing.T) {
 	}
 }
 
+var (
+	intptr      *int
+	strptr      *string
+	bytesptr    *[]byte
+	durationPtr *time.Duration
+)
+
 func TestTokenHandler(t *testing.T) {
 	defer silent()()
 	var (
-		intptr     *int
-		strptr     *string
-		bytesptr   *[]byte
 		ctx        = context.Background()
 		loginQuery = func(db *mockdb.MockDB) *gomock.Call {
 			return db.EXPECT().QueryContext(
@@ -207,16 +211,10 @@ func TestTokenHandler(t *testing.T) {
 			tt.prep(db, rows)
 			c := e.NewContext(req, rec)
 			err := handler(c)
+			checkErrs(t, tt.errs, err)
 
 			if len(tt.errs) > 0 {
-				for _, er := range tt.errs {
-					if !errors.Is(err, er) {
-						t.Errorf("expected \"%v\", got \"%v\"", er, err)
-					}
-				}
 				return
-			} else {
-				is.NoErr(err)
 			}
 
 			resp := rec.Result()
@@ -228,11 +226,89 @@ func TestTokenHandler(t *testing.T) {
 			is.Equal(1, len(cookies))
 			is.Equal("/", cookies[0].Path)
 			is.Equal(cookies[0].Value, tok.Token)
-			is.Equal(cookies[0].Expires.Unix(), tok.Expires)
+			is.Equal(cookies[0].Expires, tok.Expires.Time.UTC())
 			claims := auth.GetClaims(c)
 			is.True(claims != nil)
 		})
 	}
+}
+
+func TestLogList(t *testing.T) {
+	var (
+		ctx = context.Background()
+	)
+	type table struct {
+		errs  []error
+		query url.Values
+		prep  func(db *mockdb.MockDB, rows *mockdb.MockRows)
+	}
+	expectScan := func(rows *mockdb.MockRows) *gomock.Call {
+		return rows.EXPECT().Scan(
+			gomock.AssignableToTypeOf(intptr),
+			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(intptr),
+			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(durationPtr),
+			gomock.Any(),
+			gomock.AssignableToTypeOf(&time.Time{}),
+		)
+	}
+
+	for i, tt := range []table{
+		{
+			errs:  []error{},
+			query: url.Values{"limit": {"12"}, "offset": {"0"}},
+			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
+				db.EXPECT().QueryContext(ctx, getLogsQuery, []interface{}{0, 12}).Return(rows, nil)
+				rows.EXPECT().Next().Times(1).Return(true)
+				expectScan(rows).Do(func(v ...interface{}) {}).Return(nil)
+				rows.EXPECT().Next().Times(1).Return(false)
+				rows.EXPECT().Close().Return(nil)
+			},
+		},
+	} {
+		if tt.prep == nil {
+			tt.prep = func(*mockdb.MockDB, *mockdb.MockRows) {}
+		}
+		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			db := mockdb.NewMockDB(ctrl)
+			rows := mockdb.NewMockRows(ctrl)
+			e := echo.New()
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/", nil).WithContext(ctx)
+			req.URL.RawQuery = tt.query.Encode()
+			handler := LogListHandler(db)
+			c := e.NewContext(req, rec)
+			tt.prep(db, rows)
+			err := handler(c)
+			checkErrs(t, tt.errs, err)
+			if len(tt.errs) > 0 {
+				return
+			}
+		})
+	}
+}
+
+func checkErrs(t *testing.T, expected []error, err error) (stop bool) {
+	t.Helper()
+	if len(expected) > 0 {
+		for _, er := range expected {
+			if !errors.Is(err, er) {
+				t.Errorf("expected \"%v\", got \"%v\"", er, err)
+			}
+		}
+		return true
+	} else {
+		if err != nil {
+			t.Error(err)
+		}
+	}
+	return false
 }
 
 func silent() func() {

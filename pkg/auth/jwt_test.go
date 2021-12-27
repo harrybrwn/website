@@ -2,9 +2,11 @@ package auth
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -45,16 +47,12 @@ func TestGuard(t *testing.T) {
 		errs   []error
 		cfg    TokenConfig
 		claims Claims
-		prep   func(c echo.Context)
 	}
 
 	for i, tt := range []table{
 		{
-			errs: []error{
-				echo.ErrUnauthorized,
-				// jwt.ValidationError{},
-			},
-			cfg: GenEdDSATokenConfig(),
+			errs: []error{echo.ErrUnauthorized},
+			cfg:  GenEdDSATokenConfig(),
 			claims: Claims{
 				ID:    1,
 				UUID:  uuid.New(),
@@ -67,10 +65,75 @@ func TestGuard(t *testing.T) {
 				},
 			},
 		},
+		{
+			errs: []error{ErrNoAudience},
+			cfg:  GenerateECDSATokenConfig(),
+			claims: Claims{
+				ID: 90,
+				RegisteredClaims: jwt.RegisteredClaims{
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+					Issuer:    Issuer,
+					Audience:  []string{}, // invalid audience
+				},
+			},
+		},
+		{
+			errs: []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
+			cfg:  GenEdDSATokenConfig(),
+			claims: Claims{
+				ID: 12,
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    "wrong issuer",
+					Audience:  []string{TokenAudience},
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute)),
+				},
+			},
+		},
+		{
+			errs: []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
+			cfg:  GenEdDSATokenConfig(),
+			claims: Claims{
+				ID: 12,
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    Issuer,
+					Audience:  []string{"wrong audience"},
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute)),
+				},
+			},
+		},
+		{
+			errs: []error{},
+			cfg:  GenEdDSATokenConfig(),
+			claims: Claims{
+				ID:    3,
+				UUID:  uuid.New(),
+				Roles: []Role{RoleDefault},
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    Issuer,
+					Audience:  []string{TokenAudience},
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute)),
+				},
+			},
+		},
+		{
+			errs: []error{errFailingTokenConfig, echo.ErrUnauthorized},
+			cfg:  &failingTokenConfig{GenEdDSATokenConfig()},
+			claims: Claims{
+				ID:    3,
+				UUID:  uuid.New(),
+				Roles: []Role{RoleDefault},
+				RegisteredClaims: jwt.RegisteredClaims{
+					Issuer:    Issuer,
+					Audience:  []string{TokenAudience},
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute)),
+				},
+			},
+		},
 	} {
-		if tt.prep == nil {
-			tt.prep = func(echo.Context) {}
-		}
 		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
 			is := is.New(t)
 			e := echo.New()
@@ -81,7 +144,6 @@ func TestGuard(t *testing.T) {
 			req.Header.Set("Authorization", fmt.Sprintf("%s %s", tok.TokenType, tok.Token))
 
 			c := e.NewContext(req, rec)
-			tt.prep(c)
 			fn := func(c echo.Context) error {
 				claims := GetClaims(c)
 				if claims == nil {
@@ -94,6 +156,7 @@ func TestGuard(t *testing.T) {
 				is.Equal(claims.Roles, tt.claims.Roles)
 				return nil
 			}
+			is.True(GetClaims(c) == nil)
 			err = Guard(tt.cfg)(fn)(c)
 			if len(tt.errs) == 0 {
 				is.NoErr(err)
@@ -104,8 +167,92 @@ func TestGuard(t *testing.T) {
 					}
 				}
 			}
+			resp, err := NewTokenResponse(tt.cfg, &tt.claims)
+			is.NoErr(err)
+			is.True(resp.Expires.After(time.Now()))
+			is.True(resp.RefreshToken != "")
 		})
 	}
+}
+
+func TestGetBearer_Err(t *testing.T) {
+	for _, header := range []http.Header{
+		{},
+		{"Authorization": {"what?"}},
+	} {
+		r := http.Request{Header: header}
+		_, err := GetBearerToken(&r)
+		if err != errAuthHeaderTokenMissing {
+			t.Fatalf("expected error %v, got %v", errAuthHeaderTokenMissing, err)
+		}
+	}
+}
+
+func TestAdminOnly(t *testing.T) {
+	type table struct {
+		claims   *Claims
+		err      error
+		executed bool
+	}
+
+	is := is.New(t)
+	for _, tt := range []table{
+		{
+			err:      echo.ErrForbidden,
+			claims:   nil,
+			executed: false,
+		},
+		{
+			err:      echo.ErrForbidden,
+			claims:   &Claims{Roles: []Role{RoleDefault}},
+			executed: false,
+		},
+		{
+			err:      nil,
+			claims:   &Claims{Roles: []Role{RoleDefault, RoleAdmin}},
+			executed: true,
+		},
+	} {
+		e := echo.New()
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/", nil)
+		c := e.NewContext(req, rec)
+		c.Set(ClaimsContextKey, tt.claims)
+		executed := false
+		next := func(c echo.Context) error {
+			executed = true
+			return nil
+		}
+		err := AdminOnly()(next)(c)
+		if !errors.Is(err, tt.err) {
+			t.Errorf("expected \"%v\", got \"%v\"", tt.err, err)
+		}
+		is.Equal(executed, tt.executed)
+	}
+}
+
+func TestRole_Scan(t *testing.T) {
+	var (
+		is  = is.New(t)
+		r   Role
+		v   driver.Value
+		err error
+	)
+	is.NoErr(r.Scan("admin"))
+	is.Equal(r, Role("admin"))
+	v, err = r.Value()
+	is.NoErr(err)
+	is.Equal(v, string(r))
+	is.Equal(v, "admin")
+
+	is.NoErr(r.Scan([]byte("hello")))
+	is.Equal(r, Role("hello"))
+	v, err = r.Value()
+	is.NoErr(err)
+	is.Equal(v, string(r))
+	is.Equal(v, "hello")
+
+	is.True(r.Scan(12) != nil)
 }
 
 func TestLogin(t *testing.T) {
@@ -130,4 +277,14 @@ func asBody(v interface{}) io.Reader {
 	var b bytes.Buffer
 	json.NewEncoder(&b).Encode(v)
 	return &b
+}
+
+type failingTokenConfig struct {
+	TokenConfig
+}
+
+var errFailingTokenConfig = errors.New("this token config always fails")
+
+func (ftc *failingTokenConfig) GetToken(r *http.Request) (string, error) {
+	return "", errFailingTokenConfig
 }

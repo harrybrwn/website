@@ -15,9 +15,8 @@ const paths = {
   public: "./public",
   source: "./frontend",
   build: "./build",
+  favicon: "./public/favicon.ico",
 };
-
-paths.favicon = path.join(paths.public, "favicon.ico");
 
 const sitemap = [
   {
@@ -64,10 +63,16 @@ module.exports = function (webpackEnv) {
       harry_y_tanya: {
         import: path.resolve(__dirname, paths.source, "pages/harry-y-tanya.ts"),
       },
+      admin: {
+        import: path.resolve(__dirname, paths.source, "pages/admin.ts"),
+      },
     },
 
     resolve: {
       extensions: [".tsx", ".ts", ".js"],
+      alias: {
+        "@harrybrwn.com": "./frontend",
+      },
     },
 
     output: {
@@ -197,6 +202,13 @@ module.exports = function (webpackEnv) {
             templateParameters: site.pages["404"],
             meta: build.metaTags(site.pages["404"]),
           },
+          isProd ? { minify: htmlMinify } : { cache: true }
+        )
+      ),
+      new HtmlWebpackPlugin(
+        Object.assign(
+          {},
+          build.page(paths, "admin", site.pages["admin"]),
           isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),

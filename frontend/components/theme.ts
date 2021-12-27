@@ -40,7 +40,9 @@ export class ThemeManager {
         break;
       case Theme.Light:
         document.body.classList.toggle("light-theme");
-        this.themeToggle.checked = true;
+        if (this.themeToggle != null && "checked" in this.themeToggle) {
+          this.themeToggle.checked = true;
+        }
         break;
     }
   }

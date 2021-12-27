@@ -22,7 +22,12 @@ const (
 )
 
 var (
-	ErrTokenExpired = jwt.NewValidationError("token expired", jwt.ValidationErrorExpired)
+	ErrNoAudience     = errors.New("no token audience")
+	ErrTokenExpired   = jwt.NewValidationError("token expired", jwt.ValidationErrorExpired)
+	ErrBadIssuerOrAud = jwt.NewValidationError(
+		"invalid issuer or audience",
+		jwt.ValidationErrorAudience|jwt.ValidationErrorIssuer,
+	)
 )
 
 type getter interface {
@@ -42,7 +47,6 @@ type Claims struct {
 	ID    int       `json:"id"`
 	UUID  uuid.UUID `json:"uuid"`
 	Roles []Role    `json:"roles"`
-	// jwt.StandardClaims
 	jwt.RegisteredClaims
 }
 
@@ -60,11 +64,12 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			now := time.Now().UTC()
 			req := c.Request()
 			auth, err := conf.GetToken(req)
 			if err != nil {
-				return wrap(http.StatusUnauthorized, err, "could not get token from request")
+				return echo.ErrUnauthorized.SetInternal(
+					errors.Wrap(err, "could not get token from request"),
+				)
 			}
 			var claims Claims
 			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
@@ -75,16 +80,11 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			if !token.Valid {
 				return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
 			}
-			if now.After(claims.ExpiresAt.Time) {
-				// if now.After(time.Unix(claims.ExpiresAt, 0)) {
-				return echo.ErrUnauthorized.SetInternal(ErrTokenExpired)
+			if len(claims.Audience) == 0 {
+				return echo.ErrBadRequest.SetInternal(ErrNoAudience)
 			}
 			if claims.Issuer != Issuer || claims.Audience[0] != TokenAudience {
-				return &echo.HTTPError{
-					Code:     http.StatusBadRequest,
-					Message:  "bad request",
-					Internal: errors.New("jwt token issuer or audience is missmatched"),
-				}
+				return echo.ErrBadRequest.SetInternal(ErrBadIssuerOrAud)
 			}
 			c.Set(ClaimsContextKey, &claims)
 			return next(c)
@@ -100,10 +100,10 @@ var (
 )
 
 type TokenResponse struct {
-	Token        string `json:"token"`
-	Expires      int64  `json:"expires"`
-	RefreshToken string `json:"refresh_token"`
-	TokenType    string `json:"token_type"`
+	Token        string           `json:"token"`
+	Expires      *jwt.NumericDate `json:"expires"`
+	RefreshToken string           `json:"refresh_token"`
+	TokenType    string           `json:"token_type"`
 }
 
 func NewTokenResponse(
@@ -143,7 +143,7 @@ func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
 	}
 	return &TokenResponse{
 		Token:     token,
-		Expires:   claims.ExpiresAt.Unix(),
+		Expires:   claims.ExpiresAt,
 		TokenType: JWTScheme,
 	}, nil
 }
@@ -238,12 +238,4 @@ func (c *tokenConfig) Public() crypto.PublicKey {
 
 func (c *tokenConfig) Type() jwt.SigningMethod {
 	return jwt.SigningMethodES256
-}
-
-func wrap(status int, err error, msg string) *echo.HTTPError {
-	return &echo.HTTPError{
-		Code:     status,
-		Message:  http.StatusText(status),
-		Internal: errors.Wrap(err, msg),
-	}
 }

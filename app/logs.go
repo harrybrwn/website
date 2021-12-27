@@ -2,25 +2,32 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"net"
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/db"
 )
 
 type RequestLog struct {
-	ID          int
-	Method      string
-	Status      int
-	IP          string
-	URI         string
-	Referer     string
-	UserAgent   string
-	Latency     time.Duration
-	Error       error
-	RequestedAt time.Time
+	ID          int           `json:"id"`
+	Method      string        `json:"method"`
+	Status      int           `json:"status"`
+	IP          string        `json:"ip"`
+	URI         string        `json:"uri"`
+	Referer     string        `json:"referer"`
+	UserAgent   string        `json:"user_agent"`
+	Latency     time.Duration `json:"latency"`
+	Error       error         `json:"error"`
+	RequestedAt time.Time     `json:"requested_at"`
+}
+
+type LogManager struct {
+	db     db.DB
+	logger logrus.FieldLogger
 }
 
 const insertLogQuery = `
@@ -29,7 +36,7 @@ INSERT INTO request_log
 VALUES
 	($1, $2, $3, $4, $5, $6, $7, $8)`
 
-func RecordRequest(db db.DB, l *RequestLog) error {
+func (lm *LogManager) Write(ctx context.Context, l *RequestLog) error {
 	var errmsg string
 	if l.Error != nil {
 		errmsg = l.Error.Error()
@@ -40,8 +47,8 @@ func RecordRequest(db db.DB, l *RequestLog) error {
 	} else {
 		referer = nil
 	}
-	_, err := db.ExecContext(
-		context.Background(),
+	_, err := lm.db.ExecContext(
+		ctx,
 		insertLogQuery,
 		l.Method,
 		l.Status,
@@ -53,6 +60,62 @@ func RecordRequest(db db.DB, l *RequestLog) error {
 		errmsg,
 	)
 	return err
+}
+
+const getLogsQuery = `SELECT
+		id,
+		method,
+		status,
+		ip,
+		uri,
+		referer,
+		user_agent,
+		latency,
+		error,
+		requested_at
+	FROM request_log
+	WHERE id >= $1
+	ORDER BY requested_at `
+
+func (lm *LogManager) Get(ctx context.Context, limit, startID int, rev bool) ([]RequestLog, error) {
+	var (
+		res   = make([]RequestLog, 0, limit)
+		query = getLogsQuery
+	)
+	if rev {
+		query += "DESC"
+	}
+	rows, err := lm.db.QueryContext(ctx, query+" LIMIT $2", startID, limit)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var (
+			l         RequestLog
+			referrer  sql.NullString
+			errString string
+		)
+		err = rows.Scan(
+			&l.ID,
+			&l.Method,
+			&l.Status,
+			&l.IP,
+			&l.URI,
+			&referrer,
+			&l.UserAgent,
+			&l.Latency,
+			&errString,
+			&l.RequestedAt,
+		)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		l.Referer = referrer.String
+		l.Error = errors.New(errString)
+		res = append(res, l)
+	}
+	return res, rows.Close()
 }
 
 func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
@@ -75,11 +138,13 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 }
 
 func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
+	logs := LogManager{db: db, logger: logger}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
 			req := c.Request()
 			res := c.Response()
+			ctx := req.Context()
 			ip := req.Header.Get("CF-Connecting-IP")
 			if ip == "" {
 				ip, _, _ = net.SplitHostPort(req.RemoteAddr)
@@ -99,7 +164,7 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 				Error:     err,
 			}
 			LogRequest(logger, &l)
-			e := RecordRequest(db, &l)
+			e := logs.Write(ctx, &l)
 			if e != nil {
 				logger.WithError(e).Error("could not record request")
 			}

@@ -73,7 +73,7 @@ func TokenHandler(conf auth.TokenConfig, store UserStore) echo.HandlerFunc {
 			c.SetCookie(&http.Cookie{
 				Name:    tokenKey,
 				Value:   resp.Token,
-				Expires: time.Unix(resp.Expires, 0),
+				Expires: claims.ExpiresAt.Time,
 				Path:    "/",
 			})
 		} else {
@@ -103,6 +103,30 @@ func Hits(d db.DB) echo.HandlerFunc {
 			return wrap(err, 500, "could not scan row")
 		}
 		return c.JSON(200, map[string]int{"count": n})
+	}
+}
+
+func LogListHandler(db db.DB) echo.HandlerFunc {
+	logs := LogManager{db: db, logger: logger}
+	type listquery struct {
+		Limit  int  `query:"limit"`
+		Offset int  `query:"offset"`
+		Rev    bool `query:"rev"`
+	}
+	return func(c echo.Context) error {
+		var q listquery
+		err := c.Bind(&q)
+		if err != nil {
+			return err
+		}
+		if q.Limit == 0 {
+			q.Limit = 20
+		}
+		logs, err := logs.Get(c.Request().Context(), q.Limit, q.Offset, q.Rev)
+		if err != nil {
+			return err
+		}
+		return c.JSON(200, logs)
 	}
 }
 

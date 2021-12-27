@@ -54,6 +54,10 @@ module.exports = {
         type: "website",
       },
     },
+    admin: {
+      title: "Admin Panel",
+      ...common,
+    },
     404: {
       title: "404 Not Found",
       ...common,
