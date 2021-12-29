@@ -2,6 +2,7 @@
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
+const fs = require("fs");
 
 class InjectImagesPlugin {
   apply(compiler) {
@@ -135,18 +136,29 @@ class Builder {
 
   page(page, opts) {
     if (opts === undefined) opts = {};
+
+    if (!opts.pageDir) {
+      opts.pageDir = "pages";
+    }
+
     let chunks = [page];
     if (opts.chunks) {
       chunks = opts.chunks;
     } else if (opts.noChunks) {
       chunks = [];
     }
+    // Filter out the chunk if we cant find the typescript file
+    chunks = chunks.filter((val) => {
+      val = path.join("frontend", opts.pageDir, val + ".ts");
+      return fs.existsSync(val);
+    });
+
     return new HtmlWebpackPlugin(
       Object.assign(
         {
-          filename: `pages/${page}.html`,
+          filename: path.join(opts.pageDir, `${page}.html`),
           favicon: this.paths.favicon,
-          template: path.join(this.paths.source, `pages/${page}.html`),
+          template: path.join(this.paths.source, opts.pageDir, `${page}.html`),
           templateParameters: this.site.pages[page],
           chunks: chunks,
           meta: metaTags(this.site.pages[page]),
@@ -156,24 +168,6 @@ class Builder {
     );
   }
 }
-
-const page = (paths, page, site, options) => {
-  if (options === undefined) {
-    options = {};
-  }
-  let chunks = [];
-  if (!options.noChunks) {
-    chunks.push(page.replace("-", "_"));
-  }
-  return {
-    filename: `pages/${page}.html`,
-    favicon: paths.favicon,
-    template: path.join(paths.source, `pages/${page}.html`),
-    templateParameters: site,
-    chunks: chunks,
-    meta: metaTags(site),
-  };
-};
 
 module.exports = {
   Builder,

@@ -36,6 +36,8 @@ var (
 	notFoundStaticPage []byte
 	//go:embed build/pages/admin.html
 	adminPageStatic []byte
+	//go:embed build/pages/games.html
+	gamesStaticPage []byte
 	//TODO go:embed build/pages/tanya.html
 	//tanyaStaticPage []byte
 
@@ -102,14 +104,16 @@ func main() {
 	//e.GET("/~tanya", page(tanyaStaticPage, "build/pages/tanya.html"))
 	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, "build/pages/harry_y_tanya.html"), guard)
 	e.GET("/remora", page(remoraStaticPage, "build/pages/remora.html"))
+	e.GET("/games", page(gamesStaticPage, "build/pages/games.html"), guard)
 	e.GET("/admin", page(adminPageStatic, "build/pages/admin.html"), guard, auth.AdminOnly())
+	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
 	e.GET("/robots.txt", WrapHandler(robotsHandler))
 	e.GET("/sitemap.xml", WrapHandler(sitemapHandler))
 	e.GET("/sitemap.xml.gz", WrapHandler(sitemapGZHandler))
 	e.GET("/favicon.ico", faviconHandler())
-	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 	e.GET("/secret", func(c echo.Context) error {
 		return c.HTML(200, "<h1>This is a secret</h1>")
 	}, guard, auth.AdminOnly())

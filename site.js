@@ -34,6 +34,14 @@ module.exports = {
       title: "Blog | Harry Brown",
       ...common,
     },
+    admin: {
+      title: "Admin Panel",
+      ...common,
+    },
+    games: {
+      title: "Games",
+      ...common,
+    },
     harry_y_tanya: {
       title: "Tanya y Harry",
       ...common,
@@ -53,10 +61,6 @@ module.exports = {
       og: {
         type: "website",
       },
-    },
-    admin: {
-      title: "Admin Panel",
-      ...common,
     },
     404: {
       title: "404 Not Found",

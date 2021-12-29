@@ -1,5 +1,4 @@
 const CopyWebpackPlugin = require("copy-webpack-plugin");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
@@ -59,7 +58,17 @@ const htmlMinify = {
 module.exports = function (webpackEnv) {
   const isDev = webpackEnv.dev || false;
   const isProd = webpackEnv.prod || false;
-  const builder = new build.Builder({ paths, site, isProd, htmlMinify });
+  const builder = new build.Builder({
+    paths,
+    site,
+    isProd,
+    htmlMinify,
+  });
+
+  for (const key in site.pages) {
+    console.log(key);
+    // TODO generate parts of the config with this
+  }
 
   return {
     entry: {
@@ -67,13 +76,16 @@ module.exports = function (webpackEnv) {
         import: path.resolve(__dirname, paths.source, "main.ts"),
       },
       remora: {
-        import: path.resolve(__dirname, paths.source, "remora.ts"),
+        import: path.resolve(__dirname, paths.source, "pages/remora.ts"),
       },
       harry_y_tanya: {
         import: path.resolve(__dirname, paths.source, "pages/harry_y_tanya.ts"),
       },
       admin: {
         import: path.resolve(__dirname, paths.source, "pages/admin.ts"),
+      },
+      games: {
+        import: path.resolve(__dirname, paths.source, "pages/games.ts"),
       },
     },
 
@@ -100,7 +112,7 @@ module.exports = function (webpackEnv) {
       concatenateModules: isProd,
       providedExports: true,
       usedExports: "global",
-      minimize: true,
+      minimize: isProd,
       minimizer: [
         new TerserPlugin({
           terserOptions: {
@@ -155,34 +167,18 @@ module.exports = function (webpackEnv) {
     },
 
     plugins: [
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          {
-            template: path.join(paths.source, "index.html"),
-            templateParameters: site.pages["index"],
-            meta: build.metaTags(site.pages["index"]),
-            chunks: ["main"],
-            favicon: paths.favicon,
-          },
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
+      builder.page("index", { pageDir: ".", chunks: ["main"] }),
       builder.page("remora"),
       builder.page("admin"),
       builder.page("404", { noChunks: true }),
       builder.page("harry_y_tanya"),
+      builder.page("games"),
 
       new CompressionPlugin({
         deleteOriginalAssets: true,
         filename: "[path][base]",
         test: isProd ? /index\.html/ : /^$/,
-        exclude: [
-          /sitemap\.xml$/,
-          /robots\.txt$/,
-          /favicon\.ico/,
-          /.*\.asc$/, // all public keys
-        ],
+        exclude: [/sitemap\.xml$/, /robots\.txt$/, /favicon\.ico/, /.*\.asc$/],
       }),
       new CopyWebpackPlugin({
         patterns: [
