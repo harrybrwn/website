@@ -187,7 +187,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if err != nil {
 		return nil, err
 	}
-	return u, db.ScanOne(rows, &u.CreatedAt, u.UpdatedAt)
+	return u, db.ScanOne(rows, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (s *userStore) Update(ctx context.Context, u *User) error {

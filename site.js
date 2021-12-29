@@ -34,7 +34,7 @@ module.exports = {
       title: "Blog | Harry Brown",
       ...common,
     },
-    harrytanya: {
+    harry_y_tanya: {
       title: "Tanya y Harry",
       ...common,
     },

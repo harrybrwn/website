@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title><%= title %></title>
-
     <link rel="author" href="/">
     <link rel="index" href="/">
 </head>
@@ -13,11 +12,17 @@
     <noscript>
         <span><!-- javascript is disabled --></span>
     </noscript>
+
     <main>
         <center>
-            <!-- <h1 id="login-btn">Harry Brown</h1> -->
             <h1 class="welcome-banner"><marquee>Welcome</marquee></h1>
-            <img id="show-login-btn" src="<%=require('./img/spinning-world.gif')%>" alt="Rotating Globe" width="128" height="128">
+            <img
+              id="show-login-btn"
+              src="<%=require('./img/spinning-world.gif')%>"
+              alt="Rotating Globe"
+              width="128"
+              height="128"
+            >
         </center>
         <div id="login-panel" class="login-panel modal" style="display: none;">
             <div class="win95-window">
@@ -97,11 +102,11 @@
         </ul>
 
         <section class="settings">
-                <span>Toggle theme:</span>
-                <span class="theme-toggle toggle-switch">
-                    <input type="checkbox" id="theme-toggle">
-                    <label for="theme-toggle">Theme</label>
-                </span>
+            <span>Toggle theme:</span>
+            <span class="theme-toggle toggle-switch">
+                <input type="checkbox" id="theme-toggle">
+                <label for="theme-toggle">Theme</label>
+            </span>
             <button id="logout-btn">Logout</button>
             <button id="help-btn">Help</button>
         </section>
@@ -135,13 +140,28 @@
               href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
               ping="/api/ping?link=https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
               rel="noopener,noreferrer"
+              title="The Linux kernel"
             >
-                <img src="<%= require('./img/88x31/linux.gif') %>" width="88" height="31" alt="Linux">
+                <img src="<%= require('./img/88x31/linux.gif') %>" width="88" height="31" alt="The Linux kernel">
+            </a>
+            <a
+                href="https://madville.neocities.org"
+                ping="/api/ping?link=https://madville.neocities.org"
+                rel="noopener,noreferrer"
+                title="A beautifully retro site"
+            >
+                <img
+                    src="<%= require('./img/88x31/madville.gif') %>"
+                    alt="A beautifully retro site"
+                    width="88"
+                    height="31"
+                >
             </a>
             <a
               href="https://en.wikipedia.org/wiki/Netscape"
               ping="/api/ping?link=https://en.wikipedia.org/wiki/Netscape"
               rel="noopener,noreferrer"
+              title="Netscape Navigator"
             >
                 <img
                     src="<%= require('./img/88x31/netnow2.gif') %>"
@@ -150,9 +170,16 @@
                     height="31"
                 >
             </a>
-            <img src="<%= require('./img/88x31/rfc1876-now.gif') %>" width="88" height="31" alt="RFC 1876">
+            <a
+              href="https://www.vim.org/"
+              ping="/api/ping?link=https://www.vim.org/"
+              rel="noopener,noreferrer"
+              title="Vim"
+            >
+                <img src="<%= require('./img/88x31/vim.gif') %>" width="88" height="31" alt="Vim">
+            </a>
             <img src="<%= require('./img/88x31/vi_now.gif') %>" width="88" height="31" alt="Vi Now">
-            <img src="<%= require('./img/88x31/vim.gif') %>" width="88" height="31" alt="Vim">
+            <img src="<%= require('./img/88x31/rfc1876-now.gif') %>" width="88" height="31" alt="RFC 1876">
             <a
               href="https://cyber.dabamos.de/88x31/index.html"
               ping="/api/ping?link=https://cyber.dabamos.de/88x31/index.html"
@@ -176,6 +203,7 @@
             <center><img src="<%=require('./img/under_construction.gif')%>" alt="Under Construction" width="110" height="60"></center>
         </footer>
     </main>
+
     <div id="help-window" class="win95-window help-window modal" style="display: none;">
         <div class="win95-window-head">
             <p>Help</p>

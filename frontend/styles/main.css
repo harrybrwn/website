@@ -6,6 +6,10 @@ a:visited {
 	width: 45%;
 }
 
+.links {
+	columns: 2;
+}
+
 .settings {
 	margin-bottom: 1.15em;
 }
@@ -40,10 +44,6 @@ main ul li {
 	margin-bottom: .6em;
 }
 
-body.dark-theme .win95-window-body p,th,td {
-	color: black;
-}
-
 body.dark-theme .login-panel {
 	box-shadow: 5px 5px var(--win95-bg-color);
 }
@@ -62,13 +62,26 @@ body {
 	top: 50%;
 	left: 50%;
 	width: 32em;
+	max-height: 16em;
 	transform: translate(-50%, -50%);
+}
+
+body.dark-theme .win95-window-body p,th,td {
+	color: black;
+}
+
+.help-window .win95-window-head {
+	position: fixed;
 }
 
 @media only screen and (max-width: 600px) {
 	.help-window {
 		width: 18em;
 	}
+}
+
+.help-window .win95-window-body {
+	margin: 0px 2em 0.8em 2em;
 }
 
 /* Windows 95 Window Panel */
@@ -82,7 +95,8 @@ body {
 
 .win95-window-head {
 	background-color: #000080;
-	width: 100%;
+	padding-left: 5px;
+	width: calc(100% - 5px); /* Subtract the padding size */
 	height: 18px;
 	margin: 0px;
 }
@@ -109,10 +123,4 @@ body {
 	border-width: 1px;
 	font-size: .5em;
     font-weight: bold;
-}
-
-.win95-window-body {
-	display: inline-block;
-	width: calc(100% - .5em);
-	margin-bottom: 0.4em;
 }

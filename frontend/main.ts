@@ -173,6 +173,7 @@ class LoginManager {
     this.expirationCheckTimer = setInterval(() => {
       let token = loadToken();
       if (token == null) {
+        this.logout();
         return;
       }
       if (isExpired(token)) {
@@ -222,13 +223,27 @@ const privateLinks = (): HTMLLIElement[] => {
   return els;
 };
 
+const focusOnLoginEmail = () => {
+  let email = document.querySelector(
+    "#login-form input[type=email]"
+  ) as HTMLInputElement;
+  if (email) {
+    email.focus();
+  }
+};
+
 const main = () => {
   let themeManager = new ThemeManager();
-  let loginManager = new LoginManager({ interval: 5 * 60 * SECOND });
+  let loginManager = new LoginManager({
+    interval: 5 * 60 * SECOND,
+    // interval: 5 * SECOND,
+  });
   let loginPanel = new LoginPopup();
   let showLoginBtn = document.getElementById("show-login-btn");
+
   showLoginBtn?.addEventListener("click", (ev: MouseEvent) => {
     loginPanel.toggle();
+    if (loginPanel.open) focusOnLoginEmail();
   });
 
   themeManager.onChange((ev: Event) => {
@@ -260,7 +275,6 @@ const main = () => {
 
   let privLinks = privateLinks();
   if (loginManager.isLoggedIn()) {
-    // links?.appendChild(li);
     for (let li of privLinks) {
       links?.appendChild(li);
     }
@@ -272,14 +286,12 @@ const main = () => {
     if (e.action == "login") {
       storeToken(e.token);
       setCookie(e.token);
-      // links?.appendChild(li);
       for (let li of privLinks) {
         links?.appendChild(li);
       }
     } else {
       clearCookie(TOKEN_KEY);
       deleteToken();
-      // links?.removeChild(li);
       for (let li of privLinks) {
         links?.removeChild(li);
       }
@@ -303,7 +315,7 @@ const main = () => {
   }
   for (let id of ["help-window-close", "help-window-minimize"]) {
     document.getElementById(id)?.addEventListener("click", (ev: MouseEvent) => {
-      if (loginPanel.open) helpWindow.toggle();
+      if (helpWindow.open) helpWindow.toggle();
     });
   }
 
@@ -316,6 +328,7 @@ const main = () => {
       case "l":
         ev.preventDefault();
         loginPanel.toggle();
+        if (loginPanel.open) focusOnLoginEmail();
         break;
       case "t":
         themeManager.toggle();

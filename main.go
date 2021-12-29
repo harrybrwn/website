@@ -30,14 +30,14 @@ var (
 	harryStaticPage []byte
 	//go:embed build/pages/remora.html
 	remoraStaticPage []byte
-	//go:embed build/pages/harry-y-tanya.html
+	//go:embed build/pages/harry_y_tanya.html
 	harryYTanyaStaticPage []byte
 	//go:embed build/pages/404.html
-	staticPage404 []byte
+	notFoundStaticPage []byte
 	//go:embed build/pages/admin.html
 	adminPageStatic []byte
 	//TODO go:embed build/pages/tanya.html
-	tanyaStaticPage []byte
+	//tanyaStaticPage []byte
 
 	//go:embed build/pub.asc
 	gpgPubkey []byte
@@ -61,9 +61,11 @@ var (
 func main() {
 	var (
 		port = "8080"
+		env  bool
 		e    = echo.New()
 	)
 	flag.StringVar(&port, "port", port, "the port to run the server on")
+	flag.BoolVar(&env, "env", env, "read .env")
 	flag.Parse()
 
 	app.SetLogger(logger)
@@ -72,6 +74,10 @@ func main() {
 	e.DisableHTTP2 = false
 	e.HideBanner = true
 
+	if env {
+		godotenv.Load()
+	}
+
 	if app.Debug {
 		godotenv.Load()
 		auth.Expiration = time.Hour * 24
@@ -79,12 +85,7 @@ func main() {
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	echo.NotFoundHandler = func(c echo.Context) error {
-		if strings.HasPrefix(c.Request().RequestURI, "/api") {
-			return echo.ErrNotFound
-		}
-		return c.HTMLBlob(404, staticPage404)
-	}
+	echo.NotFoundHandler = NotFoundHandler()
 
 	db, err := db.Connect(logger)
 	if err != nil {
@@ -99,7 +100,7 @@ func main() {
 	e.GET("/", page(harryStaticPage, "build/index.html"))
 	e.GET("/~harry", page(harryStaticPage, "build/index.html"))
 	//e.GET("/~tanya", page(tanyaStaticPage, "build/pages/tanya.html"))
-	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, "build/pages/harry-y-tanya.html"), guard)
+	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, "build/pages/harry_y_tanya.html"), guard)
 	e.GET("/remora", page(remoraStaticPage, "build/pages/remora.html"))
 	e.GET("/admin", page(adminPageStatic, "build/pages/admin.html"), guard, auth.AdminOnly())
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
@@ -159,6 +160,23 @@ func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 		return auth.GetBearerToken(r)
 	}
 	return c.Value, nil
+}
+
+func NotFoundHandler() echo.HandlerFunc {
+	if app.Debug {
+		return func(c echo.Context) error {
+			if strings.HasPrefix(c.Request().RequestURI, "/api") {
+				return echo.ErrNotFound
+			}
+			return serveFile(c, "build/pages/404.html")
+		}
+	}
+	return func(c echo.Context) error {
+		if strings.HasPrefix(c.Request().RequestURI, "/api") {
+			return echo.ErrNotFound
+		}
+		return c.HTMLBlob(404, notFoundStaticPage)
+	}
 }
 
 func keys(rw http.ResponseWriter, r *http.Request) {

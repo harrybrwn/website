@@ -114,18 +114,68 @@ const metaTags = (site) => {
   return tags;
 };
 
-const page = (paths, page, site) => {
+const defaultHtmlMinify = {
+  minifyJS: true,
+  minifyCSS: true,
+  minifyURLs: true,
+  collapseWhitespace: true,
+  removeComments: true,
+  keepClosingSlash: true,
+  removeRedundantAttributes: true,
+  removeStyleLinkTypeAttributes: true,
+};
+
+class Builder {
+  constructor(opts) {
+    this.paths = opts.paths;
+    this.site = opts.site;
+    this.isProd = opts.isProd;
+    this.htmlMinify = opts.htmlMinify || defaultHtmlMinify;
+  }
+
+  page(page, opts) {
+    if (opts === undefined) opts = {};
+    let chunks = [page];
+    if (opts.chunks) {
+      chunks = opts.chunks;
+    } else if (opts.noChunks) {
+      chunks = [];
+    }
+    return new HtmlWebpackPlugin(
+      Object.assign(
+        {
+          filename: `pages/${page}.html`,
+          favicon: this.paths.favicon,
+          template: path.join(this.paths.source, `pages/${page}.html`),
+          templateParameters: this.site.pages[page],
+          chunks: chunks,
+          meta: metaTags(this.site.pages[page]),
+        },
+        this.isProd ? { minify: this.htmlMinify } : { cache: true }
+      )
+    );
+  }
+}
+
+const page = (paths, page, site, options) => {
+  if (options === undefined) {
+    options = {};
+  }
+  let chunks = [];
+  if (!options.noChunks) {
+    chunks.push(page.replace("-", "_"));
+  }
   return {
     filename: `pages/${page}.html`,
     favicon: paths.favicon,
     template: path.join(paths.source, `pages/${page}.html`),
     templateParameters: site,
-    chunks: [page.replace("-", "_")],
+    chunks: chunks,
     meta: metaTags(site),
   };
 };
 
 module.exports = {
+  Builder,
   metaTags,
-  page,
 };

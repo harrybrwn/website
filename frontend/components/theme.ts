@@ -57,7 +57,6 @@ export class ThemeManager {
       document.body.classList.add("dark-theme");
       this.theme = Theme.Dark;
     }
-    // this.themeToggle.checked = !this.themeToggle.checked;
     localStorage.setItem("theme", this.theme.toString());
   }
 

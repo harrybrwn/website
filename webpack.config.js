@@ -31,10 +31,18 @@ const sitemap = [
 ];
 
 const copy = (name) => {
-  return {
-    from: path.join(paths.public, name),
-    to: name,
-  };
+  if (Array.isArray(name)) {
+    let copies = [];
+    for (let n of name) {
+      copies.push(copy(n));
+    }
+    return copies;
+  } else {
+    return {
+      from: path.join(paths.public, name),
+      to: name,
+    };
+  }
 };
 
 const htmlMinify = {
@@ -51,6 +59,7 @@ const htmlMinify = {
 module.exports = function (webpackEnv) {
   const isDev = webpackEnv.dev || false;
   const isProd = webpackEnv.prod || false;
+  const builder = new build.Builder({ paths, site, isProd, htmlMinify });
 
   return {
     entry: {
@@ -61,7 +70,7 @@ module.exports = function (webpackEnv) {
         import: path.resolve(__dirname, paths.source, "remora.ts"),
       },
       harry_y_tanya: {
-        import: path.resolve(__dirname, paths.source, "pages/harry-y-tanya.ts"),
+        import: path.resolve(__dirname, paths.source, "pages/harry_y_tanya.ts"),
       },
       admin: {
         import: path.resolve(__dirname, paths.source, "pages/admin.ts"),
@@ -79,42 +88,34 @@ module.exports = function (webpackEnv) {
       clean: isProd, // remove old files before build
       path: path.resolve(__dirname, paths.build),
       filename: isProd
-        ? "static/js/[name].[contenthash:16].bundle.js"
+        ? "static/js/[name].[contenthash].js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
-        ? "static/js/[name].[contenthash:16].chunk.js"
+        ? "static/js/[name].[contenthash].chunk.js"
         : "static/js/[name].chunk.js",
       assetModuleFilename: "static/a/[hash:4].[id][ext][query][fragment]",
     },
 
     optimization: {
-      runtimeChunk: "single",
-      concatenateModules: true,
+      concatenateModules: isProd,
+      providedExports: true,
+      usedExports: "global",
       minimize: true,
-      //runtimeChunk: { name: "runtime" },
       minimizer: [
         new TerserPlugin({
           terserOptions: {
-            parse: { ecma: 8 },
             compress: {
               ecma: 5,
-              warnings: true,
-              comparisons: false,
             },
             output: {
               ecma: 5,
               comments: false,
-              ascii_only: true,
             },
             sourceMap: true,
           },
         }),
         new CssMinimizerPlugin(),
       ],
-      splitChunks: {
-        chunks: "all",
-        name: false,
-      },
     },
 
     module: {
@@ -167,51 +168,10 @@ module.exports = function (webpackEnv) {
           isProd ? { minify: htmlMinify } : { cache: true }
         )
       ),
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          // {
-          //   template: path.join(paths.source, "pages/remora.html"),
-          //   filename: "pages/remora.html",
-          //   templateParameters: site.pages["remora"],
-          //   chunks: ["remora"],
-          //   meta: build.metaTags(site.pages["remora"]),
-          //   favicon: paths.favicon,
-          // },
-          // { favicon: paths.favicon },
-          build.page(paths, "remora", site.pages["remora"]),
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          build.page(paths, "harry-y-tanya", site.pages["harrytanya"]),
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          // build.page(paths, "404", site.pages["404"]),
-          {
-            filename: "pages/404.html",
-            template: path.join(paths.source, "pages/404.html"),
-            favicon: paths.favicon,
-            chunks: [],
-            templateParameters: site.pages["404"],
-            meta: build.metaTags(site.pages["404"]),
-          },
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
-      new HtmlWebpackPlugin(
-        Object.assign(
-          {},
-          build.page(paths, "admin", site.pages["admin"]),
-          isProd ? { minify: htmlMinify } : { cache: true }
-        )
-      ),
+      builder.page("remora"),
+      builder.page("admin"),
+      builder.page("404", { noChunks: true }),
+      builder.page("harry_y_tanya"),
 
       new CompressionPlugin({
         deleteOriginalAssets: true,
@@ -227,21 +187,24 @@ module.exports = function (webpackEnv) {
       new CopyWebpackPlugin({
         patterns: [
           // Copy over the legacy site... just for the lols
-          copy("static/js/bootstrap.min.js"),
-          copy("static/js/popper.min.js"),
-          copy("static/js/jquery-3.4.1.min.js"),
-          copy("static/js/home.js"),
-          copy("static/css/bootstrap.min.css"),
-          copy("static/css/animate.min.css"),
-          copy("static/css/base.css"),
-          copy("static/css/home.css"),
-          copy("static/img/linkedin.svg"),
-          copy("static/img/github.svg"),
-          copy("static/img/1125x1500/me_sm.jpg"),
-          // I actually need these
+          ...copy(
+            [
+              "js/bootstrap.min.js",
+              "js/popper.min.js",
+              "js/jquery-3.4.1.min.js",
+              "js/home.js",
+              "css/bootstrap.min.css",
+              "css/animate.min.css",
+              "css/base.css",
+              "css/home.css",
+              "img/linkedin.svg",
+              "img/github.svg",
+              "img/1125x1500/me_sm.jpg",
+            ].map((v) => path.join("static", v))
+          ),
           copy("static/files"),
           {
-            // Harry's Preview Image
+            // Harry's OpenGraph Preview Image
             from: path.join(paths.source, "img/goofy.jpg"),
             to: path.resolve(__dirname, paths.build, "static/img/goofy.jpg"),
           },

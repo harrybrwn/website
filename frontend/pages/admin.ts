@@ -2,7 +2,7 @@ import { RequestLog, logs } from "../api";
 
 const main = () => {
   let table = new Table("logs");
-  logs(200, 0, true).then((logs) => {
+  logs({ limit: 200, reverse: true }).then((logs) => {
     displayLogs(table, logs);
   });
 };

@@ -69,7 +69,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Print("Confirm Password: ")
+	fmt.Print("\nConfirm Password: ")
 	confirmPw, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return err
