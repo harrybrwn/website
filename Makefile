@@ -1,4 +1,5 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
+ENV=production
 
 build:
 	go generate
@@ -20,3 +21,16 @@ clean:
 	yarn clean
 
 .PHONY: build clean
+
+blog: build/blog
+.PHONY: blog
+
+build/blog: blog/resources/remora.svg
+	hugo --environment $(ENV)
+
+blog/resources/remora.svg: diagrams/remora.svg
+	cp $< $@
+
+diagrams/remora.svg: diagrams/remora.drawio
+	./scripts/diagrams.svg
+

@@ -9,7 +9,7 @@ static/bootstrap-4.3.1-dist
 /public/static/img/563x750
 /public/static/img/1688x2251
 /public/static/img/2250x3000
-
+.hugo_build.lock
 
 # Config
 config.json
@@ -25,6 +25,7 @@ tests/*
 /scripts/*.sql
 /scripts/psql.sh
 /requests.http
+/demo/
 
 # Tools
 NOTES
@@ -34,4 +35,3 @@ TODO
 *.crt
 *.key
 *.pub
-

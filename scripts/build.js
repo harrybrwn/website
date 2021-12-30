@@ -153,10 +153,18 @@ class Builder {
       return fs.existsSync(val);
     });
 
+    let filename;
+    if (page === "index" || page === "404") {
+      filename = `${page}.html`;
+    } else {
+      filename = path.join(page, "index.html");
+    }
+
     return new HtmlWebpackPlugin(
       Object.assign(
         {
-          filename: path.join(opts.pageDir, `${page}.html`),
+          // filename: path.join(opts.pageDir, `${page}.html`),
+          filename: filename,
           favicon: this.paths.favicon,
           template: path.join(this.paths.source, opts.pageDir, `${page}.html`),
           templateParameters: this.site.pages[page],

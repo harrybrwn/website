@@ -25,20 +25,22 @@ import (
 
 //go:generate sh scripts/mockgen.sh
 
+const buildDir = "./build"
+
 var (
 	//go:embed build/index.html
 	harryStaticPage []byte
-	//go:embed build/pages/remora.html
+	//go:embed build/remora/index.html
 	remoraStaticPage []byte
-	//go:embed build/pages/harry_y_tanya.html
+	//go:embed build/harry_y_tanya/index.html
 	harryYTanyaStaticPage []byte
-	//go:embed build/pages/404.html
+	//go:embed build/404.html
 	notFoundStaticPage []byte
-	//go:embed build/pages/admin.html
+	//go:embed build/admin/index.html
 	adminPageStatic []byte
-	//go:embed build/pages/games.html
+	//go:embed build/games/index.html
 	gamesStaticPage []byte
-	//TODO go:embed build/pages/tanya.html
+	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
 
 	//go:embed build/pub.asc
@@ -99,13 +101,13 @@ func main() {
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
-	e.GET("/", page(harryStaticPage, "build/index.html"))
-	e.GET("/~harry", page(harryStaticPage, "build/index.html"))
+	e.GET("/", page(harryStaticPage, buildDir+"/index.html"))
+	e.GET("/~harry", page(harryStaticPage, buildDir+"/index.html"))
 	//e.GET("/~tanya", page(tanyaStaticPage, "build/pages/tanya.html"))
-	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, "build/pages/harry_y_tanya.html"), guard)
-	e.GET("/remora", page(remoraStaticPage, "build/pages/remora.html"))
-	e.GET("/games", page(gamesStaticPage, "build/pages/games.html"), guard)
-	e.GET("/admin", page(adminPageStatic, "build/pages/admin.html"), guard, auth.AdminOnly())
+	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, buildDir+"/harry_y_tanya/index.html"), guard)
+	e.GET("/remora", page(remoraStaticPage, buildDir+"/remora/index.html"))
+	e.GET("/games", page(gamesStaticPage, buildDir+"/games/index.html"), guard)
+	e.GET("/admin", page(adminPageStatic, buildDir+"/admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
