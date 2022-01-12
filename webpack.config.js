@@ -3,7 +3,6 @@ const TerserPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
-const CompressionPlugin = require("compression-webpack-plugin");
 const path = require("path");
 const build = require("./scripts/build");
 
@@ -66,7 +65,6 @@ module.exports = function (webpackEnv) {
   });
 
   for (const key in site.pages) {
-    console.log(key);
     // TODO generate parts of the config with this
   }
 
@@ -174,12 +172,6 @@ module.exports = function (webpackEnv) {
       builder.page("harry_y_tanya"),
       builder.page("games"),
 
-      new CompressionPlugin({
-        deleteOriginalAssets: true,
-        filename: "[path][base]",
-        test: isProd ? /index\.html/ : /^$/,
-        exclude: [/sitemap\.xml$/, /robots\.txt$/, /favicon\.ico/, /.*\.asc$/],
-      }),
       new CopyWebpackPlugin({
         patterns: [
           // Copy over the legacy site... just for the lols
@@ -209,7 +201,7 @@ module.exports = function (webpackEnv) {
         ],
       }),
       new SitemapPlugin({
-        base: "https://harrybrwn.com",
+        base: `https://${site.domain}`,
         paths: sitemap,
         options: { skipgzip: false },
       }),

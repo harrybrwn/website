@@ -21,6 +21,7 @@ const common = {
 };
 
 module.exports = {
+  domain: common.domain,
   pages: {
     index: {
       title: "Harry Brown",
