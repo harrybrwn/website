@@ -1,0 +1,11 @@
+FROM alpine:latest
+ARG USER=latex-docker
+ARG UID=1000
+ARG GID=1000
+
+RUN apk update && \
+	apk upgrade && \
+	apk add curl bash file texlive
+
+RUN adduser -D -u ${UID} ${USER} ${GID}
+USER ${UID}:${GID}

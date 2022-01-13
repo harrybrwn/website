@@ -56,7 +56,7 @@ var (
 	// go :embed build/sitemap.xml.gz
 	sitemapgz []byte
 
-	//go:embed templates
+	//go:embed frontend/templates
 	templates embed.FS
 
 	logger = logrus.New()
@@ -97,13 +97,17 @@ func main() {
 	}
 	defer db.Close()
 
+	templates, err := fs.Sub(templates, "frontend")
+	if err != nil {
+		logger.Fatal(err)
+	}
+
 	jwtConf := NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
 	e.GET("/", page(harryStaticPage, buildDir+"/index.html"))
 	e.GET("/~harry", page(harryStaticPage, buildDir+"/index.html"))
-	//e.GET("/~tanya", page(tanyaStaticPage, "build/pages/tanya.html"))
 	e.GET("/tanya/hyt", page(harryYTanyaStaticPage, buildDir+"/harry_y_tanya/index.html"), guard)
 	e.GET("/remora", page(remoraStaticPage, buildDir+"/remora/index.html"))
 	e.GET("/games", page(gamesStaticPage, buildDir+"/games/index.html"), guard)

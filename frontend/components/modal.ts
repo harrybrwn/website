@@ -1,28 +1,26 @@
 export interface ModalOptions {
   open?: boolean;
-  buttonID: string;
-  modalID: string;
+  element: HTMLElement | null;
+  button?: HTMLElement | null;
 }
 
 export class Modal {
   open: boolean;
-  btn: HTMLElement;
+  button: HTMLElement;
   modal: HTMLElement;
-  private opts: ModalOptions;
 
   private esc: (ev: KeyboardEvent) => void;
   private clk: (ev: MouseEvent) => void;
 
   constructor(opts: ModalOptions) {
+    if (opts.element == null) {
+      throw new Error("modal element is null");
+    }
     this.open = opts.open || false;
     this.clk = (_: MouseEvent) => {};
     this.esc = (_: KeyboardEvent) => {};
-    this.btn =
-      document.getElementById(opts.buttonID) ||
-      document.createElement("button");
-    this.modal =
-      document.getElementById(opts.modalID) || document.createElement("div");
-    this.opts = opts;
+    this.modal = opts.element;
+    this.button = opts.button || document.createElement("button");
   }
 
   private _toggle() {
@@ -39,9 +37,13 @@ export class Modal {
     if (!this.open) {
       this.clk = (ev: MouseEvent) => {
         let el = ev.target as HTMLElement | null;
-        if (el != null && el.id == this.opts.buttonID) return;
+        if (el != null && el.id == this.button.id) {
+          return;
+        }
         while (el != null && el != document.body) {
-          if (el == this.modal || el.id == this.opts.buttonID) return;
+          if (el == this.modal || el.id == this.button.id) {
+            return;
+          }
           el = el.parentElement;
         }
         this._toggle();
@@ -62,5 +64,15 @@ export class Modal {
     } else {
       this.cleanup();
     }
+  }
+
+  onClick(cb: (ev: MouseEvent) => void) {
+    this.button.addEventListener("click", cb);
+  }
+
+  toggleOnClick() {
+    this.button.addEventListener("click", (ev: MouseEvent) => {
+      this.toggle();
+    });
   }
 }

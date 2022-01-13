@@ -17,10 +17,21 @@ test:
 
 clean:
 	$(RM) bin -r
-	$(RM) test.html test-cover
+	$(RM) test.html test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
-.PHONY: build clean
+.PHONY: build run test clean
+
+.PHONY: resume
+resume:
+	docker container run --rm -it -v $(shell pwd):/app latex \
+		pdflatex \
+		--output-directory=/app/files \
+		/app/files/resume.tex
+
+.PHONY: latex-image
+latex-image:
+	docker image build -t latex -f config/docker/Dockerfile.latex .
 
 blog: build/blog
 .PHONY: blog
@@ -33,4 +44,3 @@ blog/resources/remora.svg: diagrams/remora.svg
 
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
-

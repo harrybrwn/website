@@ -1,6 +1,5 @@
-import "../styles/font.css";
-import "../styles/admin.css";
-import * as api from "../api";
+import "~/frontend/styles/admin.css";
+import * as api from "~/frontend/api";
 
 const main = () => {
   let table = new Table("logs", logsPaginator);

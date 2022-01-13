@@ -1,5 +1,5 @@
-import "../styles/font.css";
-import "../styles/remora.css";
-import { applyTheme } from "../components/theme";
+import "~/frontend/styles/font.css";
+import "~/frontend/styles/remora.css";
+import { applyTheme } from "~/frontend/components/theme";
 
 applyTheme();

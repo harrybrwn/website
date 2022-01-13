@@ -1,0 +1,39 @@
+
+.win95-window {
+	background-color: #c0c0c0;
+	border-width: 0.15em;
+	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
+	border-style: solid;
+}
+
+.win95-window-head {
+	background-color: #000080;
+	padding-left: 5px;
+	width: calc(100% - 5px); /* Subtract the padding size */
+	height: 18px;
+	margin: 0px;
+}
+
+.win95-window-head p {
+	color: white;
+	float: left;
+	margin: 0;
+	display: block;
+	font-size: 0.7em;
+}
+
+.win95-window-head button {
+	float: right;
+	text-align: center;
+	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
+	margin-top: 2px;
+    margin-right: 2px;
+    margin-bottom: 2px;
+    margin-left: 0px;
+    padding: 0;
+	width: 14px;
+    height: 14px;
+	border-width: 1px;
+	font-size: .5em;
+    font-weight: bold;
+}

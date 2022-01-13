@@ -1,3 +1,11 @@
+@import "~/frontend/styles/font.css";
+@import "~/frontend/components/win95.css";
+@import "~/frontend/components/toggle.css";
+
+body {
+	transition: background 0.2s linear;
+}
+
 a:visited {
 	text-decoration: none;
 }
@@ -84,43 +92,37 @@ body.dark-theme .win95-window-body p,th,td {
 	margin: 0px 2em 0.8em 2em;
 }
 
-/* Windows 95 Window Panel */
+/* Custom theme Toggle Switch */
 
-.win95-window {
-	background-color: #c0c0c0;
-	border-width: 0.15em;
-	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
-	border-style: solid;
+/* * {box-sizing: border-box;}
+.theme-toggle-checkbox {
+	opacity: 0;
+	position: absolute;
 }
-
-.win95-window-head {
-	background-color: #000080;
-	padding-left: 5px;
-	width: calc(100% - 5px); /* Subtract the padding size */
-	height: 18px;
-	margin: 0px;
+.theme-toggle-label {
+	background-color: green;
+	width: 50px;
+	height: 26px;
+	border-radius: 50px;
+	position: relative;
+	padding: 5px;
+	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
-
-.win95-window-head p {
-	color: white;
-	float: left;
-	margin: 0;
-	display: block;
-	font-size: 0.7em;
+.fa-moon {color: #f1c40f;}
+.fa-sun {color: #f39c12;}
+.theme-toggle-label .theme-toggle-ball {
+	background-color: red;
+	width: 22px;
+	height: 22px;
+	position: absolute;
+	left: 2px;
+	top: 2px;
+	border-radius: 50%;
+	transition: transform 0.2s linear;
 }
-
-.win95-window-head button {
-	float: right;
-	text-align: center;
-	border-color: #d8d8d8 #7a7a7a #7a7a7a #d8d8d8;
-	margin-top: 2px;
-    margin-right: 2px;
-    margin-bottom: 2px;
-    margin-left: 0px;
-    padding: 0;
-	width: 14px;
-    height: 14px;
-	border-width: 1px;
-	font-size: .5em;
-    font-weight: bold;
-}
+.theme-toggle-checkbox + .theme-toggle-label .theme-toggle-ball {
+	transform: translateX(24px);
+} */

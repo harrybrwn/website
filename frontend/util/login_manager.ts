@@ -1,5 +1,5 @@
-import { Token, loadToken, isExpired } from "../api/auth";
-import { SECOND } from "../constants";
+import { Token, loadToken, isExpired } from "~/frontend/api/auth";
+import { SECOND } from "~/frontend/constants";
 
 // const SECOND = 1000;
 

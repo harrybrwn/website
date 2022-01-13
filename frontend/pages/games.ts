@@ -1,5 +1,5 @@
-import { SECOND } from "../constants";
-import "../styles/games.css";
+import { SECOND } from "~/frontend/constants";
+import "~/frontend/styles/games.css";
 
 class Ball {
   x: number;

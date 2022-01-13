@@ -55,7 +55,6 @@ const htmlMinify = {
 };
 
 module.exports = function (webpackEnv) {
-  const isDev = webpackEnv.dev || false;
   const isProd = webpackEnv.prod || false;
   const builder = new build.Builder({
     paths,
@@ -88,9 +87,10 @@ module.exports = function (webpackEnv) {
     },
 
     resolve: {
-      extensions: [".tsx", ".ts", ".js"],
+      extensions: [".tsx", ".ts", ".js", ".css"],
       alias: {
-        "@harrybrwn.com": "./frontend",
+        "@harrybrwn.com": path.resolve(__dirname, "./") + "/",
+        "~": __dirname,
       },
     },
 
@@ -138,18 +138,16 @@ module.exports = function (webpackEnv) {
         {
           test: /\.s?css$/,
           use: [
-            // for importing css in js/ts and injecting it into the DOM
-            "style-loader",
+            MiniCssExtractPlugin.loader,
             // for @import in css
             "css-loader",
-            //MiniCssExtractPlugin.loader,
           ],
           include: [path.resolve(__dirname, paths.source)],
         },
         {
           // Embed these right into the html
           test: /\.(gif|svg)$/i,
-          type: "asset/inline",
+          type: isProd ? "asset/inline" : "asset/resource",
         },
         {
           // Fonts
@@ -165,6 +163,11 @@ module.exports = function (webpackEnv) {
     },
 
     plugins: [
+      new MiniCssExtractPlugin({
+        filename: isProd
+          ? "static/css/[name].[hash:8].css"
+          : "static/css/[name].css",
+      }),
       builder.page("index", { pageDir: ".", chunks: ["main"] }),
       builder.page("remora"),
       builder.page("admin"),

@@ -30,10 +30,11 @@ export class ThemeManager {
 
   constructor() {
     this.theme = loadTheme("theme");
-    this.themeToggle = getToggle() as HTMLInputElement;
-    if (!this.themeToggle) {
-      console.error("could not find theme toggle");
+    let toggle = getToggle();
+    if (toggle == null) {
+      throw new Error("could not get theme toggle button");
     }
+    this.themeToggle = toggle as HTMLInputElement;
     switch (this.theme) {
       case Theme.Dark:
         document.body.classList.toggle("dark-theme");

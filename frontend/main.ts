@@ -1,10 +1,7 @@
-import "./styles/font.css";
 import "./styles/main.css";
 import {
   TOKEN_KEY,
   Token,
-  loadToken,
-  isExpired,
   login,
   deleteToken,
   storeToken,
@@ -15,7 +12,6 @@ import { clearCookie } from "./util/cookies";
 import LoginManager from "./util/login_manager";
 import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
-import "./components/toggle";
 import * as api from "./api";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
@@ -67,77 +63,6 @@ const applyPageCount = () => {
   });
 };
 
-const loginButtonID = "login-btn";
-const loginPanelID = "login-panel";
-
-class LoginPopup {
-  loginBtn: HTMLElement;
-  loginPanel: HTMLElement;
-  open: boolean;
-
-  constructor() {
-    this.open = false;
-    this.escCloser = (ev: KeyboardEvent) => {};
-    this.clickCloser = (ev: MouseEvent) => {};
-    this.loginBtn =
-      document.getElementById(loginButtonID) ||
-      document.createElement("button");
-    this.loginPanel =
-      document.getElementById(loginPanelID) || document.createElement("div");
-  }
-
-  private escCloser: (ev: KeyboardEvent) => void;
-  private clickCloser: (ev: MouseEvent) => void;
-
-  private _toggle() {
-    this.loginPanel.style.display = this.open ? "none" : "block";
-    this.open = !this.open;
-  }
-
-  private cleanup() {
-    window.removeEventListener("click", this.clickCloser);
-    window.removeEventListener("keydown", this.escCloser);
-  }
-
-  toggle() {
-    if (!this.open) {
-      this.clickCloser = (ev: MouseEvent) => {
-        let el = ev.target as HTMLElement | null;
-        if (el != null && el.id == "show-login-btn") return;
-        while (el != null && el != document.body) {
-          if (el == this.loginPanel || el.id == "show-login-btn") {
-            return;
-          }
-          el = el.parentElement;
-        }
-        this._toggle();
-        this.cleanup();
-      };
-      this.escCloser = (ev: KeyboardEvent) => {
-        if (ev.key != "Escape") {
-          return;
-        }
-        this._toggle();
-        this.cleanup();
-      };
-    }
-
-    this._toggle();
-    if (this.open) {
-      window.addEventListener("click", this.clickCloser);
-      window.addEventListener("keydown", this.escCloser);
-    } else {
-      this.cleanup();
-    }
-  }
-
-  listen() {
-    this.loginBtn.addEventListener("click", () => {
-      this.toggle();
-    });
-  }
-}
-
 const anchor = (href: string, text: string): HTMLAnchorElement => {
   let a = document.createElement("a");
   a.href = href;
@@ -166,34 +91,51 @@ const focusOnLoginEmail = () => {
   }
 };
 
+const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
+  if (banner == null) {
+    return;
+  }
+  let welcomeTicker = 0;
+  let colors = [
+    "red",
+    "orange",
+    "yellow",
+    "mediumspringgreen",
+    "blue",
+    "purple",
+    "pink",
+  ];
+  setInterval(() => {
+    banner.style.color = colors[welcomeTicker % colors.length];
+    welcomeTicker++;
+  }, ms);
+};
+
 const main = () => {
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
     interval: 5 * 60 * SECOND,
     // interval: 5 * SECOND,
   });
-  let loginPanel = new LoginPopup();
-  let showLoginBtn = document.getElementById("show-login-btn");
-
-  showLoginBtn?.addEventListener("click", (ev: MouseEvent) => {
-    loginPanel.toggle();
-    if (loginPanel.open) focusOnLoginEmail();
+  let loginPanel = new Modal({
+    button: document.getElementById("login-btn"),
+    element: document.getElementById("login-panel"),
   });
-
-  themeManager.onChange((ev: Event) => {
-    themeManager.toggle();
-  });
-
   let helpWindow = new Modal({
-    open: false,
-    buttonID: "help-btn",
-    modalID: "help-window",
+    button: document.getElementById("help-btn"),
+    element: document.getElementById("help-window"),
   });
+  // Another login panel button
   document
-    .getElementById("help-btn")
+    .getElementById("show-login-btn")
     ?.addEventListener("click", (ev: MouseEvent) => {
-      helpWindow.toggle();
+      loginPanel.toggle();
+      if (loginPanel.open) focusOnLoginEmail();
     });
+  // Handle theme changes
+  themeManager.onChange((_: Event) => themeManager.toggle());
+  // Toggle help window button
+  helpWindow.toggleOnClick();
 
   // Logged in stuff
   let links = document.querySelector(".links");
@@ -232,7 +174,7 @@ const main = () => {
     }
   });
 
-  loginPanel.listen();
+  loginPanel.toggleOnClick();
   handleLogout("logout-btn", () => {
     loginManager.logout();
   });
@@ -274,16 +216,7 @@ const main = () => {
     }
   });
 
-  let welcomeTicker = 0;
-  let welcomeBanner = document.getElementsByClassName(
-    "welcome-banner"
-  )[0] as HTMLElement;
-  let colors = ["red", "blue", "mediumspringgreen", "purple", "pink", "yellow"];
-  setInterval(() => {
-    welcomeBanner.style.color = colors[welcomeTicker % colors.length];
-    welcomeTicker++;
-  }, 500);
-
+  welcomeBannerColors(document.querySelector(".welcome-banner"), 500);
   applyPageCount();
 };
 
