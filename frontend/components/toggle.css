@@ -1,54 +1,55 @@
-:root {
-	--toggle-size: 1;
-	--toggle-on-bg: grey;
-	--toggle-off-bg: grey;
-	--toggle-nub-color: #fff;
-}
-
-.toggle-switch input[type=checkbox] {
-	height: 0;
-	width: 0;
-	visibility: hidden;
-}
-
-/* Big part */
-.toggle-switch label {
-	cursor: pointer;
-	text-indent: -9999px;
-
-	width: 2.5em;
-	height: 1.25em;
-
-	background: var(--toggle-off-bg);
-	display: block;
-	border-radius: 100px;
+/* Theme Toggle <https://codepen.io/fydsa/pen/abwdpep> */
+.toggle-switch {
 	position: relative;
+	width: var(--switch-size);
 }
 
-/* Small "nub" */
-.toggle-switch label:after {
-	content: '';
+.toggle-switch label {
 	position: absolute;
+	width: 100%;
+	height: calc(var(--switch-size) / 2);
+	border-radius: calc(var(--switch-size) / 2);
+	background-color: var(--theme-light-bg);
+	/* background-color: lightblue; */
+	cursor: pointer;
+}
 
-	top:    0.075em;
-	left:   0.075em;
-	width:  1.10em;
-	height: 1.10em;
+.toggle-switch input {
+	position: absolute;
+	display: none;
+}
 
-	background: var(--toggle-nub-color);
-	border-radius: 90px;
+.theme-toggle-slider {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	border-radius: calc(var(--switch-size) / 2);
 	transition: 0.3s;
 }
 
-.toggle-switch input:checked + label {
-	background: var(--toggle-on-bg);
+.toggle-switch input:checked ~ .theme-toggle-slider {
+	background-color: var(--theme-dark-bg);
 }
 
-.toggle-switch input:checked + label:after {
-	left: calc(100% - 5px);
-	transform: translateX(-100%);
+/* Slider Circle */
+.theme-toggle-slider::before {
+	content: "";
+	position: absolute;
+	width: calc(var(--switch-size) / 2.6666666666666665);
+	height: calc(var(--switch-size) / 2.6666666666666665);
+	top: calc(var(--switch-size) / 15.384615384615385);
+	left: calc(var(--switch-size) / 12.5);
+	border-radius: 50%;
+	/* box-shadow adds the moon */
+	/* box-shadow: inset calc(var(--switch-size)/7.142857142857143) -4px 0px 0px var(--theme-light-bg); */
+	background-color: var(--theme-dark-bg);
+	transition: 0.3s;
 }
 
-.toggle-switch label:active:after {
-	width: 32.5px;
+/* Dark mode Slider Circle */
+.toggle-switch input:checked ~ .theme-toggle-slider::before {
+	/* transform: translateX(95px); */
+	transform: translateX(calc(var(--switch-size) / 2.1052631578947367));
+	background-color: var(--theme-dark-fg);
+	box-shadow: none;
 }

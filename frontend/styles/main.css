@@ -2,10 +2,6 @@
 @import "~/frontend/components/win95.css";
 @import "~/frontend/components/toggle.css";
 
-body {
-	transition: background 0.2s linear;
-}
-
 a:visited {
 	text-decoration: none;
 }
@@ -84,7 +80,7 @@ body.dark-theme .win95-window-body p,th,td {
 
 @media only screen and (max-width: 600px) {
 	.help-window {
-		width: 18em;
+		width: 75%;
 	}
 }
 
@@ -92,37 +88,7 @@ body.dark-theme .win95-window-body p,th,td {
 	margin: 0px 2em 0.8em 2em;
 }
 
-/* Custom theme Toggle Switch */
-
-/* * {box-sizing: border-box;}
-.theme-toggle-checkbox {
-	opacity: 0;
-	position: absolute;
+.toggle-switch {
+	float: right;
+	--switch-size: 60px;
 }
-.theme-toggle-label {
-	background-color: green;
-	width: 50px;
-	height: 26px;
-	border-radius: 50px;
-	position: relative;
-	padding: 5px;
-	cursor: pointer;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-.fa-moon {color: #f1c40f;}
-.fa-sun {color: #f39c12;}
-.theme-toggle-label .theme-toggle-ball {
-	background-color: red;
-	width: 22px;
-	height: 22px;
-	position: absolute;
-	left: 2px;
-	top: 2px;
-	border-radius: 50%;
-	transition: transform 0.2s linear;
-}
-.theme-toggle-checkbox + .theme-toggle-label .theme-toggle-ball {
-	transform: translateX(24px);
-} */

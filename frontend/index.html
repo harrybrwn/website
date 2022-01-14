@@ -7,6 +7,13 @@
     <title><%= title %></title>
     <link rel="author" href="/">
     <link rel="index" href="/">
+    <style>
+        body {
+            /* Prevent white flash before page loads */
+            visibility: hidden;
+            opacity: 0;
+        }
+    </style>
 </head>
 <body>
     <noscript>
@@ -24,12 +31,20 @@
               height="128"
             >
         </center>
+
+        <div class="theme-toggle toggle-switch">
+            <label class="theme-toggle-label" for="theme-toggle">
+                <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
+                <span class="theme-toggle-slider"></span>
+            </label>
+        </div>
+
         <div id="login-panel" class="login-panel modal" style="display: none;">
             <div class="win95-window">
                 <div class="win95-window-head">
                     <p>Login</p>
                     <button id="login-window-close">&#x2715;</button>
-                    <button id="login-window-minimize">&#8211;</button>
+                    <button id="login-window-minimize">&#95;</button>
                 </div>
                 <div class="win95-window-body">
                     <p>User Login</p>
@@ -39,6 +54,18 @@
                         <br>
                         <input type="submit">
                     </form>
+                </div>
+            </div>
+        </div>
+        <div id="logout-panel" class="logout-panel model" style="display: none;">
+            <div class="win95-window">
+                <div class="win95-window-head">
+                    <p>Login</p>
+                    <button id="login-window-close">&#x2715;</button>
+                    <button id="login-window-minimize">&#8211;</button>
+                </div>
+                <div class="win95-window-body">
+                    <!-- <button id="logout-btn">Logout</button> -->
                 </div>
             </div>
         </div>
@@ -102,7 +129,7 @@
         </ul>
 
         <section class="settings">
-            <span>Toggle theme:</span>
+            <!-- <span>Toggle theme:</span>
             <span class="theme-toggle toggle-switch">
                 <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
                 <label class="theme-toggle-label" for="theme-toggle">
@@ -110,7 +137,7 @@
                     <i class="fas fa-sun"></i>
                     <span class="theme-toggle-ball"></span>
                 </label>
-            </span>
+            </span> -->
             <button id="logout-btn">Logout</button>
             <button id="help-btn">Help</button>
         </section>
@@ -212,7 +239,7 @@
         <div class="win95-window-head">
             <p>Help</p>
             <button id="help-window-close">&#x2715;</button>
-            <button id="help-window-minimize">&#8211;</button>
+            <button id="help-window-minimize">&#95;</button>
         </div>
         <div class="win95-window-body">
             <p>Keyboard shortcuts</p>
@@ -240,5 +267,12 @@
             </table>
         </div>
     </div>
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            document.body.style.visibility = 'visible';
+            document.body.style.opacity = 1;
+            document.body.style.transition = 'background 0.4s linear';
+        })
+    </script>
 </body>
 </html>
