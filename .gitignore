@@ -19,13 +19,12 @@ config.json
 # Testing
 /db/data/
 /tests/
-#/scripts/
 /inspiration/
 tests/*
 /scripts/*.sql
 /scripts/psql.sh
-/requests.http
 /demo/
+requests.http
 
 # Tools
 NOTES

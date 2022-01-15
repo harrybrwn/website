@@ -26,7 +26,7 @@ FROM golang:1.17.3-alpine as builder
 WORKDIR /app
 COPY go.mod go.sum /app/
 RUN go mod download
-COPY --from=frontend /app/build .
+COPY --from=frontend /app .
 
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
 	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/user-gen ./cmd/user-gen

@@ -68,7 +68,7 @@ func NotFound(w http.ResponseWriter, r *http.Request) {
 
 // ParseFlags parses flags.
 func ParseFlags() {
-	defer RecoverFlagHelpErr()
+	defer recoverFlagHelpErr()
 	flag.Parse()
 }
 
@@ -85,7 +85,7 @@ func BoolFlag(ptr *bool, name, desc string) {
 }
 
 // RecoverFlagHelpErr will gracfully end the program if the help flag is given.
-func RecoverFlagHelpErr() {
+func recoverFlagHelpErr() {
 	if r := recover(); r != nil {
 		err, ok := r.(error)
 		if !ok {
