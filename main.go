@@ -43,6 +43,8 @@ var (
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
 
+	//go:embed files/bookmarks.json
+	bookmarks []byte
 	//go:embed build/pub.asc
 	gpgPubkey []byte
 	//go:embed build/robots.txt
@@ -128,6 +130,7 @@ func main() {
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
+	api.GET("/bookmarks", json(bookmarks))
 	api.GET("/hits", app.Hits(db))
 	api.POST("/token", app.TokenHandler(jwtConf, app.NewUserStore(db)))
 	api.GET("/runtime", func(c echo.Context) error {
@@ -237,6 +240,12 @@ func page(raw []byte, filename string) echo.HandlerFunc {
 		}
 	}
 	return hf
+}
+
+func json(raw []byte) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.Blob(200, "application/json", raw)
+	}
 }
 
 func serveFile(c echo.Context, filename string) error {

@@ -1,12 +1,12 @@
 version: "3.8"
 
 services:
-  harrybrwn.com:
+  api:
     image: harrybrwn.com:latest
     build:
       dockerfile: Dockerfile
       context: .
-      target: harrybrwn
+      target: api
     network_mode: host
     environment:
       PORT: ${PORT}

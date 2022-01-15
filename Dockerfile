@@ -32,8 +32,8 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
 	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/user-gen ./cmd/user-gen
 
 # Main image
-FROM alpine:3.14 as harrybrwn
-LABEL maintainer="Harry Brown <harrybrown98@gmail.com>"
+FROM alpine:3.14 as api
+LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
 RUN apk update && apk upgrade && apk add -l tzdata
 COPY --from=builder /app/bin/harrybrwn /app/harrybrwn
 CMD ["/app/harrybrwn"]
