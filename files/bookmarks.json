@@ -1,0 +1,191 @@
+{
+	"links": [
+		{
+			"url": "https://caltopo.com/map.html",
+			"name": "CalTOPO",
+			"description": "A map showing various geological features.",
+			"tags": [
+				"tools",
+				"science"
+			]
+		},
+		{
+			"url": "https://primes.utm.edu/primes/lists/all.txt",
+			"name": "The Largest Known Primes",
+			"description": "The 5,000 largest known prime numbers including when it was discovered and who discovered it.",
+			"tags": [
+				"math"
+			]
+		},
+		{
+			"url": "http://oldcomputers.net/",
+			"name": "Steve's Old Computer Museum",
+			"description": "A really awesome encyclopedia of old personal computers.",
+			"tags": [
+				"history",
+				"computers"
+			]
+		},
+		{
+			"url": "http://www.nooooooooooooooo.com/",
+			"name": "Noooooooooooo",
+			"description": "You know that scene in Start Wars where he screams \"noooo\"",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://gurka.se/",
+			"name": "Gurka",
+			"description": "Literally just a cucumber.",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://thetruesize.com/",
+			"name": "True Size Of",
+			"description": "A map that allows you to move the outline country to see how it looks in different places on the mercator projection.",
+			"tags": [
+				"tools"
+			]
+		},
+		{
+			"url": "http://www.dirkdirk.com/",
+			"name": "Dirk",
+			"description": "A collection of very random surreal websites.",
+			"tags": [
+				"silly",
+				"blog",
+				"people"
+			]
+		},
+		{
+			"url": "https://www.ibiblio.org/e-notes/webgl/polyhedra/polyhedra.htm",
+			"name": "Polyhedra",
+			"description": "A collection of polygons rendered in WebGL.",
+			"tags": [
+				"math",
+				"science"
+			]
+		},
+		{
+			"url": "https://neal.fun/",
+			"name": "Neal.fun",
+			"description": "A ton of fun web projects created by Neal Agarwal",
+			"tags": [
+				"blog",
+				"art",
+				"people"
+			]
+		},
+		{
+			"url": "https://www.howmanypeopleareinspacerightnow.com/",
+			"name": "How Many People in Space Right Now",
+			"description": "Displays the number of people currently in space.",
+			"tags": [
+				"blog",
+				"science"
+			]
+		},
+		{
+			"url": "https://robpike.io/",
+			"name": "Rob Pike's website",
+			"description": "",
+			"tags": [
+				"silly",
+				"people"
+			]
+		},
+		{
+			"url": "http://info.cern.ch/",
+			"name": "The first website",
+			"description": "This is the first website created by Tim Berners-Lee at Cern.",
+			"tags": [
+				"history"
+			]
+		},
+		{
+			"url": "https://www.sbnation.com/a/17776-football",
+			"name": "17776",
+			"description": "A fictional futuristic web multimedia story.",
+			"tags": [
+				"art"
+			]
+		},
+		{
+			"url": "https://libraryofbabel.info/",
+			"name": "The Library of Babel",
+			"description": "Every possible combination of the english alphabet, pre-computed to result in everything that has ever been and will ever be said.",
+			"tags": [
+				"math",
+				"art"
+			]
+		},
+		{
+			"url": "https://dn.ht/",
+			"name": "Dennis Hotson",
+			"description": "A personal website with lots of really cool projects.",
+			"tags": [
+				"blog",
+				"people"
+			]
+		},
+		{
+			"url": "http://infolab.stanford.edu/~sergey/",
+			"name": "Sergey Brin's Home Page",
+			"description": "Sergey Brin's website from when he was still in school creating Google for his PhD thesis.",
+			"tags": [
+				"people"
+			]
+		},
+		{
+			"url": "http://cat-v.org/",
+			"name": "cat-v: Considered harmful",
+			"description": "Tons of great content ranging from old unix operating systems to economics.",
+			"tags": []
+		},
+		{
+			"url": "https://crouton.net/",
+			"name": "A Crouton",
+			"description": "Really, just a crouton.",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://www.music-map.com/",
+			"name": "Music Map",
+			"description": "A graph of related musicians.",
+			"tags": [
+				"tools",
+				"art"
+			]
+		},
+		{
+			"url": "https://shitstorm.dirkdirk.com/",
+			"name": "Shit Storm",
+			"description": "",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://cat-bounce.com/",
+			"name": "Cat Bounce",
+			"description": "Bouncing cats",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://suricrasia.online/iceberg/",
+			"name": "Computer Meme Iceberg",
+			"description": "The deep iceberg of computer/programming related memes.",
+			"tags": [
+				"computers",
+				"silly"
+			]
+		}
+	]
+}

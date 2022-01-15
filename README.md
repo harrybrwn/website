@@ -6,8 +6,10 @@ This is the repo for my personal website.
 
 ```
 yarn install
+yarn build
 go generate
 go build -o bin/harrybrwn.com
+bin/harrybrown.com -env
 ```
 
 ### Run locally
