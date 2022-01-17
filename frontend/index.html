@@ -8,17 +8,21 @@
     <link rel="author" href="/">
     <link rel="index" href="/">
     <style>
-        body {
-            /* Prevent white flash before page loads */
-            visibility: hidden;
-            opacity: 0;
-        }
+        /* Prevent white flash before page loads */
+        body { visibility: hidden; opacity: 0; }
     </style>
 </head>
 <body>
     <noscript>
-        <span><!-- javascript is disabled --></span>
+        <style>body { visibility: visible; opacity: 1; }</style>
     </noscript>
+
+    <div class="theme-toggle toggle-switch">
+        <label class="theme-toggle-label" for="theme-toggle">
+            <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
+            <span class="theme-toggle-slider"></span>
+        </label>
+    </div>
 
     <main>
         <center>
@@ -31,13 +35,6 @@
               height="128"
             >
         </center>
-
-        <div class="theme-toggle toggle-switch">
-            <label class="theme-toggle-label" for="theme-toggle">
-                <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
-                <span class="theme-toggle-slider"></span>
-            </label>
-        </div>
 
         <div id="login-panel" class="login-panel modal" style="display: none;">
             <div class="win95-window">
@@ -101,6 +98,7 @@
                   target="_blank"
                   href="https://www.yourworldoftext.com/~harrybrwn/"
                   ping="/api/ping?link=https://www.yourworldoftext.com/~harrybrwn/"
+                  rel="noopener,noreferrer"
                   title="Write something on my wall"
                 >wall</a>
             </li>
@@ -129,15 +127,6 @@
         </ul>
 
         <section class="settings">
-            <!-- <span>Toggle theme:</span>
-            <span class="theme-toggle toggle-switch">
-                <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
-                <label class="theme-toggle-label" for="theme-toggle">
-                    <i class="fas fa-moon"></i>
-                    <i class="fas fa-sun"></i>
-                    <span class="theme-toggle-ball"></span>
-                </label>
-            </span> -->
             <button id="logout-btn">Logout</button>
             <button id="help-btn">Help</button>
         </section>
@@ -176,16 +165,15 @@
                 <img src="<%= require('./img/88x31/linux.gif') %>" width="88" height="31" alt="The Linux kernel">
             </a>
             <a
-                href="https://madville.neocities.org"
-                ping="/api/ping?link=https://madville.neocities.org"
-                rel="noopener,noreferrer"
-                title="A beautifully retro site"
+              href="https://madville.neocities.org"
+              ping="/api/ping?link=https://madville.neocities.org"
+              rel="noopener,noreferrer"
+              title="A beautifully retro site"
             >
                 <img
-                    src="<%= require('./img/88x31/madville.gif') %>"
-                    alt="A beautifully retro site"
-                    width="88"
-                    height="31"
+                  src="<%= require('./img/88x31/madville.gif') %>"
+                  alt="A beautifully retro site"
+                  width="88" height="31"
                 >
             </a>
             <a
@@ -195,10 +183,9 @@
               title="Netscape Navigator"
             >
                 <img
-                    src="<%= require('./img/88x31/netnow2.gif') %>"
-                    alt="Netscape Navigator"
-                    width="88"
-                    height="31"
+                  src="<%= require('./img/88x31/netnow2.gif') %>"
+                  alt="Netscape Navigator"
+                  width="88" height="31"
                 >
             </a>
             <a
@@ -207,7 +194,11 @@
               rel="noopener,noreferrer"
               title="Vim"
             >
-                <img src="<%= require('./img/88x31/vim.gif') %>" width="88" height="31" alt="Vim">
+                <img
+                  src="<%= require('./img/88x31/vim.gif') %>"
+                  width="88" height="31"
+                  alt="Vim"
+                >
             </a>
             <img src="<%= require('./img/88x31/vi_now.gif') %>" width="88" height="31" alt="Vi Now">
             <img src="<%= require('./img/88x31/rfc1876-now.gif') %>" width="88" height="31" alt="RFC 1876">
@@ -216,14 +207,22 @@
               ping="/api/ping?link=https://cyber.dabamos.de/88x31/index.html"
               rel="noopener,noreferrer"
             >
-                <img src="<%= require('./img/88x31/88x31.gif') %>" alt="Eighty eight by thirty one">
+                <img
+                  src="<%= require('./img/88x31/88x31.gif') %>"
+                  alt="Eighty eight by thirty one"
+                  width="88" height="31"
+                >
             </a>
             <a
               href="https://devils.neocities.org/"
               ping="/api/ping?link=https://devils.neocities.org/"
               rel="noopener,noreferrer"
             >
-                <img src="<%= require('./img/88x31/devils-neocities.gif') %>" alt="Devils">
+                <img
+                  src="<%= require('./img/88x31/devils-neocities.gif') %>"
+                  alt="Devils"
+                  width="88" height="31"
+                >
             </a>
             <section class="stats">
                 <div>
@@ -231,7 +230,13 @@
                 </div>
                 <div id="hit-count"></div>
             </section>
-            <center><img src="<%=require('./img/under_construction.gif')%>" alt="Under Construction" width="110" height="60"></center>
+            <center>
+                <img
+                  src="<%=require('./img/under_construction.gif')%>"
+                  alt="Under Construction"
+                  width="110" height="60"
+                >
+            </center>
         </footer>
     </main>
 

@@ -114,8 +114,8 @@ const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
 const main = () => {
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
-    interval: 5 * 60 * SECOND,
-    // interval: 5 * SECOND,
+    // interval: 5 * 60 * SECOND,
+    interval: 5 * SECOND,
   });
   let loginPanel = new Modal({
     button: document.getElementById("login-btn"),
@@ -158,6 +158,7 @@ const main = () => {
 
   // Handle login and logout
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
+    console.log("token change");
     const e = ev.detail;
     if (e.action == "login") {
       storeToken(e.token);
@@ -166,6 +167,8 @@ const main = () => {
         links?.appendChild(li);
       }
     } else {
+      let loggedIn = loginManager.isLoggedIn();
+      if (!loggedIn) return;
       clearCookie(TOKEN_KEY);
       deleteToken();
       for (let li of privLinks) {

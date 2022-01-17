@@ -10,7 +10,6 @@
 	height: calc(var(--switch-size) / 2);
 	border-radius: calc(var(--switch-size) / 2);
 	background-color: var(--theme-light-bg);
-	/* background-color: lightblue; */
 	cursor: pointer;
 }
 
@@ -48,7 +47,6 @@
 
 /* Dark mode Slider Circle */
 .toggle-switch input:checked ~ .theme-toggle-slider::before {
-	/* transform: translateX(95px); */
 	transform: translateX(calc(var(--switch-size) / 2.1052631578947367));
 	background-color: var(--theme-dark-fg);
 	box-shadow: none;

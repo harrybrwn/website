@@ -53,6 +53,7 @@ const metaTags = (site) => {
     {
       title: site.title,
       author: site.author,
+      description: site.description,
       "og-url": { property: "og:url", content: `https://${site.domain}` },
       "og-title": { property: "og:title", content: site.title },
       "og-type": { property: "og:type", content: "website" },

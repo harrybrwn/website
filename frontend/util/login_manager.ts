@@ -1,8 +1,6 @@
 import { Token, loadToken, isExpired } from "~/frontend/api/auth";
 import { SECOND } from "~/frontend/constants";
 
-// const SECOND = 1000;
-
 interface LoginManagerOptions {
   // The interval at which the manager checks to see if we are expired
   // TODO use setTimeout on a login event to handle this so we don't have to poll

@@ -2,14 +2,7 @@ DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
 ENV=production
 
 build:
-	go generate
-	go build             \
-		-trimpath        \
-		-ldflags "-s -w" \
-		-o bin/harrybrown.com
-
-run: build
-	@bin/harrybrown.com
+	sh scripts/build.sh
 
 test:
 	go test ./... -coverprofile=test-cover

@@ -51,6 +51,8 @@ var (
 	robots []byte
 	//go:embed build/favicon.ico
 	favicon []byte
+	//go:embed build/manifest.json
+	manifest []byte
 	//go:embed build/static
 	static embed.FS
 	//go:embed build/sitemap.xml
@@ -122,6 +124,7 @@ func main() {
 	e.GET("/sitemap.xml", WrapHandler(sitemapHandler))
 	e.GET("/sitemap.xml.gz", WrapHandler(sitemapGZHandler))
 	e.GET("/favicon.ico", faviconHandler())
+	e.GET("/manifest.json", json(manifest))
 	e.GET("/secret", func(c echo.Context) error {
 		return c.HTML(200, "<h1>This is a secret</h1>")
 	}, guard, auth.AdminOnly())
@@ -227,13 +230,14 @@ func page(raw []byte, filename string) echo.HandlerFunc {
 			hf = gzip(hf)
 		}
 	} else {
+		ct := http.DetectContentType(raw)
 		hf = func(c echo.Context) error {
 			h := c.Response().Header()
 			staticLastModified(h)
 			h.Set("Cache-Control", "public, max-age=31919000")
 			h.Set("Content-Length", strconv.FormatInt(length, 10))
 			h.Set("Accept-Ranges", "bytes")
-			return c.HTMLBlob(200, raw)
+			return c.Blob(200, ct, raw)
 		}
 		if http.DetectContentType(raw) == "application/x-gzip" {
 			hf = gzip(hf)
@@ -244,6 +248,10 @@ func page(raw []byte, filename string) echo.HandlerFunc {
 
 func json(raw []byte) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		h := c.Response().Header()
+		staticLastModified(h)
+		h.Set("Cache-Control", "public, max-age=31919000")
+		h.Set("Content-Length", strconv.FormatInt(int64(len(raw)), 10))
 		return c.Blob(200, "application/json", raw)
 	}
 }

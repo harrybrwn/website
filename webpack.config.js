@@ -203,6 +203,7 @@ module.exports = function (webpackEnv) {
           },
           { from: path.join(paths.public, "robots.txt") },
           { from: path.join(paths.public, "pub.asc") },
+          { from: path.join(paths.source, "manifest.json") },
         ],
       }),
       new SitemapPlugin({
