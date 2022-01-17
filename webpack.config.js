@@ -4,6 +4,8 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const HTMLInlineCSSWebpackPlugin =
+  require("html-inline-css-webpack-plugin").default;
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
 const path = require("path");
 const build = require("./scripts/build");
@@ -176,6 +178,7 @@ module.exports = function (webpackEnv) {
       builder.page("404", { noChunks: true }),
       builder.page("harry_y_tanya"),
       builder.page("games"),
+      new HTMLInlineCSSWebpackPlugin(),
 
       new CopyWebpackPlugin({
         patterns: [
