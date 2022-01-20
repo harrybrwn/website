@@ -13,7 +13,10 @@ clean:
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
-.PHONY: build run test clean
+clean-mocks:
+	$(RM) -r internal/mocks
+
+.PHONY: build run test clean clean-mocks
 
 .PHONY: resume
 resume:
