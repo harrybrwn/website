@@ -24,7 +24,7 @@ func TestServePages(t *testing.T) {
 		ctype string
 	}
 
-	files := os.DirFS("build")
+	files := os.DirFS("testdata")
 
 	// entries, err := fs.ReadDir(files, ".")
 	// is.NoErr(err) // should be able to read directory
