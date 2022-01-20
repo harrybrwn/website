@@ -17,6 +17,7 @@ config.json
 .env
 
 # Testing
+/internal/mocks/
 /db/data/
 /tests/
 /inspiration/

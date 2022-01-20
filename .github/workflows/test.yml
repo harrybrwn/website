@@ -6,13 +6,15 @@ jobs:
     strategy:
       matrix:
         go-version: [1.16.x, 1.17.5]
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - name: Install Go
       uses: actions/setup-go@v2
       with:
         go-version: ${{ matrix.go-version }}
+    - name: Install Go Tools
+      run: go install github.com/golang/mock/mockgen@latest
     - name: Checkout code
       uses: actions/checkout@v2
     - uses: actions/setup-node@v2
@@ -21,4 +23,5 @@ jobs:
         cache: 'yarn'
     - run: yarn install
     - run: yarn build
+    - run: go generate ./...
     - run: go test ./...
