@@ -222,12 +222,6 @@ const main = () => {
 
   welcomeBannerColors(document.querySelector(".welcome-banner"), 500);
   applyPageCount();
-  let timeout = setTimeout(() => {
-    console.log("hello?");
-  }, 1000 * 5);
-  clearTimeout(timeout);
-  clearTimeout(timeout);
-  clearTimeout(timeout);
 };
 
 main();

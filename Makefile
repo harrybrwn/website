@@ -10,7 +10,7 @@ test:
 
 clean:
 	$(RM) bin -r
-	$(RM) test.html test-cover files/resume.pdf files/resume.log files/resume.aux
+	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
 .PHONY: build run test clean

@@ -31,8 +31,7 @@ export default class LoginManager {
     let expires = new Date(token.expires * 1000);
     let now = new Date();
     let ms = expires.getTime() - now.getTime() - SECOND;
-    console.log("token expires at", expires);
-    console.log("expires in", ms, "milliseconds");
+    console.log("expires in", ms, "milliseconds at", expires);
     if (ms < 0) {
       return;
     }
@@ -42,6 +41,8 @@ export default class LoginManager {
     this.refreshTokenTimeout = setTimeout(() => {
       console.log("refreshing jwt token");
       refresh().then((tok: Token) => {
+        this.target.dispatchEvent(this.tokenChange("tokenChange", tok));
+        this.target.dispatchEvent(this.tokenChange("loggedIn", tok));
         this.doTimeout(tok);
       });
     }, ms);
@@ -52,13 +53,8 @@ export default class LoginManager {
     this.refreshTokenTimeout = setTimeout(() => {}, 0);
     // load the token and check expiration on startup
     let token = loadToken();
-    console.log(token, token?.expires);
     if (token != null && !isExpired(token)) {
-      console.log("token not expired");
       this.login(token);
-      this.doTimeout(token);
-    } else {
-      console.log("token expired");
     }
     this.expirationCheckTimer = setInterval(() => {
       let token = loadToken();
