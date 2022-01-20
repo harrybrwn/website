@@ -1,4 +1,4 @@
-import { Token, loadToken, isExpired } from "~/frontend/api/auth";
+import { Token, loadToken, isExpired, refresh } from "~/frontend/api/auth";
 import { SECOND } from "~/frontend/constants";
 
 interface LoginManagerOptions {
@@ -11,6 +11,7 @@ interface LoginManagerOptions {
 
 export default class LoginManager {
   private expirationCheckTimer: NodeJS.Timer;
+  private refreshTokenTimeout: NodeJS.Timeout | null;
   private target: EventTarget;
 
   private tokenChange<K extends keyof TokenChangeEventHandlersEventMap>(
@@ -26,12 +27,38 @@ export default class LoginManager {
     });
   }
 
+  private doTimeout(token: Token) {
+    let expires = new Date(token.expires * 1000);
+    let now = new Date();
+    let ms = expires.getTime() - now.getTime() - SECOND;
+    console.log("token expires at", expires);
+    console.log("expires in", ms, "milliseconds");
+    if (ms < 0) {
+      return;
+    }
+    if (this.refreshTokenTimeout != null) {
+      clearTimeout(this.refreshTokenTimeout);
+    }
+    this.refreshTokenTimeout = setTimeout(() => {
+      console.log("refreshing jwt token");
+      refresh().then((tok: Token) => {
+        this.doTimeout(tok);
+      });
+    }, ms);
+  }
+
   constructor(options: LoginManagerOptions) {
     this.target = options.target || document;
+    this.refreshTokenTimeout = setTimeout(() => {}, 0);
     // load the token and check expiration on startup
     let token = loadToken();
+    console.log(token, token?.expires);
     if (token != null && !isExpired(token)) {
+      console.log("token not expired");
       this.login(token);
+      this.doTimeout(token);
+    } else {
+      console.log("token expired");
     }
     this.expirationCheckTimer = setInterval(() => {
       let token = loadToken();
@@ -50,11 +77,20 @@ export default class LoginManager {
   logout() {
     this.target.dispatchEvent(this.tokenChange("tokenChange", null));
     this.target.dispatchEvent(this.tokenChange("loggedIn", null));
+    if (this.refreshTokenTimeout != null) {
+      clearTimeout(this.refreshTokenTimeout);
+      this.refreshTokenTimeout = null;
+    }
   }
 
   login(tk: Token) {
     this.target.dispatchEvent(this.tokenChange("tokenChange", tk));
     this.target.dispatchEvent(this.tokenChange("loggedIn", tk));
+    if (this.refreshTokenTimeout != null) {
+      clearTimeout(this.refreshTokenTimeout);
+      this.refreshTokenTimeout = null;
+    }
+    this.doTimeout(tk);
   }
 
   stop() {

@@ -24,7 +24,10 @@ export interface Login {
 
 type TokenCallback = (tok: Token) => void;
 
-export function login(user: Login, callback?: TokenCallback): Promise<Token> {
+export const login = async (
+  user: Login,
+  callback?: TokenCallback
+): Promise<Token> => {
   return fetch(`${window.location.origin}/api/token?cookie=true`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -48,7 +51,39 @@ export function login(user: Login, callback?: TokenCallback): Promise<Token> {
       if (callback) callback(tok);
       return tok;
     });
-}
+};
+
+export const refresh = async (): Promise<Token> => {
+  let token = loadToken();
+  if (token == null) {
+    throw new Error("cannot refresh token when not signed in");
+  }
+  return fetch(`${window.location.origin}/api/refresh?cookie=true`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `${token.type} ${token.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: token.refresh }),
+  })
+    .then((resp) => {
+      if (!resp.ok) {
+        throw new Error("could not get refresh token");
+      }
+      return resp.json();
+    })
+    .then((blob: any) => {
+      let tok: Token = {
+        token: blob.token,
+        expires: blob.expires,
+        refresh: blob.refresh_token,
+        type: blob.token_type,
+      };
+      storeToken(tok);
+      return tok;
+    });
+};
 
 export function parseClaims(raw: string): Claims {
   let blob = atob(raw.split(".")[1]);
@@ -91,3 +126,14 @@ function toCookie(tok: Token): string {
   let cookie = `${TOKEN_KEY}=${tok.token};expires=${exp.toUTCString()};path=/`;
   return cookie;
 }
+
+const apiHeaders = (): HeadersInit => {
+  let headers: HeadersInit = {
+    Accept: "application/json",
+  };
+  let token = loadToken();
+  if (token != null) {
+    headers["Authorization"] = `${token.type} ${token.token}`;
+  }
+  return headers;
+};

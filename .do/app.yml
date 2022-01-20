@@ -1,9 +1,0 @@
-name: harrybrwn.com
-services:
-  - name: harrybrwn
-    build_command: yarn build
-    environment_slug: html
-    github:
-      branch: digital-ocean-test
-      deploy_on_push: true
-      repo: harrybrwn/harrybrwn.com

@@ -11,6 +11,7 @@
 body {
 	color: var(--theme-light-fg);
 	background-color: var(--theme-light-bg);
+	transition: background 0.4s linear;
 }
 body.dark-theme {
 	color: var(--theme-dark-fg);

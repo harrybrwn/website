@@ -58,6 +58,65 @@ const htmlMinify = {
   minifyURLs: true,
 };
 
+const plugins = (builder) => {
+  let plugins = [
+    new MiniCssExtractPlugin({
+      filename: builder.isProd
+        ? "static/css/[name].[hash:8].css"
+        : "static/css/[name].css",
+    }),
+    builder.page("index", { pageDir: ".", chunks: ["main"] }),
+    builder.page("remora"),
+    builder.page("admin"),
+    builder.page("404", { noChunks: true }),
+    builder.page("harry_y_tanya"),
+    builder.page("games"),
+
+    new CopyWebpackPlugin({
+      patterns: [
+        // Copy over the legacy site... just for the lols
+        ...copy(
+          [
+            "js/bootstrap.min.js",
+            "js/popper.min.js",
+            "js/jquery-3.4.1.min.js",
+            "js/home.js",
+            "css/bootstrap.min.css",
+            "css/animate.min.css",
+            "css/base.css",
+            "css/home.css",
+            "img/linkedin.svg",
+            "img/github.svg",
+            "img/1125x1500/me_sm.jpg",
+          ].map((v) => path.join("static", v))
+        ),
+        copy("static/files"),
+        {
+          // Harry's OpenGraph Preview Image
+          from: path.join(builder.paths.source, "img/goofy.jpg"),
+          to: path.resolve(
+            __dirname,
+            builder.paths.build,
+            "static/img/goofy.jpg"
+          ),
+        },
+        { from: path.join(builder.paths.public, "robots.txt") },
+        { from: path.join(builder.paths.public, "pub.asc") },
+        { from: path.join(builder.paths.source, "manifest.json") },
+      ],
+    }),
+    new SitemapPlugin({
+      base: `https://${builder.site.domain}`,
+      paths: sitemap,
+      options: { skipgzip: false },
+    }),
+  ];
+  // if (builder.isProd) {
+  //   plugins.push(new HTMLInlineCSSWebpackPlugin());
+  // }
+  return plugins;
+};
+
 module.exports = function (webpackEnv) {
   const isProd = webpackEnv.prod || false;
   const builder = new build.Builder({
@@ -156,7 +215,8 @@ module.exports = function (webpackEnv) {
         {
           // Fonts
           test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
-          type: "asset/inline",
+          // type: "asset/inline",
+          type: "asset/resource",
         },
         {
           // Load these as static resources
@@ -166,54 +226,6 @@ module.exports = function (webpackEnv) {
       ],
     },
 
-    plugins: [
-      new MiniCssExtractPlugin({
-        filename: isProd
-          ? "static/css/[name].[hash:8].css"
-          : "static/css/[name].css",
-      }),
-      builder.page("index", { pageDir: ".", chunks: ["main"] }),
-      builder.page("remora"),
-      builder.page("admin"),
-      builder.page("404", { noChunks: true }),
-      builder.page("harry_y_tanya"),
-      builder.page("games"),
-      new HTMLInlineCSSWebpackPlugin(),
-
-      new CopyWebpackPlugin({
-        patterns: [
-          // Copy over the legacy site... just for the lols
-          ...copy(
-            [
-              "js/bootstrap.min.js",
-              "js/popper.min.js",
-              "js/jquery-3.4.1.min.js",
-              "js/home.js",
-              "css/bootstrap.min.css",
-              "css/animate.min.css",
-              "css/base.css",
-              "css/home.css",
-              "img/linkedin.svg",
-              "img/github.svg",
-              "img/1125x1500/me_sm.jpg",
-            ].map((v) => path.join("static", v))
-          ),
-          copy("static/files"),
-          {
-            // Harry's OpenGraph Preview Image
-            from: path.join(paths.source, "img/goofy.jpg"),
-            to: path.resolve(__dirname, paths.build, "static/img/goofy.jpg"),
-          },
-          { from: path.join(paths.public, "robots.txt") },
-          { from: path.join(paths.public, "pub.asc") },
-          { from: path.join(paths.source, "manifest.json") },
-        ],
-      }),
-      new SitemapPlugin({
-        base: `https://${site.domain}`,
-        paths: sitemap,
-        options: { skipgzip: false },
-      }),
-    ],
+    plugins: plugins(builder),
   };
 };

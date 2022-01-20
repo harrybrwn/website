@@ -2,6 +2,27 @@ import "~/frontend/styles/admin.css";
 import * as api from "~/frontend/api";
 
 const main = () => {
+  let infoContainer = document.getElementById("server-info");
+  api.runtimeInfo().then((info: api.RuntimeInfo) => {
+    if (infoContainer == null) {
+      return;
+    }
+    let elements = [
+      ...keyPairElem("name", info.name),
+      ...keyPairElem("age", info.age),
+      ...keyPairElem("uptime", info.uptime),
+      ...keyPairElem("birthday", info.birthday),
+      ...keyPairElem("debug", info.debug),
+      ...keyPairElem("GOOS", info.GOOS),
+      ...keyPairElem("GOARCH", info.GOARCH),
+    ];
+    let dl: HTMLDListElement = document.createElement("dl");
+    for (let elem of elements) {
+      dl.appendChild(elem);
+    }
+    infoContainer.appendChild(dl);
+    // infoContainer.innerText = JSON.stringify(info);
+  });
   let table = new Table("logs", logsPaginator);
   table.header([
     "id",
@@ -36,6 +57,26 @@ const logsPaginator = async (
         log.requested_at,
       ])
     );
+};
+
+const keyPairElem = (name: string, value: any): [HTMLElement, HTMLElement] => {
+  let k = document.createElement("dt");
+  k.innerText = name;
+  let v = document.createElement("dd");
+  v.innerText = `${value}`;
+  return [k, v];
+};
+
+const keyElement = (name: string): HTMLElement => {
+  let el = document.createElement("dt");
+  el.innerText = name;
+  return el;
+};
+
+const valueElement = (value: any): HTMLElement => {
+  let el = document.createElement("dd");
+  el.innerText = `${value}`;
+  return el;
 };
 
 type Paginator = (index: number, offset: number) => Promise<any[][]>;

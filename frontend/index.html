@@ -1,283 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%= title %></title>
-    <link rel="author" href="/">
-    <link rel="index" href="/">
+    <link rel="author" href="/" />
+    <link rel="index" href="/" />
     <style>
-        /* Prevent white flash before page loads */
-        body { visibility: hidden; opacity: 0; }
+      body {
+        visibility: hidden;
+        opacity: 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <noscript>
-        <style>body { visibility: visible; opacity: 1; }</style>
+      <style>
+        body {
+          visibility: visible;
+          opacity: 1;
+        }
+      </style>
     </noscript>
-
     <div class="theme-toggle toggle-switch">
-        <label class="theme-toggle-label" for="theme-toggle">
-            <input type="checkbox" class="theme-toggle-checkbox" id="theme-toggle">
-            <span class="theme-toggle-slider"></span>
-        </label>
+      <label class="theme-toggle-label" for="theme-toggle">
+        <input
+          type="checkbox"
+          class="theme-toggle-checkbox"
+          id="theme-toggle"
+        />
+        <span class="theme-toggle-slider"></span>
+      </label>
     </div>
 
     <main>
-        <center>
-            <h1 class="welcome-banner"><marquee>Welcome</marquee></h1>
-            <img
-              id="show-login-btn"
-              src="<%=require('./img/spinning-world.gif')%>"
-              alt="Rotating Globe"
-              width="128"
-              height="128"
-            >
-        </center>
+      <center>
+        <h1 class="welcome-banner"><marquee>Welcome</marquee></h1>
+        <img
+          id="show-login-btn"
+          src="<%=require('./img/spinning-world.gif')%>"
+          alt="Rotating Globe"
+          width="128"
+          height="128"
+        />
+      </center>
 
-        <div id="login-panel" class="login-panel modal" style="display: none;">
-            <div class="win95-window">
-                <div class="win95-window-head">
-                    <p>Login</p>
-                    <button id="login-window-close">&#x2715;</button>
-                    <button id="login-window-minimize">&#95;</button>
-                </div>
-                <div class="win95-window-body">
-                    <p>User Login</p>
-                    <form method="POST" action="/api/token" id="login-form">
-                        <input type="email" name="email" placeholder="Email">
-                        <input type="password" name="password" placeholder="Password">
-                        <br>
-                        <input type="submit">
-                    </form>
-                </div>
-            </div>
+      <div id="login-panel" class="login-panel modal" style="display: none">
+        <div class="win95-window">
+          <div class="win95-window-head">
+            <p>Login</p>
+            <button id="login-window-close">&#x2715;</button>
+            <button id="login-window-minimize">&#95;</button>
+          </div>
+          <div class="win95-window-body">
+            <p>User Login</p>
+            <form method="POST" action="/api/token" id="login-form">
+              <input type="email" name="email" placeholder="Email" />
+              <input type="password" name="password" placeholder="Password" />
+              <br />
+              <input type="submit" />
+            </form>
+          </div>
         </div>
-        <div id="logout-panel" class="logout-panel model" style="display: none;">
-            <div class="win95-window">
-                <div class="win95-window-head">
-                    <p>Login</p>
-                    <button id="login-window-close">&#x2715;</button>
-                    <button id="login-window-minimize">&#8211;</button>
-                </div>
-                <div class="win95-window-body">
-                    <!-- <button id="logout-btn">Logout</button> -->
-                </div>
-            </div>
+      </div>
+      <div id="logout-panel" class="logout-panel model" style="display: none">
+        <div class="win95-window">
+          <div class="win95-window-head">
+            <p>Login</p>
+            <button id="login-window-close">&#x2715;</button>
+            <button id="login-window-minimize">&#8211;</button>
+          </div>
+          <div class="win95-window-body">
+            <!-- <button id="logout-btn">Logout</button> -->
+          </div>
         </div>
+      </div>
 
-        <p>I do computers and stuff.</p>
-        <h2>Links</h2>
-        <ul class="links">
-            <li>
-                <a
-                  target="_blank"
-                  href="<%= github %>"
-                  ping="/api/ping?link=<%=github%>"
-                  rel="noopener,noreferrer"
-                  title="All my random projects"
-                >github</a>
-            </li>
-            <li>
-                <a
-                  target="_blank"
-                  href="<%= linkedin %>"
-                  ping="/api/ping?link=<%=linkedin%>"
-                  rel="noopener,noreferrer"
-                  title=""
-                >linkedin</a></li>
-            <li>
-                <a
-                  target="_blank"
-                  href="/static/files/HarrisonBrown.pdf"
-                >resume</a>
-            </li>
-            <li>
-                <a
-                  target="_blank"
-                  href="https://www.yourworldoftext.com/~harrybrwn/"
-                  ping="/api/ping?link=https://www.yourworldoftext.com/~harrybrwn/"
-                  rel="noopener,noreferrer"
-                  title="Write something on my wall"
-                >wall</a>
-            </li>
-            <!-- <li><a href="/secret">secrets</a></li> -->
-        </ul>
+      <p>I do computers and stuff.</p>
+      <h2>Links</h2>
+      <ul class="links">
+        <li>
+          <a
+            target="_blank"
+            href="<%= github %>"
+            ping="/api/ping?link=<%=github%>"
+            rel="noopener,noreferrer"
+            title="All my random projects"
+            >github</a
+          >
+        </li>
+        <li>
+          <a
+            target="_blank"
+            href="<%= linkedin %>"
+            ping="/api/ping?link=<%=linkedin%>"
+            rel="noopener,noreferrer"
+            title=""
+            >linkedin</a
+          >
+        </li>
+        <li>
+          <a target="_blank" href="/static/files/HarrisonBrown.pdf">resume</a>
+        </li>
+        <li>
+          <a
+            target="_blank"
+            href="https://www.yourworldoftext.com/~harrybrwn/"
+            ping="/api/ping?link=https://www.yourworldoftext.com/~harrybrwn/"
+            rel="noopener,noreferrer"
+            title="Write something on my wall"
+            >wall</a
+          >
+        </li>
+        <!-- <li><a href="/secret">secrets</a></li> -->
+      </ul>
 
-        <h2>My Projects</h2>
-        <ul>
-            <li>
-                <a
-                  target="_blank"
-                  href="https://github.com/harrybrwn/apizza"
-                  ping="/api/ping?link=https://github.com/harrybrwn/apizza"
-                  rel="noopener,noreferrer"
-                >apizza</a>: Download dominos pizza from the command line.
-            </li>
-            <li>
-                <a
-                  target="_blank"
-                  href="https://github.com/harrybrwn/yt"
-                  ping="/api/ping?link=https://github.com/harrybrwn/yt"
-                  rel="noopener,noreferrer"
-                >yt</a>: Youtube video/audio downloader.
-            </li>
-            <!-- <li><a href="/remora">remora</a></li> -->
-        </ul>
+      <h2>My Projects</h2>
+      <ul>
+        <li>
+          <a
+            target="_blank"
+            href="https://github.com/harrybrwn/apizza"
+            ping="/api/ping?link=https://github.com/harrybrwn/apizza"
+            rel="noopener,noreferrer"
+            >apizza</a
+          >: Download dominos pizza from the command line.
+        </li>
+        <li>
+          <a
+            target="_blank"
+            href="https://github.com/harrybrwn/yt"
+            ping="/api/ping?link=https://github.com/harrybrwn/yt"
+            rel="noopener,noreferrer"
+            >yt</a
+          >: Youtube video/audio downloader.
+        </li>
+        <!-- <li><a href="/remora">remora</a></li> -->
+      </ul>
 
-        <section class="settings">
-            <button id="logout-btn">Logout</button>
-            <button id="help-btn">Help</button>
+      <section class="settings">
+        <button id="logout-btn">Logout</button>
+        <button id="help-btn">Help</button>
+      </section>
+
+      <footer class="cards">
+        <a
+          href="http://www.theoldnet.com/#frombadge"
+          ping="/api/ping?link=http://www.theoldnet.com/#frombadge"
+          rel="noopener,noreferrer"
+          title="Are you tired of this new Internet yet? Time to Get TheOldNet!"
+        >
+          <img
+            src="<%=require('./img/88x31/theoldnet.gif')%>"
+            width="88"
+            height="31"
+            alt="The Old Net"
+          />
+        </a>
+        <a
+          href="https://geocities.restorativland.org/"
+          ping="/api/ping?link=https://geocities.restorativland.org/"
+          rel="noopener,noreferrer"
+          title="Homepage of the retro internet"
+        >
+          <img
+            src="<%=require('./img/88x31/geo-cities.gif')%>"
+            width="88"
+            height="31"
+            alt="Geo Cities"
+          />
+        </a>
+        <a
+          href="https://code.visualstudio.com/"
+          ping="/api/ping?link=https://code.visualstudio.com/"
+          rel="noopener,noreferrer"
+          title="VS Code"
+        >
+          <img
+            src="<%=require('./img/88x31/vscode.gif')%>"
+            width="88"
+            height="31"
+            alt="Visual Studio Code"
+          />
+        </a>
+        <a
+          href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
+          ping="/api/ping?link=https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
+          rel="noopener,noreferrer"
+          title="The Linux kernel"
+        >
+          <img
+            src="<%= require('./img/88x31/linux.gif') %>"
+            width="88"
+            height="31"
+            alt="The Linux kernel"
+          />
+        </a>
+        <a
+          href="https://madville.neocities.org"
+          ping="/api/ping?link=https://madville.neocities.org"
+          rel="noopener,noreferrer"
+          title="A beautifully retro site"
+        >
+          <img
+            src="<%= require('./img/88x31/madville.gif') %>"
+            alt="A beautifully retro site"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
+          href="https://en.wikipedia.org/wiki/Netscape"
+          ping="/api/ping?link=https://en.wikipedia.org/wiki/Netscape"
+          rel="noopener,noreferrer"
+          title="Netscape Navigator"
+        >
+          <img
+            src="<%= require('./img/88x31/netnow2.gif') %>"
+            alt="Netscape Navigator"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
+          href="https://www.vim.org/"
+          ping="/api/ping?link=https://www.vim.org/"
+          rel="noopener,noreferrer"
+          title="Vim"
+        >
+          <img
+            src="<%= require('./img/88x31/vim.gif') %>"
+            width="88"
+            height="31"
+            alt="Vim"
+          />
+        </a>
+        <a
+          href="https://en.wikipedia.org/wiki/Vi"
+          ping="/api/ping?link=https://en.wikipedia.org/wiki/Vi"
+          rel="noopener,noreferrer"
+          title="Vi"
+        >
+          <img
+            src="<%= require('./img/88x31/vi_now.gif') %>"
+            width="88"
+            height="31"
+            alt="Vi Now"
+          />
+        </a>
+        <a
+          href="https://cyber.dabamos.de/88x31/index.html"
+          ping="/api/ping?link=https://cyber.dabamos.de/88x31/index.html"
+          rel="noopener,noreferrer"
+        >
+          <img
+            src="<%= require('./img/88x31/88x31.gif') %>"
+            alt="Eighty eight by thirty one"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
+          href="https://devils.neocities.org/"
+          ping="/api/ping?link=https://devils.neocities.org/"
+          rel="noopener,noreferrer"
+        >
+          <img
+            src="<%= require('./img/88x31/devils-neocities.gif') %>"
+            alt="Devils"
+            width="88"
+            height="31"
+          />
+        </a>
+        <section class="stats">
+          <div>Last updated: <%= built.toDateString() %></div>
+          <div id="hit-count"></div>
         </section>
-
-        <footer class="cards">
-            <a
-              href="http://www.theoldnet.com/#frombadge"
-              ping="/api/ping?link=http://www.theoldnet.com/#frombadge"
-              rel="noopener,noreferrer"
-              title="Are you tired of this new Internet yet? Time to Get TheOldNet!"
-            >
-                <img src="<%=require('./img/88x31/theoldnet.gif')%>" width="88" height="31" alt="The Old Net">
-            </a>
-            <a
-              href="https://geocities.restorativland.org/"
-              ping="/api/ping?link=https://geocities.restorativland.org/"
-              rel="noopener,noreferrer"
-              title="Homepage of the retro internet"
-            >
-                <img src="<%=require('./img/88x31/geo-cities.gif')%>" width="88" height="31" alt="Geo Cities">
-            </a>
-            <a
-              href="https://code.visualstudio.com/"
-              ping="/api/ping?link=https://code.visualstudio.com/"
-              rel="noopener,noreferrer"
-              title="VS Code"
-            >
-                <img src="<%=require('./img/88x31/vscode.gif')%>" width="88" height="31" alt="Visual Studio Code">
-            </a>
-            <a
-              href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
-              ping="/api/ping?link=https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
-              rel="noopener,noreferrer"
-              title="The Linux kernel"
-            >
-                <img src="<%= require('./img/88x31/linux.gif') %>" width="88" height="31" alt="The Linux kernel">
-            </a>
-            <a
-              href="https://madville.neocities.org"
-              ping="/api/ping?link=https://madville.neocities.org"
-              rel="noopener,noreferrer"
-              title="A beautifully retro site"
-            >
-                <img
-                  src="<%= require('./img/88x31/madville.gif') %>"
-                  alt="A beautifully retro site"
-                  width="88" height="31"
-                >
-            </a>
-            <a
-              href="https://en.wikipedia.org/wiki/Netscape"
-              ping="/api/ping?link=https://en.wikipedia.org/wiki/Netscape"
-              rel="noopener,noreferrer"
-              title="Netscape Navigator"
-            >
-                <img
-                  src="<%= require('./img/88x31/netnow2.gif') %>"
-                  alt="Netscape Navigator"
-                  width="88" height="31"
-                >
-            </a>
-            <a
-              href="https://www.vim.org/"
-              ping="/api/ping?link=https://www.vim.org/"
-              rel="noopener,noreferrer"
-              title="Vim"
-            >
-                <img
-                  src="<%= require('./img/88x31/vim.gif') %>"
-                  width="88" height="31"
-                  alt="Vim"
-                >
-            </a>
-            <img src="<%= require('./img/88x31/vi_now.gif') %>" width="88" height="31" alt="Vi Now">
-            <img src="<%= require('./img/88x31/rfc1876-now.gif') %>" width="88" height="31" alt="RFC 1876">
-            <a
-              href="https://cyber.dabamos.de/88x31/index.html"
-              ping="/api/ping?link=https://cyber.dabamos.de/88x31/index.html"
-              rel="noopener,noreferrer"
-            >
-                <img
-                  src="<%= require('./img/88x31/88x31.gif') %>"
-                  alt="Eighty eight by thirty one"
-                  width="88" height="31"
-                >
-            </a>
-            <a
-              href="https://devils.neocities.org/"
-              ping="/api/ping?link=https://devils.neocities.org/"
-              rel="noopener,noreferrer"
-            >
-                <img
-                  src="<%= require('./img/88x31/devils-neocities.gif') %>"
-                  alt="Devils"
-                  width="88" height="31"
-                >
-            </a>
-            <section class="stats">
-                <div>
-                    Last updated: <%= built.toDateString() %>
-                </div>
-                <div id="hit-count"></div>
-            </section>
-            <center>
-                <img
-                  src="<%=require('./img/under_construction.gif')%>"
-                  alt="Under Construction"
-                  width="110" height="60"
-                >
-            </center>
-        </footer>
+        <center>
+          <img
+            src="<%=require('./img/under_construction.gif')%>"
+            alt="Under Construction"
+            width="110"
+            height="60"
+          />
+        </center>
+      </footer>
     </main>
 
-    <div id="help-window" class="win95-window help-window modal" style="display: none;">
-        <div class="win95-window-head">
-            <p>Help</p>
-            <button id="help-window-close">&#x2715;</button>
-            <button id="help-window-minimize">&#95;</button>
-        </div>
-        <div class="win95-window-body">
-            <p>Keyboard shortcuts</p>
-            <table>
-                <tr>
-                    <th>Shortcut</th>
-                    <th>Action</th>
-                </tr>
-                <tr>
-                    <td>?</td>
-                    <td>Show the help menu</td>
-                </tr>
-                <tr>
-                    <td>l</td>
-                    <td>Show login window</td>
-                </tr>
-                <tr>
-                    <td>t</td>
-                    <td>Toggle the theme</td>
-                </tr>
-                <tr>
-                    <td>esc</td>
-                    <td>Close a pop-up such as this one</td>
-                </tr>
-            </table>
-        </div>
+    <div
+      id="help-window"
+      class="win95-window help-window modal"
+      style="display: none"
+    >
+      <div class="win95-window-head">
+        <p>Help</p>
+        <button id="help-window-close">&#x2715;</button>
+        <button id="help-window-minimize">&#95;</button>
+      </div>
+      <div class="win95-window-body">
+        <p>Keyboard shortcuts</p>
+        <table>
+          <tr>
+            <th>Shortcut</th>
+            <th>Action</th>
+          </tr>
+          <tr>
+            <td>?</td>
+            <td>Show the help menu</td>
+          </tr>
+          <tr>
+            <td>l</td>
+            <td>Show login window</td>
+          </tr>
+          <tr>
+            <td>t</td>
+            <td>Toggle the theme</td>
+          </tr>
+          <tr>
+            <td>esc</td>
+            <td>Close a pop-up such as this one</td>
+          </tr>
+        </table>
+      </div>
     </div>
+
     <script>
-        window.addEventListener("DOMContentLoaded", () => {
-            document.body.style.visibility = 'visible';
-            document.body.style.opacity = 1;
-            document.body.style.transition = 'background 0.4s linear';
-        })
+      window.addEventListener("DOMContentLoaded", () => {
+        document.body.style.visibility = "visible";
+        document.body.style.opacity = 1;
+      });
     </script>
-</body>
+  </body>
 </html>

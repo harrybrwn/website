@@ -31,6 +31,7 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
       .then((tok: Token) => {
         callback(tok);
         form.reset();
+        return tok;
       })
       .catch((error: Error) => {
         console.error(error);
@@ -114,8 +115,8 @@ const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
 const main = () => {
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
-    // interval: 5 * 60 * SECOND,
-    interval: 5 * SECOND,
+    interval: 5 * 60 * SECOND,
+    // interval: 5 * SECOND,
   });
   let loginPanel = new Modal({
     button: document.getElementById("login-btn"),
@@ -132,10 +133,10 @@ const main = () => {
       loginPanel.toggle();
       if (loginPanel.open) focusOnLoginEmail();
     });
-  // Handle theme changes
-  themeManager.onChange((_: Event) => themeManager.toggle());
   // Toggle help window button
   helpWindow.toggleOnClick();
+  // Handle theme changes
+  themeManager.onChange((_: Event) => themeManager.toggle());
 
   // Logged in stuff
   let links = document.querySelector(".links");
@@ -221,6 +222,12 @@ const main = () => {
 
   welcomeBannerColors(document.querySelector(".welcome-banner"), 500);
   applyPageCount();
+  let timeout = setTimeout(() => {
+    console.log("hello?");
+  }, 1000 * 5);
+  clearTimeout(timeout);
+  clearTimeout(timeout);
+  clearTimeout(timeout);
 };
 
 main();

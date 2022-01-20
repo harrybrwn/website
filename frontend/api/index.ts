@@ -91,7 +91,7 @@ export interface Bookmarks {
  * bookmarks will fetch a list of bookmarks from the api.
  * @returns list of bookmarks
  */
-export const bookmarks = (): Promise<Bookmarks> => {
+export const bookmarks = async (): Promise<Bookmarks> => {
   return fetch(`${window.location.origin}/api/bookmarks`).then(
     (resp: Response) => {
       if (!resp.ok) {
@@ -100,4 +100,32 @@ export const bookmarks = (): Promise<Bookmarks> => {
       return resp.json();
     }
   );
+};
+
+export interface RuntimeInfo {
+  name: string;
+  age: number;
+  uptime: number;
+  goversion: string;
+  error: string;
+  birthday: string;
+  debug: boolean;
+  GOOS: string;
+  GOARCH: string;
+}
+
+/**
+ * Retrieve the api server's runtime info.
+ * @returns the server's runtime info
+ */
+export const runtimeInfo = async (): Promise<RuntimeInfo> => {
+  return fetch(`${window.location.origin}/api/runtime`, {
+    method: "GET",
+    headers: apiHeaders(),
+  }).then((resp) => {
+    if (!resp.ok) {
+      throw new Error("could not get runtime info");
+    }
+    return resp.json();
+  });
 };
