@@ -51,9 +51,11 @@ jobs:
     - name: Install Go MockGen
       if: steps.go-cache.outputs.cache-hit != 'true'
       run: go install github.com/golang/mock/mockgen@latest
+    - name: Install go dependencies
+      if: steps.go-cache.outputs.cache-hit != 'true'
+      run: go mod download
 
     - name: Frontend dependencies
-      if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
     - run: yarn build
