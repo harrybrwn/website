@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
@@ -9,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -42,7 +45,7 @@ func TokenHandler(conf auth.TokenConfig, store UserStore) echo.HandlerFunc {
 			return err
 		default:
 			err = errors.Wrap(err, "failed to bind user data")
-			return wrap(err, http.StatusInternalServerError)
+			return echo.ErrInternalServerError.SetInternal(err)
 		}
 		logger := logger.WithFields(logrus.Fields{
 			"username": body.Username,
@@ -78,6 +81,74 @@ func TokenHandler(conf auth.TokenConfig, store UserStore) echo.HandlerFunc {
 			})
 		} else {
 			logger.Info("not sending cookie")
+		}
+		return c.JSON(200, resp)
+	}
+}
+
+func RefreshTokenHandler(conf auth.TokenConfig) echo.HandlerFunc {
+	type RefreshTokenReq struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	keyfunc := func(*jwt.Token) (interface{}, error) {
+		return conf.Public(), nil
+	}
+	return func(c echo.Context) error {
+		var (
+			err         error
+			req         = c.Request()
+			cookieQuery = req.URL.Query().Get("cookie")
+			setCookie   bool
+			tokenReq    RefreshTokenReq
+		)
+		err = c.Bind(&tokenReq)
+		if err != nil {
+			return echo.ErrBadRequest.SetInternal(err)
+		}
+		if len(cookieQuery) > 0 {
+			setCookie, err = strconv.ParseBool(cookieQuery)
+			if err != nil {
+				return echo.ErrBadRequest.SetInternal(err)
+			}
+		} else {
+			setCookie = false
+		}
+
+		refreshClaims, err := auth.ValidateRefreshToken(tokenReq.RefreshToken, keyfunc)
+		if err != nil {
+			return echo.ErrBadRequest.SetInternal(err)
+		}
+		requestClaims := auth.GetClaims(c)
+		if requestClaims == nil {
+			return echo.ErrInternalServerError
+		}
+		if requestClaims.ID != refreshClaims.ID || !bytes.Equal(requestClaims.UUID[:], refreshClaims.UUID[:]) {
+			return echo.ErrUnauthorized.SetInternal(fmt.Errorf("refresh token claims did not match auth token claims"))
+		}
+		// Create the new claims based on the previous claims and the refresh token
+		claims := auth.Claims{
+			ID:    requestClaims.ID,
+			UUID:  requestClaims.UUID,
+			Roles: requestClaims.Roles,
+			RegisteredClaims: jwt.RegisteredClaims{
+				Audience: requestClaims.Audience,
+				Issuer:   auth.Issuer,
+			},
+		}
+		resp, err := auth.NewTokenResponse(conf, &claims)
+		if err != nil {
+			return echo.ErrInternalServerError.SetInternal(err)
+		}
+
+		c.Set(auth.ClaimsContextKey, claims)
+		if setCookie {
+			logger.Info("setting cookie")
+			c.SetCookie(&http.Cookie{
+				Name:    tokenKey,
+				Value:   resp.Token,
+				Expires: claims.ExpiresAt.Time,
+				Path:    "/",
+			})
 		}
 		return c.JSON(200, resp)
 	}

@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	Issuer        = "harrybrwn.com"
-	TokenAudience = "user"
+	Issuer          = "harrybrwn.com"
+	TokenAudience   = "user"
+	refreshAudience = "refresh"
 )
 
 var (
@@ -28,6 +29,8 @@ var (
 		"invalid issuer or audience",
 		jwt.ValidationErrorAudience|jwt.ValidationErrorIssuer,
 	)
+	ErrBadRefreshTokenAud = errors.New("bad refresh token audience")
+	ErrBadIssuer          = errors.New("bad token issuer")
 )
 
 type getter interface {
@@ -92,6 +95,27 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 	}
 }
 
+func ValidateRefreshToken(token string, keyfunc func(*jwt.Token) (interface{}, error)) (*Claims, error) {
+	var claims Claims
+	tok, err := jwt.ParseWithClaims(token, &claims, keyfunc)
+	if err != nil {
+		return nil, err
+	}
+	if !tok.Valid {
+		return nil, &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "invalid refresh token",
+		}
+	}
+	if len(claims.Audience) < 1 || claims.Audience[0] != refreshAudience {
+		return nil, ErrBadRefreshTokenAud
+	}
+	if claims.Issuer != Issuer {
+		return nil, errors.Wrapf(ErrBadIssuer, "%s", claims.Issuer)
+	}
+	return &claims, nil
+}
+
 var (
 	SigningMethod     = jwt.SigningMethodES256
 	Expiration        = time.Hour * 2
@@ -124,7 +148,7 @@ func NewTokenResponse(
 		return nil, err
 	}
 
-	c.Audience = []string{"refresh"}
+	c.Audience = []string{refreshAudience}
 	c.ExpiresAt = jwt.NewNumericDate(now.Add(RefreshExpiration))
 	tok := jwt.NewWithClaims(conf.Type(), &c)
 	refresh, err := tok.SignedString(key)

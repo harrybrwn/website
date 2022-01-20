@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	mathrand "math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -175,6 +176,59 @@ func TestGuard(t *testing.T) {
 	}
 }
 
+func TestValidateRefreshToken(t *testing.T) {
+	type table struct {
+		errs    []error
+		vErr    uint32
+		refresh string
+	}
+	cfg := GenEdDSATokenConfig()
+	keyfunc := func(*jwt.Token) (interface{}, error) { return cfg.Public(), nil }
+	genToken := func(ex time.Time, aud, iss string) string {
+		return generateRefreshToken(cfg, ex, []Role{RoleDefault}, aud, iss)
+	}
+	for i, tt := range []table{
+		{
+			refresh: genToken(time.Now().Add(time.Hour*5), refreshAudience, Issuer),
+		},
+		{
+			refresh: genToken(time.Date(2020, time.January, 5, 4, 3, 2, 1, time.Local), refreshAudience, Issuer),
+			vErr:    jwt.ValidationErrorExpired,
+		},
+		{
+			refresh: genToken(time.Now().Add(time.Hour), "_not_a_refresh_aud", Issuer),
+			errs:    []error{ErrBadRefreshTokenAud},
+		},
+		{
+			refresh: genToken(time.Now().Add(time.Hour), refreshAudience, "_"+Issuer),
+			errs:    []error{ErrBadIssuer},
+		},
+	} {
+		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
+			_, err := ValidateRefreshToken(tt.refresh, keyfunc)
+			if tt.vErr != 0 {
+				validationErr, ok := err.(*jwt.ValidationError)
+				if !ok {
+					t.Fatal("expected a jwt validation error")
+				}
+				if validationErr.Errors&tt.vErr == 0 {
+					t.Errorf("expecting validation error %d", tt.vErr)
+				}
+			} else if len(tt.errs) == 0 {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				for _, er := range tt.errs {
+					if !errors.Is(err, er) {
+						t.Errorf("expected \"%v\", got \"%v\"", er, err)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestGetBearer_Err(t *testing.T) {
 	for _, header := range []http.Header{
 		{},
@@ -287,4 +341,28 @@ var errFailingTokenConfig = errors.New("this token config always fails")
 
 func (ftc *failingTokenConfig) GetToken(r *http.Request) (string, error) {
 	return "", errFailingTokenConfig
+}
+
+func generateRefreshToken(
+	cfg TokenConfig,
+	expiration time.Time,
+	roles []Role,
+	aud, iss string,
+) string {
+	c := Claims{
+		ID:   mathrand.Int(),
+		UUID: uuid.New(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(expiration),
+			Audience:  []string{aud},
+			Issuer:    iss,
+		},
+	}
+	tok := jwt.NewWithClaims(cfg.Type(), &c)
+	token, err := tok.SignedString(cfg.Private())
+	if err != nil {
+		panic(err)
+	}
+	return token
 }

@@ -7,22 +7,29 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	mathrand "math/rand"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"harrybrown.com/internal/mocks/mockdb"
 	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
 )
+
+func init() {
+	logger.SetLevel(logrus.ErrorLevel)
+}
 
 func TestHits(t *testing.T) {
 	var (
@@ -232,6 +239,104 @@ func TestTokenHandler(t *testing.T) {
 		})
 	}
 }
+func TestRefreshTokenHandler_Err(t *testing.T) {
+	type table struct {
+		prep func(claims *auth.Claims, v url.Values)
+	}
+	for i, tt := range []table{
+		{prep: func(claims *auth.Claims, v url.Values) { claims.Audience = []string{"not correct aud"} }},
+		{prep: func(claims *auth.Claims, v url.Values) {
+			n := time.Now()
+			claims.ExpiresAt = jwt.NewNumericDate(time.Date(
+				n.Year(), n.Month(), n.Day(), n.Hour()-5,
+				n.Minute(), n.Second(), n.Nanosecond(), n.Location(),
+			))
+		}},
+		{prep: func(claims *auth.Claims, v url.Values) {
+			claims.ID = claims.ID + 1
+		}},
+		{prep: func(claims *auth.Claims, v url.Values) {
+			claims.UUID[0] = 'h'
+			claims.UUID[1] = 'e'
+			claims.UUID[2] = 'l'
+			claims.UUID[3] = 'l'
+			claims.UUID[4] = 'o'
+		}},
+		{prep: func(claims *auth.Claims, v url.Values) {
+			v.Add("cookie", "not-a-boolean")
+		}},
+	} {
+		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
+			is := is.New(t)
+			tokenCfg := auth.GenEdDSATokenConfig()
+			claims := &auth.Claims{
+				ID:   mathrand.Int(),
+				UUID: uuid.New(),
+				RegisteredClaims: jwt.RegisteredClaims{
+					IssuedAt:  jwt.NewNumericDate(time.Now()),
+					ExpiresAt: jwt.NewNumericDate(time.Now().Add(auth.Expiration)),
+					Audience:  []string{"refresh"},
+					Issuer:    auth.Issuer,
+				},
+			}
+			params := url.Values{}
+			userClaims := *claims
+			userClaims.Audience = []string{auth.TokenAudience}
+			if tt.prep != nil {
+				tt.prep(claims, params)
+			}
+			refreshToken, err := jwt.NewWithClaims(tokenCfg.Type(), claims).SignedString(tokenCfg.Private())
+			is.NoErr(err)
+			e := echo.New()
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/refresh", body(map[string]string{"refresh_token": refreshToken}))
+			req.URL.RawQuery = params.Encode()
+			req.Header.Set("Content-Type", "application/json")
+			c := e.NewContext(req, rec)
+			c.Set(auth.ClaimsContextKey, &userClaims)
+			handler := RefreshTokenHandler(tokenCfg)
+			err = handler(c)
+			if err == nil {
+				t.Fatal("expected an error got nil")
+			}
+		})
+	}
+}
+
+func TestRefreshTokenHandler(t *testing.T) {
+	is := is.New(t)
+	tokenCfg := auth.GenEdDSATokenConfig()
+	claims := &auth.Claims{
+		ID:   mathrand.Int(),
+		UUID: uuid.New(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(auth.Expiration)),
+			Audience:  []string{"refresh"},
+			Issuer:    auth.Issuer,
+		},
+	}
+	refreshToken, err := jwt.NewWithClaims(tokenCfg.Type(), claims).SignedString(tokenCfg.Private())
+	is.NoErr(err)
+	e := echo.New()
+	req := httptest.NewRequest(
+		"POST", "/api/refresh?cookie=true",
+		body(map[string]string{"refresh_token": refreshToken}),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.Set(auth.ClaimsContextKey, claims)
+	handler := RefreshTokenHandler(tokenCfg)
+	err = handler(c)
+	is.NoErr(err)
+	res := rec.Result()
+	is.Equal(res.StatusCode, 200)
+	is.Equal(1, len(res.Cookies()))
+	cookie := res.Cookies()[0]
+	is.Equal(cookie.Name, tokenKey)
+	is.Equal(cookie.Path, "/")
+}
 
 func TestLogList(t *testing.T) {
 	var (
@@ -249,7 +354,7 @@ func TestLogList(t *testing.T) {
 			gomock.AssignableToTypeOf(intptr),
 			gomock.AssignableToTypeOf(strptr),
 			gomock.AssignableToTypeOf(strptr),
-			gomock.AssignableToTypeOf(strptr),
+			gomock.AssignableToTypeOf(&sql.NullString{}),
 			gomock.AssignableToTypeOf(strptr),
 			gomock.AssignableToTypeOf(durationPtr),
 			gomock.Any(),
@@ -262,7 +367,7 @@ func TestLogList(t *testing.T) {
 			errs:  []error{},
 			query: url.Values{"limit": {"12"}, "offset": {"0"}},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
-				db.EXPECT().QueryContext(ctx, getLogsQuery, []interface{}{0, 12}).Return(rows, nil)
+				db.EXPECT().QueryContext(ctx, getLogsQuery+" LIMIT $2", []interface{}{0, 12}).Return(rows, nil)
 				rows.EXPECT().Next().Times(1).Return(true)
 				expectScan(rows).Do(func(v ...interface{}) {}).Return(nil)
 				rows.EXPECT().Next().Times(1).Return(false)

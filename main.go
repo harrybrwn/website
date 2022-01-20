@@ -136,6 +136,7 @@ func main() {
 	api.GET("/bookmarks", json(bookmarks))
 	api.GET("/hits", app.Hits(db))
 	api.POST("/token", app.TokenHandler(jwtConf, app.NewUserStore(db)))
+	api.POST("/refresh", app.RefreshTokenHandler(jwtConf), guard)
 	api.GET("/runtime", func(c echo.Context) error {
 		return c.JSON(200, app.RuntimeInfo(startup))
 	}, guard, auth.AdminOnly())
