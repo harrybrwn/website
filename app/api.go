@@ -1,8 +1,6 @@
 package app
 
 import (
-	"bytes"
-	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
@@ -28,133 +26,177 @@ var logger = logrus.New()
 
 func SetLogger(l *logrus.Logger) { logger = l }
 
-func TokenHandler(conf auth.TokenConfig, store UserStore) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var (
-			err         error
-			body        Login
-			req         = c.Request()
-			ctx         = req.Context()
-			cookieQuery = req.URL.Query().Get("cookie")
-			setCookie   bool
-		)
-		switch err = c.Bind(&body); err {
-		case nil:
-			break
-		case echo.ErrUnsupportedMediaType:
-			return err
-		default:
-			err = errors.Wrap(err, "failed to bind user data")
-			return echo.ErrInternalServerError.SetInternal(err)
-		}
-		logger := logger.WithFields(logrus.Fields{
-			"username": body.Username,
-			"email":    body.Email,
-		})
-		if len(cookieQuery) > 0 {
-			setCookie, err = strconv.ParseBool(cookieQuery)
-			if err != nil {
-				return echo.ErrBadRequest.SetInternal(err)
-			}
-		} else {
-			setCookie = false
-		}
-		logger.Info("getting token")
-		u, err := store.Login(ctx, &body)
-		if err != nil {
-			return echo.ErrNotFound.SetInternal(errors.Wrap(err, "failed to login"))
-		}
-		claims := u.NewClaims()
-		resp, err := auth.NewTokenResponse(conf, claims)
-		if err != nil {
-			return echo.ErrInternalServerError.SetInternal(
-				errors.Wrap(err, "could not create token response"))
-		}
-		c.Set(auth.ClaimsContextKey, claims)
-		if setCookie {
-			logger.Info("setting cookie")
-			c.SetCookie(&http.Cookie{
-				Name:    tokenKey,
-				Value:   resp.Token,
-				Expires: claims.ExpiresAt.Time,
-				Path:    "/",
-			})
-		} else {
-			logger.Info("not sending cookie")
-		}
-		return c.JSON(200, resp)
-	}
+type TokenService struct {
+	Tokens auth.TokenStore
+	Users  UserStore
+	Config auth.TokenConfig
 }
 
-func RefreshTokenHandler(conf auth.TokenConfig) echo.HandlerFunc {
-	type RefreshTokenReq struct {
-		RefreshToken string `json:"refresh_token"`
+func (ts *TokenService) Token(c echo.Context) error {
+	var (
+		err  error
+		body Login
+		req  = c.Request()
+		ctx  = req.Context()
+	)
+	switch err = c.Bind(&body); err {
+	case nil:
+		break
+	case echo.ErrUnsupportedMediaType:
+		return err
+	default:
+		err = errors.Wrap(err, "failed to bind user data")
+		return echo.ErrInternalServerError.SetInternal(err)
 	}
-	keyfunc := func(*jwt.Token) (interface{}, error) {
-		return conf.Public(), nil
+	logger := logger.WithFields(logrus.Fields{
+		"username": body.Username,
+		"email":    body.Email,
+	})
+	setCookie, err := ts.parserCookieQuery(req)
+	if err != nil {
+		return err
 	}
-	return func(c echo.Context) error {
-		var (
-			err         error
-			req         = c.Request()
-			cookieQuery = req.URL.Query().Get("cookie")
-			setCookie   bool
-			tokenReq    RefreshTokenReq
-		)
-		err = c.Bind(&tokenReq)
-		if err != nil {
-			return echo.ErrBadRequest.SetInternal(err)
-		}
-		if len(cookieQuery) > 0 {
-			setCookie, err = strconv.ParseBool(cookieQuery)
-			if err != nil {
-				return echo.ErrBadRequest.SetInternal(err)
-			}
-		} else {
-			setCookie = false
-		}
+	logger.Info("getting token")
+	u, err := ts.Users.Login(ctx, &body)
+	if err != nil {
+		return echo.ErrNotFound.SetInternal(errors.Wrap(err, "failed to login"))
+	}
 
-		refreshClaims, err := auth.ValidateRefreshToken(tokenReq.RefreshToken, keyfunc)
-		if err != nil {
-			return echo.ErrBadRequest.SetInternal(err)
-		}
-		requestClaims := auth.GetClaims(c)
-		if requestClaims == nil {
-			return echo.ErrInternalServerError
-		}
-		if requestClaims.ID != refreshClaims.ID || !bytes.Equal(requestClaims.UUID[:], refreshClaims.UUID[:]) {
-			return echo.ErrUnauthorized.SetInternal(fmt.Errorf("refresh token claims did not match auth token claims"))
-		}
-		// Create the new claims based on the previous claims and the refresh token
-		claims := auth.Claims{
-			ID:    requestClaims.ID,
-			UUID:  requestClaims.UUID,
-			Roles: requestClaims.Roles,
-			RegisteredClaims: jwt.RegisteredClaims{
-				Audience: requestClaims.Audience,
-				Issuer:   auth.Issuer,
-			},
-		}
-		resp, err := auth.NewTokenResponse(conf, &claims)
-		if err != nil {
-			return echo.ErrInternalServerError.SetInternal(err)
-		}
-
-		c.Set(auth.ClaimsContextKey, claims)
-		if setCookie {
-			logger.Info("setting cookie")
-			c.SetCookie(&http.Cookie{
-				Name:    tokenKey,
-				Value:   resp.Token,
-				Expires: claims.ExpiresAt.Time,
-				Path:    "/",
-			})
-		}
-		return c.JSON(200, resp)
+	claims := u.NewClaims()
+	// Generate both a new access token and refresh token.
+	resp, err := auth.NewTokenResponse(ts.Config, claims)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(
+			errors.Wrap(err, "could not create token response"))
 	}
+	err = ts.Tokens.Set(ctx, u.ID, resp.RefreshToken)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+	c.Set(auth.ClaimsContextKey, claims)
+	if setCookie {
+		ts.setTokenCookie(c.Response(), resp, claims)
+	}
+	return c.JSON(200, resp)
 }
 
-const hitsQuery = `select count(*) from request_log where uri = $1`
+type RefreshTokenReq struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (ts *TokenService) Refresh(c echo.Context) error {
+	var (
+		err      error
+		req      = c.Request()
+		ctx      = req.Context()
+		tokenReq RefreshTokenReq
+	)
+	err = c.Bind(&tokenReq)
+	if err != nil {
+		return echo.ErrBadRequest.SetInternal(err)
+	}
+	setCookie, err := ts.parserCookieQuery(req)
+	if err != nil {
+		return err
+	}
+
+	logger.WithField("refresh_token", tokenReq.RefreshToken).Info("received refresh token")
+	refreshClaims, err := auth.ValidateRefreshToken(tokenReq.RefreshToken, ts.keyfunc)
+	if err != nil {
+		return echo.ErrBadRequest.SetInternal(err)
+	}
+
+	// If the refresh token is still in the token store then we're good.
+	_, err = ts.Tokens.Get(ctx, refreshClaims.ID)
+	if err != nil {
+		return echo.ErrUnauthorized.SetInternal(err)
+	}
+
+	claims := auth.Claims{
+		ID:    refreshClaims.ID,
+		UUID:  refreshClaims.UUID,
+		Roles: refreshClaims.Roles,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Audience: []string{auth.TokenAudience},
+			Issuer:   auth.Issuer,
+		},
+	}
+	// Only generate a new access token, the client should still have the refresh token.
+	resp, err := auth.NewAccessToken(ts.Config, &claims)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+
+	c.Set(auth.ClaimsContextKey, claims)
+	if setCookie {
+		ts.setTokenCookie(c.Response(), resp, &claims)
+	}
+	return c.JSON(200, resp)
+}
+
+func (ts *TokenService) parserCookieQuery(req *http.Request) (bool, error) {
+	var (
+		set         bool
+		err         error
+		cookieQuery = req.URL.Query().Get("cookie")
+	)
+	if len(cookieQuery) > 0 {
+		set, err = strconv.ParseBool(cookieQuery)
+		if err != nil {
+			return false, echo.ErrBadRequest.SetInternal(err)
+		}
+	} else {
+		set = false
+	}
+	return set, nil
+}
+
+func (ts *TokenService) setTokenCookie(response http.ResponseWriter, token *auth.TokenResponse, claims *auth.Claims) {
+	logger.Info("setting cookie")
+	http.SetCookie(response, &http.Cookie{
+		Name:     tokenKey,
+		Value:    token.Token,
+		Expires:  claims.ExpiresAt.Time,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func (ts *TokenService) Revoke(c echo.Context) error {
+	var (
+		ctx = c.Request().Context()
+		req RefreshTokenReq
+	)
+	err := c.Bind(&req)
+	if err != nil {
+		return err
+	}
+	claims := auth.GetClaims(c)
+	if claims == nil {
+		return echo.ErrBadRequest
+	}
+	token, err := ts.Tokens.Get(ctx, claims.ID)
+	if err != nil {
+		return err
+	}
+	if req.RefreshToken != token {
+		return &echo.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "incorrect refresh token",
+		}
+	}
+	err = ts.Tokens.Del(c.Request().Context(), claims.ID)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	return nil
+}
+
+func (ts *TokenService) keyfunc(*jwt.Token) (interface{}, error) {
+	return ts.Config.Public(), nil
+}
+
+const hitsQuery = `SELECT count(*) FROM request_log WHERE uri = $1`
 
 func Hits(d db.DB) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -235,7 +277,7 @@ type Info struct {
 
 var birthTimestamp = time.Date(
 	1998, time.August, 4, // 1998-08-04
-	4, 40, 0, 0, // 4:40 AM
+	4, 40, 3, 0, // 4:40:03 AM
 	mustLoadLocation("America/Los_Angeles"),
 )
 

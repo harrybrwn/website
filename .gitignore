@@ -15,6 +15,7 @@ static/bootstrap-4.3.1-dist
 config.json
 .vscode
 .env
+prod.env
 
 # Testing
 /internal/mocks/
@@ -23,7 +24,6 @@ config.json
 /inspiration/
 tests/*
 /scripts/*.sql
-/scripts/psql.sh
 /demo/
 requests.http
 

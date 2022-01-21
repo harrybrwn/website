@@ -52,6 +52,7 @@ func TestGuard(t *testing.T) {
 
 	for i, tt := range []table{
 		{
+			// Negative expires_at
 			errs: []error{echo.ErrUnauthorized},
 			cfg:  GenEdDSATokenConfig(),
 			claims: Claims{
@@ -62,7 +63,7 @@ func TestGuard(t *testing.T) {
 					Audience:  []string{TokenAudience},
 					Issuer:    Issuer,
 					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(-time.Second)),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(-10 * time.Second)),
 				},
 			},
 		},
@@ -365,4 +366,17 @@ func generateRefreshToken(
 		panic(err)
 	}
 	return token
+}
+
+func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
+	tok := jwt.NewWithClaims(conf.Type(), claims)
+	token, err := tok.SignedString(conf.Private())
+	if err != nil {
+		return nil, err
+	}
+	return &TokenResponse{
+		Token:     token,
+		Expires:   claims.ExpiresAt,
+		TokenType: JWTScheme,
+	}, nil
 }

@@ -117,17 +117,16 @@ func ValidateRefreshToken(token string, keyfunc func(*jwt.Token) (interface{}, e
 }
 
 var (
-	SigningMethod     = jwt.SigningMethodES256
 	Expiration        = time.Hour * 2
-	RefreshExpiration = Expiration * 12
+	RefreshExpiration = time.Hour * 24 * 5
 	JWTScheme         = "Bearer"
 )
 
 type TokenResponse struct {
 	Token        string           `json:"token"`
 	Expires      *jwt.NumericDate `json:"expires"`
-	RefreshToken string           `json:"refresh_token"`
 	TokenType    string           `json:"token_type"`
+	RefreshToken string           `json:"refresh_token"`
 }
 
 func NewTokenResponse(
@@ -135,31 +134,30 @@ func NewTokenResponse(
 	claims *Claims,
 ) (*TokenResponse, error) {
 	now := time.Now()
-	key := conf.Private()
-	expires := now.Add(Expiration)
-	// These should persist past the call.
-	claims.IssuedAt = jwt.NewNumericDate(now)
-	claims.ExpiresAt = jwt.NewNumericDate(expires)
-	// Copy the claims so changes while creating the
-	// refresh token are only local.
-	c := *claims
-	resp, err := newTokenResp(conf, &c)
+	resp, err := newAccessToken(conf, now, claims)
 	if err != nil {
 		return nil, err
 	}
-
-	c.Audience = []string{refreshAudience}
-	c.ExpiresAt = jwt.NewNumericDate(now.Add(RefreshExpiration))
-	tok := jwt.NewWithClaims(conf.Type(), &c)
-	refresh, err := tok.SignedString(key)
+	err = resp.initRefreshToken(conf, now, *claims)
 	if err != nil {
 		return nil, err
 	}
-	resp.RefreshToken = refresh
 	return resp, nil
 }
 
-func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
+func NewAccessToken(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
+	now := time.Now()
+	resp, err := newAccessToken(conf, now, claims)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func newAccessToken(conf TokenConfig, now time.Time, claims *Claims) (*TokenResponse, error) {
+	expires := now.Add(Expiration)
+	claims.IssuedAt = jwt.NewNumericDate(now)
+	claims.ExpiresAt = jwt.NewNumericDate(expires)
 	tok := jwt.NewWithClaims(conf.Type(), claims)
 	token, err := tok.SignedString(conf.Private())
 	if err != nil {
@@ -170,6 +168,18 @@ func newTokenResp(conf TokenConfig, claims *Claims) (*TokenResponse, error) {
 		Expires:   claims.ExpiresAt,
 		TokenType: JWTScheme,
 	}, nil
+}
+
+func (tr *TokenResponse) initRefreshToken(conf TokenConfig, now time.Time, c Claims) error {
+	c.Audience = []string{refreshAudience}
+	c.ExpiresAt = jwt.NewNumericDate(time.Now().Add(RefreshExpiration))
+	tok := jwt.NewWithClaims(conf.Type(), &c)
+	refresh, err := tok.SignedString(conf.Private())
+	if err != nil {
+		return err
+	}
+	tr.RefreshToken = refresh
+	return nil
 }
 
 var errAuthHeaderTokenMissing = errors.New("token missing from authorization header")

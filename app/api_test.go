@@ -214,10 +214,14 @@ func TestTokenHandler(t *testing.T) {
 			req.Header.Set(echo.HeaderContentType, "application/json")
 			req.URL.RawQuery = tt.query.Encode()
 
-			handler := TokenHandler(tt.cfg, NewUserStore(db))
+			service := TokenService{
+				Config: tt.cfg,
+				Users:  NewUserStore(db),
+				Tokens: auth.NewInMemoryTokenStore(time.Minute),
+			}
 			tt.prep(db, rows)
 			c := e.NewContext(req, rec)
-			err := handler(c)
+			err := service.Token(c)
 			checkErrs(t, tt.errs, err)
 
 			if len(tt.errs) > 0 {
@@ -230,6 +234,8 @@ func TestTokenHandler(t *testing.T) {
 				cookies = resp.Cookies()
 			)
 			is.NoErr(json.NewDecoder(resp.Body).Decode(&tok))
+			is.True(len(tok.Token) > 1)
+			is.True(len(tok.RefreshToken) > 1)
 			is.Equal(1, len(cookies))
 			is.Equal("/", cookies[0].Path)
 			is.Equal(cookies[0].Value, tok.Token)
@@ -239,6 +245,7 @@ func TestTokenHandler(t *testing.T) {
 		})
 	}
 }
+
 func TestRefreshTokenHandler_Err(t *testing.T) {
 	type table struct {
 		prep func(claims *auth.Claims, v url.Values)
@@ -251,16 +258,6 @@ func TestRefreshTokenHandler_Err(t *testing.T) {
 				n.Year(), n.Month(), n.Day(), n.Hour()-5,
 				n.Minute(), n.Second(), n.Nanosecond(), n.Location(),
 			))
-		}},
-		{prep: func(claims *auth.Claims, v url.Values) {
-			claims.ID = claims.ID + 1
-		}},
-		{prep: func(claims *auth.Claims, v url.Values) {
-			claims.UUID[0] = 'h'
-			claims.UUID[1] = 'e'
-			claims.UUID[2] = 'l'
-			claims.UUID[3] = 'l'
-			claims.UUID[4] = 'o'
 		}},
 		{prep: func(claims *auth.Claims, v url.Values) {
 			v.Add("cookie", "not-a-boolean")
@@ -287,15 +284,16 @@ func TestRefreshTokenHandler_Err(t *testing.T) {
 			}
 			refreshToken, err := jwt.NewWithClaims(tokenCfg.Type(), claims).SignedString(tokenCfg.Private())
 			is.NoErr(err)
+			store := auth.NewInMemoryTokenStore(time.Minute)
+			is.NoErr(store.Set(context.Background(), claims.ID, refreshToken))
 			e := echo.New()
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest("POST", "/api/refresh", body(map[string]string{"refresh_token": refreshToken}))
 			req.URL.RawQuery = params.Encode()
 			req.Header.Set("Content-Type", "application/json")
 			c := e.NewContext(req, rec)
-			c.Set(auth.ClaimsContextKey, &userClaims)
-			handler := RefreshTokenHandler(tokenCfg)
-			err = handler(c)
+			service := TokenService{Tokens: store, Config: tokenCfg}
+			err = service.Refresh(c)
 			if err == nil {
 				t.Fatal("expected an error got nil")
 			}
@@ -318,6 +316,8 @@ func TestRefreshTokenHandler(t *testing.T) {
 	}
 	refreshToken, err := jwt.NewWithClaims(tokenCfg.Type(), claims).SignedString(tokenCfg.Private())
 	is.NoErr(err)
+	store := auth.NewInMemoryTokenStore(time.Minute)
+	is.NoErr(store.Set(context.Background(), claims.ID, refreshToken))
 	e := echo.New()
 	req := httptest.NewRequest(
 		"POST", "/api/refresh?cookie=true",
@@ -326,9 +326,8 @@ func TestRefreshTokenHandler(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	c.Set(auth.ClaimsContextKey, claims)
-	handler := RefreshTokenHandler(tokenCfg)
-	err = handler(c)
+	service := TokenService{Config: tokenCfg, Tokens: store}
+	err = service.Refresh(c)
 	is.NoErr(err)
 	res := rec.Result()
 	is.Equal(res.StatusCode, 200)
@@ -336,6 +335,10 @@ func TestRefreshTokenHandler(t *testing.T) {
 	cookie := res.Cookies()[0]
 	is.Equal(cookie.Name, tokenKey)
 	is.Equal(cookie.Path, "/")
+	var tok auth.TokenResponse
+	is.NoErr(json.NewDecoder(res.Body).Decode(&tok))
+	is.Equal(0, len(tok.RefreshToken))
+	is.True(1 < len(tok.Token))
 }
 
 func TestLogList(t *testing.T) {

@@ -7,6 +7,9 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/sirupsen/logrus"
 )
 
 type DB interface {
@@ -48,15 +51,7 @@ func (db *database) QueryContext(ctx context.Context, query string, v ...interfa
 	return db.DB.QueryContext(ctx, query, v...)
 }
 
-type logger interface {
-	Info(...interface{})
-}
-
-func Connect(loggers ...logger) (DB, error) {
-	var logger logger = new(lg)
-	if len(loggers) > 0 {
-		logger = loggers[0]
-	}
+func Connect(logger logrus.FieldLogger) (DB, error) {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -77,18 +72,57 @@ func Connect(loggers ...logger) (DB, error) {
 	for {
 		select {
 		case <-ticker.C:
-			logger.Info("connecting to database")
 			err = db.Ping()
 			if err == nil {
 				logger.Info("database connected")
 				return &database{DB: db}, nil
 			}
+			logger.WithError(err).Warn("failed to ping database, retrying...")
 		case <-ctx.Done():
 			return nil, errors.New("database ping timeout")
 		}
 	}
 }
 
-type lg struct{}
+func lookupAnyOf(keys ...string) (string, bool) {
+	for _, k := range keys {
+		res, ok := os.LookupEnv(k)
+		if ok {
+			return res, true
+		}
+	}
+	return "", false
+}
 
-func (*lg) Info(...interface{}) {}
+func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
+	ctx := context.Background()
+	url, ok := lookupAnyOf("REDIS_TLS_URL", "REDIS_URL")
+	if !ok {
+		return nil, errors.New("$REDIS_URL not set")
+	}
+	opts, err := redis.ParseURL(url)
+	if err != nil {
+		return nil, err
+	}
+	client := redis.NewClient(opts)
+	if err = client.Ping(ctx).Err(); err == nil {
+		return client, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			err = client.Ping(ctx).Err()
+			if err == nil || err == redis.Nil {
+				logger.Info("redis client connected")
+				return client, nil
+			}
+			logger.WithError(err).Warn("failed to ping redis, retrying...")
+		case <-ctx.Done():
+			return nil, errors.New("redis client dial timeout")
+		}
+	}
+}
