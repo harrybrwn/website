@@ -53,7 +53,7 @@ export const logs = (opts: LogOpts): Promise<RequestLog[]> => {
   u.searchParams.append("offset", opts.offset.toString());
   u.searchParams.append("rev", opts.reverse.toString());
   return fetch(
-    `${window.location.origin}/api/logs?limit=${opts.limit}&offset=${opts.offset}&rev=${opts.reverse}`,
+    `/api/logs?limit=${opts.limit}&offset=${opts.offset}&rev=${opts.reverse}`,
     {
       method: "GET",
       headers: apiHeaders(),

@@ -1,4 +1,5 @@
 export const TOKEN_KEY = "_token";
+export const REFRESH_TOKEN_KEY = "_refresh";
 
 export interface Token {
   token: string;
@@ -53,23 +54,22 @@ export const login = async (
     });
 };
 
-export const refresh = async (): Promise<Token> => {
-  let token = loadToken();
-  if (token == null) {
-    throw new Error("cannot refresh token when not signed in");
-  }
+export const refresh = async (refresh: string): Promise<Token> => {
   return fetch(`${window.location.origin}/api/refresh?cookie=true`, {
     method: "POST",
     headers: {
       Accept: "application/json",
-      Authorization: `${token.type} ${token.token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ refresh_token: token.refresh }),
+    body: JSON.stringify({ refresh_token: refresh }),
   })
     .then((resp) => {
       if (!resp.ok) {
-        throw new Error("could not get refresh token");
+        // const msg = await resp.json();
+        // throw new Error(`could not get new access token: ${msg.message}`);
+        throw new Error(
+          `could not get new access token: status ${resp.status}`
+        );
       }
       return resp.json();
     })
@@ -110,13 +110,42 @@ export function loadToken(): Token | null {
   return JSON.parse(blob);
 }
 
+export const loadRefreshToken = (): string | null => {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+};
+
+/**
+ * This will store the refresh token separately if it needs to otherwise will
+ * not touch the refresh token.
+ * @param t is the jwt token being stored
+ */
 export function storeToken(t: Token) {
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(t));
+  let refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (
+    (refresh == null || refresh != t.refresh) &&
+    t.refresh != null &&
+    t.refresh.length > 0
+  ) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, t.refresh);
+  }
+  // don't need to store the refresh token twice
+  localStorage.setItem(
+    TOKEN_KEY,
+    JSON.stringify({
+      token: t.token,
+      expires: t.expires,
+      type: t.type,
+    })
+  );
 }
 
 export function deleteToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
+
+export const clearRefreshToken = () => {
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+};
 
 function toCookie(tok: Token): string {
   let exp = new Date(tok.expires * 1000);
@@ -127,13 +156,17 @@ function toCookie(tok: Token): string {
   return cookie;
 }
 
-const apiHeaders = (): HeadersInit => {
-  let headers: HeadersInit = {
-    Accept: "application/json",
-  };
+export const authHeader = (): string => {
   let token = loadToken();
-  if (token != null) {
-    headers["Authorization"] = `${token.type} ${token.token}`;
+  if (token == null) {
+    return "";
   }
-  return headers;
+  return `${token.type} ${token.token}`;
+};
+
+const apiHeaders = (): HeadersInit => {
+  return {
+    Accept: "application/json",
+    Authorization: authHeader(),
+  };
 };

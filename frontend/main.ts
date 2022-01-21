@@ -6,6 +6,7 @@ import {
   deleteToken,
   storeToken,
   setCookie,
+  clearRefreshToken,
 } from "./api/auth";
 import { SECOND } from "./constants";
 import { clearCookie } from "./util/cookies";
@@ -116,7 +117,10 @@ const main = () => {
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
     interval: 5 * 60 * SECOND,
-    // interval: 5 * SECOND,
+    clearToken: () => {
+      deleteToken();
+      clearCookie(TOKEN_KEY);
+    },
   });
   let loginPanel = new Modal({
     button: document.getElementById("login-btn"),
@@ -159,8 +163,8 @@ const main = () => {
 
   // Handle login and logout
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
-    console.log("token change");
     const e = ev.detail;
+    console.log("token change:", e.action);
     if (e.action == "login") {
       storeToken(e.token);
       setCookie(e.token);
@@ -168,10 +172,9 @@ const main = () => {
         links?.appendChild(li);
       }
     } else {
-      let loggedIn = loginManager.isLoggedIn();
-      if (!loggedIn) return;
-      clearCookie(TOKEN_KEY);
-      deleteToken();
+      if (!loginManager.isLoggedIn()) {
+        return;
+      }
       for (let li of privLinks) {
         links?.removeChild(li);
       }
@@ -181,6 +184,8 @@ const main = () => {
   loginPanel.toggleOnClick();
   handleLogout("logout-btn", () => {
     loginManager.logout();
+    // TODO send revoke to token service
+    clearRefreshToken();
   });
   handleLogin("login-form", (tok: Token) => {
     loginManager.login(tok);
@@ -189,16 +194,18 @@ const main = () => {
 
   // Close login window when the minimize or close buttons are pressed
   for (let id of ["login-window-close", "login-window-minimize"]) {
-    document.getElementById(id)?.addEventListener("click", (ev: MouseEvent) => {
+    document.getElementById(id)?.addEventListener("click", (_: MouseEvent) => {
       if (loginPanel.open) loginPanel.toggle();
     });
   }
+  // Close and minimize buttons for help window
   for (let id of ["help-window-close", "help-window-minimize"]) {
-    document.getElementById(id)?.addEventListener("click", (ev: MouseEvent) => {
+    document.getElementById(id)?.addEventListener("click", (_: MouseEvent) => {
       if (helpWindow.open) helpWindow.toggle();
     });
   }
 
+  // Handle Keypresses
   document.addEventListener("keydown", (ev: KeyboardEvent) => {
     const e = ev.target as HTMLElement;
     if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
