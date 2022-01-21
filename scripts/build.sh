@@ -3,7 +3,7 @@
 set -e
 
 yarn build
-go generate
+go generate ./...
 go build \
     -trimpath \
     -ldflags "-w -s" \
