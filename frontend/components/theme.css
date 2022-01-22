@@ -11,11 +11,12 @@
 body {
 	color: var(--theme-light-fg);
 	background-color: var(--theme-light-bg);
-	transition: background 0.4s linear;
+	transition: background 0.3s ease-in;
 }
 body.dark-theme {
 	color: var(--theme-dark-fg);
 	background-color: var(--theme-dark-bg);
+	z-index: 10;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -11,7 +11,7 @@ import {
 import { SECOND } from "./constants";
 import { clearCookie } from "./util/cookies";
 import LoginManager from "./util/login_manager";
-import { ThemeManager } from "./components/theme";
+import { Theme, ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import * as api from "./api";
 
@@ -140,7 +140,9 @@ const main = () => {
   // Toggle help window button
   helpWindow.toggleOnClick();
   // Handle theme changes
-  themeManager.onChange((_: Event) => themeManager.toggle());
+  themeManager.onChange((_: Event) => {
+    themeManager.toggle();
+  });
 
   // Logged in stuff
   let links = document.querySelector(".links");

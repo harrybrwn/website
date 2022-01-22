@@ -88,7 +88,6 @@ func main() {
 	}
 
 	if app.Debug {
-		godotenv.Load()
 		auth.Expiration = time.Second * 60
 		auth.RefreshExpiration = auth.Expiration * 60
 		logger.SetLevel(logrus.DebugLevel)
