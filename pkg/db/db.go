@@ -129,7 +129,7 @@ func lookupAnyOf(keys ...string) (string, bool) {
 
 func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
 	ctx := context.Background()
-	url, ok := lookupAnyOf("REDIS_URL")
+	url, ok := lookupAnyOf("REDIS_URL", "REDIS_TLS_URL")
 	if !ok {
 		return nil, errors.New("$REDIS_URL not set")
 	}
