@@ -8,10 +8,12 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
 	ErrTokenNotFound = errors.New("token not found")
+	logger           = logrus.New()
 )
 
 type TokenStore interface {
@@ -26,11 +28,11 @@ func NewRedisTokenStore(timeout time.Duration, client *redis.Client) TokenStore 
 
 func NewInMemoryTokenStore(timeout time.Duration) TokenStore {
 	store := &memoryTokenStore{
-		tokens:  make(map[int]timeoutToken),
-		timeout: timeout,
+		tokens:   make(map[int]timeoutToken),
+		timeout:  timeout,
+		timeouts: make(chan int),
 	}
-	// TODO start a background process that will periodically clean out expired
-	// tokens.
+	go store.tidy() // background process to handle ttl
 	return store
 }
 
@@ -64,18 +66,25 @@ type timeoutToken struct {
 }
 
 type memoryTokenStore struct {
-	tokens  map[int]timeoutToken
-	timeout time.Duration
-	mu      sync.RWMutex
+	tokens   map[int]timeoutToken
+	timeout  time.Duration
+	mu       sync.RWMutex
+	timeouts chan int
 }
 
 func (ms *memoryTokenStore) Set(ctx context.Context, id int, token string) error {
 	ms.mu.Lock()
-	defer ms.mu.Unlock()
 	ms.tokens[id] = timeoutToken{
 		expires: time.Now().Add(ms.timeout),
 		token:   token,
 	}
+	ms.mu.Unlock()
+	timer := time.NewTimer(ms.timeout)
+	go func() {
+		defer timer.Stop()
+		<-timer.C
+		ms.timeouts <- id
+	}()
 	return nil
 }
 
@@ -99,4 +108,21 @@ func (ms *memoryTokenStore) Del(ctx context.Context, id int) error {
 	delete(ms.tokens, id)
 	ms.mu.Unlock()
 	return nil
+}
+
+func (ms *memoryTokenStore) tidy() {
+	ctx := context.Background()
+	for {
+		id, ok := <-ms.timeouts
+		if !ok {
+			return
+		}
+		err := ms.Del(ctx, id)
+		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err,
+				"id":    id,
+			}).Warn("could not clear from in-memory token store")
+		}
+	}
 }

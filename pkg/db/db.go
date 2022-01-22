@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -49,6 +50,38 @@ type database struct{ *sql.DB }
 
 func (db *database) QueryContext(ctx context.Context, query string, v ...interface{}) (Rows, error) {
 	return db.DB.QueryContext(ctx, query, v...)
+}
+
+// Datastores connects to all the datastores in parallel for faster cold starts.
+func Datastores(logger logrus.FieldLogger) (DB, *redis.Client, error) {
+	var (
+		wg   sync.WaitGroup
+		errs = make(chan error)
+		db   DB
+		rd   *redis.Client
+	)
+	wg.Add(2)
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+	go func() {
+		defer wg.Done()
+		var err error
+		db, err = Connect(logger)
+		if err != nil {
+			errs <- err
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		var err error
+		rd, err = DialRedis(logger)
+		if err != nil {
+			errs <- err
+		}
+	}()
+	return db, rd, <-errs
 }
 
 func Connect(logger logrus.FieldLogger) (DB, error) {

@@ -96,16 +96,12 @@ func main() {
 
 	echo.NotFoundHandler = NotFoundHandler()
 
-	rd, err := db.DialRedis(logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	defer rd.Close()
-	db, err := db.Connect(logger)
+	db, rd, err := db.Datastores(logger)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	defer db.Close()
+	defer rd.Close()
 
 	templates, err := fs.Sub(templates, "frontend")
 	if err != nil {

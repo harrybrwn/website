@@ -12,6 +12,7 @@ services:
       PORT: ${PORT}
       DATABASE_URL: ${DATABASE_URL}
       JWT_SEED: ${JWT_SEED}
+      REDIS_URL: ${REDIS_URL}
 
   db:
     image: postgres:13.3-alpine

@@ -22,3 +22,16 @@ CREATE TABLE IF NOT EXISTS "request_log" (
 	error        TEXT,
 	requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE OR REPLACE VIEW logs AS SELECT
+	id,
+	"method",
+	status,
+	uri,
+	latency/1e6 as latency_ms,
+	age(current_timestamp, requested_at),
+	ip,
+	user_agent,
+	referer,
+	error
+FROM request_log ORDER BY requested_at DESC;

@@ -7,7 +7,7 @@ ENV_FILE=.env
 while :; do
   case $1 in
     -h|--help)
-      echo "redis-cli.sh [-h|-help|-env]"
+      echo "redis-cli.sh [-h|-help|-env] <redis-cli args...>"
       exit
       ;;
     -env)
@@ -21,7 +21,7 @@ while :; do
 done
 
 if [ ! -f "$ENV_FILE" ]; then
-  echo '.env does not exist'
+  echo "$ENV_FILE does not exist"
   exit 1
 fi
 

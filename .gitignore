@@ -14,8 +14,10 @@ static/bootstrap-4.3.1-dist
 # Config
 config.json
 .vscode
-.env
+*.env
+*.pgpass
 prod.env
+stg.env
 
 # Testing
 /internal/mocks/
