@@ -64,18 +64,6 @@
           </div>
         </div>
       </div>
-      <div id="logout-panel" class="logout-panel model" style="display: none">
-        <div class="win95-window">
-          <div class="win95-window-head">
-            <p>Login</p>
-            <button id="login-window-close">&#x2715;</button>
-            <button id="login-window-minimize">&#8211;</button>
-          </div>
-          <div class="win95-window-body">
-            <!-- <button id="logout-btn">Logout</button> -->
-          </div>
-        </div>
-      </div>
 
       <p>I do computers and stuff.</p>
       <h2>Links</h2>
@@ -165,7 +153,7 @@
           title="Homepage of the retro internet"
         >
           <img
-            src="<%=require('./img/88x31/geo-cities.gif')%>"
+            src="<%= require('./img/88x31/geo-cities.gif') %>"
             width="88"
             height="31"
             alt="Geo Cities"
@@ -178,7 +166,7 @@
           title="VS Code"
         >
           <img
-            src="<%=require('./img/88x31/vscode.gif')%>"
+            src="<%= require('./img/88x31/vscode.gif') %>"
             width="88"
             height="31"
             alt="Visual Studio Code"
@@ -195,32 +183,6 @@
             width="88"
             height="31"
             alt="The Linux kernel"
-          />
-        </a>
-        <a
-          href="https://madville.neocities.org"
-          ping="/api/ping?link=https://madville.neocities.org"
-          rel="noopener,noreferrer"
-          title="A beautifully retro site"
-        >
-          <img
-            src="<%= require('./img/88x31/madville.gif') %>"
-            alt="A beautifully retro site"
-            width="88"
-            height="31"
-          />
-        </a>
-        <a
-          href="https://en.wikipedia.org/wiki/Netscape"
-          ping="/api/ping?link=https://en.wikipedia.org/wiki/Netscape"
-          rel="noopener,noreferrer"
-          title="Netscape Navigator"
-        >
-          <img
-            src="<%= require('./img/88x31/netnow2.gif') %>"
-            alt="Netscape Navigator"
-            width="88"
-            height="31"
           />
         </a>
         <a
@@ -250,9 +212,49 @@
           />
         </a>
         <a
+          href="https://www.palemoon.org/"
+          ping="/api/ping?https://www.palemoon.org/"
+          rel="noopener,noreferrer"
+          title="Palemoon"
+        >
+          <img
+            src="<%= require('./img/88x31/palemoon.png') %>"
+            alt="Palemoon web browser"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
+          href="https://madville.neocities.org"
+          ping="/api/ping?link=https://madville.neocities.org"
+          rel="noopener,noreferrer"
+          title="A beautifully retro site"
+        >
+          <img
+            src="<%= require('./img/88x31/madville.gif') %>"
+            alt="A beautifully retro site"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
+          href="https://en.wikipedia.org/wiki/Netscape"
+          ping="/api/ping?link=https://en.wikipedia.org/wiki/Netscape"
+          rel="noopener,noreferrer"
+          title="Netscape Navigator"
+        >
+          <img
+            src="<%= require('./img/88x31/netnow2.gif') %>"
+            alt="Netscape Navigator"
+            width="88"
+            height="31"
+          />
+        </a>
+        <a
           href="https://cyber.dabamos.de/88x31/index.html"
           ping="/api/ping?link=https://cyber.dabamos.de/88x31/index.html"
           rel="noopener,noreferrer"
+          title="So many buttons!"
         >
           <img
             src="<%= require('./img/88x31/88x31.gif') %>"
@@ -279,7 +281,13 @@
         </section>
         <center>
           <img
-            src="<%=require('./img/under_construction.gif')%>"
+            src="<%= require('./img/88x31/me/wait-what.png') %>"
+            alt="Harry"
+            width="88"
+            height="31"
+          />
+          <img
+            src="<%= require('./img/under_construction.gif') %>"
             alt="Under Construction"
             width="110"
             height="60"

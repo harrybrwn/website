@@ -37,7 +37,6 @@ main ul li {
 .login-panel {
 	top: 27%;
 	left: 50%;
-	float: left;
 	width: 18em;
 	text-align: center;
 	transform: translate(-50%, -50%);
@@ -46,6 +45,10 @@ main ul li {
 .login-panel .win95-window-body p {
 	margin-top: .6em;
 	margin-bottom: .6em;
+}
+
+.login-panel input[type=submit] {
+	margin: 10px;
 }
 
 body.dark-theme .login-panel {

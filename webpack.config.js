@@ -62,7 +62,7 @@ const plugins = (builder) => {
   let plugins = [
     new MiniCssExtractPlugin({
       filename: builder.isProd
-        ? "static/css/[name].[hash:8].css"
+        ? "static/css/[contenthash:8].css"
         : "static/css/[name].css",
     }),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
@@ -162,12 +162,14 @@ module.exports = function (webpackEnv) {
       clean: isProd, // remove old files before build
       path: path.resolve(__dirname, paths.build),
       filename: isProd
-        ? "static/js/[name].[contenthash].js"
+        ? "static/js/[contenthash].js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
-        ? "static/js/[name].[contenthash].chunk.js"
+        ? "static/js/[contenthash].chunk.js"
         : "static/js/[name].chunk.js",
-      assetModuleFilename: "static/a/[hash:4].[id][ext][query][fragment]",
+      assetModuleFilename: builder.isProd
+        ? "static/a/[contenthash:16][ext]"
+        : "static/a/[name][id][ext]",
     },
 
     optimization: {
