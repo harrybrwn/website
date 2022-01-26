@@ -57,8 +57,12 @@ jobs:
 
     - name: Frontend dependencies
       run: yarn install
-
     - run: yarn build
     - run: go generate ./...
-    - run: go test -v -cover ./...
     - run: go build -trimpath -ldflags "-w -s"
+
+    - name: Test Frontend
+      run: yarn test
+    - name: Test Backend
+      run: go test -v -cover ./...
+
