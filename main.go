@@ -88,8 +88,8 @@ func main() {
 	}
 
 	if app.Debug {
-		auth.Expiration = time.Second * 60
-		auth.RefreshExpiration = auth.Expiration * 60
+		auth.Expiration = time.Second * 30
+		// auth.RefreshExpiration = auth.Expiration * 60
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
@@ -122,8 +122,8 @@ func main() {
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
 	e.GET("/robots.txt", WrapHandler(robotsHandler))
-	e.GET("/sitemap.xml", WrapHandler(sitemapHandler))
-	e.GET("/sitemap.xml.gz", WrapHandler(sitemapGZHandler))
+	e.GET("/sitemap.xml", WrapHandler(sitemapHandler(sitemap, false)))
+	e.GET("/sitemap.xml.gz", WrapHandler(sitemapHandler(sitemapgz, true)))
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
 	e.GET("/secret", func(c echo.Context) error {
@@ -192,7 +192,7 @@ func NotFoundHandler() echo.HandlerFunc {
 			if strings.HasPrefix(c.Request().RequestURI, "/api") {
 				return echo.ErrNotFound
 			}
-			return serveFile(c, "build/pages/404.html")
+			return serveFile(c, 404, "build/pages/404.html")
 		}
 	}
 	return func(c echo.Context) error {
@@ -231,7 +231,7 @@ func page(raw []byte, filename string) echo.HandlerFunc {
 	filename = filepath.Join(buildDir, filename)
 	if app.Debug {
 		hf = func(c echo.Context) error {
-			return serveFile(c, filename)
+			return serveFile(c, 200, filename)
 		}
 		b, err := os.ReadFile(filename)
 		if err != nil {
@@ -267,34 +267,33 @@ func json(raw []byte) echo.HandlerFunc {
 	}
 }
 
-func serveFile(c echo.Context, filename string) error {
+func serveFile(c echo.Context, status int, filename string) error {
 	http.ServeFile(c.Response(), c.Request(), filename)
+	c.Response().WriteHeader(status)
 	return nil
 }
 
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
-	staticLastModified(rw.Header())
-	rw.Header().Set("Cache-Control", staticCacheControl)
+	h := rw.Header()
+	staticLastModified(h)
+	h.Set("Cache-Control", staticCacheControl)
+	h.Set("Content-Type", "text/plain")
 	rw.Write(robots)
 }
 
-func sitemapHandler(rw http.ResponseWriter, r *http.Request) {
-	h := rw.Header()
-	staticLastModified(h)
-	h.Set("Cache-Control", staticCacheControl)
-	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemap)), 10))
-	h.Set("Content-Type", "text/xml")
-	rw.Write(sitemap)
-}
-
-func sitemapGZHandler(rw http.ResponseWriter, r *http.Request) {
-	h := rw.Header()
-	staticLastModified(h)
-	h.Set("Cache-Control", staticCacheControl)
-	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemapgz)), 10))
-	h.Set("Content-Encoding", "gzip")
-	h.Set("Content-Type", "text/xml")
-	rw.Write(sitemapgz)
+func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Request) {
+	length := strconv.FormatInt(int64(len(raw)), 10)
+	return func(rw http.ResponseWriter, r *http.Request) {
+		h := rw.Header()
+		staticLastModified(h)
+		h.Set("Cache-Control", staticCacheControl)
+		h.Set("Content-Length", length)
+		h.Set("Content-Type", "text/xml")
+		if gzip {
+			h.Set("Content-Encoding", "gzip")
+		}
+		rw.Write(raw)
+	}
 }
 
 func handleStatic() http.Handler {
@@ -313,11 +312,17 @@ func ping(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(200)
 }
 
+func acceptsGzip(header http.Header) bool {
+	accept := header.Get("Accept-Encoding")
+	return strings.Contains(accept, "gzip")
+}
+
 func gzip(handler echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		accept := c.Request().Header.Get("Accept-Encoding")
-		if !strings.Contains(accept, "gzip") {
-			logger.WithField("accept-encoding", accept).Error("browser encoding not supported")
+		if !acceptsGzip(c.Request().Header) {
+			logger.WithField(
+				"accept-encoding", c.Request().Header.Get("Accept-Encoding"),
+			).Error("browser encoding not supported")
 			return c.Blob(500, "text/html", []byte("<h2>encoding failure</h2>"))
 		}
 		c.Response().Header().Set("Content-Encoding", "gzip")

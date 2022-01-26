@@ -112,8 +112,57 @@ body.dark-theme .win95-window-body p,th,td {
 }
 
 .dark-theme .stars {
-	transition: background 3s ease-out;
-	transition-timing-function: cubic-bezier(.15,.35,.41,.93);
+	/* transition: background 5s cubic-bezier(.15,.35,.41,.93); */
+	transition: background 3s cubic-bezier(.58, .31, .49, .87);
 	z-index: -50;
 	background: #000 url('../img/stars.png') repeat left;
+}
+
+.web-button-tooltip {
+	width: 88px;
+	height: 31px;
+	cursor: pointer;
+}
+
+.tooltip {
+	/* making the .tooltip span a container for the tooltip text */
+	position: relative;
+}
+
+.tooltip:before {
+	content: attr(data-text); /* here's the magic */
+	position: absolute;
+
+	/* vertically center */
+	top:50%;
+	transform:translateY(50%);
+
+	left: -18%;
+	margin-left: 0px;
+
+	/* basic styles */
+	width: 120%;
+	border-radius: 4px;
+	background-color: #000;
+	color: #fff;
+	text-align: center;
+	font-size: 0.8em;
+	opacity: 0.8;
+
+	/* Hide by default */
+	display: none;
+}
+
+.light-theme .tooltip:before {
+	background-color: #000;
+	color: #fff;
+}
+
+.dark-theme .tooltip:before {
+	background-color: #fff;
+	color: black;
+}
+
+.tooltip:hover:before {
+	display: block;
 }

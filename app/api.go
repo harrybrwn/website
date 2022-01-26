@@ -152,7 +152,6 @@ func (ts *TokenService) parserCookieQuery(req *http.Request) (bool, error) {
 }
 
 func (ts *TokenService) setTokenCookie(response http.ResponseWriter, token *auth.TokenResponse, claims *auth.Claims) {
-	logger.Info("setting cookie")
 	http.SetCookie(response, &http.Cookie{
 		Name:     tokenKey,
 		Value:    token.Token,

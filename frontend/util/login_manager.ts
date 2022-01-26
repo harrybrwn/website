@@ -128,6 +128,7 @@ export default class LoginManager {
     this.expirationCheckTimer = setInterval(() => {}, 120 * SECOND);
     clearInterval(this.expirationCheckTimer);
 
+    window.addEventListener("beforeunload", (ev: BeforeUnloadEvent) => {});
     document.addEventListener("visibilitychange", (ev: Event) => {
       if (!document.hidden) {
         this.checkToken();
