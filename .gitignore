@@ -20,6 +20,7 @@ prod.env
 stg.env
 
 # Testing
+/.testing/
 /internal/mocks/
 /db/data/
 /tests/

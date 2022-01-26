@@ -9,7 +9,7 @@ test:
 	go tool cover -html=test-cover
 
 clean:
-	$(RM) bin -r
+	$(RM) -r bin .testing
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 

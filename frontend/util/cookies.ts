@@ -5,3 +5,4 @@ export function clearCookie(name: string) {
   // https://stackoverflow.com/questions/179355/clearing-all-cookies-with-javascript
   document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
 }
+
