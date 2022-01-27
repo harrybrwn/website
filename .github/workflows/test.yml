@@ -62,7 +62,7 @@ jobs:
     - run: go build -trimpath -ldflags "-w -s"
 
     - name: Test Frontend
-      run: yarn test
+      run: yarn test:ci
     - name: Test Backend
       run: go test -v -cover ./...
 

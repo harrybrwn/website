@@ -10,7 +10,7 @@ import {
 } from "./api/auth";
 import { SECOND } from "./constants";
 import { clearCookie } from "./util/cookies";
-import LoginManager from "./util/login_manager";
+import LoginManager from "./util/LoginManager";
 import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import * as api from "./api";

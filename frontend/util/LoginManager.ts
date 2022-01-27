@@ -63,7 +63,7 @@ export default class LoginManager {
       })
       .catch((error) => {
         // Could not refresh the access token
-        console.log("refresh error:", error);
+        console.error("refresh error:", error);
         this.dispatch(null);
         this.loggedIn = false;
         this.clearToken();
@@ -76,7 +76,7 @@ export default class LoginManager {
     let expires = new Date(token.expires * 1000);
     let now = new Date();
     let ms = expires.getTime() - now.getTime() - SECOND;
-    console.log("expires in", ms, "milliseconds at", expires);
+    //console.log("expires in", ms, "milliseconds at", expires);
     if (ms < 0) {
       return;
     }
@@ -89,7 +89,7 @@ export default class LoginManager {
           }
         })
         .catch((error) => {
-          console.log("could not refresh access token:", error);
+          console.error("could not refresh access token:", error);
         });
     }, ms);
   }
@@ -97,19 +97,18 @@ export default class LoginManager {
   private async checkToken() {
     let token = loadToken();
     if (token == null) {
-      console.log("TokenManager: no token found");
       if (loadRefreshToken() != null) {
         await this.refresh();
       }
     } else if (isExpired(token)) {
-      console.log("TokenManager: token expired");
       await this.refresh();
-    } else {
-      console.log("token still valid");
     }
   }
 
-  constructor(options: LoginManagerOptions) {
+  constructor(options?: LoginManagerOptions) {
+    if (!options) {
+      options = {};
+    }
     this.loggedIn = false;
     this.target = options.target || document;
     this.refreshTokenTimeout = null;

@@ -12,7 +12,8 @@ export interface Claims {
   id: number;
   uuid: string;
   roles: string[];
-  aud: string;
+  aud: string[];
+  iss: string;
   exp: number;
   iat: number;
 }
@@ -29,7 +30,7 @@ export const login = async (
   user: Login,
   callback?: TokenCallback
 ): Promise<Token> => {
-  return fetch(`${window.location.origin}/api/token?cookie=true`, {
+  return fetch("/api/token?cookie=true", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),
@@ -55,7 +56,7 @@ export const login = async (
 };
 
 export const refresh = async (refresh: string): Promise<Token> => {
-  return fetch(`${window.location.origin}/api/refresh?cookie=true`, {
+  return fetch("/api/refresh?cookie=true", {
     method: "POST",
     headers: {
       Accept: "application/json",

@@ -7,6 +7,8 @@ build:
 test:
 	go test ./... -coverprofile=test-cover
 	go tool cover -html=test-cover
+	yarn test
+	yarn coverage
 
 clean:
 	$(RM) -r bin .testing

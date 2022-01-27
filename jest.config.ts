@@ -12,6 +12,7 @@ export default {
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "/tmp/jest_rs",
+  cacheDirectory: ".testing/jest/cache",
 
   // Automatically clear mock calls, instances and results before every test
   clearMocks: true,
@@ -23,7 +24,8 @@ export default {
   // collectCoverageFrom: undefined,
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: "coverage",
+  //coverageDirectory: "coverage",
+  coverageDirectory: ".testing/jest/coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
@@ -81,7 +83,9 @@ export default {
   // ],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
-  // moduleNameMapper: {},
+  moduleNameMapper: {
+    "^~(.*)$": "<rootDir>$1",
+  },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
   // modulePathIgnorePatterns: [],
@@ -94,7 +98,7 @@ export default {
 
   // A preset that is used as a base for Jest's configuration
   // preset: undefined,
-  //preset: "ts-jest",
+  preset: "ts-jest",
 
   // Run tests from one or more projects
   // projects: undefined,
@@ -139,6 +143,7 @@ export default {
 
   // The test environment that will be used for testing
   testEnvironment: "jsdom",
+  //testEnvironment: "node",
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
