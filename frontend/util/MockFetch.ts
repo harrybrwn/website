@@ -30,12 +30,6 @@ export default class MockFetch {
         return mockFetch.call(input, init);
       }
     );
-    // global.fetch = function (
-    //   input: RequestInfo,
-    //   init?: RequestInit | undefined
-    // ): Promise<Response> {
-    //   return mockFetch.call(input, init);
-    // };
   }
 
   finish() {
