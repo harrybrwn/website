@@ -12,11 +12,13 @@ export default class MockFetch {
   callStack: FetchParams[];
   resultStack: Response[];
   globalFetch: FetchFn;
+  headers: Headers;
 
-  constructor() {
+  constructor(headers?: HeadersInit | undefined) {
     this.callStack = [];
     this.resultStack = [];
     this.globalFetch = global.fetch;
+    this.headers = new Headers(headers);
   }
 
   start() {

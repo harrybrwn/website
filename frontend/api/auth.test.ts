@@ -5,8 +5,11 @@ import {
   loadToken,
   clearRefreshToken,
   deleteToken,
+  refresh,
+  setCookie,
 } from "./auth";
 import MockFetch from "~/frontend/util/MockFetch";
+import { toBindingIdentifierName } from "@babel/types";
 
 test("parse jwt claims", () => {
   let token =
@@ -41,8 +44,8 @@ describe("login", () => {
   });
 
   afterEach(() => {
-    deleteToken();
     mockFetch.finish();
+    localStorage.clear();
   });
 
   describe("login successful", () => {
@@ -137,5 +140,120 @@ describe("login", () => {
       expect(loadRefreshToken()).toBe(null);
       expect(loadToken()).toBe(null);
     });
+  });
+});
+
+describe("refresh", () => {
+  const refreshToken =
+    "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsicmVmcmVzaCJdLCJleHAiOjE2NDM2OTA4OTcsImlhdCI6MTY0MzI1ODg5N30.bXMKEsa4Rji5d6KhFmu6U77Ww8MpadMGh5n7vUYbJ6zxU93x-E8uuutzyZdhkH_qJgGmyL2BSof8oY0ea0h3Cw";
+  const rawToken =
+    "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsidXNlciJdLCJleHAiOjE2NDMyNTg5MjcsImlhdCI6MTY0MzI1ODg5N30.J2pePgCOz_gA8lmcIxoxDzv0B6xxBeyC6UgAGz0Z77ImURf48jA9crj8JscwbGapycfSLi8kXPX5YrsnbR9JDQ";
+  const user = {
+    username: "tester",
+    email: "tester@example.com",
+    password: "password1",
+  };
+
+  const oldToken = {
+    token:
+      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwid…IRZ9oA2pGCN-3gzCIQCBNffJbCcoviiniih8G5B2RutbjPjCw",
+    refresh:
+      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsicmVmcmVzaCJdLCJleHAiOjE2NDM3NzU0MzcsImlhdCI6MTY0MzM0MzQzN30._FEJKd3ixVSzeePMm1VT-dSwg4YNuC37i29oaHhzorKUO3VRaaFiT1in7RyMsL0EDD1QZqcb6PFffIexTKi5Dg",
+    expires: 1643343496,
+    type: "Bearer",
+  };
+
+  let mockFetch: MockFetch;
+  let newExpiration: number;
+
+  beforeEach(() => {
+    mockFetch = new MockFetch();
+    mockFetch.start();
+  });
+
+  afterEach(() => {
+    mockFetch.finish();
+    localStorage.clear();
+  });
+
+  describe("successful refresh", () => {
+    newExpiration = Math.round((Date.now() + 100000) / 1000);
+    beforeEach(() => {
+      mockFetch
+        .expect("/api/refresh?cookie=true", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refresh_token: oldToken.refresh }),
+        })
+        .returns({
+          ok: true,
+          json() {
+            return Promise.resolve({
+              refresh_token: refreshToken,
+              token: rawToken,
+              token_type: "Bearer",
+              expires: newExpiration,
+            });
+          },
+        } as Response);
+    });
+
+    test("refresh ok", async () => {
+      let token = await refresh(oldToken.refresh);
+      expect(token.refresh).toBe(refreshToken);
+      expect(token.token).toBe(rawToken);
+      expect(token.expires).toBe(newExpiration);
+      expect(token.type).toBe("Bearer");
+    });
+  });
+
+  describe("failed refresh", () => {
+    beforeEach(() => {
+      mockFetch
+        .expect("/api/refresh?cookie=true", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refresh_token: oldToken.refresh }),
+        })
+        .returns({ ok: false, status: 500 } as Response);
+    });
+
+    test("should throw an error", async () => {
+      try {
+        await refresh(oldToken.refresh);
+        fail("should throw error");
+      } catch (error) {
+        expect(fetch).toHaveBeenCalledTimes(1);
+        if (error instanceof Error) {
+          expect(error).toBeTruthy();
+          expect(error.message).toBe(
+            "could not get new access token: status 500"
+          );
+        } else {
+          fail("expected error of type Error");
+        }
+      }
+    });
+  });
+});
+
+describe("setCookie", () => {
+  const token = {
+    token:
+      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwid…IRZ9oA2pGCN-3gzCIQCBNffJbCcoviiniih8G5B2RutbjPjCw",
+    refresh:
+      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsicmVmcmVzaCJdLCJleHAiOjE2NDM3NzU0MzcsImlhdCI6MTY0MzM0MzQzN30._FEJKd3ixVSzeePMm1VT-dSwg4YNuC37i29oaHhzorKUO3VRaaFiT1in7RyMsL0EDD1QZqcb6PFffIexTKi5Dg",
+    expires: 1643343496,
+    type: "Bearer",
+  };
+  setCookie(token);
+  test("should have token cookie", () => {
+    expect(document.cookie).toBe("_token=" + token.token);
   });
 });

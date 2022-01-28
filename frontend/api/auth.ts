@@ -24,12 +24,7 @@ export interface Login {
   password: string;
 }
 
-type TokenCallback = (tok: Token) => void;
-
-export const login = async (
-  user: Login,
-  callback?: TokenCallback
-): Promise<Token> => {
+export const login = async (user: Login): Promise<Token> => {
   return fetch("/api/token?cookie=true", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -50,7 +45,6 @@ export const login = async (
         type: blob.token_type,
       };
       storeToken(tok);
-      if (callback) callback(tok);
       return tok;
     });
 };
