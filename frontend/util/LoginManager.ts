@@ -6,6 +6,7 @@ import {
   refresh,
   loadRefreshToken,
   clearRefreshToken,
+  refreshExpiration,
 } from "~/frontend/api/auth";
 import { SECOND } from "~/frontend/constants";
 
@@ -67,7 +68,7 @@ export default class LoginManager {
         this.dispatch(null);
         this.loggedIn = false;
         this.clearToken();
-        clearRefreshToken();
+        // clearRefreshToken();
         return null;
       });
   }
@@ -120,7 +121,21 @@ export default class LoginManager {
       if (!isExpired(token)) {
         this.login(token);
       } else {
-        this.clearToken();
+        console.log("current token is expired");
+        let refExp = refreshExpiration();
+        if (refExp == null || refExp.getTime() < Date.now()) {
+          console.log("expired or no refresh token");
+          this.clearToken();
+        } else {
+          console.log("found token");
+          this.refresh()
+            .then(() => {
+              console.log("token refreshed");
+            })
+            .catch((error) => {
+              console.error("unable to refresh access token:", error);
+            });
+        }
       }
     }
 

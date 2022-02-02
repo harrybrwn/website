@@ -362,6 +362,7 @@ func TestLogList(t *testing.T) {
 			gomock.AssignableToTypeOf(durationPtr),
 			gomock.Any(),
 			gomock.AssignableToTypeOf(&time.Time{}),
+			gomock.AssignableToTypeOf(&uuid.UUID{}),
 		)
 	}
 

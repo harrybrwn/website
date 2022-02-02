@@ -9,7 +9,7 @@ import {
   setCookie,
 } from "./auth";
 import MockFetch from "~/frontend/util/MockFetch";
-import { toBindingIdentifierName } from "@babel/types";
+import { clearCookie } from "~/frontend/util/cookies";
 
 test("parse jwt claims", () => {
   let token =
@@ -249,11 +249,14 @@ describe("setCookie", () => {
       "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwid…IRZ9oA2pGCN-3gzCIQCBNffJbCcoviiniih8G5B2RutbjPjCw",
     refresh:
       "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsicmVmcmVzaCJdLCJleHAiOjE2NDM3NzU0MzcsImlhdCI6MTY0MzM0MzQzN30._FEJKd3ixVSzeePMm1VT-dSwg4YNuC37i29oaHhzorKUO3VRaaFiT1in7RyMsL0EDD1QZqcb6PFffIexTKi5Dg",
-    expires: 1643343496,
+    expires: Math.round((Date.now() + 100000) / 1000),
     type: "Bearer",
   };
-  setCookie(token);
+  afterEach(() => {
+    clearCookie("_token");
+  });
   test("should have token cookie", () => {
-    expect(document.cookie).toBe("_token=" + token.token);
+    setCookie(token);
+    expect(document.cookie).toEqual("_token=" + token.token);
   });
 });

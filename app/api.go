@@ -1,9 +1,11 @@
 package app
 
 import (
+	"encoding/hex"
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
@@ -25,6 +27,30 @@ const (
 var logger = logrus.New()
 
 func SetLogger(l *logrus.Logger) { logger = l }
+
+func NewTokenConfig() auth.TokenConfig {
+	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
+	if hasSeed {
+		logger.Info("creating token config from seed")
+		seed, err := hex.DecodeString(hexseed)
+		if err != nil {
+			panic(errors.Wrap(err, "could not decode private key seed from hex"))
+		}
+		return &tokenConfig{auth.EdDSATokenConfigFromSeed(seed)}
+	}
+	logger.Warn("generating new key pair for token config")
+	return &tokenConfig{auth.GenEdDSATokenConfig()}
+}
+
+type tokenConfig struct{ auth.TokenConfig }
+
+func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
+	c, err := r.Cookie(tokenKey)
+	if err != nil {
+		return auth.GetBearerToken(r)
+	}
+	return c.Value, nil
+}
 
 type TokenService struct {
 	Tokens auth.TokenStore
@@ -249,6 +275,10 @@ func HandleInfo(w http.ResponseWriter, r *http.Request) interface{} {
 	}
 }
 
+func HandleRuntimeInfo(startup time.Time) echo.HandlerFunc {
+	return func(c echo.Context) error { return c.JSON(200, RuntimeInfo(startup)) }
+}
+
 func RuntimeInfo(start time.Time) *Info {
 	return &Info{
 		Name:      "Harry Brown",
@@ -319,6 +349,7 @@ var (
 				"you could do anything?",
 			Author: "That one kid",
 		},
+		// {Body: "640K ought to be enough memory for anybody.", Author: "Bill Gates"},
 		// {Body: "I did not have sexual relations with that woman.", Author: "Bill Clinton"},
 		// {Body: "Bush did 911.", Author: "A very intelligent internet user"},
 	}

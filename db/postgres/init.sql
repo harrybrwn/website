@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS "user" (
-	id         SERIAL PRIMARY KEY,
-	uuid       UUID UNIQUE,
-	username   VARCHAR(256),
-	email      VARCHAR(256),
-	pw_hash    BYTEA,
-	totp_code  VARCHAR(32),
-	roles      VARCHAR(32)[],
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+	id          SERIAL PRIMARY KEY,
+	uuid        UUID UNIQUE,
+	username    VARCHAR(256),
+	email       VARCHAR(256),
+	pw_hash     BYTEA,
+	totp_secret VARCHAR(32),
+	roles       VARCHAR(32)[],
+    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS "request_log" (
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "request_log" (
 	user_agent   TEXT,
 	latency      INT,
 	error        TEXT,
-	requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+	requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 );
 
 CREATE OR REPLACE VIEW logs AS SELECT
@@ -35,3 +35,7 @@ CREATE OR REPLACE VIEW logs AS SELECT
 	referer,
 	error
 FROM request_log ORDER BY requested_at DESC;
+
+ALTER TABLE request_log
+ADD COLUMN IF NOT EXISTS
+	user_id UUID;

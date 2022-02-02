@@ -38,3 +38,6 @@ services:
       - ${REDIS_PORT}
       - --requirepass
       - "${REDIS_PASSWORD}"
+    volumes:
+      - ./db/data/redis:/data
+

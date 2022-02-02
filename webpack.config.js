@@ -148,7 +148,8 @@ module.exports = function (webpackEnv) {
         import: path.resolve(__dirname, paths.source, "pages/games.ts"),
       },
     },
-    devtool: "inline-source-map",
+
+    devtool: builder.isProd ? false : "inline-source-map",
 
     resolve: {
       extensions: [".tsx", ".ts", ".js", ".css"],
@@ -230,5 +231,11 @@ module.exports = function (webpackEnv) {
     },
 
     plugins: plugins(builder),
+
+    cache: {
+      type: "filesystem",
+      cacheDirectory: path.resolve(__dirname, ".build/cache"),
+      store: "pack",
+    },
   };
 };

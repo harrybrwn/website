@@ -16,15 +16,15 @@ import (
 )
 
 type User struct {
-	ID        int         `json:"id"`
-	UUID      uuid.UUID   `json:"uuid"`
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	PWHash    []byte      `json:"-"`
-	TOTPCode  string      `json:"-"`
-	Roles     []auth.Role `json:"roles"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	ID         int         `json:"id"`
+	UUID       uuid.UUID   `json:"uuid"`
+	Username   string      `json:"username"`
+	Email      string      `json:"email"`
+	PWHash     []byte      `json:"-"`
+	TOTPSecret string      `json:"-"`
+	Roles      []auth.Role `json:"roles"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 func (u *User) NewClaims() *auth.Claims {
@@ -79,7 +79,7 @@ const selectQueryHead = `SELECT
 	username,
 	email,
 	pw_hash,
-	totp_code,
+	totp_secret,
 	roles,
 	created_at,
 	updated_at
@@ -104,7 +104,7 @@ func scanUser(rows db.Rows, u *User) (err error) {
 		&u.Username,
 		&u.Email,
 		&u.PWHash,
-		&u.TOTPCode,
+		&u.TOTPSecret,
 		pq.Array(&u.Roles),
 		&u.CreatedAt,
 		&u.UpdatedAt,
@@ -171,7 +171,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 		u.Roles = []auth.Role{auth.RoleDefault}
 	}
 	const query = `
-		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_code)
+		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING created_at, updated_at`
 	rows, err := s.db.QueryContext(
@@ -182,7 +182,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 		u.Email,
 		u.PWHash,
 		pq.Array(u.Roles),
-		u.TOTPCode,
+		u.TOTPSecret,
 	)
 	if err != nil {
 		return nil, err

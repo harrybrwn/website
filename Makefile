@@ -4,23 +4,30 @@ ENV=production
 build:
 	sh scripts/build.sh
 
-test:
-	go test ./... -coverprofile=test-cover
-	go tool cover -html=test-cover
-	yarn test
-	yarn coverage
+test: test-go test-ts
 
 clean:
-	$(RM) -r bin .testing
+	$(RM) -r bin .testing .build
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
 clean-mocks:
 	$(RM) -r internal/mocks
 
-.PHONY: build run test clean clean-mocks
+test-go:
+	@mkdir -p .testing
+	go generate
+	go test \
+		./app ./cmd/... ./pkg/... ./internal/... \
+		-coverprofile=.testing/coverprofile.txt
+	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
+	@x-www-browser .testing/coverage.html
 
-.PHONY: resume
+test-ts:
+	yarn test
+	yarn coverage
+
+
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
 		pdflatex \
@@ -42,3 +49,5 @@ blog/resources/remora.svg: diagrams/remora.svg
 
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
+
+.PHONY: build run test clean clean-mocks test-go test-ts resume

@@ -142,6 +142,15 @@ export const clearRefreshToken = () => {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
+export const refreshExpiration = (): Date | null => {
+  let t = loadRefreshToken();
+  if (t == null) {
+    return null;
+  }
+  let claims = parseClaims(t);
+  return new Date(claims.exp * 1000);
+};
+
 function toCookie(tok: Token): string {
   let exp = new Date(tok.expires * 1000);
   let time = exp.getTime();
