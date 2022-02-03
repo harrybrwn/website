@@ -7,6 +7,8 @@ const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const HTMLInlineCSSWebpackPlugin =
   require("html-inline-css-webpack-plugin").default;
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+
 const path = require("path");
 const build = require("./scripts/build");
 
@@ -18,6 +20,8 @@ const paths = {
   source: "./frontend",
   build: "./build",
   favicon: "./public/favicon.ico",
+  rootDir: __dirname,
+  cache: "./.build/cache",
 };
 
 const sitemap = [
@@ -60,10 +64,12 @@ const htmlMinify = {
 
 const plugins = (builder) => {
   let plugins = [
+    // Typechecking in a different process
+    new ForkTsCheckerWebpackPlugin(),
     new MiniCssExtractPlugin({
       filename: builder.isProd
         ? "static/css/[contenthash:8].css"
-        : "static/css/[name].css",
+        : "static/css/[name].[contenthash:8].css",
     }),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
@@ -95,7 +101,7 @@ const plugins = (builder) => {
           // Harry's OpenGraph Preview Image
           from: path.join(builder.paths.source, "img/goofy.jpg"),
           to: path.resolve(
-            __dirname,
+            builder.paths.rootDir,
             builder.paths.build,
             "static/img/goofy.jpg"
           ),
@@ -111,9 +117,6 @@ const plugins = (builder) => {
       options: { skipgzip: false },
     }),
   ];
-  // if (builder.isProd) {
-  //   plugins.push(new HTMLInlineCSSWebpackPlugin());
-  // }
   return plugins;
 };
 
@@ -130,22 +133,23 @@ module.exports = function (webpackEnv) {
     // TODO generate parts of the config with this
   }
 
+  const entryImport = (name) => path.resolve(paths.rootDir, paths.source, name);
   return {
     entry: {
       main: {
-        import: path.resolve(__dirname, paths.source, "main.ts"),
+        import: entryImport("main.ts"),
       },
       remora: {
-        import: path.resolve(__dirname, paths.source, "pages/remora.ts"),
+        import: entryImport("pages/remora.ts"),
       },
       harry_y_tanya: {
-        import: path.resolve(__dirname, paths.source, "pages/harry_y_tanya.ts"),
+        import: entryImport("pages/harry_y_tanya.ts"),
       },
       admin: {
-        import: path.resolve(__dirname, paths.source, "pages/admin.ts"),
+        import: entryImport("pages/admin.ts"),
       },
       games: {
-        import: path.resolve(__dirname, paths.source, "pages/games.ts"),
+        import: entryImport("pages/games.ts"),
       },
     },
 
@@ -154,14 +158,14 @@ module.exports = function (webpackEnv) {
     resolve: {
       extensions: [".tsx", ".ts", ".js", ".css"],
       alias: {
-        "@harrybrwn.com": path.resolve(__dirname, "./") + "/",
-        "~": __dirname,
+        "@harrybrwn.com": path.resolve(paths.rootDir, "./") + "/",
+        "~": paths.rootDir,
       },
     },
 
     output: {
       clean: isProd, // remove old files before build
-      path: path.resolve(__dirname, paths.build),
+      path: path.resolve(paths.rootDir, paths.build),
       filename: isProd
         ? "static/js/[contenthash].js"
         : "static/js/[name].bundle.js",
@@ -198,18 +202,30 @@ module.exports = function (webpackEnv) {
     module: {
       rules: [
         {
-          test: /\.tsx?$/,
-          use: "ts-loader",
-          include: [path.resolve(__dirname, paths.source)],
+          test: /\.(js|ts)x?$/,
+          use: {
+            loader: require.resolve("babel-loader"),
+            options: {
+              cacheDirectory: path.resolve(paths.cache, "babel"),
+              cacheCompression: false,
+              configFile: path.resolve(
+                paths.rootDir,
+                "config",
+                "babel.config.js"
+              ), // use babel.config.js
+              babelrc: false, // ignore any .babelrc file
+            },
+          },
+          include: [path.resolve(paths.rootDir, paths.source)],
         },
         {
           test: /\.s?css$/,
           use: [
             MiniCssExtractPlugin.loader,
             // for @import in css
-            "css-loader",
+            require.resolve("css-loader"),
           ],
-          include: [path.resolve(__dirname, paths.source)],
+          include: [path.resolve(paths.rootDir, paths.source)],
         },
         {
           // Embed these right into the html
@@ -234,7 +250,7 @@ module.exports = function (webpackEnv) {
 
     cache: {
       type: "filesystem",
-      cacheDirectory: path.resolve(__dirname, ".build/cache"),
+      cacheDirectory: path.resolve(paths.rootDir, paths.cache, "webpack"),
       store: "pack",
     },
   };
