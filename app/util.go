@@ -64,7 +64,6 @@ func Page(raw []byte, filename string) echo.HandlerFunc {
 
 func ServeFile(c echo.Context, status int, filename string) error {
 	http.ServeFile(c.Response(), c.Request(), filename)
-	c.Response().WriteHeader(status)
 	return nil
 }
 
