@@ -101,7 +101,7 @@ const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
   let colors = [
     "red",
     "orange",
-    "yellow",
+    // "yellow",
     "mediumspringgreen",
     "blue",
     "purple",
@@ -177,12 +177,6 @@ const main = () => {
   if (!links) {
     console.error("could not find .links");
   }
-  let tanya = document.createElement("a");
-  tanya.href = "/tanya/hyt";
-  tanya.className = "tanya-link";
-  tanya.innerText = "tanya y harry";
-  let li = document.createElement("li");
-  li.appendChild(tanya);
 
   let privLinks = privateLinks();
   if (loginManager.isLoggedIn()) {

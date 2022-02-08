@@ -115,7 +115,7 @@ body.dark-theme .win95-window-body p,th,td {
 	/* transition: background 5s cubic-bezier(.15,.35,.41,.93); */
 	transition: background 3s cubic-bezier(.58, .31, .49, .87);
 	z-index: -50;
-	background: #000 url('../img/stars.png') repeat left;
+	background: #000 url('../img/stars-compressed.webp') repeat left;
 }
 
 .web-button-tooltip {

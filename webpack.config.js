@@ -71,6 +71,7 @@ const plugins = (builder) => {
         ? "static/css/[contenthash:8].css"
         : "static/css/[name].[contenthash:8].css",
     }),
+    new HTMLInlineCSSWebpackPlugin(),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
@@ -153,10 +154,10 @@ module.exports = function (webpackEnv) {
       },
     },
 
-    devtool: builder.isProd ? false : "inline-source-map",
+    devtool: builder.isProd ? undefined : "inline-source-map",
 
     resolve: {
-      extensions: [".tsx", ".ts", ".js", ".css"],
+      extensions: [".tsx", ".ts", ".jsx", ".js", ".css", ".svg"],
       alias: {
         "@harrybrwn.com": path.resolve(paths.rootDir, "./") + "/",
         "~": paths.rootDir,
@@ -167,10 +168,10 @@ module.exports = function (webpackEnv) {
       clean: isProd, // remove old files before build
       path: path.resolve(paths.rootDir, paths.build),
       filename: isProd
-        ? "static/js/[contenthash].js"
+        ? "static/js/[name].[contenthash].js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
-        ? "static/js/[contenthash].chunk.js"
+        ? "static/js/[name].[contenthash].chunk.js"
         : "static/js/[name].chunk.js",
       assetModuleFilename: builder.isProd
         ? "static/a/[contenthash:16][ext]"
@@ -212,7 +213,7 @@ module.exports = function (webpackEnv) {
                 paths.rootDir,
                 "config",
                 "babel.config.js"
-              ), // use babel.config.js
+              ), // use config/babel.config.js
               babelrc: false, // ignore any .babelrc file
             },
           },
@@ -230,7 +231,9 @@ module.exports = function (webpackEnv) {
         {
           // Embed these right into the html
           test: /\.(gif|svg)$/i,
-          type: isProd ? "asset/inline" : "asset/resource",
+          //type: isProd ? "asset/inline" : "asset/resource",
+          // type: "asset/resource",
+          type: "asset/inline",
         },
         {
           // Fonts
