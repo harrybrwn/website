@@ -71,7 +71,7 @@ const plugins = (builder) => {
         ? "static/css/[contenthash:8].css"
         : "static/css/[name].[contenthash:8].css",
     }),
-    new HTMLInlineCSSWebpackPlugin(),
+    // new HTMLInlineCSSWebpackPlugin(),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
@@ -232,14 +232,13 @@ module.exports = function (webpackEnv) {
           // Embed these right into the html
           test: /\.(gif|svg)$/i,
           //type: isProd ? "asset/inline" : "asset/resource",
-          // type: "asset/resource",
           type: "asset/inline",
         },
+        { test: /stars-compressed\.webp/i, type: "asset/inline" },
         {
           // Fonts
           test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
-          // type: "asset/inline",
-          type: "asset/resource",
+          type: "asset/resource", // inline fonts make parsing really slow
         },
         {
           // Load these as static resources

@@ -235,9 +235,9 @@ const main = () => {
     if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
       return;
     }
+    ev.preventDefault();
     switch (ev.key) {
       case "l":
-        ev.preventDefault();
         loginPanel.toggle();
         if (loginPanel.open) focusOnLoginEmail();
         break;
