@@ -96,8 +96,6 @@ body.dark-theme .win95-window-body p,th,td {
 	--switch-size: 60px;
 }
 
-/* @import "stars.css"; */
-
 .stars,
 .twinkling {
 	position: absolute;
@@ -135,7 +133,7 @@ body.dark-theme .win95-window-body p,th,td {
 
 	/* vertically center */
 	top:50%;
-	transform:translateY(50%);
+	transform: translateY(50%);
 
 	left: -18%;
 	margin-left: 0px;

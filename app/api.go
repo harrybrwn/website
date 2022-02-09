@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -223,15 +226,44 @@ func (ts *TokenService) keyfunc(*jwt.Token) (interface{}, error) {
 
 const hitsQuery = `SELECT count(*) FROM request_log WHERE uri = $1`
 
-func Hits(d db.DB) echo.HandlerFunc {
+func NewHitsCache(rd redis.Cmdable) HitsCache { return &hitsCache{rd: rd} }
+
+type HitsCache interface {
+	Next(context.Context, string) (int64, error)
+	Put(context.Context, string, int64) error
+}
+
+type hitsCache struct{ rd redis.Cmdable }
+
+func (hc *hitsCache) Next(ctx context.Context, k string) (int64, error) {
+	count, err := hc.rd.Incr(ctx, k).Result()
+	if err != nil {
+		return 0, err
+	}
+	if count == 1 {
+		return 0, errors.New("increment not yet set")
+	}
+	return count, nil
+}
+
+func (hc *hitsCache) Put(ctx context.Context, k string, n int64) error {
+	return hc.rd.Set(ctx, k, n, -1).Err()
+}
+
+func Hits(d db.DB, h HitsCache, logger logrus.FieldLogger) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var (
-			n   int
+			n   int64
 			u   = c.QueryParam("u")
 			ctx = c.Request().Context()
 		)
 		if len(u) == 0 {
 			u = "/"
+		}
+		key := fmt.Sprintf("hits:%s", u)
+		count, err := h.Next(ctx, key)
+		if err == nil {
+			return c.JSON(200, map[string]int64{"count": count})
 		}
 		rows, err := d.QueryContext(ctx, hitsQuery, u)
 		if err != nil {
@@ -240,7 +272,11 @@ func Hits(d db.DB) echo.HandlerFunc {
 		if err = db.ScanOne(rows, &n); err != nil {
 			return wrap(err, 500, "could not scan row")
 		}
-		return c.JSON(200, map[string]int{"count": n})
+		err = h.Put(ctx, key, n)
+		if err != nil {
+			logger.WithError(err).Warn("could not set cached page views")
+		}
+		return c.JSON(200, map[string]int64{"count": n})
 	}
 }
 

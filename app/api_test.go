@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"harrybrown.com/internal/mocks/mockapp"
 	"harrybrown.com/internal/mocks/mockdb"
 	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
@@ -37,6 +38,7 @@ func TestHits(t *testing.T) {
 		ctrl = gomock.NewController(t)
 		db   = mockdb.NewMockDB(ctrl)
 		rows = mockdb.NewMockRows(ctrl)
+		hc   = mockapp.NewMockHitsCache(ctrl)
 		e    = echo.New()
 		ctx  = context.Background()
 	)
@@ -58,14 +60,27 @@ func TestHits(t *testing.T) {
 		if exp == "" {
 			exp = "/"
 		}
+		hc.EXPECT().Next(ctx, gomock.AssignableToTypeOf("")).Return(int64(0), errors.New("asdf"))
 		db.EXPECT().QueryContext(ctx, hitsQuery, exp).Return(rows, nil)
 		rows.EXPECT().Next().Return(true)
 		rows.EXPECT().Scan(gomock.Any()).Return(nil)
 		rows.EXPECT().Close().Return(nil).Times(1)
-		is.NoErr(Hits(db)(c))
+		hc.EXPECT().Put(ctx, gomock.AssignableToTypeOf(""), int64(0)).Return(nil)
+
+		is.NoErr(Hits(db, hc, logger)(c))
 		is.Equal(rec.Code, 200)
 		is.True(strings.HasPrefix(rec.Header().Get("Content-Type"), "application/json"))
 		is.Equal("{\"count\":0}\n", rec.Body.String())
+
+		rec = httptest.NewRecorder()
+		req = httptest.NewRequest("GET", "/api/hits", nil).WithContext(ctx)
+		c = e.NewContext(req, rec)
+		c.QueryParams().Set("u", tab.u)
+		hc.EXPECT().Next(ctx, gomock.AssignableToTypeOf("")).Return(int64(1), nil)
+		is.NoErr(Hits(db, hc, logger)(c))
+		is.Equal(rec.Code, 200)
+		is.True(strings.HasPrefix(rec.Header().Get("Content-Type"), "application/json"))
+		is.Equal("{\"count\":1}\n", rec.Body.String())
 	}
 }
 

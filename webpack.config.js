@@ -71,7 +71,7 @@ const plugins = (builder) => {
         ? "static/css/[contenthash:8].css"
         : "static/css/[name].[contenthash:8].css",
     }),
-    // new HTMLInlineCSSWebpackPlugin(),
+    new HTMLInlineCSSWebpackPlugin(),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
@@ -168,10 +168,10 @@ module.exports = function (webpackEnv) {
       clean: isProd, // remove old files before build
       path: path.resolve(paths.rootDir, paths.build),
       filename: isProd
-        ? "static/js/[name].[contenthash].js"
+        ? "static/js/[contenthash].js"
         : "static/js/[name].bundle.js",
       chunkFilename: isProd
-        ? "static/js/[name].[contenthash].chunk.js"
+        ? "static/js/[contenthash].chunk.js"
         : "static/js/[name].chunk.js",
       assetModuleFilename: builder.isProd
         ? "static/a/[contenthash:16][ext]"

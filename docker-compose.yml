@@ -26,7 +26,7 @@ services:
       - "9432:5432"
     volumes:
       - ./db/postgres:/docker-entrypoint-initdb.d:ro
-      - ./db/data/postgres:/var/lib/postgresql/data/
+      - database:/var/lib/postgresql/data/
 
   redis:
     image: redis:6.2.6-alpine
@@ -39,5 +39,8 @@ services:
       - --requirepass
       - "${REDIS_PASSWORD}"
     volumes:
-      - ./db/data/redis:/data
+      - cache-data:/data
 
+volumes:
+  database:
+  cache-data:

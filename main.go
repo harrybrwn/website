@@ -133,7 +133,7 @@ func main() {
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
 	api.GET("/bookmarks", json(bookmarks))
-	api.GET("/hits", app.Hits(db))
+	api.GET("/hits", app.Hits(db, app.NewHitsCache(rd), logger))
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())

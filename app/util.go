@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"html/template"
@@ -9,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,8 +31,7 @@ var (
 
 func Page(raw []byte, filename string) echo.HandlerFunc {
 	var (
-		hf     echo.HandlerFunc
-		length = int64(len(raw))
+		hf echo.HandlerFunc
 	)
 	filename = filepath.Join(BuildDir, filename)
 	if Debug {
@@ -43,7 +43,7 @@ func Page(raw []byte, filename string) echo.HandlerFunc {
 			panic(err)
 		}
 		if http.DetectContentType(b) == "application/x-gzip" {
-			hf = gzip(hf)
+			hf = asGzip(hf)
 		}
 	} else {
 		ct := http.DetectContentType(raw)
@@ -51,12 +51,10 @@ func Page(raw []byte, filename string) echo.HandlerFunc {
 			h := c.Response().Header()
 			staticLastModified(h)
 			h.Set("Cache-Control", StaticCacheControl)
-			h.Set("Content-Length", strconv.FormatInt(length, 10))
-			h.Set("Accept-Ranges", "bytes")
 			return c.Blob(200, ct, raw)
 		}
 		if http.DetectContentType(raw) == "application/x-gzip" {
-			hf = gzip(hf)
+			hf = asGzip(hf)
 		}
 	}
 	return hf
@@ -71,7 +69,19 @@ func staticLastModified(h http.Header) {
 	h.Set("Last-Modified", StartTime.UTC().Format(http.TimeFormat))
 }
 
-func gzip(handler echo.HandlerFunc) echo.HandlerFunc {
+func gzipBytes(raw []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(raw); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func asGzip(handler echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		if !acceptsGzip(c.Request().Header) {
 			logger.WithField(

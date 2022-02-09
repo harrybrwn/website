@@ -4,7 +4,7 @@ ENV=production
 build:
 	sh scripts/build.sh
 
-test: test-go test-ts
+test: test-ts test-go
 
 clean:
 	$(RM) -r bin .testing .build
@@ -16,17 +16,14 @@ clean-mocks:
 
 test-go:
 	@mkdir -p .testing
-	go generate
-	go test \
-		./app ./cmd/... ./pkg/... ./internal/... \
-		-coverprofile=.testing/coverprofile.txt
+	go generate ./...
+	go test ./... -coverprofile=.testing/coverprofile.txt
 	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
 	@x-www-browser .testing/coverage.html
 
 test-ts:
 	yarn test
 	yarn coverage
-
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \

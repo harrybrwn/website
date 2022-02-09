@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "request_log" (
 	user_agent   TEXT,
 	latency      INT,
 	error        TEXT,
-	requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+	requested_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE VIEW logs AS SELECT
