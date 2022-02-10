@@ -6,6 +6,8 @@ build:
 
 test: test-ts test-go
 
+lint: lint-go
+
 clean:
 	$(RM) -r bin .testing .build
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
@@ -17,13 +19,12 @@ clean-mocks:
 test-go:
 	@mkdir -p .testing
 	go generate ./...
-	go test ./... -coverprofile=.testing/coverprofile.txt
+	go test -tags ci ./... -covermode=atomic -coverprofile=.testing/coverprofile.txt
 	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
-	@x-www-browser .testing/coverage.html
+	@#x-www-browser .testing/coverage.html
 
 test-ts:
 	yarn test
-	yarn coverage
 
 lint-go:
 	go vet -tags ci ./...

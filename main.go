@@ -55,7 +55,7 @@ var (
 	static embed.FS
 	//go:embed build/sitemap.xml
 	sitemap []byte
-	// go :embed build/sitemap.xml.gz
+	//go:embed build/sitemap.xml.gz
 	sitemapgz []byte
 
 	//go:embed frontend/templates

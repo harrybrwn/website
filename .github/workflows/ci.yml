@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-      - name: Cache Mocks Generation
+      - name: Cache Build Tools
         uses: actions/cache@v2
         id: go-cache
         with:
@@ -80,13 +80,13 @@ jobs:
         node-version-file: '.nvmrc'
         cache: 'yarn'
 
-    - name: Install Go Dependencies
+    - name: Install Go dependencies
       if: steps.go-cache.outputs.cache-hit != 'true'
       run: |
         go install github.com/golang/mock/mockgen@latest
         go mod download
 
-    - name: Frontend dependencies
+    - name: Install frontend dependencies
       #if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
@@ -100,7 +100,7 @@ jobs:
     - name: Test Frontend
       run: yarn test:ci
     - name: Test Backend
-      run: go test -v -cover ./...
+      run: go test -tags ci -v -cover ./...
 
   migrate:
     name: Database Migrations
@@ -109,9 +109,6 @@ jobs:
     env:
       GO_VERSION: 1.17.5
     steps:
-      - uses: actions/setup-go@v2
-        with:
-          go-version: ${{ env.GO_VERSION }}
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -123,19 +120,24 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-migrate-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-
+            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-migrate-
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Install Migration Tool
         #if: steps.migrate-tool.outputs.cache-hit != 'true'
         run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-      - name: Migrate Staging DB
-        run: migrate -dir ./db/migrations -database ${{ secrets.STAGING_DATABASE_URL }} up
+      - name: Staging DB Migration
+        run: migrate -verbose -dir ./db/migrations -database ${{ secrets.STAGING_DATABASE_URL }} up
         if: github.ref == 'refs/heads/staging'
-      - name: Migrate Production DB
-        run: migrate -dir ./db/mirations -database ${{ secrets.PROD_DATABASE_URL }} up
+      - name: Production DB Migration
+        run: migrate -verbose -dir ./db/mirations -database ${{ secrets.PROD_DATABASE_URL }} up
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
-      - run: migrate -h
+      - run: migrate -version
         if: github.ref == 'refs/heads/dev'
