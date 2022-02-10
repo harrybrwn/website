@@ -100,9 +100,9 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-        key: ${{ runner.os }}_${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}_${{ runner.arch }}-go-
+          key: ${{ runner.os }}_${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}_${{ runner.arch }}-go-
       - name: Install Migration Tool
         if: steps.migrate-tool.outputs.cache-hit != 'true'
         run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
