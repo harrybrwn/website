@@ -5,14 +5,15 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
-    env:
-      GO_VERSION: 1.17.5
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with:
           go-version: ~1.17.5
+      - id: go-version
+        run: echo "::set-output name=version-used::$(go env GOVERSION)"
+
       - name: Cache Build Tools
         uses: actions/cache@v2
         id: go-cache
@@ -21,9 +22,9 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-
+            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-
       - name: Install Go MockGen
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: go install github.com/golang/mock/mockgen@latest
@@ -37,7 +38,7 @@ jobs:
       matrix:
         go-version:
           # - 1.16.x
-          - 1.17.5
+          - ~1.17.5
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -53,9 +54,16 @@ jobs:
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-go${{ matrix.go-version }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-go${{ matrix.go-version }}-yarn-
+          ${{ runner.os }}-yarn-
+
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - id: go-version
+      run: echo "::set-output name=version-used::$(go env GOVERSION)"
 
     # Cache go modules and builds
     - name: Cache Go modules and builds
@@ -66,14 +74,9 @@ jobs:
           ~/go/pkg/mod
           ~/.cache/go-build
           ~/go/bin
-        key: ${{ runner.os }}_${{ runner.arch }}-go${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}_${{ runner.arch }}-go${{ matrix.go-version }}-
-
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ~${{ matrix.go-version }}
+          ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-
 
     - uses: actions/setup-node@v2
       with:
@@ -116,6 +119,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ~${{ env.GO_VERSION }}
+      - id: go-version
+        run: echo "::set-output name=version-used::$(go env GOVERSION)"
+
       - name: Cache Migration tool
         uses: actions/cache@v2
         id: migrate-tool
@@ -124,12 +130,12 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-migrate-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-migrate-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-migrate-
+            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-migrate-
 
       - name: Install Migration Tool
-        if: steps.migrate-tool.outputs.cache-hit != 'true'
+        #if: steps.migrate-tool.outputs.cache-hit != 'true'
         run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
       - name: Staging DB Migration
