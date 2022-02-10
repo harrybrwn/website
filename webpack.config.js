@@ -69,7 +69,7 @@ const plugins = (builder) => {
     new MiniCssExtractPlugin({
       filename: builder.isProd
         ? "static/css/[contenthash:8].css"
-        : "static/css/[name].[contenthash:8].css",
+        : "static/css/[name].[id].css",
     }),
     new HTMLInlineCSSWebpackPlugin(),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
@@ -122,7 +122,9 @@ const plugins = (builder) => {
 };
 
 module.exports = function (webpackEnv) {
+  console.log(webpackEnv);
   const isProd = webpackEnv.prod || false;
+  const isCI = webpackEnv.ci || false;
   const builder = new build.Builder({
     paths,
     site,
@@ -167,6 +169,7 @@ module.exports = function (webpackEnv) {
     output: {
       clean: isProd, // remove old files before build
       path: path.resolve(paths.rootDir, paths.build),
+      // pathinfo: false,
       filename: isProd
         ? "static/js/[contenthash].js"
         : "static/js/[name].bundle.js",
@@ -179,10 +182,10 @@ module.exports = function (webpackEnv) {
     },
 
     optimization: {
-      concatenateModules: isProd,
       providedExports: true,
       usedExports: "global",
-      minimize: isProd,
+      concatenateModules: isProd,
+      minimize: isProd && !isCI,
       minimizer: [
         new TerserPlugin({
           terserOptions: {
@@ -198,6 +201,15 @@ module.exports = function (webpackEnv) {
         }),
         new CssMinimizerPlugin(),
       ],
+      // Removing some optimizations during CI to make builds faster
+      removeAvailableModules: isCI ? false : true,
+      removeEmptyChunks: isCI ? false : true,
+      splitChunks: isCI
+        ? false
+        : {
+            chunks: "all",
+            minSize: 20_000,
+          },
     },
 
     module: {
@@ -254,6 +266,10 @@ module.exports = function (webpackEnv) {
       type: "filesystem",
       cacheDirectory: path.resolve(paths.rootDir, paths.cache, "webpack"),
       store: "pack",
+      buildDependencies: {
+        // This makes all dependencies of this file - build dependencies
+        config: [__filename, path.resolve("./site.js")],
+      },
     },
   };
 };
