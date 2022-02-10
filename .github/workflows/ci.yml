@@ -47,9 +47,9 @@ jobs:
       id: yarn-cache
       with:
         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        key: ${{ runner.os }}-go${{ matrix.go-version }}-yarn-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
-          ${{ runner.os }}-yarn-
+          ${{ runner.os }}-go${{ matrix.go-version }}-yarn-
 
     # Cache go modules and builds
     - name: Cache Go modules and builds
@@ -60,9 +60,9 @@ jobs:
           ~/go/pkg/mod
           ~/.cache/go-build
           ~/go/bin
-        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}_${{ runner.arch }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ matrix.go-version }}-
+          ${{ runner.os }}_${{ runner.arch }}-go-${{ matrix.go-version }}-
 
     - name: Install Go MockGen
       if: steps.go-cache.outputs.cache-hit != 'true'
@@ -72,7 +72,9 @@ jobs:
       run: go mod download
 
     - name: Frontend dependencies
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
+
     - run: yarn build
     - run: go generate ./...
     - run: go build -trimpath -ldflags "-w -s"
@@ -90,7 +92,21 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ~1.17
-      - run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+      - name: Cache Migration tool
+        uses: actions/cache@v2
+        id: migrate-tool
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/go/bin
+        key: ${{ runner.os }}_${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}_${{ runner.arch }}-go-
+      - name: Install Migration Tool
+        if: steps.migrate-tool.outputs.cache-hit != 'true'
+        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
