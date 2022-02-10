@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	tokenKey     = "_token"
-	maxCookieAge = 2147483647
+	tokenKey = "_token"
+	//maxCookieAge = 2147483647
 )
 
 var logger = logrus.New()

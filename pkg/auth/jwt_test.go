@@ -330,7 +330,9 @@ func TestLogin(t *testing.T) {
 
 func asBody(v interface{}) io.Reader {
 	var b bytes.Buffer
-	json.NewEncoder(&b).Encode(v)
+	if err := json.NewEncoder(&b).Encode(v); err != nil {
+		panic(err)
+	}
 	return &b
 }
 

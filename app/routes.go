@@ -39,7 +39,10 @@ func HomepageHandler(fs fs.FS) http.Handler {
 		})
 		if err != nil {
 			log.Error(err)
-			rw.Write([]byte("something went wrong"))
+			_, err = rw.Write([]byte("something went wrong"))
+			if err != nil {
+				logger.WithError(err).Error("failed to write error message to response")
+			}
 			rw.WriteHeader(500)
 		}
 	})

@@ -5,16 +5,32 @@ jobs:
   lint:
     name: lint
     runs-on: ubuntu-latest
+    env:
+      GO_VERSION: 1.17.5
     steps:
+      - name: Cache Mocks Generation
+        uses: actions/cache@v2
+        id: go-cache
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/go/bin
+          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-
       - uses: actions/setup-go@v2
         with:
-          go-version: ~1.17
+          go-version: ${{ env.GO_VERSION }}
       - name: Install Go MockGen
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: go install github.com/golang/mock/mockgen@latest
       - name: Checkout Code
         uses: actions/checkout@v2
       - run: go generate ./...
-      - run: go vet ./cmd/... ./app/... ./pkg/...
+      - run: go vet -tags ci ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
 
   test:
     strategy:
@@ -60,9 +76,9 @@ jobs:
           ~/go/pkg/mod
           ~/.cache/go-build
           ~/go/bin
-        key: ${{ runner.os }}_${{ runner.arch }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}_${{ runner.arch }}-go${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          ${{ runner.os }}_${{ runner.arch }}-go-${{ matrix.go-version }}-
+          ${{ runner.os }}_${{ runner.arch }}-go${{ matrix.go-version }}-
 
     - name: Install Go Dependencies
       if: steps.go-cache.outputs.cache-hit != 'true'
@@ -74,8 +90,10 @@ jobs:
       if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
-    - run: yarn build
-    - run: |
+    - name: Build Frontend
+      run: yarn build
+    - name: Build Backend
+      run: |
         go generate ./...
         go build -trimpath -ldflags "-w -s"
 
@@ -88,10 +106,12 @@ jobs:
     name: Database Migrations
     needs: [lint, test]
     runs-on: ubuntu-latest
+    env:
+      GO_VERSION: 1.17.5
     steps:
       - uses: actions/setup-go@v2
         with:
-          go-version: ~1.17
+          go-version: ${{ env.GO_VERSION }}
       - name: Cache Migration tool
         uses: actions/cache@v2
         id: migrate-tool
@@ -100,9 +120,9 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-go-
+            ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-
       - name: Install Migration Tool
         if: steps.migrate-tool.outputs.cache-hit != 'true'
         run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest

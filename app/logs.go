@@ -55,7 +55,7 @@ func (lm *LogManager) Write(ctx context.Context, l *RequestLog) error {
 	} else {
 		referer = nil
 	}
-	var userID interface{} = nil
+	var userID interface{}
 	if bytes.Equal(l.UserID[:], uuid.Nil[:]) {
 		userID = nil
 	} else {
@@ -136,7 +136,7 @@ func (lm *LogManager) Get(ctx context.Context, limit, startID int, rev bool) ([]
 }
 
 func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
-	var userID interface{} = nil
+	var userID interface{}
 	if bytes.Equal(l.UserID[:], uuid.Nil[:]) {
 		userID = nil
 	} else {

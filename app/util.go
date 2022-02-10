@@ -1,8 +1,6 @@
 package app
 
 import (
-	"bytes"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"html/template"
@@ -67,18 +65,6 @@ func ServeFile(c echo.Context, status int, filename string) error {
 
 func staticLastModified(h http.Header) {
 	h.Set("Last-Modified", StartTime.UTC().Format(http.TimeFormat))
-}
-
-func gzipBytes(raw []byte) ([]byte, error) {
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-	if _, err := gz.Write(raw); err != nil {
-		return nil, err
-	}
-	if err := gz.Close(); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
 func asGzip(handler echo.HandlerFunc) echo.HandlerFunc {

@@ -25,6 +25,10 @@ test-ts:
 	yarn test
 	yarn coverage
 
+lint-go:
+	go vet -tags ci ./...
+	golangci-lint run
+
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
 		pdflatex \

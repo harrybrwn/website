@@ -1,3 +1,6 @@
+//go:build !ci
+// +build !ci
+
 package main
 
 import (
@@ -78,7 +81,9 @@ func main() {
 	e.HideBanner = true
 
 	if env {
-		godotenv.Load()
+		if err := godotenv.Load(); err != nil {
+			logger.WithError(err).Warn("could not load .env")
+		}
 	}
 
 	if app.Debug {
@@ -165,7 +170,10 @@ func NotFoundHandler() echo.HandlerFunc {
 func keys(rw http.ResponseWriter, r *http.Request) {
 	staticLastModified(rw.Header())
 	rw.Header().Set("Cache-Control", app.StaticCacheControl)
-	rw.Write(gpgPubkey)
+	_, err := rw.Write(gpgPubkey)
+	if err != nil {
+		logger.WithError(err).Error("could not write response")
+	}
 }
 
 func faviconHandler() echo.HandlerFunc {
@@ -195,7 +203,10 @@ func robotsHandler(rw http.ResponseWriter, r *http.Request) {
 	staticLastModified(h)
 	h.Set("Cache-Control", app.StaticCacheControl)
 	h.Set("Content-Type", "text/plain")
-	rw.Write(robots)
+	_, err := rw.Write(robots)
+	if err != nil {
+		logger.WithError(err).Error("could not write response body")
+	}
 }
 
 func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Request) {
@@ -209,7 +220,10 @@ func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Reque
 		if gzip {
 			h.Set("Content-Encoding", "gzip")
 		}
-		rw.Write(raw)
+		_, err := rw.Write(raw)
+		if err != nil {
+			logger.WithError(err).Error("could not write response body")
+		}
 	}
 }
 

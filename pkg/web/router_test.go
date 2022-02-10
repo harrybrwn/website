@@ -45,10 +45,16 @@ func TestRouter(t *testing.T) {
 	}
 
 	res, err = http.Get(ts.URL + "/test")
+	if err != nil {
+		t.Error(err)
+	}
 	if res.StatusCode != 404 {
 		t.Error("Wrong status code")
 	}
 	res, err = http.Get(ts.URL + "/")
+	if err != nil {
+		t.Error(err)
+	}
 	if res.StatusCode != 404 {
 		t.Error("Wrong status code")
 	}
@@ -98,6 +104,9 @@ func TestNestedRoute(t *testing.T) {
 	}
 	text, err = ioutil.ReadAll(res.Body)
 	errif(t, err)
+	if len(text) == 0 {
+		t.Error("zero length result")
+	}
 }
 
 func TestJSONRoute(t *testing.T) {
@@ -128,7 +137,6 @@ func TestJSONRoute(t *testing.T) {
 		t.Error("Got unexpected output:", string(text))
 	}
 	res = nil
-	text = nil
 
 	res, err = http.Get(ts.URL + "/test/static")
 	errif(t, err)
@@ -202,7 +210,6 @@ func TestExpandError(t *testing.T) {
 		t.Error("got the wrong error handleing output")
 	}
 	res = nil
-	text = nil
 
 	res, err = http.Get(ts.URL + "/error")
 	errif(t, err)
