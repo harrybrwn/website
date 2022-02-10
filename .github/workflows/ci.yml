@@ -76,8 +76,8 @@ jobs:
 
     - run: yarn build
     - run: |
-      go generate ./...
-      go build -trimpath -ldflags "-w -s"
+        go generate ./...
+        go build -trimpath -ldflags "-w -s"
 
     - name: Test Frontend
       run: yarn test:ci
