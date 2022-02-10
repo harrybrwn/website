@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -22,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"harrybrown.com/internal/mocks/mockapp"
 	"harrybrown.com/internal/mocks/mockdb"
+	"harrybrown.com/internal/mocks/mockredis"
 	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
 )
@@ -38,9 +39,10 @@ func TestHits(t *testing.T) {
 		ctrl = gomock.NewController(t)
 		db   = mockdb.NewMockDB(ctrl)
 		rows = mockdb.NewMockRows(ctrl)
-		hc   = mockapp.NewMockHitsCache(ctrl)
+		rd   = mockredis.NewMockCmdable(ctrl)
 		e    = echo.New()
 		ctx  = context.Background()
+		hc   = &hitsCache{rd: rd, timeout: time.Minute}
 	)
 	defer ctrl.Finish()
 	defer silent()()
@@ -60,12 +62,14 @@ func TestHits(t *testing.T) {
 		if exp == "" {
 			exp = "/"
 		}
-		hc.EXPECT().Next(ctx, gomock.AssignableToTypeOf("")).Return(int64(0), errors.New("asdf"))
+		key := fmt.Sprintf("hits:%s", exp) // cache key
+
+		rd.EXPECT().Incr(ctx, key).Return(redis.NewIntResult(0, errors.New("asdf")))
 		db.EXPECT().QueryContext(ctx, hitsQuery, exp).Return(rows, nil)
 		rows.EXPECT().Next().Return(true)
 		rows.EXPECT().Scan(gomock.Any()).Return(nil)
 		rows.EXPECT().Close().Return(nil).Times(1)
-		hc.EXPECT().Put(ctx, gomock.AssignableToTypeOf(""), int64(0)).Return(nil)
+		rd.EXPECT().Set(ctx, key, int64(0), hc.timeout).Return(redis.NewStatusResult("", nil))
 
 		is.NoErr(Hits(db, hc, logger)(c))
 		is.Equal(rec.Code, 200)
@@ -76,12 +80,30 @@ func TestHits(t *testing.T) {
 		req = httptest.NewRequest("GET", "/api/hits", nil).WithContext(ctx)
 		c = e.NewContext(req, rec)
 		c.QueryParams().Set("u", tab.u)
-		hc.EXPECT().Next(ctx, gomock.AssignableToTypeOf("")).Return(int64(1), nil)
+		rd.EXPECT().Incr(ctx, key).Return(redis.NewIntResult(int64(2), nil))
 		is.NoErr(Hits(db, hc, logger)(c))
 		is.Equal(rec.Code, 200)
 		is.True(strings.HasPrefix(rec.Header().Get("Content-Type"), "application/json"))
-		is.Equal("{\"count\":1}\n", rec.Body.String())
+		is.Equal("{\"count\":2}\n", rec.Body.String())
 	}
+}
+
+func TestHitsCache(t *testing.T) {
+	is := is.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rd := mockredis.NewMockCmdable(ctrl)
+	cache := &hitsCache{rd: rd, timeout: time.Second}
+	ctx := context.Background()
+	key := "one"
+	rd.EXPECT().Incr(ctx, key).Return(redis.NewIntResult(1, nil))
+	n, err := cache.Next(ctx, key)
+	is.True(err != nil) // incr resulting in 1 means not found, should be error
+	is.Equal(n, int64(0))
+	rd.EXPECT().Incr(ctx, key).Return(redis.NewIntResult(5, nil))
+	n, err = cache.Next(ctx, key)
+	is.NoErr(err)
+	is.Equal(n, int64(5))
 }
 
 var (

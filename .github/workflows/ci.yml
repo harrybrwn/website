@@ -1,11 +1,27 @@
 on: [push, pull_request]
-name: tests
+name: ci
 
 jobs:
+  lint:
+    name: lint
+    runs-one: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17
+      - name: Install Go MockGen
+        run: go install github.com/golang/mock/mockgen@latest
+      - name: Checkout Code
+        uses: actions/checkout@v2
+      - run: go generate ./...
+      - run: go vet ./cmd/... ./app/... ./pkg/...
+
   test:
     strategy:
       matrix:
-        go-version: [1.16.x, 1.17.5]
+        go-version:
+          # - 1.16.x
+          - 1.17.5
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -66,3 +82,15 @@ jobs:
     - name: Test Backend
       run: go test -v -cover ./...
 
+  migrate:
+    name: Database Migrations
+    needs: [lint, test]
+    runes-one: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17
+      - run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0

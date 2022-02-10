@@ -226,14 +226,19 @@ func (ts *TokenService) keyfunc(*jwt.Token) (interface{}, error) {
 
 const hitsQuery = `SELECT count(*) FROM request_log WHERE uri = $1`
 
-func NewHitsCache(rd redis.Cmdable) HitsCache { return &hitsCache{rd: rd} }
+func NewHitsCache(rd redis.Cmdable) HitsCache {
+	return &hitsCache{rd: rd, timeout: time.Hour}
+}
 
 type HitsCache interface {
 	Next(context.Context, string) (int64, error)
 	Put(context.Context, string, int64) error
 }
 
-type hitsCache struct{ rd redis.Cmdable }
+type hitsCache struct {
+	rd      redis.Cmdable
+	timeout time.Duration
+}
 
 func (hc *hitsCache) Next(ctx context.Context, k string) (int64, error) {
 	count, err := hc.rd.Incr(ctx, k).Result()
@@ -247,7 +252,7 @@ func (hc *hitsCache) Next(ctx context.Context, k string) (int64, error) {
 }
 
 func (hc *hitsCache) Put(ctx context.Context, k string, n int64) error {
-	return hc.rd.Set(ctx, k, n, -1).Err()
+	return hc.rd.Set(ctx, k, n, hc.timeout).Err()
 }
 
 func Hits(d db.DB, h HitsCache, logger logrus.FieldLogger) echo.HandlerFunc {
