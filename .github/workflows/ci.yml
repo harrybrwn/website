@@ -85,7 +85,7 @@ jobs:
   migrate:
     name: Database Migrations
     needs: [lint, test]
-    runes-one: ubuntu-latest
+    runs-one: ubuntu-latest
     steps:
       - uses: actions/setup-go@v2
         with:
