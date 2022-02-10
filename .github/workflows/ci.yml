@@ -87,7 +87,7 @@ jobs:
         go mod download
 
     - name: Frontend dependencies
-      if: steps.yarn-cache.outputs.cache-hit != 'true'
+      # if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
     - name: Build Frontend
