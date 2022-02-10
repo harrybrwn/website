@@ -9,7 +9,5 @@ mockgen                             \
 	-destination $dest/mockdb/db.go \
 	harrybrown.com/pkg/db DB,Rows
 
-mockgen                                 \
-	-package mockapp                    \
-	-destination $dest/mockapp/redis.go \
-	harrybrown.com/app HitsCache
+mockgen -package mockredis -destination $dest/mockredis/cmdable.go \
+	github.com/go-redis/redis/v8 Cmdable
