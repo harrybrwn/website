@@ -7,6 +7,7 @@
     "test:ci": "jest --rootDir . -c config/jest.config.ts --coverage --runInBand --ci",
     "coverage": "x-www-browser .testing/jest/coverage/lcov-report/index.html",
     "build": "webpack --env prod --mode=production --progress",
+    "build:ci": "webpack --env prod --mode=production",
     "dev": "webpack -w --mode development --env dev --progress",
     "dev-build": "webpack --mode development --env dev",
     "clean": "rm -rf ./build"

@@ -41,6 +41,11 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+
     - name: Checkout code
       uses: actions/checkout@v2
 
@@ -70,11 +75,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}_${{ runner.arch }}-go${{ matrix.go-version }}-
 
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-
     - uses: actions/setup-node@v2
       with:
         node-version-file: '.nvmrc'
@@ -87,11 +87,11 @@ jobs:
         go mod download
 
     - name: Frontend dependencies
-      # if: steps.yarn-cache.outputs.cache-hit != 'true'
+      if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
     - name: Build Frontend
-      run: yarn build
+      run: yarn build:ci
     - name: Build Backend
       run: |
         go generate ./...
@@ -126,6 +126,7 @@ jobs:
           key: ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}_${{ runner.arch }}-go${{ env.GO_VERSION }}-
+
       - name: Install Migration Tool
         if: steps.migrate-tool.outputs.cache-hit != 'true'
         run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
