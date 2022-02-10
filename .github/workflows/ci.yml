@@ -8,11 +8,11 @@ jobs:
     env:
       GO_VERSION: 1.17.5
     steps:
-      - uses: actions/setup-go@v2
-        with:
-          go-version: 1.17.5
       - name: Checkout Code
         uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17.5
       - name: Cache Build Tools
         uses: actions/cache@v2
         id: go-cache
