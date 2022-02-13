@@ -30,8 +30,8 @@ tests/*
 requests.http
 
 # Tools
-NOTES
-TODO
+NOTES*
+TODO*
 
 # Dev
 *.crt

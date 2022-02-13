@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS "request_log" (
 
 CREATE OR REPLACE VIEW logs AS SELECT
 	id,
-	"method",
+	method,
 	status,
 	uri,
 	latency/1e6 as latency_ms,
