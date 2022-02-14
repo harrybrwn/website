@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
+	"nhooyr.io/websocket"
 )
 
 const (
@@ -302,6 +303,16 @@ func LogListHandler(db db.DB) echo.HandlerFunc {
 			return err
 		}
 		return c.JSON(200, logs)
+	}
+}
+
+func ChatSocketHandler() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ws, err := websocket.Accept(c.Response(), c.Request(), &websocket.AcceptOptions{})
+		if err != nil {
+			return echo.ErrInternalServerError.SetInternal(err)
+		}
+		return ws.Close(websocket.StatusNormalClosure, "not implemented yet")
 	}
 }
 

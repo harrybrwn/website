@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
+	"harrybrown.com/app/chat"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
@@ -40,6 +40,8 @@ var (
 	gamesStaticPage []byte
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
+	//go:embed build/chat/index.html
+	chatStaticPage []byte
 
 	//go:embed files/bookmarks.json
 	bookmarks []byte
@@ -87,7 +89,7 @@ func main() {
 	}
 
 	if app.Debug {
-		auth.Expiration = time.Second * 30
+		// auth.Expiration = time.Second * 30
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
@@ -115,6 +117,7 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
+	e.GET("/chat", app.Page(chatStaticPage, "chat/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
@@ -125,12 +128,13 @@ func main() {
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
 
-	api := e.Group("/api")
+	userStore := app.NewUserStore(db)
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
-		Users:  app.NewUserStore(db),
+		Users:  userStore,
 	}
+	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
@@ -142,6 +146,8 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
+	api.Any("/echo", func(c echo.Context) error { return chat.EchoHandler(c.Response(), c.Request()) })
+	api.GET("/chat/stream", app.ChatSocketHandler()) // TODO guard this before releasing
 
 	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))

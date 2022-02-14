@@ -1,0 +1,151 @@
+.debug {
+	border-width: 1px;
+	border-style: solid;
+	border-color: red;
+}
+.debug-blue {
+	border-width: 1px;
+	border-style: solid;
+	border-color: blue;
+}
+
+:root {
+	font-size: 16px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	padding: 0;
+	margin: 0;
+}
+
+main {
+	/* --sidebar-width: 20vw; */
+	--sidebar-width: 250px;
+}
+
+.rooms {
+	position:absolute;
+	width: var(--sidebar-width);
+	height: 100vh;
+	border-right: 1px solid black;
+	padding: 0.5em;
+}
+
+/* .rooms-header {} */
+
+.rooms-list {
+	padding: 5px;
+}
+
+/* Chat Conversation */
+
+.chat {
+	width: calc(100vw - var(--sidebar-width));
+	height: 90%;
+	position: absolute;
+	left: var(--sidebar-width);
+	overflow-y: scroll;
+
+	--name-height: 85px;
+}
+
+.chat .room-name {
+	display: flex;
+	padding: 1em;
+	position: fixed;
+	width: 100%;
+
+	/* Bring the Room name to the front */
+	background-color: white;
+	z-index: 10;
+	box-shadow: 0 6px 2px -2px gray;
+
+	height: var(--name-height);
+}
+
+.conversation {
+	position: absolute;
+	width: 100%;
+	top: var(--name-height);
+}
+
+.conversation-messages {
+	position: relative;
+	z-index: 1;
+
+	display: flex;
+	flex-direction: column;
+}
+
+.conversation .sent .message-text {
+	background-color: blue;
+	float: right;
+}
+.conversation .recv .message-text {
+	background-color: green;
+}
+
+.conversation .message {
+	display: block;
+	position: relative;
+
+	width: auto;
+}
+
+.conversation .message .message-text {
+	word-wrap: break-word;
+	display: inline-block;
+
+	max-width: 30%; /* TODO this should be larger on a smaller screen */
+
+	color: white;
+	border-radius: 10px;
+	padding: .5em;
+	margin: .5em;
+}
+
+/* Chat Bar */
+
+.chat-bar {
+	position: fixed;
+	bottom: 0;
+	display: flex;
+
+	padding: 1.2em;
+	width: calc(100% - var(--sidebar-width));
+}
+
+.chat-bar textarea {
+	resize: none;
+	padding: 5px;
+}
+
+.chat-bar input {
+	width: 100%;
+	padding: 0.8em;
+
+	border: none;
+	background-color: lightgrey;
+}
+.chat-bar input:focus{
+	border-width: 0px;
+	outline-width: 1px;
+}
+
+.chat-bar button {
+	padding: 0.8em;
+	margin-left: 5px;
+
+	border-radius: 10px;
+	border-width: 0;
+
+	background-color: lightgrey;
+}
+
+.chat-bar button:hover {
+	background-color: rgb(182, 182, 182);
+}

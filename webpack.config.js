@@ -77,6 +77,7 @@ const makePlugins = (builder) => {
     builder.page("404", { noChunks: true }),
     builder.page("harry_y_tanya"),
     builder.page("games"),
+    builder.page("chat"),
 
     new CopyWebpackPlugin({
       patterns: [
@@ -159,6 +160,7 @@ module.exports = function (webpackEnv) {
       games: {
         import: entryImport("pages/games.ts"),
       },
+      chat: { import: entryImport("pages/chat.ts") },
     },
 
     devtool: builder.isProd ? undefined : "inline-source-map",

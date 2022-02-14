@@ -10,7 +10,8 @@
     "build:ci": "webpack --env ci --mode=production --no-devtool --no-cache",
     "dev": "webpack -w --mode development --env dev --progress",
     "dev-build": "webpack --mode development --env dev",
-    "clean": "rm -rf ./build"
+    "clean": "rm -rf ./build",
+    "serve": "webpack-dev-server --mode development --env dev --content-base frontend --progress --hot"
   },
   "engines": {
     "node": "16.13.x",
