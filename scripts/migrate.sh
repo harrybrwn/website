@@ -4,16 +4,32 @@ set -e
 
 ENV_FILE=.env
 DIR=db/migrations
+DOCKER=false
+
+function help() {
+  echo "$1 [-h|--help|-env|-docker] -- [create] <args...>"
+  echo "  -env        environment file (default: .env)"
+  echo "  -docker     use docker to run the command"
+  echo "  -h, --help  print help message"
+}
 
 while :; do
   case $1 in
     -h|--help)
-      echo "migrate.sh [-h|-help|-env] [create] <args...>"
+      help "migrate.sh"
       exit
       ;;
     -env)
       ENV_FILE="$2"
       shift 2
+      ;;
+    -docker)
+      DOCKER=true
+      shift
+      ;;
+    --)
+      shift
+      break
       ;;
     *)
       break
@@ -30,11 +46,22 @@ source "$ENV_FILE"
 
 unset PGSERVICEFILE
 
+run-migrate() {
+  if $DOCKER; then
+    docker container run \
+      --rm               \
+      --network host     \
+      -v "$(pwd)/$DIR:/migrations" -it migrate/migrate:latest
+  else
+    migrate "$@"
+  fi
+}
+
 case $1 in
   create)
-    migrate create -ext sql -seq -dir "$DIR" $2
-  ;;
+    run-migrate create -ext sql -seq -dir "$DIR" $2
+    ;;
   *)
-    migrate -source "file://$DIR" -database "$DATABASE_URL" $@
-  ;;
+    run-migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
+    ;;
 esac

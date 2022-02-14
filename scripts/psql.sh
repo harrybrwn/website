@@ -19,6 +19,10 @@ while :; do
       USE_DOCKER=true
       shift
       ;;
+    --)
+      shift
+      break
+      ;;
     *)
       break
       ;;
@@ -51,7 +55,7 @@ else
   PGPASS_LINE="$POSTGRES_HOST:$POSTGRES_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD"
   echo "$PGPASS_LINE" > $PGPASSFILE
   chmod 0600 $PGPASSFILE
-  PGPASSFILE="$PGPASSFILE" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" "$POSTGRES_DB" "$POSTGRES_USER" $@
+  PGPASSFILE="$PGPASSFILE" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" "$POSTGRES_DB" "$POSTGRES_USER" "$@"
 fi
 
 # vim: ts=2 sts=2 sw=2

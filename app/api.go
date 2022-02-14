@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"math/rand"
+	mrand "math/rand"
 	"net/http"
 	"os"
 	"runtime"
@@ -26,10 +26,6 @@ const (
 	tokenKey = "_token"
 	//maxCookieAge = 2147483647
 )
-
-var logger = logrus.New()
-
-func SetLogger(l *logrus.Logger) { logger = l }
 
 func NewTokenConfig() auth.TokenConfig {
 	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
@@ -399,7 +395,7 @@ var (
 func RandomQuote() Quote {
 	quotesMu.Lock()
 	defer quotesMu.Unlock()
-	return quotes[rand.Intn(len(quotes))]
+	return quotes[mrand.Intn(len(quotes))]
 }
 
 func GetQuotes() []Quote {

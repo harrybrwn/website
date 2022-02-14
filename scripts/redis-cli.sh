@@ -14,6 +14,10 @@ while :; do
       ENV_FILE="$2"
       shift 2
       ;;
+    --)
+      shift
+      break
+      ;;
     *)
       break
       ;;
@@ -27,6 +31,7 @@ fi
 
 source "$ENV_FILE"
 
+echo "$REDIS_URL"
 docker-compose exec                  \
   -e REDISCLI_AUTH="$REDIS_PASSWORD" \
   redis redis-cli  \

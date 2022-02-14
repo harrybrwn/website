@@ -160,9 +160,14 @@ func (s *userStore) Get(ctx context.Context, id uuid.UUID) (*User, error) {
 
 const hashCost = bcrypt.DefaultCost
 
+// HashPassword using the global application hash cost.
+func HashPassword(pw []byte) ([]byte, error) {
+	return bcrypt.GenerateFromPassword(pw, hashCost)
+}
+
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
-	u.PWHash, err = bcrypt.GenerateFromPassword([]byte(password), hashCost)
+	u.PWHash, err = HashPassword([]byte(password))
 	if err != nil {
 		return nil, err
 	}
