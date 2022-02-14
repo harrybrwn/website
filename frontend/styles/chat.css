@@ -10,7 +10,7 @@
 }
 
 :root {
-	font-size: 16px;
+	font-size: 18px;
 }
 
 * {
@@ -24,14 +24,14 @@ body {
 
 main {
 	/* --sidebar-width: 20vw; */
-	--sidebar-width: 250px;
+	--sidebar-width: 300px;
 }
 
 .rooms {
 	position:absolute;
 	width: var(--sidebar-width);
 	height: 100vh;
-	border-right: 1px solid black;
+	border-right: 1px solid lightgrey;
 	padding: 0.5em;
 }
 
@@ -44,13 +44,14 @@ main {
 /* Chat Conversation */
 
 .chat {
+	--name-height: 85px;
+
 	width: calc(100vw - var(--sidebar-width));
-	height: 90%;
+	height: calc(100% - var(--name-height));
+
 	position: absolute;
 	left: var(--sidebar-width);
 	overflow-y: scroll;
-
-	--name-height: 85px;
 }
 
 .chat .room-name {
@@ -62,12 +63,12 @@ main {
 	/* Bring the Room name to the front */
 	background-color: white;
 	z-index: 10;
-	box-shadow: 0 6px 2px -2px gray;
+	box-shadow: 0 4px 2px -2px lightgray;
 
 	height: var(--name-height);
 }
 
-.conversation {
+.chat .conversation {
 	position: absolute;
 	width: 100%;
 	top: var(--name-height);
@@ -130,6 +131,7 @@ main {
 
 	border: none;
 	background-color: lightgrey;
+	border-radius: 10px;
 }
 .chat-bar input:focus{
 	border-width: 0px;
