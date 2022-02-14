@@ -62,7 +62,7 @@ const htmlMinify = {
   minifyURLs: true,
 };
 
-const plugins = (builder) => {
+const makePlugins = (builder) => {
   let plugins = [
     // Typechecking in a different process
     new ForkTsCheckerWebpackPlugin(),
@@ -71,7 +71,6 @@ const plugins = (builder) => {
         ? "static/css/[contenthash:8].css"
         : "static/css/[name].[id].css",
     }),
-    new HTMLInlineCSSWebpackPlugin(),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
@@ -125,12 +124,18 @@ module.exports = function (webpackEnv) {
   console.log(webpackEnv);
   const isProd = webpackEnv.prod || false;
   const isCI = webpackEnv.ci || false;
+  const isWatch = webpackEnv.WEBPACK_WATCH || false;
   const builder = new build.Builder({
     paths,
     site,
     isProd,
     htmlMinify,
   });
+
+  let plugins = makePlugins(builder);
+  if (!isWatch) {
+    plugins.push(new HTMLInlineCSSWebpackPlugin());
+  }
 
   for (const key in site.pages) {
     // TODO generate parts of the config with this
@@ -191,12 +196,13 @@ module.exports = function (webpackEnv) {
           terserOptions: {
             compress: {
               ecma: 5,
+              inline: true,
             },
             output: {
               ecma: 5,
               comments: false,
             },
-            sourceMap: true,
+            sourceMap: !isProd,
           },
         }),
         new CssMinimizerPlugin(),
@@ -260,7 +266,7 @@ module.exports = function (webpackEnv) {
       ],
     },
 
-    plugins: plugins(builder),
+    plugins: plugins,
 
     cache: {
       type: "filesystem",
@@ -270,6 +276,9 @@ module.exports = function (webpackEnv) {
         // This makes all dependencies of this file - build dependencies
         config: [__filename, path.resolve("./site.js")],
       },
+    },
+    devServer: {
+      port: 9000,
     },
   };
 };
