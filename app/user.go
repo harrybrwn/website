@@ -52,7 +52,7 @@ var (
 type UserStore interface {
 	Login(context.Context, *Login) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
-	Create(context.Context, string, *User) (*User, error)
+	Create(ctx context.Context, password string, user *User) (*User, error)
 }
 
 func NewUserStore(db db.DB) *userStore {
@@ -68,9 +68,9 @@ type userStore struct {
 }
 
 type Login struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" form:"username"`
+	Email    string `json:"email" form:"email"`
+	Password string `json:"password" form:"password"`
 }
 
 const selectQueryHead = `SELECT

@@ -21,7 +21,7 @@ test-go:
 	go generate ./...
 	go test -tags ci ./... -covermode=atomic -coverprofile=.testing/coverprofile.txt
 	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
-	@#x-www-browser .testing/coverage.html
+	@x-www-browser .testing/coverage.html
 
 test-ts:
 	yarn test

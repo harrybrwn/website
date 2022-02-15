@@ -11,3 +11,6 @@ mockgen                             \
 
 mockgen -package mockredis -destination $dest/mockredis/cmdable.go \
 	github.com/go-redis/redis/v8 Cmdable
+
+mockgen -package mockusers -destination $dest/mockusers/store.go \
+	harrybrown.com/app UserStore

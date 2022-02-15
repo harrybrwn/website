@@ -44,8 +44,6 @@ const fileCompressionLoader = {
 
 const defaultMetaTags = {
   referrer: { name: "referrer", content: "no-referrer" },
-  robots: "index,archive,follow",
-  googlebot: "index,archive,follow",
 };
 
 const metaTags = (site) => {
@@ -68,6 +66,13 @@ const metaTags = (site) => {
     defaultMetaTags,
     site.subject ? { subject: site.subject } : undefined
   );
+
+  if (site.robots) {
+    tags = Object.assign(tags, {
+      robots: site.robots,
+      googlebot: site.robots,
+    });
+  }
 
   if (site.og) {
     if (typeof site.og !== "object") {

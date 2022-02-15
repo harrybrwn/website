@@ -17,6 +17,7 @@ const common = {
   linkedin: "https://www.linkedin.com/in/harrison-brown-88823b185/",
   built: new Date(),
   og: true,
+  robots: "index, archive, follow",
   twitter,
 };
 
@@ -66,6 +67,11 @@ module.exports = {
     404: {
       title: "404 Not Found",
       ...common,
+    },
+    invite: {
+      title: "You're Invited!",
+      ...common,
+      robots: false,
     },
   },
 };

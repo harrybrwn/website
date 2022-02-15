@@ -34,6 +34,15 @@ func AdminOnly() echo.MiddlewareFunc {
 	}
 }
 
+func IsAdmin(cl *Claims) bool {
+	for _, r := range cl.Roles {
+		if r == RoleAdmin {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Role) Scan(src interface{}) error {
 	switch v := src.(type) {
 	case string:
