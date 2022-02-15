@@ -18,6 +18,7 @@ const common = {
   built: new Date(),
   og: true,
   twitter,
+  robots: "index, archive, follow",
 };
 
 module.exports = {
