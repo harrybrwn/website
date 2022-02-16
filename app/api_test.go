@@ -141,7 +141,7 @@ func TestTokenHandler(t *testing.T) {
 
 	type table struct {
 		cfg   auth.TokenConfig
-		body  map[string]string
+		body  map[string]interface{}
 		errs  []error
 		query url.Values
 		prep  func(db *mockdb.MockDB, rows *mockdb.MockRows)
@@ -155,12 +155,12 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:  auth.GenEdDSATokenConfig(),
-			body: map[string]string{"password": "1234"},
+			body: map[string]interface{}{"password": "1234"},
 			errs: []error{ErrUserNotFound, echo.ErrNotFound},
 		},
 		{
 			cfg:  auth.GenerateECDSATokenConfig(),
-			body: map[string]string{"email": "joe@joe.com", "password": "im the real joe"},
+			body: map[string]interface{}{"email": "joe@joe.com", "password": "im the real joe"},
 			errs: []error{sql.ErrConnDone, echo.ErrNotFound},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Return(rows, nil)
@@ -171,7 +171,7 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:  auth.GenerateECDSATokenConfig(),
-			body: map[string]string{"email": "joe@joe.com", "password": "im the real joe"},
+			body: map[string]interface{}{"email": "joe@joe.com", "password": "im the real joe"},
 			errs: []error{ErrUserNotFound, echo.ErrNotFound},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Return(rows, nil)
@@ -182,7 +182,7 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:  auth.GenerateECDSATokenConfig(),
-			body: map[string]string{"email": "joe@joe.com", "password": "im the real joe"},
+			body: map[string]interface{}{"email": "joe@joe.com", "password": "im the real joe"},
 			errs: []error{sql.ErrNoRows, echo.ErrNotFound},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Return(rows, sql.ErrNoRows)
@@ -190,7 +190,7 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:  auth.GenEdDSATokenConfig(),
-			body: map[string]string{"username": "tester", "password": "asdfasdf"},
+			body: map[string]interface{}{"username": "tester", "password": "asdfasdf"},
 			errs: []error{sql.ErrNoRows, echo.ErrNotFound},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Times(1).Return(rows, nil)
@@ -201,7 +201,7 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:  auth.GenerateECDSATokenConfig(),
-			body: map[string]string{"email": "joe@joe.com", "password": "im the real joe"},
+			body: map[string]interface{}{"email": "joe@joe.com", "password": "im the real joe"},
 			errs: []error{ErrWrongPassword, echo.ErrNotFound},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Return(rows, nil)
@@ -212,7 +212,7 @@ func TestTokenHandler(t *testing.T) {
 		},
 		{
 			cfg:   auth.GenerateECDSATokenConfig(),
-			body:  map[string]string{"username": "tester", "password": "asdfasdf"},
+			body:  map[string]interface{}{"username": "tester", "password": "asdfasdf"},
 			query: url.Values{"cookie": {"true"}},
 			prep: func(db *mockdb.MockDB, rows *mockdb.MockRows) {
 				loginQuery(db).Times(1).Return(rows, nil)
@@ -325,7 +325,7 @@ func TestRefreshTokenHandler_Err(t *testing.T) {
 			is.NoErr(store.Set(context.Background(), claims.ID, refreshToken))
 			e := echo.New()
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest("POST", "/api/refresh", body(map[string]string{"refresh_token": refreshToken}))
+			req := httptest.NewRequest("POST", "/api/refresh", body(map[string]interface{}{"refresh_token": refreshToken}))
 			req.URL.RawQuery = params.Encode()
 			req.Header.Set("Content-Type", "application/json")
 			c := e.NewContext(req, rec)
@@ -358,7 +358,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	e := echo.New()
 	req := httptest.NewRequest(
 		"POST", "/api/refresh?cookie=true",
-		body(map[string]string{"refresh_token": refreshToken}),
+		body(map[string]interface{}{"refresh_token": refreshToken}),
 	)
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -463,9 +463,9 @@ func silent() func() {
 	return func() { logger.SetOutput(out) }
 }
 
-func body(m map[string]string) io.Reader {
+func body(i interface{}) io.Reader {
 	var b bytes.Buffer
-	if err := json.NewEncoder(&b).Encode(m); err != nil {
+	if err := json.NewEncoder(&b).Encode(i); err != nil {
 		panic(err)
 	}
 	return &b

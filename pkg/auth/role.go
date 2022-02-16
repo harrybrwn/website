@@ -17,6 +17,10 @@ const (
 	TokenContextKey  = "jwt-ctx-token"
 )
 
+var (
+	ErrAdminRequired = errors.New("admin access required")
+)
+
 func AdminOnly() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

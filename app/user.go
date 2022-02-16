@@ -165,6 +165,11 @@ func HashPassword(pw []byte) ([]byte, error) {
 	return bcrypt.GenerateFromPassword(pw, hashCost)
 }
 
+const createUserQuery = `
+	INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING created_at, updated_at`
+
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
 	u.PWHash, err = HashPassword([]byte(password))
@@ -175,13 +180,9 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if len(u.Roles) == 0 {
 		u.Roles = []auth.Role{auth.RoleDefault}
 	}
-	const query = `
-		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING created_at, updated_at`
 	rows, err := s.db.QueryContext(
 		ctx,
-		query,
+		createUserQuery,
 		u.UUID,
 		u.Username,
 		u.Email,
