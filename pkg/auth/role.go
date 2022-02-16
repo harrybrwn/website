@@ -39,7 +39,6 @@ func AdminOnly() echo.MiddlewareFunc {
 	}
 }
 
-
 func IsAdmin(cl *Claims) bool {
 	for _, r := range cl.Roles {
 		if r == RoleAdmin {
@@ -47,6 +46,7 @@ func IsAdmin(cl *Claims) bool {
 		}
 	}
 	return false
+}
 
 func RoleRequired(required Role) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
