@@ -124,7 +124,7 @@ func main() {
 
 	e.GET("/", app.Page(harryStaticPage, "index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "index.html"))
-	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard)
+	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())

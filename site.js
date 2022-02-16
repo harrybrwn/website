@@ -19,6 +19,7 @@ const common = {
   og: true,
   robots: "index, archive, follow",
   twitter,
+  robots: "index, archive, follow",
 };
 
 module.exports = {
