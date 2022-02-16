@@ -49,12 +49,23 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ~1.17
-      - name: Get Go Version
-        id: go-version
-        run: echo "::set-output name=version-used::$(go env GOVERSION)"
 
+      # - name: Get Go Version
+      #   id: go-version
+      #   run: echo "::set-output name=version-used::$(go env GOVERSION)"
+      # - name: Cache Builds
+      #   uses: actions/cache@v2
+      #   id: go-cache
+      #   with:
+      #     path: |
+      #       ~/go/pkg/mod
+      #       ~/.cache/go-build
+      #       ~/go/bin
+      #     key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-${{ hashFiles('**/go.sum') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-
       - name: Install Go dependencies
-        #if: steps.go-cache.outputs.cache-hit != 'true'
+        # if: steps.go-cache.outputs.cache-hit != 'true'
         run: |
           go install github.com/golang/mock/mockgen@latest
           go mod download
@@ -144,7 +155,7 @@ jobs:
 
   migrate:
     name: Database Migrations
-    needs: [lint, test]
+    needs: [lint, build, test]
     runs-on: ubuntu-latest
     env:
       GO_VERSION: 1.17.5
