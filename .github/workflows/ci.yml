@@ -50,22 +50,22 @@ jobs:
         with:
           go-version: ~1.17
 
-      # - name: Get Go Version
-      #   id: go-version
-      #   run: echo "::set-output name=version-used::$(go env GOVERSION)"
-      # - name: Cache Builds
-      #   uses: actions/cache@v2
-      #   id: go-cache
-      #   with:
-      #     path: |
-      #       ~/go/pkg/mod
-      #       ~/.cache/go-build
-      #       ~/go/bin
-      #     key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-${{ hashFiles('**/go.sum') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-
+      - name: Get Go Version
+        id: go-version
+        run: echo "::set-output name=version-used::$(go env GOVERSION)"
+      - name: Cache Builds
+        uses: actions/cache@v2
+        id: go-cache
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/go/bin
+          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-build-
       - name: Install Go dependencies
-        # if: steps.go-cache.outputs.cache-hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: |
           go install github.com/golang/mock/mockgen@latest
           go mod download
@@ -141,17 +141,12 @@ jobs:
       #if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
-    - name: Build Frontend
-      run: yarn build:ci
-    - name: Build Backend
-      run: |
-        go generate ./...
-        go build -x -trimpath -ldflags "-w -s"
-
     - name: Test Frontend
       run: yarn test:ci
     - name: Test Backend
-      run: go test -tags ci -v -cover ./...
+      run: |
+        go generate ./...
+        go test -tags ci -v -cover ./...
 
   migrate:
     name: Database Migrations
