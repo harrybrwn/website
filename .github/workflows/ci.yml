@@ -23,9 +23,9 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
             ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-
+            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-
       - name: Install Go MockGen
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: go install github.com/golang/mock/mockgen@latest
@@ -59,6 +59,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-yarn-
 
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+    - name: Get Go Version
+      id: go-version
+      run: echo "::set-output name=version-used::$(go env GOVERSION)"
+
     - name: Cache Go modules and builds
       uses: actions/cache@v2
       id: go-cache
@@ -70,14 +78,6 @@ jobs:
         key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-
-
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Get Go Version
-      id: go-version
-      run: echo "::set-output name=version-used::$(go env GOVERSION)"
 
     - uses: actions/setup-node@v2
       with:
