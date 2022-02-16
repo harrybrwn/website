@@ -51,6 +51,9 @@ type inviteSession struct {
 	ExpiresAt int64 `json:"ex,omitempty"`
 	// Force the invite to have only one valid email
 	Email string `json:"e,omitempty"`
+	// Roles is an array of roles used when creating the new user. Only Admin
+	// should be able to set roles.
+	Roles []auth.Role `json:"r,omitempty"`
 }
 
 const (
@@ -62,6 +65,7 @@ type CreateInviteRequest struct {
 	Timeout time.Duration `json:"timeout,omitempty"`
 	TTL     int           `json:"ttl,omitempty"`
 	Email   string        `json:"email,omitempty"`
+	Roles   []string      `json:"roles"`
 }
 
 // Create is the handler for people with accounts to create temporary invite links
@@ -96,7 +100,7 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 
 		if !auth.IsAdmin(claims) {
 			// Disallow these parameters if the user is not an admin.
-			if p.TTL != 0 || p.Timeout != 0 {
+			if p.TTL != 0 || p.Timeout != 0 || len(p.Roles) > 0 {
 				return echo.ErrUnauthorized.SetInternal(auth.ErrAdminRequired)
 			}
 		}
@@ -110,12 +114,16 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
-		now := iv.Now()
+		roles := make([]auth.Role, len(p.Roles))
+		for i, r := range p.Roles {
+			roles[i] = auth.Role(r)
+		}
 		err = iv.set(ctx, key, p.Timeout, &inviteSession{
 			CreatedBy: claims.UUID,
-			ExpiresAt: now.Add(p.Timeout).UnixMilli(),
+			ExpiresAt: iv.Now().Add(p.Timeout).UnixMilli(),
 			TTL:       p.TTL,
 			Email:     p.Email,
+			Roles:     roles,
 		})
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
@@ -209,6 +217,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 		_, err = users.Create(ctx, login.Password, &User{
 			Email:    login.Email,
 			Username: login.Username,
+			Roles:    session.Roles,
 		})
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)

@@ -13,6 +13,8 @@ clean:
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
+coverage: coverage-ts coverage-go
+
 clean-mocks:
 	$(RM) -r internal/mocks
 
@@ -21,10 +23,17 @@ test-go:
 	go generate ./...
 	go test -tags ci ./... -covermode=atomic -coverprofile=.testing/coverprofile.txt
 	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
-	@x-www-browser .testing/coverage.html
+	@#x-www-browser .testing/coverage.html
 
 test-ts:
 	yarn test
+
+.PHONY: coverage-go coverage-ts
+coverage-go:
+	x-www-browser .testing/coverage.html
+
+coverage-ts:
+	yarn coverage
 
 lint-go:
 	go vet -tags ci ./...

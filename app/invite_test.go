@@ -17,6 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
 	"harrybrown.com/internal/mocks/mockdb"
@@ -78,8 +79,14 @@ func TestInviteCreate(t *testing.T) {
 			body:   CreateInviteRequest{TTL: 64},
 		},
 		{
+			// Admin can change roles
+			id:     "123",
+			claims: &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
+			body:   CreateInviteRequest{Roles: []string{"some_role"}},
+		},
+		{
 			// Regular user not allowed to change timeout
-			id:       "123",
+			id:       "1234",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
 			body:     CreateInviteRequest{Timeout: time.Minute},
 			expected: echo.ErrUnauthorized,
@@ -87,9 +94,17 @@ func TestInviteCreate(t *testing.T) {
 		},
 		{
 			// Regular user not allowed to change ttl
-			id:       "1234",
+			id:       "12345",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
 			body:     CreateInviteRequest{TTL: 1000},
+			expected: echo.ErrUnauthorized,
+			internal: auth.ErrAdminRequired,
+		},
+		{
+			// Regular user not allowed to change roles
+			id:       "123456",
+			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
+			body:     CreateInviteRequest{Roles: []string{"admin"}},
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrAdminRequired,
 		},
@@ -143,11 +158,16 @@ func TestInviteCreate(t *testing.T) {
 			if tt.body.TTL == 0 {
 				tt.body.TTL = defaultInviteTTL
 			}
+			roles := make([]auth.Role, len(tt.body.Roles))
+			for i, r := range tt.body.Roles {
+				roles[i] = auth.Role(r)
+			}
 			if tt.expected == nil {
 				expires := now.Add(tt.body.Timeout).UnixMilli()
 				expectedSession, err := json.Marshal(&inviteSession{
 					CreatedBy: tt.claims.UUID, TTL: tt.body.TTL,
 					ExpiresAt: expires, Email: tt.body.Email,
+					Roles: roles,
 				})
 				is.NoErr(err)
 				rdb.EXPECT().
@@ -389,7 +409,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:    "success",
-			session: &inviteSession{TTL: -1},
+			session: &inviteSession{TTL: -1, Roles: []auth.Role{auth.RoleAdmin, auth.RoleDefault}},
 			login:   &Login{Email: "a@a.it", Password: "123", Username: "test-user"},
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
 				ctx := context.Background()
@@ -397,8 +417,12 @@ func TestInviteSignUp(t *testing.T) {
 					mockSessionGet(t, mocks.rdb, tt.session),
 					mocks.db.EXPECT().QueryContext(
 						ctx, createUserQuery,
-						gomock.Any(), tt.login.Username, tt.login.Email,
-						gomock.Any(), gomock.Any(), gomock.Any(),
+						gomock.Any(), // uuid
+						tt.login.Username,
+						tt.login.Email,
+						gomock.Any(), // password hash
+						pq.Array(tt.session.Roles),
+						gomock.Any(), // totp secret
 					).Return(mocks.rows, nil),
 					mocks.rows.EXPECT().Next().Return(true),
 					mocks.rows.EXPECT().Scan(
@@ -572,9 +596,13 @@ func TestInviteSession(t *testing.T) {
 	}
 	is.True(len(k) > 0)
 	expires := now.Add(timeout).UnixMilli()
-	rawSession := fmt.Sprintf(`{"cb":"%s","tl":%d,"ex":%d,"e":"%s"}`, uid, ttl, expires, email)
-	rdb.EXPECT().Set(ctx, k, []byte(rawSession), timeout).Return(redis.NewStatusResult("", nil))
-	rdb.EXPECT().Get(ctx, k).Return(redis.NewStringResult(rawSession, nil))
+	rawSession, err := json.Marshal(&inviteSession{
+		CreatedBy: uid, TTL: ttl,
+		ExpiresAt: expires, Email: email,
+	})
+	is.NoErr(err)
+	rdb.EXPECT().Set(ctx, k, rawSession, timeout).Return(redis.NewStatusResult("", nil))
+	rdb.EXPECT().Get(ctx, k).Return(redis.NewStringResult(string(rawSession), nil))
 
 	err = invites.set(ctx, k, timeout, &inviteSession{CreatedBy: uid, ExpiresAt: expires, TTL: ttl, Email: email})
 	is.NoErr(err)

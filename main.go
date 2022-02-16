@@ -122,7 +122,7 @@ func main() {
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
-	e.GET("/", app.Page(harryStaticPage, "index.html"))
+	e.Any("/", app.Page(harryStaticPage, "index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "index.html"))
 	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
