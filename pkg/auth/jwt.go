@@ -31,6 +31,7 @@ var (
 	)
 	ErrBadRefreshTokenAud = errors.New("bad refresh token audience")
 	ErrBadIssuer          = errors.New("bad token issuer")
+	ErrNoClaims           = errors.New("no claims found")
 )
 
 type getter interface {

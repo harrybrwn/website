@@ -75,6 +75,13 @@ const metaTags = (site) => {
       : undefined
   );
 
+  if (site.robots) {
+    tags = Object.assign(tags, {
+      robots: site.robots,
+      googlebot: site.robots,
+    });
+  }
+
   if (site.og) {
     if (typeof site.og !== "object") {
       site.og = {};

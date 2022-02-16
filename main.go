@@ -5,10 +5,13 @@ package main
 
 import (
 	"embed"
+	"encoding/base64"
 	"flag"
 	"io/fs"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +43,8 @@ var (
 	gamesStaticPage []byte
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
+	//go:embed build/invite/index.html
+	inviteStaticPage []byte
 
 	//go:embed files/bookmarks.json
 	bookmarks []byte
@@ -105,6 +110,14 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	userStore := app.NewUserStore(db)
+
+	invites := app.Invitations{
+		Path:    &InvitePathBuilder{"/invite"},
+		RDB:     rd,
+		Encoder: base64.RawURLEncoding,
+	}
+
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
@@ -116,6 +129,9 @@ func main() {
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+
+	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", &invites))
+	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
@@ -129,7 +145,7 @@ func main() {
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
-		Users:  app.NewUserStore(db),
+		Users:  userStore,
 	}
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
@@ -142,6 +158,8 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
+	api.POST("/invite/create", invites.Create(), guard)
+	api.DELETE("/invite/:id", invites.Delete(), guard)
 
 	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
@@ -164,6 +182,21 @@ func NotFoundHandler() echo.HandlerFunc {
 			return echo.ErrNotFound
 		}
 		return c.HTMLBlob(404, notFoundStaticPage)
+	}
+}
+
+func invitesPageHandler(body []byte, contentType, debugFile string, invitations *app.Invitations) echo.HandlerFunc {
+	if app.Debug {
+		return func(c echo.Context) error {
+			raw, err := os.ReadFile(debugFile)
+			if err != nil {
+				return err
+			}
+			ct := http.DetectContentType(raw)
+			return invitations.Accept(raw, ct)(c)
+		}
+	} else {
+		return invitations.Accept(body, "contentType")
 	}
 }
 
@@ -256,4 +289,15 @@ func staticCache(h http.Handler) http.Handler {
 
 func WrapHandler(h http.HandlerFunc) echo.HandlerFunc {
 	return echo.WrapHandler(h)
+}
+
+type InvitePathBuilder struct{ p string }
+
+func (ipb *InvitePathBuilder) Path(id string) string {
+	return filepath.Join("/", ipb.p, id)
+}
+
+func (ipb *InvitePathBuilder) GetID(r *http.Request) string {
+	list := strings.Split(r.URL.Path, string(filepath.Separator))
+	return list[2]
 }
