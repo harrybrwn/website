@@ -560,7 +560,7 @@ func TestInviteDelete(t *testing.T) {
 				tt.mocks(t, rdb, &tt)
 			}
 			err := invites.Delete()(c)
-			// is.True(errors.Is(tt.expected, err))
+			is.True(errors.Is(tt.expected, err))
 			is.Equal(tt.expected, err)
 			if httpErr, ok := err.(*echo.HTTPError); ok && tt.internal != nil {
 				is.True(errors.Is(httpErr.Internal, tt.internal))

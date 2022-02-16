@@ -34,6 +34,41 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
 
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Install node
+      - uses: actions/setup-node@v2
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'yarn'
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ~1.17
+      - name: Get Go Version
+        id: go-version
+        run: echo "::set-output name=version-used::$(go env GOVERSION)"
+
+      - name: Install Go dependencies
+        #if: steps.go-cache.outputs.cache-hit != 'true'
+        run: |
+          go install github.com/golang/mock/mockgen@latest
+          go mod download
+
+      - name: Install frontend dependencies
+        #if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install
+    - name: Build Frontend
+      run: yarn build:ci
+    - name: Build Backend
+      run: |
+        go generate ./...
+        go build -x -trimpath -ldflags "-w -s"
+
   test:
     strategy:
       matrix:
@@ -79,6 +114,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-
 
+    # Install node
     - uses: actions/setup-node@v2
       with:
         node-version-file: '.nvmrc'
@@ -99,7 +135,7 @@ jobs:
     - name: Build Backend
       run: |
         go generate ./...
-        go build -trimpath -ldflags "-w -s"
+        go build -x -trimpath -ldflags "-w -s"
 
     - name: Test Frontend
       run: yarn test:ci
