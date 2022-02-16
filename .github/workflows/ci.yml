@@ -62,12 +62,12 @@ jobs:
       - name: Install frontend dependencies
         #if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn install
-    - name: Build Frontend
-      run: yarn build:ci
-    - name: Build Backend
-      run: |
-        go generate ./...
-        go build -x -trimpath -ldflags "-w -s"
+      - name: Build Frontend
+        run: yarn build:ci
+      - name: Build Backend
+        run: |
+          go generate ./...
+          go build -x -trimpath -ldflags "-w -s"
 
   test:
     strategy:
