@@ -616,23 +616,23 @@ func TestInviteList(t *testing.T) {
 					{
 						Path:      "/invite/1",
 						CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
-						ExpiresAt: time.UnixMilli(12),
+						ExpiresAt: time.UnixMilli(100000),
 					},
 					{
 						Path:      "/invite/2",
 						CreatedBy: uuid.MustParse("eeff1122-816f-4d67-821b-64be606af220"),
-						ExpiresAt: time.UnixMilli(443),
+						ExpiresAt: time.UnixMilli(1000000),
 					},
 				},
 			},
 			sessions: []inviteSession{
 				{
 					CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
-					ExpiresAt: 12,
+					ExpiresAt: 100000,
 				},
 				{
 					CreatedBy: uuid.MustParse("eeff1122-816f-4d67-821b-64be606af220"),
-					ExpiresAt: 443,
+					ExpiresAt: 1000000,
 				},
 			},
 			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
