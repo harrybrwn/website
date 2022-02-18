@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -92,7 +91,7 @@ func main() {
 	}
 
 	if app.Debug {
-		auth.Expiration = time.Second * 30
+		// auth.Expiration = time.Second * 30
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
@@ -160,6 +159,7 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
+	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
 
 	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))

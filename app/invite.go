@@ -5,10 +5,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -53,6 +55,9 @@ type inviteSession struct {
 	Email string `json:"e,omitempty"`
 	// Roles is an array of roles used when creating the new user. Only Admin
 	// should be able to set roles.
+	//
+	// TODO if auth.Role is ever turned into an int, turn this into an int to
+	// skip any custom json marshaling for auth.Role.
 	Roles []auth.Role `json:"r,omitempty"`
 }
 
@@ -228,6 +233,82 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 	}
 }
 
+type inviteList struct {
+	Invites []invite `json:"invites"`
+}
+
+type invite struct {
+	Path      string      `json:"path"`
+	CreatedBy uuid.UUID   `json:"created_by"`
+	ExpiresAt time.Time   `json:"expires_at"`
+	Email     string      `json:"email,omitempty"`
+	Roles     []auth.Role `json:"roles"`
+	TTL       int         `json:"ttl"`
+}
+
+func (iv *Invitations) List() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var (
+			resp   inviteList
+			ctx    = c.Request().Context()
+			claims = auth.GetClaims(c)
+		)
+		if claims == nil {
+			return echo.ErrUnauthorized
+		}
+		keys, err := iv.RDB.Keys(ctx, "invite:*").Result()
+		if err != nil {
+			return echo.ErrNotFound.SetInternal(err)
+		}
+
+		l := len(keys)
+		if l == 0 {
+			return c.JSON(200, resp)
+		}
+
+		sessions := make([]inviteSession, l)
+		rawsessions, err := iv.RDB.MGet(ctx, keys...).Result()
+		if err != nil {
+			return echo.ErrNotFound.SetInternal(err)
+		}
+		for i, raw := range rawsessions {
+			s := raw.(string)
+			err = json.Unmarshal([]byte(s), &sessions[i])
+			if err != nil {
+				return echo.ErrInternalServerError.SetInternal(err)
+			}
+			keys[i] = strings.Replace(keys[i], "invite:", "", 1)
+		}
+
+		resp.Invites = make([]invite, 0, l)
+		if auth.IsAdmin(claims) {
+			for i, s := range sessions {
+				inv := invite{Path: iv.Path.Path(keys[i])}
+				setInviteFromSession(&inv, &s)
+				resp.Invites = append(resp.Invites, inv)
+			}
+		} else {
+			for i, s := range sessions {
+				if !bytes.Equal(s.CreatedBy[:], claims.UUID[:]) {
+					continue
+				}
+				inv := invite{Path: iv.Path.Path(keys[i])}
+				setInviteFromSession(&inv, &s)
+				resp.Invites = append(resp.Invites, inv)
+			}
+		}
+		return c.JSON(200, resp)
+	}
+}
+
+func setInviteFromSession(inv *invite, s *inviteSession) {
+	inv.Email = s.Email
+	inv.CreatedBy = s.CreatedBy
+	inv.ExpiresAt = time.UnixMilli(s.ExpiresAt)
+	inv.Roles = s.Roles
+	inv.TTL = s.TTL
+}
+
 func (iv *Invitations) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var (
@@ -271,12 +352,12 @@ func (iv *Invitations) set(
 	if err != nil {
 		return err
 	}
-	return iv.RDB.Set(ctx, key, raw, timeout).Err()
+	return iv.RDB.Set(ctx, fmt.Sprintf("invite:%s", key), raw, timeout).Err()
 }
 
 func (iv *Invitations) get(ctx context.Context, key string) (*inviteSession, error) {
 	var s inviteSession
-	raw, err := iv.RDB.Get(ctx, key).Bytes()
+	raw, err := iv.RDB.Get(ctx, fmt.Sprintf("invite:%s", key)).Bytes()
 	if err != nil {
 		return nil, err
 	}

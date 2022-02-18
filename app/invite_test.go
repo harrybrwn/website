@@ -171,7 +171,7 @@ func TestInviteCreate(t *testing.T) {
 				})
 				is.NoErr(err)
 				rdb.EXPECT().
-					Set(ctx, tt.id, []byte(expectedSession), tt.body.Timeout).
+					Set(ctx, fmt.Sprintf("invite:%s", tt.id), []byte(expectedSession), tt.body.Timeout).
 					Return(redis.NewStatusResult("", nil))
 			}
 			err := invites.Create()(c)
@@ -572,6 +572,172 @@ func TestInviteDelete(t *testing.T) {
 	}
 }
 
+func TestInviteList(t *testing.T) {
+	type table struct {
+		name               string
+		expected, internal error
+		claims             *auth.Claims
+		inviteList         *inviteList
+		sessions           []inviteSession
+		mock               func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession)
+	}
+	for i, tt := range []table{
+		{
+			name:     "no claims",
+			expected: echo.ErrUnauthorized,
+		},
+		{
+			name:     "failed getting keys",
+			expected: echo.ErrNotFound,
+			internal: redis.Nil,
+			claims:   new(auth.Claims),
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+				rdb.EXPECT().Keys(context.Background(), "invite:*").
+					Return(redis.NewStringSliceResult(nil, redis.Nil))
+			},
+		},
+		{
+			name:       "no sessions",
+			inviteList: &inviteList{},
+			claims:     &auth.Claims{},
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+				rdb.EXPECT().Keys(context.Background(), "invite:*").
+					Return(redis.NewStringSliceResult([]string{}, nil))
+			},
+		},
+		{
+			name: "list as admin",
+			claims: &auth.Claims{
+				UUID:  uuid.MustParse("e5ccb6f1-816f-4d67-821b-64be606af220"),
+				Roles: []auth.Role{auth.RoleAdmin},
+			},
+			inviteList: &inviteList{
+				Invites: []invite{
+					{
+						Path:      "/invite/1",
+						CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
+						ExpiresAt: time.UnixMilli(12),
+					},
+					{
+						Path:      "/invite/2",
+						CreatedBy: uuid.MustParse("eeff1122-816f-4d67-821b-64be606af220"),
+						ExpiresAt: time.UnixMilli(443),
+					},
+				},
+			},
+			sessions: []inviteSession{
+				{
+					CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
+					ExpiresAt: 12,
+				},
+				{
+					CreatedBy: uuid.MustParse("eeff1122-816f-4d67-821b-64be606af220"),
+					ExpiresAt: 443,
+				},
+			},
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+				ctx := context.Background()
+				keys := []string{
+					"invite:1",
+					"invite:2",
+				}
+				rdb.EXPECT().Keys(ctx, "invite:*").
+					Return(redis.NewStringSliceResult(keys, nil))
+				raw := make([]interface{}, len(tt.sessions))
+				for i, s := range tt.sessions {
+					b, err := json.Marshal(s)
+					if err != nil {
+						panic(err)
+					}
+					raw[i] = string(b)
+				}
+				rdb.EXPECT().MGet(ctx, keys[0], keys[1]).
+					Return(redis.NewSliceResult(raw, nil))
+			},
+		},
+		{
+			name: "list as not admin",
+			claims: &auth.Claims{
+				UUID:  uuid.MustParse("e5ccb6f1-816f-4d67-821b-64be606af220"),
+				Roles: []auth.Role{auth.RoleDefault},
+			},
+			inviteList: &inviteList{
+				Invites: []invite{
+					{
+						Path:      "/invite/3",
+						CreatedBy: uuid.MustParse("e5ccb6f1-816f-4d67-821b-64be606af220"),
+						ExpiresAt: time.UnixMilli(123),
+					},
+				},
+			},
+			sessions: []inviteSession{
+				{
+					CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
+					ExpiresAt: 1,
+				},
+				{
+					CreatedBy: uuid.MustParse("eeff1122-816f-4d67-821b-64be606af220"),
+					ExpiresAt: 1,
+				},
+				{
+					CreatedBy: uuid.MustParse("e5ccb6f1-816f-4d67-821b-64be606af220"),
+					ExpiresAt: 123,
+				},
+			},
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+				ctx := context.Background()
+				keys := []string{"invite:1", "invite:2", "invite:3"}
+				rdb.EXPECT().Keys(ctx, "invite:*").
+					Return(redis.NewStringSliceResult(keys, nil))
+				raw := make([]interface{}, len(tt.sessions))
+				for i, s := range tt.sessions {
+					b, err := json.Marshal(s)
+					if err != nil {
+						panic(err)
+					}
+					raw[i] = string(b)
+				}
+				rdb.EXPECT().MGet(ctx, keys[0], keys[1], keys[2]).
+					Return(redis.NewSliceResult(raw, nil))
+			},
+		},
+	} {
+		t.Run(fmt.Sprintf("%s_%d_%s", t.Name(), i, tt.name), func(t *testing.T) {
+			ctx := context.Background()
+			is := is.New(t)
+			ctrl := gomock.NewController(t)
+			rdb := mockredis.NewMockCmdable(ctrl)
+			invites := Invitations{
+				Path:    &testPath{p: "invite"},
+				RDB:     rdb,
+				Encoder: base64.RawURLEncoding,
+			}
+			defer ctrl.Finish()
+
+			req := httptest.NewRequest("GET", "/invite/list", nil).WithContext(ctx)
+			rec := httptest.NewRecorder()
+			c := echo.New().NewContext(req, rec)
+			c.Set(auth.ClaimsContextKey, tt.claims)
+			if tt.mock != nil {
+				tt.mock(rdb, &tt, nil)
+			}
+			err := invites.List()(c)
+			is.True(errors.Is(tt.expected, err))
+			if httpErr, ok := err.(*echo.HTTPError); ok && tt.internal != nil {
+				is.True(errors.Is(httpErr.Internal, tt.internal))
+			}
+			if tt.expected != nil {
+				return
+			}
+			list := inviteList{}
+			err = json.Unmarshal(rec.Body.Bytes(), &list)
+			is.NoErr(err)
+			// fmt.Println(list)
+			is.Equal(list, *tt.inviteList)
+		})
+	}
+}
+
 func TestInviteSession(t *testing.T) {
 	is := is.New(t)
 	ctx := context.Background()
@@ -601,8 +767,8 @@ func TestInviteSession(t *testing.T) {
 		ExpiresAt: expires, Email: email,
 	})
 	is.NoErr(err)
-	rdb.EXPECT().Set(ctx, k, rawSession, timeout).Return(redis.NewStatusResult("", nil))
-	rdb.EXPECT().Get(ctx, k).Return(redis.NewStringResult(string(rawSession), nil))
+	rdb.EXPECT().Set(ctx, fmt.Sprintf("invite:%s", k), rawSession, timeout).Return(redis.NewStatusResult("", nil))
+	rdb.EXPECT().Get(ctx, fmt.Sprintf("invite:%s", k)).Return(redis.NewStringResult(string(rawSession), nil))
 
 	err = invites.set(ctx, k, timeout, &inviteSession{CreatedBy: uid, ExpiresAt: expires, TTL: ttl, Email: email})
 	is.NoErr(err)
