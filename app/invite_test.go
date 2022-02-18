@@ -736,10 +736,8 @@ func TestInviteList(t *testing.T) {
 			for i := range list.Invites {
 				is.Equal(list.Invites[i].CreatedBy, tt.inviteList.Invites[i].CreatedBy)
 				is.Equal(list.Invites[i].Path, tt.inviteList.Invites[i].Path)
-				// is.Equal(list.Invites[i].ExpiresAt, tt.inviteList.Invites[i].ExpiresAt)
-				list.Invites[i].ExpiresAt.Equal(tt.inviteList.Invites[i].ExpiresAt)
+				is.True(list.Invites[i].ExpiresAt.Equal(tt.inviteList.Invites[i].ExpiresAt))
 			}
-			// is.Equal(list.Invites, tt.inviteList.Invites)
 		})
 	}
 }

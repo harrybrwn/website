@@ -213,7 +213,6 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrBadRequest.SetInternal(err)
 		}
 		if len(login.Email) == 0 || len(login.Password) == 0 {
-			// return &echo.HTTPError{Code: http.StatusBadRequest, Message: "empty login information"}
 			return ErrEmptyLogin
 		}
 		if len(session.Email) > 0 && session.Email != login.Email {
