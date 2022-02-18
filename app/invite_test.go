@@ -732,8 +732,13 @@ func TestInviteList(t *testing.T) {
 			list := inviteList{}
 			err = json.Unmarshal(rec.Body.Bytes(), &list)
 			is.NoErr(err)
-			// fmt.Println(list)
-			is.Equal(list, *tt.inviteList)
+			is.Equal(len(list.Invites), len(tt.inviteList.Invites))
+			for i := range list.Invites {
+				is.Equal(list.Invites[i].CreatedBy, tt.inviteList.Invites[i].CreatedBy)
+				is.Equal(list.Invites[i].Path, tt.inviteList.Invites[i].Path)
+				is.Equal(list.Invites[i].ExpiresAt, tt.inviteList.Invites[i].ExpiresAt)
+			}
+			// is.Equal(list.Invites, tt.inviteList.Invites)
 		})
 	}
 }
