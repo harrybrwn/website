@@ -5,7 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"syscall"
 
 	"golang.org/x/term"
@@ -48,19 +50,28 @@ func main() {
 	}
 }
 
-func fromStdIn() ([]byte, error) {
-	fmt.Print("Password: ")
-	pw, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return nil, err
-	}
-	fmt.Print("\nConfirm Password: ")
-	confirmPw, err := term.ReadPassword(int(syscall.Stdin))
-	if err != nil {
-		return nil, err
-	}
-	if !bytes.Equal(confirmPw, pw) {
-		return nil, errors.New("passwords were different")
+func fromStdIn() (pw []byte, err error) {
+	if flag.Arg(0) == "-" {
+		var buf bytes.Buffer
+		_, err = io.Copy(&buf, os.Stdin)
+		if err != nil {
+			return nil, err
+		}
+		pw = bytes.Trim(buf.Bytes(), "\n\t ")
+	} else {
+		fmt.Print("Password: ")
+		pw, err = term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Print("\nConfirm Password: ")
+		confirmPw, err := term.ReadPassword(int(syscall.Stdin))
+		if err != nil {
+			return nil, err
+		}
+		if !bytes.Equal(confirmPw, pw) {
+			return nil, errors.New("passwords were different")
+		}
 	}
 	return pw, nil
 }
