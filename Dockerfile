@@ -43,7 +43,7 @@ FROM alpine:3.14 as user-gen
 COPY --from=builder /app/bin/user-gen /app/user-gen
 CMD ["/app/user-gen"]
 
-FROM python:3.8.12-slim-buster as python
+FROM python:3.9-slim-buster as python
 COPY --from=builder /app/bin/user-gen /usr/local/bin/user-gen
 COPY --from=frontend /app/test /app/test
 WORKDIR /app/test

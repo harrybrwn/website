@@ -426,6 +426,7 @@ func TestInviteSignUp(t *testing.T) {
 					).Return(mocks.rows, nil),
 					mocks.rows.EXPECT().Next().Return(true),
 					mocks.rows.EXPECT().Scan(
+						gomock.AssignableToTypeOf(intptr),
 						gomock.AssignableToTypeOf(&time.Time{}),
 						gomock.AssignableToTypeOf(&time.Time{}),
 					).Return(nil),

@@ -39,6 +39,14 @@ lint-go:
 	go vet -tags ci ./...
 	golangci-lint run
 
+TOOLS=user-gen pwhash key-gen
+
+tools:
+	@mkdir -p ./bin
+	@for tool in $(TOOLS); do \
+		go build -trimpath -ldflags "-s -w" -o ./bin/$$tool ./cmd/$$tool; \
+	done
+
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
 		pdflatex \
@@ -61,4 +69,4 @@ blog/resources/remora.svg: diagrams/remora.svg
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
 
-.PHONY: build run test clean clean-mocks test-go test-ts resume
+.PHONY: build run test clean clean-mocks test-go test-ts resume tools

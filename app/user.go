@@ -168,7 +168,7 @@ func HashPassword(pw []byte) ([]byte, error) {
 const createUserQuery = `
 	INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
 	VALUES ($1, $2, $3, $4, $5, $6)
-	RETURNING created_at, updated_at`
+	RETURNING id, created_at, updated_at`
 
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
@@ -193,7 +193,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if err != nil {
 		return nil, err
 	}
-	return u, db.ScanOne(rows, &u.CreatedAt, &u.UpdatedAt)
+	return u, db.ScanOne(rows, &u.ID, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (s *userStore) Update(ctx context.Context, u *User) error {
