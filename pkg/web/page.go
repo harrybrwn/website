@@ -100,14 +100,6 @@ func (p *Page) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// AddTemplateFile will add a template file to the page struct
-func (p *Page) AddTemplateFile(files ...string) *Page {
-	for _, file := range files {
-		p.templates = append(p.templates, getfile(file))
-	}
-	return p
-}
-
 // Path returns the route path.
 func (p *Page) Path() string {
 	return p.RoutePath
