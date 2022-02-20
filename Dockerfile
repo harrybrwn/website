@@ -42,3 +42,19 @@ CMD ["/app/harrybrwn"]
 FROM alpine:3.14 as user-gen
 COPY --from=builder /app/bin/user-gen /app/user-gen
 CMD ["/app/user-gen"]
+
+FROM python:3.9-slim-buster as python
+COPY --from=builder /app/bin/user-gen /usr/local/bin/user-gen
+COPY --from=frontend /app/test /app/test
+WORKDIR /app/test
+
+ENV PATH="/root/.poetry/bin:$PATH"
+ENV POETRY_VIRTUALENVS_CREATE=false
+
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y curl && \
+    pip install --user --upgrade pip
+RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+RUN poetry install
+

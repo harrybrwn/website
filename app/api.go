@@ -1,14 +1,19 @@
 package app
 
 import (
+	"context"
+	"encoding/hex"
+	"fmt"
 	"math"
-	"math/rand"
+	mrand "math/rand"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -18,13 +23,33 @@ import (
 )
 
 const (
-	tokenKey     = "_token"
-	maxCookieAge = 2147483647
+	tokenKey = "_token"
+	//maxCookieAge = 2147483647
 )
 
-var logger = logrus.New()
+func NewTokenConfig() auth.TokenConfig {
+	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
+	if hasSeed {
+		logger.Info("creating token config from seed")
+		seed, err := hex.DecodeString(hexseed)
+		if err != nil {
+			panic(errors.Wrap(err, "could not decode private key seed from hex"))
+		}
+		return &tokenConfig{auth.EdDSATokenConfigFromSeed(seed)}
+	}
+	logger.Warn("generating new key pair for token config")
+	return &tokenConfig{auth.GenEdDSATokenConfig()}
+}
 
-func SetLogger(l *logrus.Logger) { logger = l }
+type tokenConfig struct{ auth.TokenConfig }
+
+func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
+	c, err := r.Cookie(tokenKey)
+	if err != nil {
+		return auth.GetBearerToken(r)
+	}
+	return c.Value, nil
+}
 
 type TokenService struct {
 	Tokens auth.TokenStore
@@ -152,7 +177,6 @@ func (ts *TokenService) parserCookieQuery(req *http.Request) (bool, error) {
 }
 
 func (ts *TokenService) setTokenCookie(response http.ResponseWriter, token *auth.TokenResponse, claims *auth.Claims) {
-	logger.Info("setting cookie")
 	http.SetCookie(response, &http.Cookie{
 		Name:     tokenKey,
 		Value:    token.Token,
@@ -198,15 +222,49 @@ func (ts *TokenService) keyfunc(*jwt.Token) (interface{}, error) {
 
 const hitsQuery = `SELECT count(*) FROM request_log WHERE uri = $1`
 
-func Hits(d db.DB) echo.HandlerFunc {
+func NewHitsCache(rd redis.Cmdable) HitsCache {
+	return &hitsCache{rd: rd, timeout: time.Hour}
+}
+
+type HitsCache interface {
+	Next(context.Context, string) (int64, error)
+	Put(context.Context, string, int64) error
+}
+
+type hitsCache struct {
+	rd      redis.Cmdable
+	timeout time.Duration
+}
+
+func (hc *hitsCache) Next(ctx context.Context, k string) (int64, error) {
+	count, err := hc.rd.Incr(ctx, k).Result()
+	if err != nil {
+		return 0, err
+	}
+	if count == 1 {
+		return 0, errors.New("increment not yet set")
+	}
+	return count, nil
+}
+
+func (hc *hitsCache) Put(ctx context.Context, k string, n int64) error {
+	return hc.rd.Set(ctx, k, n, hc.timeout).Err()
+}
+
+func Hits(d db.DB, h HitsCache, logger logrus.FieldLogger) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var (
-			n   int
+			n   int64
 			u   = c.QueryParam("u")
 			ctx = c.Request().Context()
 		)
 		if len(u) == 0 {
 			u = "/"
+		}
+		key := fmt.Sprintf("hits:%s", u)
+		count, err := h.Next(ctx, key)
+		if err == nil {
+			return c.JSON(200, map[string]int64{"count": count})
 		}
 		rows, err := d.QueryContext(ctx, hitsQuery, u)
 		if err != nil {
@@ -215,7 +273,11 @@ func Hits(d db.DB) echo.HandlerFunc {
 		if err = db.ScanOne(rows, &n); err != nil {
 			return wrap(err, 500, "could not scan row")
 		}
-		return c.JSON(200, map[string]int{"count": n})
+		err = h.Put(ctx, key, n)
+		if err != nil {
+			logger.WithError(err).Warn("could not set cached page views")
+		}
+		return c.JSON(200, map[string]int64{"count": n})
 	}
 }
 
@@ -248,6 +310,10 @@ func HandleInfo(w http.ResponseWriter, r *http.Request) interface{} {
 		Name: "Harry Brown",
 		Age:  math.Round(GetAge()),
 	}
+}
+
+func HandleRuntimeInfo(startup time.Time) echo.HandlerFunc {
+	return func(c echo.Context) error { return c.JSON(200, RuntimeInfo(startup)) }
 }
 
 func RuntimeInfo(start time.Time) *Info {
@@ -320,6 +386,7 @@ var (
 				"you could do anything?",
 			Author: "That one kid",
 		},
+		// {Body: "640K ought to be enough memory for anybody.", Author: "Bill Gates"},
 		// {Body: "I did not have sexual relations with that woman.", Author: "Bill Clinton"},
 		// {Body: "Bush did 911.", Author: "A very intelligent internet user"},
 	}
@@ -328,7 +395,7 @@ var (
 func RandomQuote() Quote {
 	quotesMu.Lock()
 	defer quotesMu.Unlock()
-	return quotes[rand.Intn(len(quotes))]
+	return quotes[mrand.Intn(len(quotes))]
 }
 
 func GetQuotes() []Quote {

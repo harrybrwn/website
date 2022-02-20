@@ -49,10 +49,6 @@ func (h *ErrorHandler) Error() string {
 	return fmt.Sprintf("(%s:%d %s()) %s\n", h.file, h.line, h.funcname, h.msg)
 }
 
-func (h *ErrorHandler) log() {
-	log.Error(h.Error())
-}
-
 func (h *ErrorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ServeError(w, h.status)
 }

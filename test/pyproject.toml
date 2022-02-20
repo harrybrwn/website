@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "harrybrwn.com-tests"
+version = "0.0.1"
+description = ""
+authors = ["Harry Brown <harrybrown98@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0.1"
+requests = "^2.27.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

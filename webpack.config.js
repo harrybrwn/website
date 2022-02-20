@@ -7,6 +7,8 @@ const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const HTMLInlineCSSWebpackPlugin =
   require("html-inline-css-webpack-plugin").default;
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
+const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+
 const path = require("path");
 const build = require("./scripts/build");
 
@@ -18,6 +20,8 @@ const paths = {
   source: "./frontend",
   build: "./build",
   favicon: "./public/favicon.ico",
+  rootDir: __dirname,
+  cache: "./.build/cache",
 };
 
 const sitemap = [
@@ -58,19 +62,22 @@ const htmlMinify = {
   minifyURLs: true,
 };
 
-const plugins = (builder) => {
+const makePlugins = (builder) => {
   let plugins = [
+    // Typechecking in a different process
+    new ForkTsCheckerWebpackPlugin(),
     new MiniCssExtractPlugin({
       filename: builder.isProd
         ? "static/css/[contenthash:8].css"
-        : "static/css/[name].css",
+        : "static/css/[name].[id].css",
     }),
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
-    builder.page("404", { noChunks: true }),
     builder.page("harry_y_tanya"),
     builder.page("games"),
+    builder.page("404", { noChunks: true }),
+    builder.page("invite"),
 
     new CopyWebpackPlugin({
       patterns: [
@@ -95,7 +102,7 @@ const plugins = (builder) => {
           // Harry's OpenGraph Preview Image
           from: path.join(builder.paths.source, "img/goofy.jpg"),
           to: path.resolve(
-            __dirname,
+            builder.paths.rootDir,
             builder.paths.build,
             "static/img/goofy.jpg"
           ),
@@ -111,14 +118,14 @@ const plugins = (builder) => {
       options: { skipgzip: false },
     }),
   ];
-  // if (builder.isProd) {
-  //   plugins.push(new HTMLInlineCSSWebpackPlugin());
-  // }
   return plugins;
 };
 
 module.exports = function (webpackEnv) {
+  console.log(webpackEnv);
   const isProd = webpackEnv.prod || false;
+  const isCI = webpackEnv.ci || false;
+  const isWatch = webpackEnv.WEBPACK_WATCH || false;
   const builder = new build.Builder({
     paths,
     site,
@@ -126,41 +133,50 @@ module.exports = function (webpackEnv) {
     htmlMinify,
   });
 
+  let plugins = makePlugins(builder);
+  if (!isWatch) {
+    plugins.push(new HTMLInlineCSSWebpackPlugin());
+  }
+
   for (const key in site.pages) {
     // TODO generate parts of the config with this
   }
 
+  const entryImport = (name) => path.resolve(paths.rootDir, paths.source, name);
   return {
     entry: {
       main: {
-        import: path.resolve(__dirname, paths.source, "main.ts"),
+        import: entryImport("main.ts"),
       },
       remora: {
-        import: path.resolve(__dirname, paths.source, "pages/remora.ts"),
+        import: entryImport("pages/remora.ts"),
       },
       harry_y_tanya: {
-        import: path.resolve(__dirname, paths.source, "pages/harry_y_tanya.ts"),
+        import: entryImport("pages/harry_y_tanya.ts"),
       },
       admin: {
-        import: path.resolve(__dirname, paths.source, "pages/admin.ts"),
+        import: entryImport("pages/admin.ts"),
       },
       games: {
-        import: path.resolve(__dirname, paths.source, "pages/games.ts"),
+        import: entryImport("pages/games.ts"),
       },
+      invite: { import: entryImport("pages/invite.ts") },
     },
-    devtool: "inline-source-map",
+
+    devtool: builder.isProd ? undefined : "inline-source-map",
 
     resolve: {
-      extensions: [".tsx", ".ts", ".js", ".css"],
+      extensions: [".tsx", ".ts", ".jsx", ".js", ".css", ".svg"],
       alias: {
-        "@harrybrwn.com": path.resolve(__dirname, "./") + "/",
-        "~": __dirname,
+        "@harrybrwn.com": path.resolve(paths.rootDir, "./") + "/",
+        "~": paths.rootDir,
       },
     },
 
     output: {
       clean: isProd, // remove old files before build
-      path: path.resolve(__dirname, paths.build),
+      path: path.resolve(paths.rootDir, paths.build),
+      // pathinfo: false,
       filename: isProd
         ? "static/js/[contenthash].js"
         : "static/js/[name].bundle.js",
@@ -173,53 +189,76 @@ module.exports = function (webpackEnv) {
     },
 
     optimization: {
-      concatenateModules: isProd,
       providedExports: true,
       usedExports: "global",
-      minimize: isProd,
+      concatenateModules: isProd,
+      minimize: isProd && !isCI,
       minimizer: [
         new TerserPlugin({
           terserOptions: {
             compress: {
               ecma: 5,
+              inline: true,
             },
             output: {
               ecma: 5,
               comments: false,
             },
-            sourceMap: true,
+            sourceMap: !isProd,
           },
         }),
         new CssMinimizerPlugin(),
       ],
+      // Removing some optimizations during CI to make builds faster
+      removeAvailableModules: isCI ? false : true,
+      removeEmptyChunks: isCI ? false : true,
+      splitChunks: isCI
+        ? false
+        : {
+            chunks: "all",
+            minSize: 20_000,
+          },
     },
 
     module: {
       rules: [
         {
-          test: /\.tsx?$/,
-          use: "ts-loader",
-          include: [path.resolve(__dirname, paths.source)],
+          test: /\.(js|ts)x?$/,
+          use: {
+            loader: require.resolve("babel-loader"),
+            options: {
+              cacheDirectory: path.resolve(paths.cache, "babel"),
+              cacheCompression: false,
+              configFile: path.resolve(
+                paths.rootDir,
+                "config",
+                "babel.config.js"
+              ), // use config/babel.config.js
+              babelrc: false, // ignore any .babelrc file
+            },
+          },
+          include: [path.resolve(paths.rootDir, paths.source)],
         },
         {
           test: /\.s?css$/,
           use: [
             MiniCssExtractPlugin.loader,
             // for @import in css
-            "css-loader",
+            require.resolve("css-loader"),
           ],
-          include: [path.resolve(__dirname, paths.source)],
+          include: [path.resolve(paths.rootDir, paths.source)],
         },
         {
           // Embed these right into the html
           test: /\.(gif|svg)$/i,
-          type: isProd ? "asset/inline" : "asset/resource",
+          //type: isProd ? "asset/inline" : "asset/resource",
+          type: "asset/inline",
         },
+        { test: /stars-compressed\.webp/i, type: "asset/inline" },
         {
           // Fonts
           test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
-          // type: "asset/inline",
-          type: "asset/resource",
+          type: "asset/resource", // inline fonts make parsing really slow
         },
         {
           // Load these as static resources
@@ -229,6 +268,19 @@ module.exports = function (webpackEnv) {
       ],
     },
 
-    plugins: plugins(builder),
+    plugins: plugins,
+
+    cache: {
+      type: "filesystem",
+      cacheDirectory: path.resolve(paths.rootDir, paths.cache, "webpack"),
+      store: "pack",
+      buildDependencies: {
+        // This makes all dependencies of this file - build dependencies
+        config: [__filename, path.resolve("./site.js")],
+      },
+    },
+    devServer: {
+      port: 9000,
+    },
   };
 };

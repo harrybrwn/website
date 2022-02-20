@@ -97,7 +97,7 @@ func (ms *memoryTokenStore) Get(ctx context.Context, id int) (string, error) {
 	}
 	ms.mu.RUnlock()
 	if time.Now().After(tmTok.expires) {
-		ms.Del(ctx, id)
+		_ = ms.Del(ctx, id)
 		return "", ErrTokenNotFound
 	}
 	return tmTok.token, nil

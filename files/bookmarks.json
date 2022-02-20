@@ -186,6 +186,33 @@
 				"computers",
 				"silly"
 			]
-		}
-	]
+		},
+        {
+            "url": "https://skribbl.io/",
+            "name": "skribble.io",
+            "description": "Multiplayer guess-the-drawing game.",
+            "tags": [
+                "games",
+                "multiplayer"
+            ]
+        },
+        {
+            "url": "https://digdig.io/",
+            "name": "digdig.io",
+            "description": "",
+            "tags": [
+                "games",
+                "multiplayer"
+            ]
+        },
+        {
+            "url": "https://agar.io",
+            "name": "agar.io",
+            "description": "",
+            "tags": [
+                "games",
+                "multiplayer"
+            ]
+        }
+    ]
 }

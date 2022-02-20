@@ -40,7 +40,7 @@
         <h1 class="welcome-banner"><marquee>Welcome</marquee></h1>
         <img
           id="show-login-btn"
-          src="<%=require('./img/spinning-world.gif')%>"
+          src="<%=require('./img/earth.gif')%>"
           alt="Rotating Globe"
           width="128"
           height="128"
@@ -106,6 +106,10 @@
 
       <h2>My Projects</h2>
       <ul>
+        <li>
+          <a href="/projects/remora">Remora</a>: A distributed web crawler and
+          search engine.
+        </li>
         <li>
           <a
             target="_blank"
@@ -218,7 +222,7 @@
           title="Palemoon"
         >
           <img
-            src="<%= require('./img/88x31/palemoon.png') %>"
+            src="<%= require('./img/88x31/palemoon.gif') %>"
             alt="Palemoon web browser"
             width="88"
             height="31"
@@ -280,12 +284,32 @@
           <div id="hit-count"></div>
         </section>
         <center>
-          <img
-            src="<%= require('./img/88x31/me/wait-what.png') %>"
-            alt="Harry"
-            width="88"
-            height="31"
-          />
+          <span
+            class="tooltip web-button-tooltip"
+            id="web-btn-1-tooltip"
+            data-text="Copy code"
+          >
+            <img
+              id="web-button-1"
+              src="<%= require('./img/88x31/me/wait-what.gif') %>"
+              alt="Harry"
+              width="88"
+              height="31"
+            />
+          </span>
+          <span
+            class="tooltip web-button-tooltip"
+            id="web-btn-2-tooltip"
+            data-text="Copy code"
+          >
+            <img
+              id="web-button-2"
+              src="<%= require('./img/88x31/me/button.gif') %>"
+              alt="Harry"
+              width="88"
+              height="31"
+            />
+          </span>
           <img
             src="<%= require('./img/under_construction.gif') %>"
             alt="Under Construction"

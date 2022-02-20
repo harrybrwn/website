@@ -65,9 +65,40 @@ export const logs = (opts: LogOpts): Promise<RequestLog[]> => {
   });
 };
 
+export interface InviteRequest {
+  timeout?: number;
+  ttl?: number;
+  email?: string;
+  roles?: string[];
+}
+
+export interface InviteURL {
+  path: string;
+}
+
+export const invite = async (req?: InviteRequest): Promise<InviteURL> => {
+  let body: string;
+  if (req) {
+    body = JSON.stringify(req);
+  } else {
+    body = "";
+  }
+  return fetch("/api/invite/create", {
+    method: "POST",
+    headers: apiHeaders(),
+    body: body,
+  }).then((res) => {
+    if (!res.ok) {
+      throw new Error("");
+    }
+    return res.json();
+  });
+};
+
 const apiHeaders = (): HeadersInit => {
   let headers: HeadersInit = {
     Accept: "application/json",
+    "Content-Type": "application/json",
   };
   let token = loadToken();
   if (token != null) {

@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  tests:
+    image: python-tests:latest
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+      target: python
+    network_mode: host
+

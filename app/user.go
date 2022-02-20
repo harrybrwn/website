@@ -16,15 +16,15 @@ import (
 )
 
 type User struct {
-	ID        int         `json:"id"`
-	UUID      uuid.UUID   `json:"uuid"`
-	Username  string      `json:"username"`
-	Email     string      `json:"email"`
-	PWHash    []byte      `json:"-"`
-	TOTPCode  string      `json:"-"`
-	Roles     []auth.Role `json:"roles"`
-	CreatedAt time.Time   `json:"created_at"`
-	UpdatedAt time.Time   `json:"updated_at"`
+	ID         int         `json:"id"`
+	UUID       uuid.UUID   `json:"uuid"`
+	Username   string      `json:"username"`
+	Email      string      `json:"email"`
+	PWHash     []byte      `json:"-"`
+	TOTPSecret string      `json:"-"`
+	Roles      []auth.Role `json:"roles"`
+	CreatedAt  time.Time   `json:"created_at"`
+	UpdatedAt  time.Time   `json:"updated_at"`
 }
 
 func (u *User) NewClaims() *auth.Claims {
@@ -52,7 +52,7 @@ var (
 type UserStore interface {
 	Login(context.Context, *Login) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
-	Create(context.Context, string, *User) (*User, error)
+	Create(ctx context.Context, password string, user *User) (*User, error)
 }
 
 func NewUserStore(db db.DB) *userStore {
@@ -68,9 +68,9 @@ type userStore struct {
 }
 
 type Login struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" form:"username"`
+	Email    string `json:"email" form:"email"`
+	Password string `json:"password" form:"password"`
 }
 
 const selectQueryHead = `SELECT
@@ -79,7 +79,7 @@ const selectQueryHead = `SELECT
 	username,
 	email,
 	pw_hash,
-	totp_code,
+	totp_secret,
 	roles,
 	created_at,
 	updated_at
@@ -104,7 +104,7 @@ func scanUser(rows db.Rows, u *User) (err error) {
 		&u.Username,
 		&u.Email,
 		&u.PWHash,
-		&u.TOTPCode,
+		&u.TOTPSecret,
 		pq.Array(&u.Roles),
 		&u.CreatedAt,
 		&u.UpdatedAt,
@@ -160,9 +160,19 @@ func (s *userStore) Get(ctx context.Context, id uuid.UUID) (*User, error) {
 
 const hashCost = bcrypt.DefaultCost
 
+// HashPassword using the global application hash cost.
+func HashPassword(pw []byte) ([]byte, error) {
+	return bcrypt.GenerateFromPassword(pw, hashCost)
+}
+
+const createUserQuery = `
+	INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING id, created_at, updated_at`
+
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
-	u.PWHash, err = bcrypt.GenerateFromPassword([]byte(password), hashCost)
+	u.PWHash, err = HashPassword([]byte(password))
 	if err != nil {
 		return nil, err
 	}
@@ -170,24 +180,20 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if len(u.Roles) == 0 {
 		u.Roles = []auth.Role{auth.RoleDefault}
 	}
-	const query = `
-		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_code)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING created_at, updated_at`
 	rows, err := s.db.QueryContext(
 		ctx,
-		query,
+		createUserQuery,
 		u.UUID,
 		u.Username,
 		u.Email,
 		u.PWHash,
 		pq.Array(u.Roles),
-		u.TOTPCode,
+		u.TOTPSecret,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return u, db.ScanOne(rows, &u.CreatedAt, &u.UpdatedAt)
+	return u, db.ScanOne(rows, &u.ID, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (s *userStore) Update(ctx context.Context, u *User) error {

@@ -12,9 +12,14 @@ type Role string
 const (
 	RoleAdmin   Role = "admin"
 	RoleDefault Role = "default"
+	RoleTanya   Role = "tanya"
 
 	ClaimsContextKey = "jwt-ctx-claims"
 	TokenContextKey  = "jwt-ctx-token"
+)
+
+var (
+	ErrAdminRequired = errors.New("admin access required")
 )
 
 func AdminOnly() echo.MiddlewareFunc {
@@ -26,6 +31,32 @@ func AdminOnly() echo.MiddlewareFunc {
 			}
 			for _, r := range claims.Roles {
 				if r == RoleAdmin {
+					return next(c)
+				}
+			}
+			return echo.ErrForbidden
+		}
+	}
+}
+
+func IsAdmin(cl *Claims) bool {
+	for _, r := range cl.Roles {
+		if r == RoleAdmin {
+			return true
+		}
+	}
+	return false
+}
+
+func RoleRequired(required Role) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			claims := GetClaims(c)
+			if claims == nil {
+				return echo.ErrForbidden
+			}
+			for _, r := range claims.Roles {
+				if r == required {
 					return next(c)
 				}
 			}

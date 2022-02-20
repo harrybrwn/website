@@ -4,21 +4,49 @@ ENV=production
 build:
 	sh scripts/build.sh
 
-test:
-	go test ./... -coverprofile=test-cover
-	go tool cover -html=test-cover
+test: test-ts test-go
+
+lint: lint-go
 
 clean:
-	$(RM) bin -r
+	$(RM) -r bin .testing .build
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
+
+coverage: coverage-ts coverage-go
 
 clean-mocks:
 	$(RM) -r internal/mocks
 
-.PHONY: build run test clean clean-mocks
+test-go:
+	@mkdir -p .testing
+	go generate ./...
+	go test -tags ci ./... -covermode=atomic -coverprofile=.testing/coverprofile.txt
+	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
+	@#x-www-browser .testing/coverage.html
 
-.PHONY: resume
+test-ts:
+	yarn test
+
+.PHONY: coverage-go coverage-ts
+coverage-go:
+	x-www-browser .testing/coverage.html
+
+coverage-ts:
+	yarn coverage
+
+lint-go:
+	go vet -tags ci ./...
+	golangci-lint run
+
+TOOLS=user-gen pwhash key-gen
+
+tools:
+	@mkdir -p ./bin
+	@for tool in $(TOOLS); do \
+		go build -trimpath -ldflags "-s -w" -o ./bin/$$tool ./cmd/$$tool; \
+	done
+
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
 		pdflatex \
@@ -40,3 +68,5 @@ blog/resources/remora.svg: diagrams/remora.svg
 
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
+
+.PHONY: build run test clean clean-mocks test-go test-ts resume tools

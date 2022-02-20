@@ -1,8 +1,11 @@
+//go:build !ci
+// +build !ci
+
 package main
 
 import (
 	"embed"
-	"encoding/hex"
+	"encoding/base64"
 	"flag"
 	"io/fs"
 	"net"
@@ -11,11 +14,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
@@ -25,8 +26,6 @@ import (
 )
 
 //go:generate sh scripts/mockgen.sh
-
-const buildDir = "./build"
 
 var (
 	//go:embed build/index.html
@@ -43,6 +42,8 @@ var (
 	gamesStaticPage []byte
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
+	//go:embed build/invite/index.html
+	inviteStaticPage []byte
 
 	//go:embed files/bookmarks.json
 	bookmarks []byte
@@ -58,7 +59,7 @@ var (
 	static embed.FS
 	//go:embed build/sitemap.xml
 	sitemap []byte
-	// go :embed build/sitemap.xml.gz
+	//go:embed build/sitemap.xml.gz
 	sitemapgz []byte
 
 	//go:embed frontend/templates
@@ -84,12 +85,13 @@ func main() {
 	e.HideBanner = true
 
 	if env {
-		godotenv.Load()
+		if err := godotenv.Load(); err != nil {
+			logger.WithError(err).Warn("could not load .env")
+		}
 	}
 
 	if app.Debug {
-		auth.Expiration = time.Second * 60
-		auth.RefreshExpiration = auth.Expiration * 60
+		// auth.Expiration = time.Second * 30
 		logger.SetLevel(logrus.DebugLevel)
 	}
 
@@ -107,34 +109,42 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	jwtConf := NewTokenConfig()
+	userStore := app.NewUserStore(db)
+
+	invites := app.Invitations{
+		Path:    &InvitePathBuilder{"/invite"},
+		RDB:     rd,
+		Encoder: base64.RawURLEncoding,
+	}
+
+	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
-	e.GET("/", page(harryStaticPage, "index.html"))
-	e.GET("/~harry", page(harryStaticPage, "index.html"))
-	e.GET("/tanya/hyt", page(hytStaticPage, "harry_y_tanya/index.html"), guard)
-	e.GET("/remora", page(remoraStaticPage, "remora/index.html"))
-	e.GET("/games", page(gamesStaticPage, "games/index.html"), guard)
-	e.GET("/admin", page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
+	e.Any("/", app.Page(harryStaticPage, "index.html"))
+	e.GET("/~harry", app.Page(harryStaticPage, "index.html"))
+	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
+	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
+	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
+	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+
+	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", &invites))
+	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
 	e.GET("/robots.txt", WrapHandler(robotsHandler))
-	e.GET("/sitemap.xml", WrapHandler(sitemapHandler))
-	e.GET("/sitemap.xml.gz", WrapHandler(sitemapGZHandler))
+	e.GET("/sitemap.xml", WrapHandler(sitemapHandler(sitemap, false)))
+	e.GET("/sitemap.xml.gz", WrapHandler(sitemapHandler(sitemapgz, true)))
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
-	e.GET("/secret", func(c echo.Context) error {
-		return c.HTML(200, "<h1>This is a secret</h1>")
-	}, guard, auth.AdminOnly())
 
 	api := e.Group("/api")
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
-		Users:  app.NewUserStore(db),
+		Users:  userStore,
 	}
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
@@ -143,47 +153,19 @@ func main() {
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
 	api.GET("/bookmarks", json(bookmarks))
-	api.GET("/hits", app.Hits(db))
-	api.GET("/runtime", func(c echo.Context) error {
-		return c.JSON(200, app.RuntimeInfo(startup))
-	}, guard, auth.AdminOnly())
+	api.GET("/hits", app.Hits(db, app.NewHitsCache(rd), logger))
 	api.Any("/ping", WrapHandler(ping))
-	api.GET("/logs", app.LogListHandler(db))
+	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
+	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
+	api.POST("/invite/create", invites.Create(), guard)
+	api.DELETE("/invite/:id", invites.Delete(), guard)
+	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
 
-	logger.WithField("time", startup).Info("server starting")
+	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
 		logger.Fatal(err)
 	}
-}
-
-const (
-	tokenKey     = "_token"
-	maxCookieAge = 2147483647
-)
-
-func NewTokenConfig() auth.TokenConfig {
-	hexseed, hasSeed := os.LookupEnv("JWT_SEED")
-	if hasSeed {
-		logger.Info("creating token config from seed")
-		seed, err := hex.DecodeString(hexseed)
-		if err != nil {
-			panic(errors.Wrap(err, "could not decode private key seed from hex"))
-		}
-		return &tokenConfig{auth.EdDSATokenConfigFromSeed(seed)}
-	}
-	logger.Warn("generating new key pair for token config")
-	return &tokenConfig{auth.GenEdDSATokenConfig()}
-}
-
-type tokenConfig struct{ auth.TokenConfig }
-
-func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
-	c, err := r.Cookie(tokenKey)
-	if err != nil {
-		return auth.GetBearerToken(r)
-	}
-	return c.Value, nil
 }
 
 func NotFoundHandler() echo.HandlerFunc {
@@ -192,7 +174,7 @@ func NotFoundHandler() echo.HandlerFunc {
 			if strings.HasPrefix(c.Request().RequestURI, "/api") {
 				return echo.ErrNotFound
 			}
-			return serveFile(c, "build/pages/404.html")
+			return app.ServeFile(c, 404, "build/pages/404.html")
 		}
 	}
 	return func(c echo.Context) error {
@@ -203,12 +185,28 @@ func NotFoundHandler() echo.HandlerFunc {
 	}
 }
 
-const staticCacheControl = "public, max-age=31919000"
+func invitesPageHandler(body []byte, contentType, debugFile string, invitations *app.Invitations) echo.HandlerFunc {
+	if app.Debug {
+		return func(c echo.Context) error {
+			raw, err := os.ReadFile(debugFile)
+			if err != nil {
+				return err
+			}
+			ct := http.DetectContentType(raw)
+			return invitations.Accept(raw, ct)(c)
+		}
+	} else {
+		return invitations.Accept(body, "contentType")
+	}
+}
 
 func keys(rw http.ResponseWriter, r *http.Request) {
 	staticLastModified(rw.Header())
-	rw.Header().Set("Cache-Control", staticCacheControl)
-	rw.Write(gpgPubkey)
+	rw.Header().Set("Cache-Control", app.StaticCacheControl)
+	_, err := rw.Write(gpgPubkey)
+	if err != nil {
+		logger.WithError(err).Error("could not write response")
+	}
 }
 
 func faviconHandler() echo.HandlerFunc {
@@ -217,84 +215,49 @@ func faviconHandler() echo.HandlerFunc {
 		h := c.Response().Header()
 		h.Set("Content-Length", length)
 		h.Set("Accept-Ranges", "bytes")
-		h.Set("Cache-Control", staticCacheControl)
+		h.Set("Cache-Control", app.StaticCacheControl)
 		staticLastModified(h)
 		return c.Blob(200, "image/x-icon", favicon)
 	}
-}
-
-func page(raw []byte, filename string) echo.HandlerFunc {
-	var (
-		hf     echo.HandlerFunc
-		length = int64(len(raw))
-	)
-	filename = filepath.Join(buildDir, filename)
-	if app.Debug {
-		hf = func(c echo.Context) error {
-			return serveFile(c, filename)
-		}
-		b, err := os.ReadFile(filename)
-		if err != nil {
-			panic(err)
-		}
-		if http.DetectContentType(b) == "application/x-gzip" {
-			hf = gzip(hf)
-		}
-	} else {
-		ct := http.DetectContentType(raw)
-		hf = func(c echo.Context) error {
-			h := c.Response().Header()
-			staticLastModified(h)
-			h.Set("Cache-Control", staticCacheControl)
-			h.Set("Content-Length", strconv.FormatInt(length, 10))
-			h.Set("Accept-Ranges", "bytes")
-			return c.Blob(200, ct, raw)
-		}
-		if http.DetectContentType(raw) == "application/x-gzip" {
-			hf = gzip(hf)
-		}
-	}
-	return hf
 }
 
 func json(raw []byte) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		h := c.Response().Header()
 		staticLastModified(h)
-		h.Set("Cache-Control", staticCacheControl)
+		h.Set("Cache-Control", app.StaticCacheControl)
 		h.Set("Content-Length", strconv.FormatInt(int64(len(raw)), 10))
 		return c.Blob(200, "application/json", raw)
 	}
 }
 
-func serveFile(c echo.Context, filename string) error {
-	http.ServeFile(c.Response(), c.Request(), filename)
-	return nil
-}
-
 func robotsHandler(rw http.ResponseWriter, r *http.Request) {
-	staticLastModified(rw.Header())
-	rw.Header().Set("Cache-Control", staticCacheControl)
-	rw.Write(robots)
-}
-
-func sitemapHandler(rw http.ResponseWriter, r *http.Request) {
 	h := rw.Header()
 	staticLastModified(h)
-	h.Set("Cache-Control", staticCacheControl)
-	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemap)), 10))
-	h.Set("Content-Type", "text/xml")
-	rw.Write(sitemap)
+	h.Set("Cache-Control", app.StaticCacheControl)
+	h.Set("Content-Type", "text/plain")
+	_, err := rw.Write(robots)
+	if err != nil {
+		logger.WithError(err).Error("could not write response body")
+	}
 }
 
-func sitemapGZHandler(rw http.ResponseWriter, r *http.Request) {
-	h := rw.Header()
-	staticLastModified(h)
-	h.Set("Cache-Control", staticCacheControl)
-	h.Set("Content-Length", strconv.FormatInt(int64(len(sitemapgz)), 10))
-	h.Set("Content-Encoding", "gzip")
-	h.Set("Content-Type", "text/xml")
-	rw.Write(sitemapgz)
+func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Request) {
+	length := strconv.FormatInt(int64(len(raw)), 10)
+	return func(rw http.ResponseWriter, r *http.Request) {
+		h := rw.Header()
+		staticLastModified(h)
+		h.Set("Cache-Control", app.StaticCacheControl)
+		h.Set("Content-Length", length)
+		h.Set("Content-Type", "text/xml")
+		if gzip {
+			h.Set("Content-Encoding", "gzip")
+		}
+		_, err := rw.Write(raw)
+		if err != nil {
+			logger.WithError(err).Error("could not write response body")
+		}
+	}
 }
 
 func handleStatic() http.Handler {
@@ -309,37 +272,32 @@ func handleStatic() http.Handler {
 	return staticCache(http.FileServer(http.FS(fs)))
 }
 
-func ping(rw http.ResponseWriter, r *http.Request) {
-	rw.WriteHeader(200)
-}
-
-func gzip(handler echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		accept := c.Request().Header.Get("Accept-Encoding")
-		if !strings.Contains(accept, "gzip") {
-			logger.WithField("accept-encoding", accept).Error("browser encoding not supported")
-			return c.Blob(500, "text/html", []byte("<h2>encoding failure</h2>"))
-		}
-		c.Response().Header().Set("Content-Encoding", "gzip")
-		return handler(c)
-	}
-}
-
-var startup = time.Now()
+func ping(rw http.ResponseWriter, r *http.Request) { rw.WriteHeader(200) }
 
 func staticLastModified(h http.Header) {
-	h.Set("Last-Modified", startup.UTC().Format(http.TimeFormat))
+	h.Set("Last-Modified", app.StartTime.UTC().Format(http.TimeFormat))
 }
 
 func staticCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		header := rw.Header()
 		staticLastModified(header)
-		header.Set("Cache-Control", staticCacheControl)
+		header.Set("Cache-Control", app.StaticCacheControl)
 		h.ServeHTTP(rw, r)
 	})
 }
 
 func WrapHandler(h http.HandlerFunc) echo.HandlerFunc {
 	return echo.WrapHandler(h)
+}
+
+type InvitePathBuilder struct{ p string }
+
+func (ipb *InvitePathBuilder) Path(id string) string {
+	return filepath.Join("/", ipb.p, id)
+}
+
+func (ipb *InvitePathBuilder) GetID(r *http.Request) string {
+	list := strings.Split(r.URL.Path, string(filepath.Separator))
+	return list[2]
 }

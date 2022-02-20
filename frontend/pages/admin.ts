@@ -1,7 +1,38 @@
 import "~/frontend/styles/admin.css";
 import * as api from "~/frontend/api";
+import LoginManager from "~/frontend/util/LoginManager";
+import {
+  TOKEN_KEY,
+  storeToken,
+  deleteToken,
+  setCookie,
+} from "~/frontend/api/auth";
+import { clearCookie } from "~/frontend/util/cookies";
+import { SECOND } from "~/frontend/constants";
 
 const main = () => {
+  let loginManager = new LoginManager({
+    interval: 5 * 60 * SECOND,
+    clearToken: () => {
+      deleteToken();
+      clearCookie(TOKEN_KEY);
+    },
+  });
+  document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
+    const e = ev.detail;
+    if (e.action == "login") {
+      storeToken(e.token);
+      setCookie(e.token);
+    } else {
+      if (!loginManager.isLoggedIn()) {
+        return;
+      }
+    }
+  });
+
+  let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
+  handleInvitationCreation(inviteForm);
+
   let infoContainer = document.getElementById("server-info");
   api.runtimeInfo().then((info: api.RuntimeInfo) => {
     if (infoContainer == null) {
@@ -36,6 +67,43 @@ const main = () => {
     "requested at",
   ]);
   table.render();
+};
+
+const handleInvitationCreation = (form: HTMLFormElement) => {
+  form.addEventListener("submit", (ev: SubmitEvent) => {
+    ev.preventDefault();
+    console.log(ev.submitter);
+    console.log(ev.target);
+    let target = ev.target as HTMLFormElement;
+    let data = new FormData(target);
+    let request = createInviteRequest(data);
+    console.log(request);
+    api.invite(request).then((invite: api.InviteURL) => {
+      let el = document.createElement("div");
+      let url = location.origin;
+      if (invite.path[0] != "/") url += "/";
+      el.innerText = `${location.origin}${invite.path}`;
+      form.parentElement?.appendChild(el);
+    });
+  });
+};
+
+const createInviteRequest = (data: FormData): api.InviteRequest => {
+  let expires = (data.get("expires") as string) || undefined;
+  let email = (data.get("email") as string) || undefined;
+  let ttl = (data.get("ttl") as string) || undefined;
+  let roles = (data.get("roles") as string) || undefined;
+
+  let request: api.InviteRequest = {};
+  if (expires) {
+    let ex = new Date(expires);
+    // timeout in nanoseconds
+    request.timeout = (ex.getTime() - Date.now()) * 1e6;
+  }
+  if (ttl) request.ttl = parseInt(ttl);
+  if (email) request.email = email;
+  if (roles) request.roles = roles.split(",");
+  return request;
 };
 
 const logsPaginator = async (

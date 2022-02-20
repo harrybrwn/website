@@ -10,8 +10,8 @@ import {
 } from "./api/auth";
 import { SECOND } from "./constants";
 import { clearCookie } from "./util/cookies";
-import LoginManager from "./util/login_manager";
-import { Theme, ThemeManager } from "./components/theme";
+import LoginManager from "./util/LoginManager";
+import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import * as api from "./api";
 
@@ -101,16 +101,44 @@ const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
   let colors = [
     "red",
     "orange",
-    "yellow",
+    // "yellow",
     "mediumspringgreen",
     "blue",
     "purple",
     "pink",
   ];
-  setInterval(() => {
+  const fn = () => {
     banner.style.color = colors[welcomeTicker % colors.length];
     welcomeTicker++;
-  }, ms);
+  };
+  setInterval(fn, ms);
+};
+
+const webButtonClipboard = (num: number) => {
+  let tooltip = document.getElementById(`web-btn-${num}-tooltip`);
+  if (tooltip == null) {
+    console.error("could not find tooltip");
+    return;
+  }
+  if (tooltip.children.length == 0 || tooltip.children[0].tagName != "IMG") {
+    throw new Error("web button tooltip has no child image");
+  }
+  let button = tooltip.children[0] as HTMLImageElement;
+
+  const defaultMsg = "Copy code";
+  const payload = `<a href="${window.origin}/">\n  <img src="${button.src}" alt="Harry Brown" width="88" height="31">\n</a>`;
+
+  tooltip.setAttribute("data-text", defaultMsg);
+  const copy = () => {
+    navigator.clipboard.writeText(payload);
+    tooltip?.setAttribute("data-text", "Code copied!");
+    fetch(`/api/ping?action=web-button-copy&button=${button.src}`);
+  };
+  button.addEventListener("click", copy);
+  // tooltip.addEventListener("click", copy);
+  button.addEventListener("mouseout", () => {
+    tooltip?.setAttribute("data-text", defaultMsg);
+  });
 };
 
 const main = () => {
@@ -149,12 +177,6 @@ const main = () => {
   if (!links) {
     console.error("could not find .links");
   }
-  let tanya = document.createElement("a");
-  tanya.href = "/tanya/hyt";
-  tanya.className = "tanya-link";
-  tanya.innerText = "tanya y harry";
-  let li = document.createElement("li");
-  li.appendChild(tanya);
 
   let privLinks = privateLinks();
   if (loginManager.isLoggedIn()) {
@@ -213,9 +235,9 @@ const main = () => {
     if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
       return;
     }
+    ev.preventDefault();
     switch (ev.key) {
       case "l":
-        ev.preventDefault();
         loginPanel.toggle();
         if (loginPanel.open) focusOnLoginEmail();
         break;
@@ -229,8 +251,10 @@ const main = () => {
     }
   });
 
-  welcomeBannerColors(document.querySelector(".welcome-banner"), 500);
+  welcomeBannerColors(document.querySelector(".welcome-banner"), SECOND);
   applyPageCount();
+  webButtonClipboard(1);
+  webButtonClipboard(2);
 };
 
 main();

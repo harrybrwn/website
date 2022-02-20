@@ -14,7 +14,20 @@
 		</nav>
 	</header>
 	<main>
-		<section class="server-info" id="server-info"></section>
+		<section class="invitations">
+			<h2>Create Invitation</h2>
+			<form id="invite-source">
+				<input type="datetime-local" name="expires" placeholder="Expires At">
+				<input type="email" name="email" placeholder="Email">
+				<input type="number" name="ttl" placeholder="Retries Allowed">
+				<input type="text" name="roles" placeholder="Roles (comma separated list)">
+				<input type="submit">
+			</form>
+		</section>
+		<section class="server-info" id="server-info">
+			<h2>Server Stats</h2>
+		</section>
+		<br>
 		<section class="logs" id="logs"></section>
 	</main>
 </body>

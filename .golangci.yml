@@ -1,0 +1,16 @@
+run:
+  build-tags:
+    - ci
+  skip-dirs:
+    - internal/mocks
+
+linter-settings:
+  gocyclo:
+    min-complexity: 10
+
+  gofumpt:
+    # Default: 1.15
+    lang-version: "1.17"
+
+  misspell:
+    locale: US

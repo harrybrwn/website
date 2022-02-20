@@ -4,6 +4,10 @@ body {
 	font-size: 12px;
 }
 
+.invitations form input {
+	display: flex;
+}
+
 dt {
 	float: left;
 	clear: left;

@@ -1,14 +1,17 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"net"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 )
 
@@ -23,6 +26,11 @@ type RequestLog struct {
 	Latency     time.Duration `json:"latency"`
 	Error       error         `json:"error"`
 	RequestedAt time.Time     `json:"requested_at"`
+	UserID      uuid.UUID
+}
+
+type LogWriter interface {
+	Write(context.Context, *RequestLog) error
 }
 
 type LogManager struct {
@@ -32,9 +40,9 @@ type LogManager struct {
 
 const insertLogQuery = `
 INSERT INTO request_log
-	(method, status, ip, uri, referer, user_agent, latency, error)
+	(method, status, ip, uri, referer, user_agent, latency, error, user_id)
 VALUES
-	($1, $2, $3, $4, $5, $6, $7, $8)`
+	($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
 func (lm *LogManager) Write(ctx context.Context, l *RequestLog) error {
 	var errmsg string
@@ -47,6 +55,12 @@ func (lm *LogManager) Write(ctx context.Context, l *RequestLog) error {
 	} else {
 		referer = nil
 	}
+	var userID interface{}
+	if bytes.Equal(l.UserID[:], uuid.Nil[:]) {
+		userID = nil
+	} else {
+		userID = l.UserID
+	}
 	_, err := lm.db.ExecContext(
 		ctx,
 		insertLogQuery,
@@ -58,6 +72,7 @@ func (lm *LogManager) Write(ctx context.Context, l *RequestLog) error {
 		l.UserAgent,
 		l.Latency,
 		errmsg,
+		userID,
 	)
 	return err
 }
@@ -72,7 +87,8 @@ const getLogsQuery = `SELECT
 		user_agent,
 		latency,
 		error,
-		requested_at
+		requested_at,
+		user_id
 	FROM request_log
 	WHERE id >= $1
 	ORDER BY requested_at `
@@ -106,6 +122,7 @@ func (lm *LogManager) Get(ctx context.Context, limit, startID int, rev bool) ([]
 			&l.Latency,
 			&errString,
 			&l.RequestedAt,
+			&l.UserID,
 		)
 		if err != nil {
 			rows.Close()
@@ -119,6 +136,12 @@ func (lm *LogManager) Get(ctx context.Context, limit, startID int, rev bool) ([]
 }
 
 func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
+	var userID interface{}
+	if bytes.Equal(l.UserID[:], uuid.Nil[:]) {
+		userID = nil
+	} else {
+		userID = l.UserID
+	}
 	fields := logrus.Fields{
 		"method":     l.Method,
 		"status":     l.Status,
@@ -128,6 +151,7 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 		"user_agent": l.UserAgent,
 		"latency":    l.Latency,
 		"latency_ms": float64(l.Latency) / 1.0e6,
+		"user_uuid":  userID,
 	}
 	if l.Error != nil {
 		fields["error"] = l.Error
@@ -136,6 +160,10 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 		logger.WithFields(fields).Info("request")
 	}
 }
+
+const (
+	maxDuration time.Duration = 1<<63 - 1
+)
 
 func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
 	logs := LogManager{db: db, logger: logger}
@@ -153,6 +181,11 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 			if err != nil {
 				c.Error(err)
 			}
+			var userUUID uuid.UUID
+			claims := auth.GetClaims(c)
+			if claims != nil {
+				userUUID = claims.UUID
+			}
 			l := RequestLog{
 				Method:    req.Method,
 				Status:    res.Status,
@@ -162,8 +195,13 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 				UserAgent: req.Header.Get("User-Agent"),
 				Latency:   time.Since(start),
 				Error:     err,
+				UserID:    userUUID,
 			}
 			LogRequest(logger, &l)
+			if l.Latency > maxDuration {
+				// Prevent out of range errors from postgres
+				l.Latency = maxDuration
+			}
 			e := logs.Write(ctx, &l)
 			if e != nil {
 				logger.WithError(e).Error("could not record request")

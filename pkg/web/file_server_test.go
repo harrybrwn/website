@@ -47,11 +47,6 @@ func TestServePages(t *testing.T) {
 	}
 }
 
-type staticServer struct {
-	contentTypeCache map[string]string
-	files            fs.FS
-}
-
 func pageHandler(files fs.FS) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		var (
@@ -103,11 +98,4 @@ func pageHandler(files fs.FS) func(c echo.Context) error {
 		_, err = io.Copy(c.Response(), file)
 		return err
 	}
-}
-
-func fsMust(f fs.FS, e error) fs.FS {
-	if e != nil {
-		panic(e)
-	}
-	return f
 }

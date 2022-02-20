@@ -7,14 +7,83 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/labstack/echo/v4"
 	"harrybrown.com/pkg/log"
 )
 
-// Name is the name of the application.
-var Name = "harrybrown.com"
+const (
+	// Name is the name of the application.
+	Name               = "harrybrown.com"
+	BuildDir           = "./build"
+	StaticCacheControl = "public, max-age=31919000"
+)
+
+var (
+	StartTime = time.Now()
+)
+
+func Page(raw []byte, filename string) echo.HandlerFunc {
+	var (
+		hf echo.HandlerFunc
+	)
+	filename = filepath.Join(BuildDir, filename)
+	if Debug {
+		hf = func(c echo.Context) error {
+			return ServeFile(c, 200, filename)
+		}
+		b, err := os.ReadFile(filename)
+		if err != nil {
+			panic(err)
+		}
+		if http.DetectContentType(b) == "application/x-gzip" {
+			hf = asGzip(hf)
+		}
+	} else {
+		ct := http.DetectContentType(raw)
+		hf = func(c echo.Context) error {
+			h := c.Response().Header()
+			staticLastModified(h)
+			h.Set("Cache-Control", StaticCacheControl)
+			return c.Blob(200, ct, raw)
+		}
+		if http.DetectContentType(raw) == "application/x-gzip" {
+			hf = asGzip(hf)
+		}
+	}
+	return hf
+}
+
+func ServeFile(c echo.Context, status int, filename string) error {
+	http.ServeFile(c.Response(), c.Request(), filename)
+	return nil
+}
+
+func staticLastModified(h http.Header) {
+	h.Set("Last-Modified", StartTime.UTC().Format(http.TimeFormat))
+}
+
+func asGzip(handler echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if !acceptsGzip(c.Request().Header) {
+			logger.WithField(
+				"accept-encoding", c.Request().Header.Get("Accept-Encoding"),
+			).Error("browser encoding not supported")
+			return c.Blob(500, "text/html", []byte("<h2>encoding failure</h2>"))
+		}
+		c.Response().Header().Set("Content-Encoding", "gzip")
+		return handler(c)
+	}
+}
+
+func acceptsGzip(header http.Header) bool {
+	accept := header.Get("Accept-Encoding")
+	return strings.Contains(accept, "gzip")
+}
 
 // NewLogger creates a new logger that will intercept a handler and replace it
 // with one that has logging functionality.

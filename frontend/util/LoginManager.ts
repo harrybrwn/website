@@ -6,6 +6,7 @@ import {
   refresh,
   loadRefreshToken,
   clearRefreshToken,
+  refreshExpiration,
 } from "~/frontend/api/auth";
 import { SECOND } from "~/frontend/constants";
 
@@ -63,11 +64,11 @@ export default class LoginManager {
       })
       .catch((error) => {
         // Could not refresh the access token
-        console.log("refresh error:", error);
+        console.error("refresh error:", error);
         this.dispatch(null);
         this.loggedIn = false;
         this.clearToken();
-        clearRefreshToken();
+        // clearRefreshToken();
         return null;
       });
   }
@@ -76,7 +77,7 @@ export default class LoginManager {
     let expires = new Date(token.expires * 1000);
     let now = new Date();
     let ms = expires.getTime() - now.getTime() - SECOND;
-    console.log("expires in", ms, "milliseconds at", expires);
+    //console.log("expires in", ms, "milliseconds at", expires);
     if (ms < 0) {
       return;
     }
@@ -89,7 +90,7 @@ export default class LoginManager {
           }
         })
         .catch((error) => {
-          console.log("could not refresh access token:", error);
+          console.error("could not refresh access token:", error);
         });
     }, ms);
   }
@@ -97,19 +98,18 @@ export default class LoginManager {
   private async checkToken() {
     let token = loadToken();
     if (token == null) {
-      console.log("TokenManager: no token found");
       if (loadRefreshToken() != null) {
         await this.refresh();
       }
     } else if (isExpired(token)) {
-      console.log("TokenManager: token expired");
       await this.refresh();
-    } else {
-      console.log("token still valid");
     }
   }
 
-  constructor(options: LoginManagerOptions) {
+  constructor(options?: LoginManagerOptions) {
+    if (!options) {
+      options = {};
+    }
     this.loggedIn = false;
     this.target = options.target || document;
     this.refreshTokenTimeout = null;
@@ -121,13 +121,28 @@ export default class LoginManager {
       if (!isExpired(token)) {
         this.login(token);
       } else {
-        this.clearToken();
+        console.log("current token is expired");
+        let refExp = refreshExpiration();
+        if (refExp == null || refExp.getTime() < Date.now()) {
+          console.log("expired or no refresh token");
+          this.clearToken();
+        } else {
+          console.log("found token");
+          this.refresh()
+            .then(() => {
+              console.log("token refreshed");
+            })
+            .catch((error) => {
+              console.error("unable to refresh access token:", error);
+            });
+        }
       }
     }
 
     this.expirationCheckTimer = setInterval(() => {}, 120 * SECOND);
     clearInterval(this.expirationCheckTimer);
 
+    // window.addEventListener("beforeunload", (ev: BeforeUnloadEvent) => {});
     document.addEventListener("visibilitychange", (ev: Event) => {
       if (!document.hidden) {
         this.checkToken();

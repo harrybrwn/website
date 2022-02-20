@@ -1,0 +1,2 @@
+ALTER TABLE "user"
+DROP CONSTRAINT IF EXISTS unique_email;

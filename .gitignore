@@ -1,8 +1,9 @@
 # Build
 /bin/
 /node_modules/
+/build/
+/.build/
 *.log
-build
 test-cover
 static/bootstrap-4.3.1-dist
 !scripts/build.js
@@ -16,10 +17,9 @@ config.json
 .vscode
 *.env
 *.pgpass
-prod.env
-stg.env
 
 # Testing
+/.testing/
 /internal/mocks/
 /db/data/
 /tests/
@@ -30,8 +30,8 @@ tests/*
 requests.http
 
 # Tools
-NOTES
-TODO
+NOTES*
+TODO*
 
 # Dev
 *.crt

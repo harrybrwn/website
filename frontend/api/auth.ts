@@ -12,7 +12,8 @@ export interface Claims {
   id: number;
   uuid: string;
   roles: string[];
-  aud: string;
+  aud: string[];
+  iss: string;
   exp: number;
   iat: number;
 }
@@ -23,13 +24,8 @@ export interface Login {
   password: string;
 }
 
-type TokenCallback = (tok: Token) => void;
-
-export const login = async (
-  user: Login,
-  callback?: TokenCallback
-): Promise<Token> => {
-  return fetch(`${window.location.origin}/api/token?cookie=true`, {
+export const login = async (user: Login): Promise<Token> => {
+  return fetch("/api/token?cookie=true", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),
@@ -49,13 +45,12 @@ export const login = async (
         type: blob.token_type,
       };
       storeToken(tok);
-      if (callback) callback(tok);
       return tok;
     });
 };
 
 export const refresh = async (refresh: string): Promise<Token> => {
-  return fetch(`${window.location.origin}/api/refresh?cookie=true`, {
+  return fetch("/api/refresh?cookie=true", {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -145,6 +140,15 @@ export function deleteToken() {
 
 export const clearRefreshToken = () => {
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+};
+
+export const refreshExpiration = (): Date | null => {
+  let t = loadRefreshToken();
+  if (t == null) {
+    return null;
+  }
+  let claims = parseClaims(t);
+  return new Date(claims.exp * 1000);
 };
 
 function toCookie(tok: Token): string {

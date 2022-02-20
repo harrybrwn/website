@@ -75,19 +75,6 @@ func NewNestedRoute(path string, routes ...Route) *NestedRoute {
 	}
 }
 
-// SetHandler sets the BaseHander field of the NestedRoute and returns
-// the NestedRoute.
-func (nr *NestedRoute) SetHandler(h http.Handler) *NestedRoute {
-	nr.BaseHandler = h
-	return nr
-}
-
-// SetHandlerFunc sets the BaseHandler field as the handlerfunc given.
-func (nr *NestedRoute) SetHandlerFunc(fn http.HandlerFunc) *NestedRoute {
-	nr.BaseHandler = fn
-	return nr
-}
-
 // Path returns the base path for the nested list of Routes.
 func (nr *NestedRoute) Path() string {
 	return nr.BasePath
@@ -101,12 +88,6 @@ func (nr *NestedRoute) Handler() http.Handler {
 // Expand will return the list of nested Routes
 func (nr *NestedRoute) Expand() ([]Route, error) {
 	return nr.routes, nil
-}
-
-// AddRoute will add a nested Route.
-func (nr *NestedRoute) AddRoute(r Route) *NestedRoute {
-	nr.routes = append(nr.routes, &innerRoute{basepath: nr.BasePath, inner: r})
-	return nr
 }
 
 var (
