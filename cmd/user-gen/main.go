@@ -62,6 +62,10 @@ func run() error {
 			roles = append(roles, auth.RoleAdmin)
 		case auth.RoleDefault:
 			roles = append(roles, auth.RoleDefault)
+		case auth.RoleTanya:
+			roles = append(roles, auth.RoleTanya)
+		default:
+			return fmt.Errorf("unknown role: %s", r)
 		}
 	}
 	if len(roles) == 0 {
