@@ -125,6 +125,13 @@ func TestInviteCreate(t *testing.T) {
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrNoClaims,
 		},
+		{
+			id:       "5",
+			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
+			body:     CreateInviteRequest{Timeout: -100},
+			expected: echo.ErrBadRequest,
+			internal: nil,
+		},
 	} {
 		tt := tt
 		i := i
@@ -224,6 +231,18 @@ func TestInviteAccept(t *testing.T) {
 			},
 			expected: echo.ErrForbidden,
 			internal: ErrInviteTTL,
+		},
+		{
+			expected: echo.ErrForbidden,
+			session: &inviteSession{
+				TTL:       -1,
+				Email:     "test@x.io",
+				ExpiresAt: -10,
+				CreatedBy: uuid.New(),
+			},
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+				mockSessionGet(t, rdb, s).Times(1)
+			},
 		},
 		{
 			// Always good TTL of -1

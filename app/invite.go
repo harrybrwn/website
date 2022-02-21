@@ -17,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
 )
 
@@ -108,7 +109,16 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			if p.TTL != 0 || p.Timeout != 0 || len(p.Roles) > 0 {
 				return echo.ErrUnauthorized.SetInternal(auth.ErrAdminRequired)
 			}
+		} else {
+			if p.Timeout < 0 {
+				return echo.ErrBadRequest
+			}
+			logger.WithFields(logrus.Fields{
+				"ttl":     p.TTL,
+				"timeout": fmt.Sprintf("%v", p.Timeout),
+			}).Debug("admin creating invite")
 		}
+
 		if p.TTL == 0 {
 			p.TTL = defaultInviteTTL
 		}
@@ -169,6 +179,9 @@ func (iv *Invitations) Accept(body []byte, contentType string) echo.HandlerFunc 
 			iv.RDB.Del(ctx, id)
 			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		}
+		if session.ExpiresAt < 0 {
+			return echo.ErrForbidden
+		}
 		resp := c.Response()
 		resp.Header().Set("Content-Type", contentType)
 		resp.WriteHeader(200)
@@ -227,7 +240,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 		// Cleanup on success
-		err = iv.RDB.Del(ctx, key).Err()
+		err = iv.del(ctx, key)
 		if err != nil {
 			logger.WithError(err).Error("failed to destroy invite session")
 		}
@@ -328,7 +341,7 @@ func (iv *Invitations) Delete() echo.HandlerFunc {
 		if !bytes.Equal(claims.UUID[:], session.CreatedBy[:]) {
 			return echo.ErrForbidden
 		}
-		err = iv.RDB.Del(ctx, id).Err()
+		err = iv.del(ctx, id)
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
@@ -368,6 +381,10 @@ func (iv *Invitations) get(ctx context.Context, key string) (*inviteSession, err
 		return nil, err
 	}
 	return &s, nil
+}
+
+func (iv *Invitations) del(ctx context.Context, key string) error {
+	return iv.RDB.Del(ctx, fmt.Sprintf("invite:%s", key)).Err()
 }
 
 func (iv *Invitations) key() (string, error) {
