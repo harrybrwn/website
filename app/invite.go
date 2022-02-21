@@ -227,7 +227,10 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 		// Cleanup on success
-		defer iv.RDB.Del(ctx, key)
+		err = iv.RDB.Del(ctx, key).Err()
+		if err != nil {
+			logger.WithError(err).Error("failed to destroy invite session")
+		}
 		return c.Redirect(http.StatusPermanentRedirect, "/")
 	}
 }
