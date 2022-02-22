@@ -29,9 +29,13 @@ tests/*
 /demo/
 requests.http
 
-# Tools
+# Notes
 NOTES*
 TODO*
+
+# Tools
+*.sh
+!scripts/*.sh
 
 # Dev
 *.crt

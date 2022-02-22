@@ -36,10 +36,11 @@ const main = () => {
     (_index: number, _offset: number): Promise<any[][]> => {
       return api.invites().then((res: api.InviteList) => {
         let rows = [];
+        if (res.invites == null) return [];
         res.invites.sort((a: api.InviteURL, b: api.InviteURL): number => {
-          let da = new Date(a.expires_at);
-          let db = new Date(b.expires_at);
-          return da.getTime() - db.getTime();
+          return (
+            new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime()
+          );
         });
         for (let inv of res.invites) {
           rows.push(inviteRow(inv));
@@ -49,9 +50,9 @@ const main = () => {
     }
   );
   inviteTable.header(["url", "expires at", "roles"]);
-  inviteTable.render();
   let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
   handleInvitationCreation(inviteTable, inviteForm);
+  inviteTable.render();
 
   let infoContainer = document.getElementById("server-info");
   api.runtimeInfo().then((info: api.RuntimeInfo) => {
@@ -110,7 +111,7 @@ const inviteRow = (inv: api.InviteURL): string[] => {
   let diff = d.getTime() - Date.now();
   return [
     `${url}${inv.path}`,
-    `${d.toISOString()} | ${millisecondsToStr(diff)}`,
+    `${millisecondsToStr(diff)}`,
     inv.roles.join(", "),
   ];
 };
@@ -189,10 +190,10 @@ class Table {
     this.headerNames = [];
 
     this.table = document.createElement("table");
-    this.table.setAttribute("cellspacing", "0");
-    this.table.setAttribute("cellpadding", "0");
     this.thead = document.createElement("thead");
     this.tbody = document.createElement("tbody");
+    this.table.setAttribute("cellspacing", "0");
+    this.table.setAttribute("cellpadding", "0");
     this.table.appendChild(this.thead);
     this.table.appendChild(this.tbody);
   }
@@ -308,7 +309,7 @@ const addColResizeHandlers = (el: HTMLElement) => {
     nextColWidth = 0;
 
     if (handlerSet) {
-      console.log("removeing mouseMove event handler");
+      console.log("removing mouseMove event handler");
       document.removeEventListener("mousemove", mouseMove);
       handlerSet = false;
     }
