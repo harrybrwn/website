@@ -14,6 +14,7 @@ import LoginManager from "./util/LoginManager";
 import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import * as api from "./api";
+import { isEmail } from "~/frontend/util/email";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
   let formOrNull = document.getElementById(formID) as HTMLFormElement | null;
@@ -21,24 +22,38 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
     throw new Error("could not find element " + formID);
   }
   let form: HTMLFormElement = formOrNull;
-  form.addEventListener("submit", function (event: SubmitEvent) {
+  let error = document.createElement("div");
+  form.appendChild(error);
+  form.addEventListener("submit", (event: SubmitEvent) => {
     event.preventDefault();
     let formData = new FormData(form);
-    login({
+    // let email = formData.get("email") as string;
+    // if (!isEmail(email)) {
+    //   error.innerText = "invalid email";
+    //   return;
+    // }
+    let email: string = "";
+    let req = {
       username: formData.get("username") as string,
-      email: formData.get("email") as string,
+      email: email,
       password: formData.get("password") as string,
-    })
+    };
+    let identifier = formData.get("identifier") as string;
+    if (isEmail(identifier)) {
+      req.email = identifier;
+    } else {
+      req.username = identifier;
+    }
+    login(req)
       .then((tok: Token) => {
         callback(tok);
         form.reset();
         return tok;
       })
-      .catch((error: Error) => {
+      .catch((err: Error) => {
         console.error(error);
-        let e = document.createElement("p");
-        e.innerHTML = `${error}`;
-        form.appendChild(e);
+        error.innerHTML = `${err}`;
+        form.reset();
       });
   });
 }
@@ -86,7 +101,7 @@ const privateLinks = (): HTMLLIElement[] => {
 
 const focusOnLoginEmail = () => {
   let email = document.querySelector(
-    "#login-form input[type=email]"
+    "#login-form input[name=identifier]"
   ) as HTMLInputElement;
   if (email) {
     email.focus();
