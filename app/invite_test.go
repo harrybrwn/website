@@ -129,7 +129,7 @@ func TestInviteCreate(t *testing.T) {
 			id:       "5",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
 			body:     CreateInviteRequest{Timeout: -100},
-			expected: echo.ErrBadRequest,
+			expected: ErrInvalidTimeout,
 			internal: nil,
 		},
 	} {
@@ -187,9 +187,9 @@ func TestInviteCreate(t *testing.T) {
 				is.True(errors.Is(httpErr.Internal, tt.internal))
 			}
 			if tt.expected == nil {
-				var resp map[string]string
+				var resp invite
 				is.NoErr(json.NewDecoder(rec.Body).Decode(&resp))
-				is.True(len(resp["path"]) > 0)
+				is.True(len(resp.Path) > 0)
 			}
 		})
 	}

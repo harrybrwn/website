@@ -25,6 +25,7 @@ var (
 	ErrInviteTTL            = errors.New("session ttl limit reached")
 	ErrEmptyLogin           = &echo.HTTPError{Code: http.StatusBadRequest, Message: "empty login information"}
 	ErrInviteEmailMissmatch = &echo.HTTPError{Code: http.StatusForbidden, Message: "email does not match invitation"}
+	ErrInvalidTimeout       = &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid invite timeout"}
 )
 
 type StrEncoder interface {
@@ -111,7 +112,7 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			}
 		} else {
 			if p.Timeout < 0 {
-				return echo.ErrBadRequest
+				return ErrInvalidTimeout
 			}
 			logger.WithFields(logrus.Fields{
 				"ttl":     p.TTL,
@@ -133,9 +134,10 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 		for i, r := range p.Roles {
 			roles[i] = auth.Role(r)
 		}
+		expires := iv.Now().Add(p.Timeout)
 		err = iv.set(ctx, key, p.Timeout, &inviteSession{
 			CreatedBy: claims.UUID,
-			ExpiresAt: iv.Now().Add(p.Timeout).UnixMilli(),
+			ExpiresAt: expires.UnixMilli(),
 			TTL:       p.TTL,
 			Email:     p.Email,
 			Roles:     roles,
@@ -143,8 +145,12 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
-		resp := Response{
-			Path: filepath.Join("/", iv.Path.Path(key)),
+		resp := invite{
+			Path:      filepath.Join("/", iv.Path.Path(key)),
+			ExpiresAt: expires,
+			CreatedBy: claims.UUID,
+			TTL:       p.TTL,
+			Roles:     roles,
 		}
 		return c.JSON(200, &resp)
 	}

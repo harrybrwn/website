@@ -9,6 +9,7 @@ import {
 } from "~/frontend/api/auth";
 import { clearCookie } from "~/frontend/util/cookies";
 import { SECOND } from "~/frontend/constants";
+import { millisecondsToStr } from "~/frontend/util/time";
 
 const main = () => {
   let loginManager = new LoginManager({
@@ -30,8 +31,27 @@ const main = () => {
     }
   });
 
+  let inviteTable = new Table(
+    "invite-list",
+    (_index: number, _offset: number): Promise<any[][]> => {
+      return api.invites().then((res: api.InviteList) => {
+        let rows = [];
+        res.invites.sort((a: api.InviteURL, b: api.InviteURL): number => {
+          let da = new Date(a.expires_at);
+          let db = new Date(b.expires_at);
+          return da.getTime() - db.getTime();
+        });
+        for (let inv of res.invites) {
+          rows.push(inviteRow(inv));
+        }
+        return rows;
+      });
+    }
+  );
+  inviteTable.header(["url", "expires at", "roles"]);
+  inviteTable.render();
   let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
-  handleInvitationCreation(inviteForm);
+  handleInvitationCreation(inviteTable, inviteForm);
 
   let infoContainer = document.getElementById("server-info");
   api.runtimeInfo().then((info: api.RuntimeInfo) => {
@@ -52,40 +72,16 @@ const main = () => {
       dl.appendChild(elem);
     }
     infoContainer.appendChild(dl);
-    // infoContainer.innerText = JSON.stringify(info);
   });
+  /*
   let table = new Table("logs", logsPaginator);
   table.header([
-    "id",
-    "method",
-    "status",
-    "ip",
-    "uri",
-    "referer",
-    "user agent",
-    "latency",
+    "id", "method", "status", "ip",
+    "uri", "referer", "user agent", "latency",
     "requested at",
   ]);
   table.render();
-};
-
-const handleInvitationCreation = (form: HTMLFormElement) => {
-  form.addEventListener("submit", (ev: SubmitEvent) => {
-    ev.preventDefault();
-    console.log(ev.submitter);
-    console.log(ev.target);
-    let target = ev.target as HTMLFormElement;
-    let data = new FormData(target);
-    let request = createInviteRequest(data);
-    console.log(request);
-    api.invite(request).then((invite: api.InviteURL) => {
-      let el = document.createElement("div");
-      let url = location.origin;
-      if (invite.path[0] != "/") url += "/";
-      el.innerText = `${location.origin}${invite.path}`;
-      form.parentElement?.appendChild(el);
-    });
-  });
+  */
 };
 
 const createInviteRequest = (data: FormData): api.InviteRequest => {
@@ -104,6 +100,31 @@ const createInviteRequest = (data: FormData): api.InviteRequest => {
   if (email) request.email = email;
   if (roles) request.roles = roles.split(",");
   return request;
+};
+
+const inviteRow = (inv: api.InviteURL): string[] => {
+  let url = location.origin;
+  if (inv.path[0] != "/") url += "/";
+  if (inv.roles == null) inv.roles = [];
+  let d = new Date(inv.expires_at);
+  let diff = d.getTime() - Date.now();
+  return [
+    `${url}${inv.path}`,
+    `${d.toISOString()} | ${millisecondsToStr(diff)}`,
+    inv.roles.join(", "),
+  ];
+};
+
+const handleInvitationCreation = (table: Table, form: HTMLFormElement) => {
+  form.addEventListener("submit", (ev: SubmitEvent) => {
+    ev.preventDefault();
+    let target = ev.target as HTMLFormElement;
+    let data = new FormData(target);
+    let request = createInviteRequest(data);
+    api.invite(request).then((invite: api.InviteURL) => {
+      table.pushRow(inviteRow(invite));
+    });
+  });
 };
 
 const logsPaginator = async (
@@ -215,7 +236,7 @@ class Table {
     this.thead.appendChild(h);
   }
 
-  addRow(row: any[]) {
+  private createRow(row: any[]): HTMLTableRowElement {
     let tr = document.createElement("tr");
     let i = 0;
     for (let val of row) {
@@ -225,7 +246,15 @@ class Table {
       tr.appendChild(el);
       i++;
     }
-    this.tbody.appendChild(tr);
+    return tr;
+  }
+
+  addRow(row: any[]) {
+    this.tbody.appendChild(this.createRow(row));
+  }
+
+  pushRow(row: any[]) {
+    this.tbody.insertBefore(this.createRow(row), this.tbody.firstChild);
   }
 
   body(rows: any[][]) {

@@ -132,7 +132,7 @@ const webButtonClipboard = (num: number) => {
   const copy = () => {
     navigator.clipboard.writeText(payload);
     tooltip?.setAttribute("data-text", "Code copied!");
-    fetch(`/api/ping?action=web-button-copy&button=${button.src}`);
+    fetch(`/api/ping?action=web-button-${num}-copy`);
   };
   button.addEventListener("click", copy);
   // tooltip.addEventListener("click", copy);

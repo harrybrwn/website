@@ -74,6 +74,14 @@ export interface InviteRequest {
 
 export interface InviteURL {
   path: string;
+  created_by: string;
+  expires_at: string;
+  roles: string[];
+  ttl: number;
+}
+
+export interface InviteList {
+  invites: InviteURL[];
 }
 
 export const invite = async (req?: InviteRequest): Promise<InviteURL> => {
@@ -87,9 +95,22 @@ export const invite = async (req?: InviteRequest): Promise<InviteURL> => {
     method: "POST",
     headers: apiHeaders(),
     body: body,
+  }).then(async (res) => {
+    if (!res.ok) {
+      let msg = await res.json();
+      throw new Error(msg.message);
+    }
+    return res.json();
+  });
+};
+
+export const invites = async (): Promise<InviteList> => {
+  return fetch("/api/invite/list", {
+    method: "GET",
+    headers: apiHeaders(),
   }).then((res) => {
     if (!res.ok) {
-      throw new Error("");
+      return Promise.reject(res.statusText);
     }
     return res.json();
   });
