@@ -186,7 +186,7 @@ jobs:
         run: migrate -verbose -source file://db/migrations -database ${{ secrets.STAGING_DATABASE_URL }} up
         if: github.ref == 'refs/heads/staging'
       - name: Production DB Migration
-        run: migrate -verbose -source file://db/mirations -database ${{ secrets.PROD_DATABASE_URL }} up
+        run: migrate -verbose -source file://db/migrations -database ${{ secrets.PROD_DATABASE_URL }} up
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
       - run: migrate -version
         if: github.ref == 'refs/heads/dev'
