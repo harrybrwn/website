@@ -77,9 +77,6 @@ type CreateInviteRequest struct {
 
 // Create is the handler for people with accounts to create temporary invite links
 func (iv *Invitations) Create() echo.HandlerFunc {
-	type Response struct {
-		Path string `json:"path"`
-	}
 	if iv.Now == nil {
 		iv.Now = time.Now
 	}
