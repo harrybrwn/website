@@ -12,6 +12,7 @@ type Role string
 const (
 	RoleAdmin   Role = "admin"
 	RoleDefault Role = "default"
+	RoleFamily  Role = "family"
 	RoleTanya   Role = "tanya"
 
 	ClaimsContextKey = "jwt-ctx-claims"
