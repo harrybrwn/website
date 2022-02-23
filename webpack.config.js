@@ -132,9 +132,10 @@ module.exports = function (webpackEnv) {
     isProd,
     htmlMinify,
   });
+  const embedCSS = false;
 
   let plugins = makePlugins(builder);
-  if (!isWatch) {
+  if (!isWatch && embedCSS) {
     plugins.push(new HTMLInlineCSSWebpackPlugin());
   }
 
