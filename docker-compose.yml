@@ -1,19 +1,6 @@
 version: "3.8"
 
 services:
-  api:
-    image: harrybrwn.com:latest
-    build:
-      dockerfile: Dockerfile
-      context: .
-      target: api
-    network_mode: host
-    environment:
-      PORT: ${PORT}
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SEED: ${JWT_SEED}
-      REDIS_URL: ${REDIS_URL}
-
   db:
     image: postgres:13.3-alpine
     container_name: harrybrwn.com-db
