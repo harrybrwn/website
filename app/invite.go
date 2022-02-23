@@ -179,7 +179,7 @@ func (iv *Invitations) Accept(body []byte, contentType string) echo.HandlerFunc 
 			return echo.ErrNotFound.SetInternal(err)
 		}
 		if session.TTL == 0 {
-			iv.RDB.Del(ctx, id)
+			iv.del(ctx, id)
 			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		}
 		if session.ExpiresAt < 0 {
@@ -214,7 +214,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrNotFound.SetInternal(err)
 		}
 		if session.TTL == 0 {
-			_ = iv.RDB.Del(ctx, key).Err()
+			iv.del(ctx, key)
 			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		} else if session.TTL > 0 {
 			// Decrement the TTL and put it back in storage
