@@ -116,7 +116,7 @@ func (s *userStore) get(ctx context.Context, q string, args ...interface{}) (*Us
 	var u User
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "QueryContext failed")
 	}
 	return &u, scanUser(rows, &u)
 }

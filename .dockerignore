@@ -1,15 +1,28 @@
-/.git/
-/node_modules/
-/build/
+# Notes
+/README*
+/TODO*
+/NOTES*
 
+# Config
+/config/env/
+/config/postgres/
+/Dockerfile
+/docker-compose.*
+/Procfile
+/Makefile
+/.vscode/
 /.env
 /.dockerignore
 /.gitignore
-/Dockerfile
-/docker-compose.yml
-/Procfile
-/Makefile
-/README.md
-/TODO
-/NOTES
+
+# Data
+/.git/
+/node_modules/
+/build/
 /db/data/
+/.testing/
+**/__pycache__
+
+# Scripts
+/scripts/requests.http
+/scripts/*.sql

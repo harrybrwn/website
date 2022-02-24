@@ -247,7 +247,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 		if err != nil {
 			logger.WithError(err).Error("failed to destroy invite session")
 		}
-		return c.Redirect(http.StatusPermanentRedirect, "/")
+		return nil
 	}
 }
 
@@ -399,4 +399,62 @@ func (iv *Invitations) key() (string, error) {
 		return "", err
 	}
 	return iv.Encoder.EncodeToString(b[:]), nil
+}
+
+type InviteSessionStore struct {
+	RDB    redis.Cmdable
+	Prefix string
+}
+
+func (iss *InviteSessionStore) key(id string) string {
+	return fmt.Sprintf("%s:%s", iss.Prefix, id)
+}
+
+func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSession, error) {
+	raw, err := iss.RDB.Get(ctx, iss.key(key)).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	var s inviteSession
+	if err = json.Unmarshal(raw, &s); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (iss *InviteSessionStore) Put(ctx context.Context, key string, exp time.Duration, session *inviteSession) error {
+	raw, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+	return iss.RDB.Set(ctx, iss.key(key), raw, exp).Err()
+}
+
+func (iss *InviteSessionStore) Del(ctx context.Context, key string) error {
+	return iss.RDB.Del(ctx, iss.key(key)).Err()
+}
+
+func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, error) {
+	keys, err := iss.RDB.Keys(ctx, fmt.Sprintf("%s:*", iss.Prefix)).Result()
+	if err != nil {
+		return nil, err
+	}
+	l := len(keys)
+	if l == 0 {
+		return []*inviteSession{}, nil
+	}
+	sessions := make([]*inviteSession, l)
+	rawsessions, err := iss.RDB.MGet(ctx, keys...).Result()
+	if err != nil {
+		return nil, err
+	}
+	for i, raw := range rawsessions {
+		s := raw.(string)
+		sessions[i] = new(inviteSession)
+		err = json.Unmarshal([]byte(s), sessions[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return sessions, nil
 }

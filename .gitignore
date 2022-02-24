@@ -11,6 +11,7 @@ static/bootstrap-4.3.1-dist
 /public/static/img/1688x2251
 /public/static/img/2250x3000
 .hugo_build.lock
+__pycache__/
 
 # Config
 config.json
