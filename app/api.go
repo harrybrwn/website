@@ -17,6 +17,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sendgrid/rest"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
@@ -218,6 +220,41 @@ func (ts *TokenService) Revoke(c echo.Context) error {
 
 func (ts *TokenService) keyfunc(*jwt.Token) (interface{}, error) {
 	return ts.Config.Public(), nil
+}
+
+type EmailClient interface {
+	SendWithContext(ctx context.Context, email *mail.SGMailV3) (*rest.Response, error)
+}
+
+func SendMail(client EmailClient) echo.HandlerFunc {
+	type addr struct {
+		Name    string `json:"name"`
+		Address string `json:"address"`
+	}
+	type Body struct {
+		From    addr   `json:"from"`
+		To      addr   `json:"to"`
+		Subject string `json:"subject"`
+		Content string `json:"content"`
+	}
+	return func(c echo.Context) error {
+		var (
+			err error
+			b   Body
+			ctx = c.Request().Context()
+		)
+		if err = c.Bind(&b); err != nil {
+			return err
+		}
+		from := mail.NewEmail(b.From.Name, b.From.Address)
+		to := mail.NewEmail(b.To.Name, b.To.Address)
+		message := mail.NewSingleEmail(from, b.Subject, to, "", b.Content)
+		response, err := client.SendWithContext(ctx, message)
+		if err != nil {
+			return err
+		}
+		return c.JSON(200, response)
+	}
 }
 
 const hitsQuery = `SELECT count(*) FROM request_log WHERE uri = $1`

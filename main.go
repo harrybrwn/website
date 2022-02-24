@@ -17,6 +17,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
@@ -146,6 +147,7 @@ func main() {
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
 		Users:  userStore,
 	}
+	emailClient := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
@@ -160,6 +162,7 @@ func main() {
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
 	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
+	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
 	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
