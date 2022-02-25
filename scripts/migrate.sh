@@ -48,8 +48,6 @@ fi
 
 unset PGSERVICEFILE
 
-echo "$DATABASE_URL"
-
 run-migrate() {
   if $DOCKER; then
     docker container run \

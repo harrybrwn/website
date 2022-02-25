@@ -24,11 +24,9 @@ def admin():
         "onetwothreefourfive",
         ["admin"],
     )
-    print("creating admin")
     u.create()
     yield u
     u.delete()
-    print("admin deleted")
 
 
 @pytest.fixture(scope="module")

@@ -148,6 +148,27 @@ jobs:
         go generate ./...
         go test -tags ci -v -cover ./...
 
+  functional:
+    name: Functional Tests
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: testing_db_pw
+      POSTGRES_USER: ci
+      POSTGRES_DB: ci_db
+      REDIS_PASSWORD: testing_cache_pw
+      SENDGRID_API_KEY: {{ secrets.SENDGRID_API_KEY }}
+      JWT_SEED: {{ secrets.JWT_SEED }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Build testing images
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build
+      - name: Start services
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+      - name: Run tests
+        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
+
   migrate:
     name: Database Migrations
     needs: [lint, build, test]

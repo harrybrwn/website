@@ -15,8 +15,10 @@ clean:
 
 coverage: coverage-ts coverage-go
 
-clean-mocks:
-	$(RM) -r internal/mocks
+deep-clean:
+	$(RM) -r internal/mocks \
+		$(shell find . -name '.pytest_cache' -type d) \
+		$(shell find . -name '__pycache__' -type d)
 
 test-go:
 	@mkdir -p .testing
@@ -69,14 +71,16 @@ blog/resources/remora.svg: diagrams/remora.svg
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
 
-.PHONY: build run test clean clean-mocks test-go test-ts resume tools
+.PHONY: build run test clean deep-clean test-go test-ts resume tools
 
 .PHONY: functional-setup build-functional
 build-functional:
 	docker-compose -f docker-compose.test.yml build
-functional-setup:
-	docker-compose -f docker-compose.test.yml -f docker-compose.yml down
-	docker-compose -f docker-compose.test.yml -f docker-compose.yml up -d db redis web
-	docker-compose -f docker-compose.test.yml -f docker-compose.yml run --rm tests scripts/functional-setup.sh
-	docker-compose -f docker-compose.test.yml -f docker-compose.yml logs -f
 
+functional-setup:
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml down
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml build
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+
+functional:
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
