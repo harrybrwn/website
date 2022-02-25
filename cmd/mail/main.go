@@ -14,7 +14,7 @@ import (
 var apikey string
 
 func main() {
-	godotenv.Load()
+	_ = godotenv.Load()
 	apikey = os.Getenv("SENDGRID_API_KEY")
 	if len(apikey) == 0 {
 		log.Fatal("could not find api key")

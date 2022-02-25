@@ -179,7 +179,9 @@ func (iv *Invitations) Accept(body []byte, contentType string) echo.HandlerFunc 
 			return echo.ErrNotFound.SetInternal(err)
 		}
 		if session.TTL == 0 {
-			iv.del(ctx, id)
+			if err = iv.del(ctx, id); err != nil {
+				logger.WithError(err).Error("could not delete invite session")
+			}
 			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		}
 		if session.ExpiresAt < 0 {
@@ -214,7 +216,9 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrNotFound.SetInternal(err)
 		}
 		if session.TTL == 0 {
-			iv.del(ctx, key)
+			if err = iv.del(ctx, key); err != nil {
+				logger.WithError(err).Error("could not delete invite session")
+			}
 			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		} else if session.TTL > 0 {
 			// Decrement the TTL and put it back in storage
