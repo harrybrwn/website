@@ -2,12 +2,10 @@
 
 set -e
 
-HOST=
-PORT=
-WAIT=1
 
 help() {
-  echo "$1 [flags...] [--] <command>"
+  # echo "$1 [flags...] [--] <command>"
+  echo "wait.sh <host> <port> [flags...] [--] <command>"
   echo "Flags:"
   echo "     --help   print help message"
   echo "  -h --host   host of service to wait for"
@@ -15,10 +13,26 @@ help() {
   echo "  -w --wait   wait time between lookup failures (seconds)"
 }
 
+WAIT=1
+HOST="$1"
+if [ -z "$HOST" ]; then
+  help
+  echo "Error: no host given"
+  exit 1
+fi
+shift
+PORT="$1"
+if [ -z "$PORT" ]; then
+  help
+  echo "Error: no host given"
+  exit 1
+fi
+shift
+
 while :; do
   case $1 in
     --help)
-      help "wait.sh"
+      help
       exit
       ;;
     -h|--host)
@@ -48,10 +62,12 @@ while :; do
 done
 
 if [ -z "$HOST" ]; then
+  help
   echo "Error: no host"
   exit 1
 fi
 if [ -z "$PORT" ]; then
+  help
   echo "Error: no port"
   exit 1
 fi

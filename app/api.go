@@ -133,19 +133,24 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 		return echo.ErrBadRequest.SetInternal(err)
 	}
 
-	// If the refresh token is still in the token store then we're good.
-	_, err = ts.Tokens.Get(ctx, refreshClaims.ID)
+	stored, err := ts.Tokens.Get(ctx, refreshClaims.ID)
 	if err != nil {
 		return echo.ErrUnauthorized.SetInternal(err)
 	}
+	if tokenReq.RefreshToken != stored {
+		logger.Warn("refresh token did not match up with token in storage")
+		return echo.ErrUnauthorized
+	}
 
+	now := time.Now()
 	claims := auth.Claims{
 		ID:    refreshClaims.ID,
 		UUID:  refreshClaims.UUID,
 		Roles: refreshClaims.Roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Audience: []string{auth.TokenAudience},
-			Issuer:   auth.Issuer,
+			Audience:  []string{auth.TokenAudience},
+			Issuer:    auth.Issuer,
+			NotBefore: jwt.NewNumericDate(now),
 		},
 	}
 	// Only generate a new access token, the client should still have the refresh token.
@@ -153,6 +158,8 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
+	// Send back the same refresh token they sent
+	resp.RefreshToken = tokenReq.RefreshToken
 
 	c.Set(auth.ClaimsContextKey, claims)
 	if setCookie {

@@ -21,6 +21,7 @@
 /build/
 /db/data/
 /.testing/
+/.pytest_cache
 **/__pycache__
 
 # Scripts

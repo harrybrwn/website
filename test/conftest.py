@@ -1,14 +1,12 @@
 import pytest
 
-import requests
 from models import User
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def user():
-    username = "testuser"
     u = User(
-        username,
+        "testuser",
         "test@harrybrwn.com",
         "password1",
         ["default"],
@@ -18,7 +16,7 @@ def user():
     u.delete()
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def admin():
     u = User(
         "admin_user",
@@ -26,26 +24,20 @@ def admin():
         "onetwothreefourfive",
         ["admin"],
     )
+    print("creating admin")
     u.create()
     yield u
     u.delete()
+    print("admin deleted")
 
 
-@pytest.fixture
-def token(user):
-    res = requests.post("http://web:8080/api/token", json={
-        "username": user.username,
-        "email": user.email,
-        "password": user.password,
-    })
-    return res.json()
+@pytest.fixture(scope="module")
+def user_token(user: User):
+    user.login()
+    return user.token
 
 
-@pytest.fixture
-def admin_token(admin):
-    res = requests.post("http://web:8080/api/token", json={
-        "username": admin.username,
-        "email": admin.email,
-        "password": admin.password,
-    })
-    return res.json()
+@pytest.fixture(scope="module")
+def admin_token(admin: User):
+    admin.login()
+    return admin.token

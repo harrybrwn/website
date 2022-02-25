@@ -37,14 +37,18 @@ while :; do
     esac
 done
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "$ENV_FILE does not exist"
-  exit 1
+# Don't fail with no env file. Will use this script in ci and containers.
+if [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
 fi
 
-source "$ENV_FILE"
+if [ -z "$DATABASE_URL" ]; then
+  DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+fi
 
 unset PGSERVICEFILE
+
+echo "$DATABASE_URL"
 
 run-migrate() {
   if $DOCKER; then
@@ -65,3 +69,4 @@ case $1 in
     run-migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
     ;;
 esac
+

@@ -70,3 +70,13 @@ diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
 
 .PHONY: build run test clean clean-mocks test-go test-ts resume tools
+
+.PHONY: functional-setup build-functional
+build-functional:
+	docker-compose -f docker-compose.test.yml build
+functional-setup:
+	docker-compose -f docker-compose.test.yml -f docker-compose.yml down
+	docker-compose -f docker-compose.test.yml -f docker-compose.yml up -d db redis web
+	docker-compose -f docker-compose.test.yml -f docker-compose.yml run --rm tests scripts/functional-setup.sh
+	docker-compose -f docker-compose.test.yml -f docker-compose.yml logs -f
+

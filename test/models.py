@@ -1,7 +1,24 @@
+import datetime
 from typing import List
-from db import db
 
+import requests
 import bcrypt
+
+from db import db
+import config
+
+
+class Token:
+    token: str
+    type: str
+    expires: int
+    refresh_token: str
+
+    def __init__(self, blob):
+        self.token = blob["token"]
+        self.type = blob["token_type"]
+        self.expires = blob["expires"]
+        self.refresh_token = blob["refresh_token"]
 
 
 class User:
@@ -12,6 +29,9 @@ class User:
     password: str
     pw_hash: bytes
     roles: List[str]
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+    token: Token
 
     def __init__(self, username: str, email: str, password: str, roles: List[str]):
         self.username = username
@@ -21,21 +41,28 @@ class User:
         self.roles = roles
         self.id = 0
         self.uuid = ''
+        self.created_at = None
+        self.updated_at = None
+        self.token = None
 
-    def create(self):
-        cur = db.cursor()
+    def create(self, conn=None):
+        if conn is None:
+            conn = db
+        cur = conn.cursor()
         cur.execute('''INSERT INTO "user"
             (uuid, username, email, pw_hash, roles, totp_secret)
             VALUES (
                 uuid_in(md5(random()::text || clock_timestamp()::text)::cstring),
                 %s, %s, %s, %s, ''
-            ) RETURNING id, uuid''',
+            ) RETURNING id, uuid, created_at, updated_at''',
             (self.username, self.email, self.pw_hash, self.roles),
         )
         res = cur.fetchone()
         self.id = res[0]
         self.uuid = res[1]
-        db.commit()
+        self.created_at = res[2]
+        self.updated_at = res[3]
+        conn.commit()
         cur.close()
 
     def delete(self):
@@ -46,6 +73,17 @@ class User:
             (self.id, self.uuid, self.username, self.email))
         db.commit()
         cur.close()
+
+
+    def login(self):
+        res = requests.post(f"http://{config.host}/api/token", json={
+            "username": self.username,
+            "email": self.email,
+            "password": self.password,
+        })
+        if not res.ok:
+            raise requests.RequestException(f"status {res.status_code}: could not login")
+        self.token = Token(res.json())
 
 
     def __str__(self):

@@ -329,7 +329,10 @@ func TestRefreshTokenHandler_Err(t *testing.T) {
 			req.URL.RawQuery = params.Encode()
 			req.Header.Set("Content-Type", "application/json")
 			c := e.NewContext(req, rec)
-			service := TokenService{Tokens: store, Config: tokenCfg}
+			service := TokenService{
+				Tokens: store,
+				Config: tokenCfg,
+			}
 			err = service.Refresh(c)
 			if err == nil {
 				t.Fatal("expected an error got nil")
@@ -363,7 +366,10 @@ func TestRefreshTokenHandler(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
-	service := TokenService{Config: tokenCfg, Tokens: store}
+	service := TokenService{
+		Config: tokenCfg,
+		Tokens: store,
+	}
 	err = service.Refresh(c)
 	is.NoErr(err)
 	res := rec.Result()
@@ -374,7 +380,6 @@ func TestRefreshTokenHandler(t *testing.T) {
 	is.Equal(cookie.Path, "/")
 	var tok auth.TokenResponse
 	is.NoErr(json.NewDecoder(res.Body).Decode(&tok))
-	is.Equal(0, len(tok.RefreshToken))
 	is.True(1 < len(tok.Token))
 }
 

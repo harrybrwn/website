@@ -22,16 +22,16 @@ RUN yarn build
 # Golang builder
 ARG GO_VERSION=1.17.3-alpine
 FROM golang:1.17.3-alpine as builder
-RUN go install github.com/golang/mock/mockgen@v1.6.0 && \
-    go install github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
+RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
+    CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /app/
 WORKDIR /app
 RUN go mod download
 
 COPY --from=frontend /app .
-
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
-	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/user-gen ./cmd/user-gen
+	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/user-gen ./cmd/user-gen && \
+	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/pwhash ./cmd/pwhash
 
 # Main image
 FROM alpine:3.14 as api
@@ -61,6 +61,7 @@ COPY test/pyproject.toml test/poetry.lock /app/test/
 COPY scripts/wait.sh /usr/local/bin/
 WORKDIR /app/test
 RUN poetry install
-
-COPY --from=builder /app/bin/user-gen /usr/local/bin/user-gen
+# Grabe some go tools from our go builder.
+COPY --from=builder /go/bin/migrate /app/bin/user-gen /usr/local/bin/
 VOLUME /app
+WORKDIR /app
