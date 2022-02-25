@@ -156,8 +156,8 @@ jobs:
       POSTGRES_USER: ci
       POSTGRES_DB: ci_db
       REDIS_PASSWORD: testing_cache_pw
-      SENDGRID_API_KEY: {{ secrets.SENDGRID_API_KEY }}
-      JWT_SEED: {{ secrets.JWT_SEED }}
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      JWT_SEED: ${{ secrets.JWT_SEED }}
     steps:
       - uses: actions/checkout@v2
         with:
