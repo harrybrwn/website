@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -412,6 +413,49 @@ type InviteSessionStore struct {
 
 func (iss *InviteSessionStore) key(id string) string {
 	return fmt.Sprintf("%s:%s", iss.Prefix, id)
+}
+
+type InviteOption func(*inviteSession)
+
+func WithCreator(uid uuid.UUID) InviteOption {
+	return func(is *inviteSession) { is.CreatedBy = uid }
+}
+
+func WithTTL(ttl int) InviteOption {
+	return func(is *inviteSession) { is.TTL = ttl }
+}
+
+func WithRoles(roles []string) InviteOption {
+	return func(is *inviteSession) {
+		is.Roles = make([]auth.Role, len(roles))
+		for i, r := range roles {
+			is.Roles[i] = auth.Role(r)
+		}
+	}
+}
+
+var now = time.Now
+
+func (iss *InviteSessionStore) Create(ctx context.Context, timeout time.Duration) (*inviteSession, string, error) {
+	var (
+		b [32]byte
+		s inviteSession
+	)
+	s.ExpiresAt = now().Add(timeout).UnixMilli()
+	raw, err := json.Marshal(&s)
+	if err != nil {
+		return nil, "", err
+	}
+	_, err = rand.Read(b[:])
+	if err != nil {
+		return nil, "", err
+	}
+	id := base64.RawURLEncoding.EncodeToString(b[:])
+	err = iss.RDB.Set(ctx, iss.key(id), raw, timeout).Err()
+	if err != nil {
+		return nil, "", err
+	}
+	return &s, id, nil
 }
 
 func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSession, error) {
