@@ -26,7 +26,6 @@ def test_robots_txt():
     assert res.status_code == 200
 
 
-
 def test_admin_page_failure():
     res = requests.get(f"http://{host}/admin")
     assert not res.ok

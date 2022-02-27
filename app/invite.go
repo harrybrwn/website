@@ -62,6 +62,8 @@ type inviteSession struct {
 	// TODO if auth.Role is ever turned into an int, turn this into an int to
 	// skip any custom json marshaling for auth.Role.
 	Roles []auth.Role `json:"r,omitempty"`
+
+	id string `json:"-"`
 }
 
 const (
@@ -396,9 +398,7 @@ func (iv *Invitations) del(ctx context.Context, key string) error {
 }
 
 func (iv *Invitations) key() (string, error) {
-	var (
-		b [32]byte
-	)
+	var b [32]byte
 	_, err := rand.Read(b[:])
 	if err != nil {
 		return "", err
@@ -502,6 +502,10 @@ func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, erro
 		err = json.Unmarshal([]byte(s), sessions[i])
 		if err != nil {
 			return nil, err
+		}
+		ix := strings.LastIndex(keys[i], ":")
+		if ix >= 0 {
+			sessions[i].id = keys[i][ix:]
 		}
 	}
 	return sessions, nil

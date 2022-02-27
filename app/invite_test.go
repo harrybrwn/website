@@ -214,7 +214,7 @@ func TestInviteAccept(t *testing.T) {
 		{
 			session: &inviteSession{TTL: 5, Email: "t@t.io", ExpiresAt: 12},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
-				mockSessionGet(t, rdb, s).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func TestInviteAccept(t *testing.T) {
 				CreatedBy: uuid.New(),
 			},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
-				mockSessionGet(t, rdb, s).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.AssignableToTypeOf("")).Return(redis.NewIntResult(0, nil))
 			},
 			expected: echo.ErrForbidden,
@@ -241,7 +241,7 @@ func TestInviteAccept(t *testing.T) {
 				CreatedBy: uuid.New(),
 			},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
-				mockSessionGet(t, rdb, s).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
 		{
@@ -253,7 +253,7 @@ func TestInviteAccept(t *testing.T) {
 				CreatedBy: uuid.New(),
 			},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
-				mockSessionGet(t, rdb, s).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
 		{
@@ -263,7 +263,8 @@ func TestInviteAccept(t *testing.T) {
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
 				rdb.EXPECT().Get(
 					gomock.AssignableToTypeOf(context.Background()),
-					gomock.AssignableToTypeOf(""),
+					// gomock.AssignableToTypeOf(""),
+					gomock.Eq("invite:12345"),
 				).Return(redis.NewStringResult("", redis.Nil))
 			},
 		},
@@ -280,7 +281,7 @@ func TestInviteAccept(t *testing.T) {
 			}
 			defer ctrl.Finish()
 
-			id := "123"
+			id := "12345"
 			req := httptest.NewRequest("GET", invites.Path.Path(id), nil).WithContext(ctx)
 			rec := httptest.NewRecorder()
 			c := echo.New().NewContext(req, rec)
@@ -355,7 +356,7 @@ func TestInviteSignUp(t *testing.T) {
 			expected: echo.ErrForbidden,
 			internal: ErrInviteTTL,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session).Times(1)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session).Times(1)
 				mocks.rdb.EXPECT().Del(
 					context.Background(),
 					gomock.AssignableToTypeOf(""),
@@ -368,7 +369,7 @@ func TestInviteSignUp(t *testing.T) {
 			expected: echo.ErrInternalServerError,
 			internal: redis.Nil,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 				mockSessionUpdate(t, mocks.rdb, tt.session).Return(redis.NewStatusResult("", redis.Nil))
 			},
 		},
@@ -377,7 +378,7 @@ func TestInviteSignUp(t *testing.T) {
 			session:  &inviteSession{TTL: 64},
 			expected: echo.ErrBadRequest,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 				mockSessionUpdate(t, mocks.rdb, tt.session).Return(redis.NewStatusResult("", nil))
 			},
 		},
@@ -387,7 +388,7 @@ func TestInviteSignUp(t *testing.T) {
 			login:    &Login{Password: "yeet", Username: "abc"},
 			expected: ErrEmptyLogin,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 				mockSessionUpdate(t, mocks.rdb, tt.session).Return(redis.NewStatusResult("", nil))
 			},
 		},
@@ -397,7 +398,7 @@ func TestInviteSignUp(t *testing.T) {
 			login:    &Login{Email: "yeet@yeet.com", Username: "abc"},
 			expected: ErrEmptyLogin,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 			},
 		},
 		{
@@ -406,7 +407,7 @@ func TestInviteSignUp(t *testing.T) {
 			login:    &Login{Email: "what@not_theheck.org", Password: "password1"},
 			expected: ErrInviteEmailMissmatch,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 				mockSessionUpdate(t, mocks.rdb, tt.session).Return(redis.NewStatusResult("", nil))
 			},
 		},
@@ -416,7 +417,7 @@ func TestInviteSignUp(t *testing.T) {
 			login:    &Login{Email: "a@a.it", Password: "123", Username: "test-user"},
 			expected: echo.ErrInternalServerError, internal: randomError,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
-				mockSessionGet(t, mocks.rdb, tt.session)
+				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
 				mocks.db.EXPECT().QueryContext(
 					context.Background(), createUserQuery,
 					gomock.Any(),
@@ -433,7 +434,7 @@ func TestInviteSignUp(t *testing.T) {
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
 				ctx := context.Background()
 				gomock.InOrder(
-					mockSessionGet(t, mocks.rdb, tt.session),
+					mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session),
 					mocks.db.EXPECT().QueryContext(
 						ctx, createUserQuery,
 						gomock.Any(), // uuid
@@ -469,7 +470,7 @@ func TestInviteSignUp(t *testing.T) {
 			}
 			defer ctrl.Finish()
 
-			req := httptest.NewRequest("POST", "/", body(tt.login)).WithContext(ctx)
+			req := httptest.NewRequest("POST", "/invite/444", body(tt.login)).WithContext(ctx)
 			if tt.login != nil {
 				req.Header.Set("Content-Type", "application/json")
 			}
@@ -532,18 +533,18 @@ func TestInviteDelete(t *testing.T) {
 			session:  &inviteSession{CreatedBy: uuid.MustParse("22222222-4d00-458d-927d-d4416d10c68f")},
 			expected: echo.ErrForbidden,
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
-				mockSessionGet(t, rdb, tt.session).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:123"), tt.session).Times(1)
 			},
 		},
 		{
 			name:     "fail to delete session",
-			id:       "123",
+			id:       "123321",
 			claims:   &auth.Claims{UUID: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			session:  &inviteSession{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			expected: echo.ErrInternalServerError,
 			internal: redis.ErrClosed,
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
-				mockSessionGet(t, rdb, tt.session).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:123321"), tt.session).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.AssignableToTypeOf("")).
 					Return(redis.NewIntResult(0, redis.ErrClosed))
 			},
@@ -554,13 +555,12 @@ func TestInviteDelete(t *testing.T) {
 			claims:  &auth.Claims{UUID: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			session: &inviteSession{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
-				mockSessionGet(t, rdb, tt.session).Times(1)
+				mockSessionGet(t, rdb, gomock.Eq("invite:123"), tt.session).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.AssignableToTypeOf("")).Return(redis.NewIntResult(0, nil))
 			},
 		},
 	} {
 		t.Run(fmt.Sprintf("%s_%d_%s", t.Name(), i, tt.name), func(t *testing.T) {
-			// t.Skip()
 			ctx := context.Background()
 			is := is.New(t)
 			ctrl := gomock.NewController(t)
@@ -576,6 +576,8 @@ func TestInviteDelete(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := echo.New().NewContext(req, rec)
 			c.Set(auth.ClaimsContextKey, tt.claims)
+			c.SetParamNames("id")
+			c.SetParamValues(tt.id)
 
 			if tt.mocks != nil {
 				tt.mocks(t, rdb, &tt)
@@ -805,13 +807,43 @@ func TestInviteSession(t *testing.T) {
 	is.Equal(session.ExpiresAt, expires)
 }
 
-func mockSessionGet(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) *gomock.Call {
+func TestSessionStore(t *testing.T) {
+	is := is.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rdb := mockredis.NewMockCmdable(ctrl)
+	s := InviteSessionStore{RDB: rdb, Prefix: "inv"}
+	ctx := context.Background()
+
+	expectedSession := inviteSession{CreatedBy: uuid.New(), Roles: []auth.Role{auth.RoleFamily}}
+	mockSessionGet(t, rdb, gomock.Eq("inv:123"), &expectedSession)
+	session, err := s.Get(ctx, "123")
+	is.NoErr(err)
+	is.Equal(*session, expectedSession)
+}
+
+func TestSessionStore_List(t *testing.T) {
+	is := is.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	rdb := mockredis.NewMockCmdable(ctrl)
+	s := InviteSessionStore{RDB: rdb, Prefix: "inv"}
+	ctx := context.Background()
+
+	keys := []string{"inv:1", "inv:2", "inv:3"}
+	rdb.EXPECT().Keys(ctx, "inv:*").Return(redis.NewStringSliceResult(keys, nil))
+	rdb.EXPECT().MGet(ctx, keys).Return(redis.NewSliceResult(nil, nil))
+	_, err := s.List(ctx)
+	is.NoErr(err)
+}
+
+func mockSessionGet(t *testing.T, rdb *mockredis.MockCmdable, key gomock.Matcher, s *inviteSession) *gomock.Call {
+	t.Helper()
 	raw, err := json.Marshal(s)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return rdb.EXPECT().Get(
-		context.Background(),
-		gomock.AssignableToTypeOf(""),
+		context.Background(), key,
 	).Return(redis.NewStringResult(string(raw), nil))
 }

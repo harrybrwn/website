@@ -171,7 +171,7 @@ jobs:
 
   migrate:
     name: Database Migrations
-    needs: [lint, build, test]
+    needs: [lint, build, test, functional]
     runs-on: ubuntu-latest
     env:
       GO_VERSION: 1.17.5
