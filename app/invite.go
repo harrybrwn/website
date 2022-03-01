@@ -41,10 +41,19 @@ type PathBuilder interface {
 }
 
 type Invitations struct {
-	Path    PathBuilder
-	RDB     redis.Cmdable
-	Encoder StrEncoder
-	Now     func() time.Time
+	Path PathBuilder
+	// RDB   redis.Cmdable
+	store InviteStore
+}
+
+func NewInvitations(rdb redis.Cmdable, path PathBuilder) *Invitations {
+	return &Invitations{
+		Path: path,
+		store: &InviteSessionStore{
+			RDB:    rdb,
+			Prefix: "invite",
+		},
+	}
 }
 
 type inviteSession struct {
@@ -79,11 +88,10 @@ type CreateInviteRequest struct {
 	Roles   []string      `json:"roles"`
 }
 
+var now = time.Now
+
 // Create is the handler for people with accounts to create temporary invite links
 func (iv *Invitations) Create() echo.HandlerFunc {
-	if iv.Now == nil {
-		iv.Now = time.Now
-	}
 	return func(c echo.Context) error {
 		var (
 			err    error
@@ -121,37 +129,17 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			}).Debug("admin creating invite")
 		}
 
-		if p.TTL == 0 {
-			p.TTL = defaultInviteTTL
-		}
-		if p.Timeout == 0 {
-			p.Timeout = defaultInviteTimeout
-		}
-		key, err := iv.key()
+		session, key, err := iv.store.Create(ctx, claims.UUID, &p)
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
-		roles := make([]auth.Role, len(p.Roles))
-		for i, r := range p.Roles {
-			roles[i] = auth.Role(r)
-		}
-		expires := iv.Now().Add(p.Timeout)
-		err = iv.set(ctx, key, p.Timeout, &inviteSession{
-			CreatedBy: claims.UUID,
-			ExpiresAt: expires.UnixMilli(),
-			TTL:       p.TTL,
-			Email:     p.Email,
-			Roles:     roles,
-		})
-		if err != nil {
-			return echo.ErrInternalServerError.SetInternal(err)
-		}
+
 		resp := invite{
 			Path:      filepath.Join("/", iv.Path.Path(key)),
-			ExpiresAt: expires,
+			ExpiresAt: time.UnixMilli(session.ExpiresAt),
 			CreatedBy: claims.UUID,
 			TTL:       p.TTL,
-			Roles:     roles,
+			Roles:     session.Roles,
 		}
 		return c.JSON(200, &resp)
 	}
@@ -178,15 +166,9 @@ func (iv *Invitations) Accept(body []byte, contentType string) echo.HandlerFunc 
 			ctx = req.Context()
 			id  = iv.Path.GetID(req)
 		)
-		session, err := iv.get(ctx, id)
+		session, err := iv.store.View(ctx, id)
 		if err != nil {
 			return echo.ErrNotFound.SetInternal(err)
-		}
-		if session.TTL == 0 {
-			if err = iv.del(ctx, id); err != nil {
-				logger.WithError(err).Error("could not delete invite session")
-			}
-			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
 		}
 		if session.ExpiresAt < 0 {
 			return echo.ErrForbidden
@@ -215,23 +197,17 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			key   = iv.Path.GetID(req)
 			login Login
 		)
-		session, err := iv.get(ctx, key)
+		session, err := iv.store.Get(ctx, key)
 		if err != nil {
-			return echo.ErrNotFound.SetInternal(err)
-		}
-		if session.TTL == 0 {
-			if err = iv.del(ctx, key); err != nil {
-				logger.WithError(err).Error("could not delete invite session")
+			switch err {
+			case ErrInviteTTL:
+				return echo.ErrForbidden.SetInternal(err)
+			case redis.Nil:
+				return echo.ErrNotFound.SetInternal(err)
 			}
-			return echo.ErrForbidden.SetInternal(ErrInviteTTL)
-		} else if session.TTL > 0 {
-			// Decrement the TTL and put it back in storage
-			session.TTL--
-			err = iv.put(ctx, key, session)
-			if err != nil {
-				return echo.ErrInternalServerError.SetInternal(err)
-			}
+			return echo.ErrInternalServerError.SetInternal(err)
 		}
+
 		err = c.Bind(&login)
 		if err != nil {
 			return echo.ErrBadRequest.SetInternal(err)
@@ -251,7 +227,8 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 		// Cleanup on success
-		err = iv.del(ctx, key)
+		//err = iv.del(ctx, key)
+		err = iv.store.Del(ctx, key)
 		if err != nil {
 			logger.WithError(err).Error("failed to destroy invite session")
 		}
@@ -282,44 +259,25 @@ func (iv *Invitations) List() echo.HandlerFunc {
 		if claims == nil {
 			return echo.ErrUnauthorized
 		}
-		keys, err := iv.RDB.Keys(ctx, "invite:*").Result()
+		sessions, err := iv.store.List(ctx)
 		if err != nil {
-			return echo.ErrNotFound.SetInternal(err)
+			return echo.ErrInternalServerError.SetInternal(err)
 		}
 
-		l := len(keys)
-		if l == 0 {
-			return c.JSON(200, resp)
-		}
-
-		sessions := make([]inviteSession, l)
-		rawsessions, err := iv.RDB.MGet(ctx, keys...).Result()
-		if err != nil {
-			return echo.ErrNotFound.SetInternal(err)
-		}
-		for i, raw := range rawsessions {
-			s := raw.(string)
-			err = json.Unmarshal([]byte(s), &sessions[i])
-			if err != nil {
-				return echo.ErrInternalServerError.SetInternal(err)
-			}
-			keys[i] = strings.Replace(keys[i], "invite:", "", 1)
-		}
-
-		resp.Invites = make([]invite, 0, l)
+		resp.Invites = make([]invite, 0, len(sessions))
 		if auth.IsAdmin(claims) {
-			for i, s := range sessions {
-				inv := invite{Path: iv.Path.Path(keys[i])}
-				setInviteFromSession(&inv, &s)
+			for _, s := range sessions {
+				inv := invite{Path: iv.Path.Path(s.id)}
+				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
 		} else {
-			for i, s := range sessions {
+			for _, s := range sessions {
 				if !bytes.Equal(s.CreatedBy[:], claims.UUID[:]) {
 					continue
 				}
-				inv := invite{Path: iv.Path.Path(keys[i])}
-				setInviteFromSession(&inv, &s)
+				inv := invite{Path: iv.Path.Path(s.id)}
+				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
 		}
@@ -345,81 +303,29 @@ func (iv *Invitations) Delete() echo.HandlerFunc {
 		if claims == nil {
 			return echo.ErrUnauthorized
 		}
-		session, err := iv.get(ctx, id)
-		if err != nil {
-			return echo.ErrNotFound.SetInternal(err)
-		}
-		if !bytes.Equal(claims.UUID[:], session.CreatedBy[:]) {
-			return echo.ErrForbidden
-		}
-		err = iv.del(ctx, id)
-		if err != nil {
-			return echo.ErrInternalServerError.SetInternal(err)
-		}
-		return nil
+		return iv.store.OwnerDel(ctx, id, claims.UUID)
 	}
 }
 
-func (iv *Invitations) put(
-	ctx context.Context,
-	key string,
-	session *inviteSession,
-) error {
-	return iv.set(ctx, key, redis.KeepTTL, session)
-}
-
-func (iv *Invitations) set(
-	ctx context.Context,
-	key string,
-	timeout time.Duration,
-	session *inviteSession,
-) error {
-	raw, err := json.Marshal(session)
-	if err != nil {
-		return err
-	}
-	return iv.RDB.Set(ctx, fmt.Sprintf("invite:%s", key), raw, timeout).Err()
-}
-
-func (iv *Invitations) get(ctx context.Context, key string) (*inviteSession, error) {
-	var s inviteSession
-	raw, err := iv.RDB.Get(ctx, fmt.Sprintf("invite:%s", key)).Bytes()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(raw, &s)
-	if err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func (iv *Invitations) del(ctx context.Context, key string) error {
-	return iv.RDB.Del(ctx, fmt.Sprintf("invite:%s", key)).Err()
-}
-
-func (iv *Invitations) key() (string, error) {
-	var b [32]byte
-	_, err := rand.Read(b[:])
-	if err != nil {
-		return "", err
-	}
-	return iv.Encoder.EncodeToString(b[:]), nil
+type InviteStore interface {
+	Create(context.Context, uuid.UUID, *CreateInviteRequest) (*inviteSession, string, error)
+	Get(context.Context, string) (*inviteSession, error)
+	View(context.Context, string) (*inviteSession, error)
+	OwnerDel(context.Context, string, uuid.UUID) error
+	Del(context.Context, string) error
+	List(ctx context.Context) ([]*inviteSession, error)
 }
 
 type InviteSessionStore struct {
-	RDB     redis.Cmdable
-	Prefix  string
-	Encoder StrEncoder
+	RDB    redis.Cmdable
+	Prefix string
 }
 
 func (iss *InviteSessionStore) key(id string) string {
 	return fmt.Sprintf("%s:%s", iss.Prefix, id)
 }
 
-var now = time.Now
-
-func (iss *InviteSessionStore) Create(ctx context.Context, req *CreateInviteRequest) (*inviteSession, string, error) {
+func (iss *InviteSessionStore) Create(ctx context.Context, creator uuid.UUID, req *CreateInviteRequest) (*inviteSession, string, error) {
 	var (
 		b       [32]byte
 		timeout time.Duration
@@ -437,8 +343,11 @@ func (iss *InviteSessionStore) Create(ctx context.Context, req *CreateInviteRequ
 	}
 
 	s := inviteSession{
+		CreatedBy: creator,
 		ExpiresAt: now().Add(timeout).UnixMilli(),
 		TTL:       ttl,
+		Email:     req.Email,
+		Roles:     asAuthRoles(req.Roles),
 	}
 	raw, err := json.Marshal(&s)
 	if err != nil {
@@ -457,6 +366,21 @@ func (iss *InviteSessionStore) Create(ctx context.Context, req *CreateInviteRequ
 }
 
 func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSession, error) {
+	s, err := iss.View(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	if s.TTL > 0 {
+		s.TTL--
+		err = iss.put(ctx, key, s)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+func (iss *InviteSessionStore) View(ctx context.Context, key string) (*inviteSession, error) {
 	s, err := iss.get(ctx, key)
 	if err != nil {
 		return nil, err
@@ -467,12 +391,6 @@ func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSess
 			logger.WithError(err).Error("could not delete invite expired session")
 		}
 		return nil, ErrInviteTTL
-	} else if s.TTL > 0 {
-		s.TTL--
-		err = iss.put(ctx, key, s)
-		if err != nil {
-			return nil, err
-		}
 	}
 	return s, nil
 }
@@ -488,12 +406,19 @@ func (iss *InviteSessionStore) put(ctx context.Context, key string, session *inv
 func (iss *InviteSessionStore) OwnerDel(ctx context.Context, key string, uid uuid.UUID) error {
 	s, err := iss.get(ctx, key)
 	if err != nil {
-		return err
+		if err == redis.Nil {
+			return echo.ErrNotFound
+		}
+		return echo.ErrInternalServerError.SetInternal(err)
 	}
 	if !bytes.Equal(s.CreatedBy[:], uid[:]) {
-		return ErrSessionOwnership
+		return echo.ErrForbidden.SetInternal(ErrSessionOwnership)
 	}
-	return iss.Del(ctx, key)
+	err = iss.Del(ctx, key)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+	return nil
 }
 
 func (iss *InviteSessionStore) Del(ctx context.Context, key string) error {
@@ -539,4 +464,12 @@ func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, erro
 		}
 	}
 	return sessions, nil
+}
+
+func asAuthRoles(ss []string) []auth.Role {
+	roles := make([]auth.Role, len(ss))
+	for i, s := range ss {
+		roles[i] = auth.Role(s)
+	}
+	return roles
 }

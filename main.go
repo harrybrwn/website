@@ -5,7 +5,6 @@ package main
 
 import (
 	"embed"
-	"encoding/base64"
 	"flag"
 	"io/fs"
 	"net"
@@ -111,12 +110,7 @@ func main() {
 	}
 
 	userStore := app.NewUserStore(db)
-
-	invites := app.Invitations{
-		Path:    &InvitePathBuilder{"/invite"},
-		RDB:     rd,
-		Encoder: base64.RawURLEncoding,
-	}
+	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"})
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
@@ -130,7 +124,7 @@ func main() {
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
-	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", &invites))
+	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
 	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))

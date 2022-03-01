@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,10 +32,6 @@ type testPath struct {
 }
 
 func (tp *testPath) Path(id string) string {
-	if tp.t != nil && id != tp.id {
-		tp.t.Helper()
-		tp.t.Errorf("wrong id: got %s, want %s", id, tp.id)
-	}
 	return filepath.Join("/", tp.p, id)
 }
 
@@ -141,12 +136,16 @@ func TestInviteCreate(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
-			now := time.Now()
+			tm := time.Now()
+			now = func() time.Time { return tm }
 			invites := Invitations{
-				Path:    &testPath{p: "invite", id: tt.id, t: t},
-				RDB:     rdb,
-				Encoder: &staticEncoding{id: tt.id},
-				Now:     func() time.Time { return now },
+				Path: &testPath{p: "invite", id: tt.id, t: t},
+				// RDB:  rdb,
+				// Encoder: &staticEncoding{id: tt.id},
+				store: &InviteSessionStore{
+					RDB:    rdb,
+					Prefix: "invite",
+				},
 			}
 			defer ctrl.Finish()
 			if tt.claims != nil {
@@ -170,15 +169,17 @@ func TestInviteCreate(t *testing.T) {
 				roles[i] = auth.Role(r)
 			}
 			if tt.expected == nil {
-				expires := now.Add(tt.body.Timeout).UnixMilli()
+				expires := tm.Add(tt.body.Timeout).UnixMilli()
 				expectedSession, err := json.Marshal(&inviteSession{
-					CreatedBy: tt.claims.UUID, TTL: tt.body.TTL,
-					ExpiresAt: expires, Email: tt.body.Email,
-					Roles: roles,
+					CreatedBy: tt.claims.UUID,
+					TTL:       tt.body.TTL,
+					ExpiresAt: expires,
+					Email:     tt.body.Email,
+					Roles:     roles,
 				})
 				is.NoErr(err)
 				rdb.EXPECT().
-					Set(ctx, fmt.Sprintf("invite:%s", tt.id), []byte(expectedSession), tt.body.Timeout).
+					Set(ctx, mockutil.HasPrefix("invite:"), expectedSession, tt.body.Timeout).
 					Return(redis.NewStatusResult("", nil))
 			}
 			err := invites.Create()(c)
@@ -229,7 +230,7 @@ func TestInviteAccept(t *testing.T) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.Eq("invite:12345")).Return(redis.NewIntResult(0, nil))
 			},
-			expected: echo.ErrForbidden,
+			expected: echo.ErrNotFound,
 			internal: ErrInviteTTL,
 		},
 		{
@@ -274,9 +275,10 @@ func TestInviteAccept(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
 			invites := Invitations{
-				Path:    &testPath{p: "invite"},
-				RDB:     rdb,
-				Encoder: base64.RawURLEncoding,
+				Path: &testPath{p: "invite"},
+				// RDB:  rdb,
+				// Encoder: base64.RawURLEncoding,
+				store: &InviteSessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -365,7 +367,7 @@ func TestInviteSignUp(t *testing.T) {
 		{
 			name:     "Fail to update session with new ttl",
 			session:  &inviteSession{TTL: 10},
-			expected: echo.ErrInternalServerError,
+			expected: echo.ErrNotFound,
 			internal: redis.Nil,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
 				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
@@ -463,9 +465,13 @@ func TestInviteSignUp(t *testing.T) {
 			db := mockdb.NewMockDB(ctrl)
 			rows := mockdb.NewMockRows(ctrl)
 			invites := Invitations{
-				Path:    &testPath{p: "invite"},
-				RDB:     rdb,
-				Encoder: base64.RawURLEncoding,
+				Path: &testPath{p: "invite"},
+				// RDB:  rdb,
+				// Encoder: base64.RawURLEncoding,
+				store: &InviteSessionStore{
+					RDB:    rdb,
+					Prefix: "invite",
+				},
 			}
 			defer ctrl.Finish()
 
@@ -565,9 +571,10 @@ func TestInviteDelete(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
 			invites := Invitations{
-				Path:    &testPath{p: "invite"},
-				RDB:     rdb,
-				Encoder: base64.RawURLEncoding,
+				Path: &testPath{p: "invite"},
+				// RDB:  rdb,
+				// Encoder: base64.RawURLEncoding,
+				store: &InviteSessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -582,8 +589,7 @@ func TestInviteDelete(t *testing.T) {
 				tt.mocks(t, rdb, &tt)
 			}
 			err := invites.Delete()(c)
-			is.True(errors.Is(tt.expected, err))
-			is.Equal(tt.expected, err)
+			is.True(errors.Is(tt.expected, err)) // should have expected error
 			if httpErr, ok := err.(*echo.HTTPError); ok && tt.internal != nil {
 				is.True(errors.Is(httpErr.Internal, tt.internal))
 			}
@@ -610,7 +616,7 @@ func TestInviteList(t *testing.T) {
 		},
 		{
 			name:     "failed getting keys",
-			expected: echo.ErrNotFound,
+			expected: echo.ErrInternalServerError,
 			internal: redis.Nil,
 			claims:   new(auth.Claims),
 			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
@@ -730,9 +736,10 @@ func TestInviteList(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
 			invites := Invitations{
-				Path:    &testPath{p: "invite"},
-				RDB:     rdb,
-				Encoder: base64.RawURLEncoding,
+				Path: &testPath{p: "invite"},
+				// RDB:  rdb,
+				// Encoder: base64.RawURLEncoding,
+				store: &InviteSessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -762,48 +769,6 @@ func TestInviteList(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestInviteSession(t *testing.T) {
-	is := is.New(t)
-	ctx := context.Background()
-	ctrl := gomock.NewController(t)
-	rdb := mockredis.NewMockCmdable(ctrl)
-	now := time.Now()
-	invites := Invitations{
-		RDB:     rdb,
-		Encoder: base64.StdEncoding,
-		Now:     func() time.Time { return now },
-	}
-	defer ctrl.Finish()
-
-	uid := uuid.New()
-	timeout := time.Second
-	ttl := 3
-	email := "t@t.com"
-
-	k, err := invites.key()
-	if err != nil {
-		t.Fatal(err)
-	}
-	is.True(len(k) > 0)
-	expires := now.Add(timeout).UnixMilli()
-	rawSession, err := json.Marshal(&inviteSession{
-		CreatedBy: uid, TTL: ttl,
-		ExpiresAt: expires, Email: email,
-	})
-	is.NoErr(err)
-	rdb.EXPECT().Set(ctx, fmt.Sprintf("invite:%s", k), rawSession, timeout).Return(redis.NewStatusResult("", nil))
-	rdb.EXPECT().Get(ctx, fmt.Sprintf("invite:%s", k)).Return(redis.NewStringResult(string(rawSession), nil))
-
-	err = invites.set(ctx, k, timeout, &inviteSession{CreatedBy: uid, ExpiresAt: expires, TTL: ttl, Email: email})
-	is.NoErr(err)
-	session, err := invites.get(ctx, k)
-	is.NoErr(err)
-	is.Equal(session.CreatedBy[:], uid[:])
-	is.Equal(session.TTL, ttl)
-	is.Equal(session.Email, email)
-	is.Equal(session.ExpiresAt, expires)
 }
 
 func TestInviteSessionStore_Get(t *testing.T) {
@@ -853,6 +818,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 	type table struct {
 		name     string
 		req      *CreateInviteRequest
+		uuid     uuid.UUID
 		expected error
 		mock     func(t *testing.T, tt *table, rd *mockredis.MockCmdable)
 	}
@@ -867,7 +833,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 				mockSessionSet(
 					t, rd, mockutil.HasPrefix("iss_create:"),
 					gomock.Eq(defaultInviteTimeout),
-					&inviteSession{TTL: defaultInviteTTL, ExpiresAt: now().Add(defaultInviteTimeout).UnixMilli()},
+					&inviteSession{TTL: defaultInviteTTL, ExpiresAt: now().Add(defaultInviteTimeout).UnixMilli(), CreatedBy: tt.uuid},
 				).Return(redis.NewStatusResult("", tmpErr))
 			},
 		},
@@ -879,7 +845,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 				mockSessionSet(
 					t, rd, mockutil.HasPrefix("iss_create:"),
 					gomock.Eq(defaultInviteTimeout),
-					&inviteSession{TTL: defaultInviteTTL, ExpiresAt: now().Add(defaultInviteTimeout).UnixMilli()},
+					&inviteSession{TTL: defaultInviteTTL, ExpiresAt: now().Add(defaultInviteTimeout).UnixMilli(), CreatedBy: tt.uuid},
 				).Return(redis.NewStatusResult("", nil))
 			},
 		},
@@ -891,7 +857,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 				mockSessionSet(
 					t, rd, mockutil.HasPrefix("iss_create:"),
 					gomock.Eq(time.Hour*9),
-					&inviteSession{TTL: 53, ExpiresAt: now().Add(time.Hour * 9).UnixMilli()},
+					&inviteSession{TTL: 53, ExpiresAt: now().Add(time.Hour * 9).UnixMilli(), CreatedBy: tt.uuid},
 				).Return(redis.NewStatusResult("", nil))
 			},
 		},
@@ -904,7 +870,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 			store := InviteSessionStore{Prefix: "iss_create", RDB: rd}
 			ctx := context.Background()
 			tt.mock(t, &tt, rd)
-			session, id, err := store.Create(ctx, tt.req)
+			session, id, err := store.Create(ctx, tt.uuid, tt.req)
 			is.True(errors.Is(err, tt.expected))
 			if tt.expected != nil {
 				return
