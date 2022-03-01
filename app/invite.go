@@ -24,6 +24,7 @@ import (
 
 var (
 	ErrInviteTTL            = errors.New("session ttl limit reached")
+	ErrSessionOwnership     = errors.New("cannot access session created by someone else")
 	ErrEmptyLogin           = &echo.HTTPError{Code: http.StatusBadRequest, Message: "empty login information"}
 	ErrInviteEmailMissmatch = &echo.HTTPError{Code: http.StatusForbidden, Message: "email does not match invitation"}
 	ErrInvalidTimeout       = &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid invite timeout"}
@@ -407,48 +408,45 @@ func (iv *Invitations) key() (string, error) {
 }
 
 type InviteSessionStore struct {
-	RDB    redis.Cmdable
-	Prefix string
+	RDB     redis.Cmdable
+	Prefix  string
+	Encoder StrEncoder
 }
 
 func (iss *InviteSessionStore) key(id string) string {
 	return fmt.Sprintf("%s:%s", iss.Prefix, id)
 }
 
-type InviteOption func(*inviteSession)
-
-func WithCreator(uid uuid.UUID) InviteOption {
-	return func(is *inviteSession) { is.CreatedBy = uid }
-}
-
-func WithTTL(ttl int) InviteOption {
-	return func(is *inviteSession) { is.TTL = ttl }
-}
-
-func WithRoles(roles []string) InviteOption {
-	return func(is *inviteSession) {
-		is.Roles = make([]auth.Role, len(roles))
-		for i, r := range roles {
-			is.Roles[i] = auth.Role(r)
-		}
-	}
-}
-
 var now = time.Now
 
-func (iss *InviteSessionStore) Create(ctx context.Context, timeout time.Duration) (*inviteSession, string, error) {
+func (iss *InviteSessionStore) Create(ctx context.Context, req *CreateInviteRequest) (*inviteSession, string, error) {
 	var (
-		b [32]byte
-		s inviteSession
+		b       [32]byte
+		timeout time.Duration
+		ttl     int
 	)
-	s.ExpiresAt = now().Add(timeout).UnixMilli()
+	if req.Timeout == 0 {
+		timeout = defaultInviteTimeout
+	} else {
+		timeout = req.Timeout
+	}
+	if req.TTL == 0 {
+		ttl = defaultInviteTTL
+	} else {
+		ttl = req.TTL
+	}
+
+	s := inviteSession{
+		ExpiresAt: now().Add(timeout).UnixMilli(),
+		TTL:       ttl,
+	}
 	raw, err := json.Marshal(&s)
 	if err != nil {
 		return nil, "", err
 	}
 	_, err = rand.Read(b[:])
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.Wrap(err, "failed to generate session id")
 	}
 	id := base64.RawURLEncoding.EncodeToString(b[:])
 	err = iss.RDB.Set(ctx, iss.key(id), raw, timeout).Err()
@@ -459,6 +457,50 @@ func (iss *InviteSessionStore) Create(ctx context.Context, timeout time.Duration
 }
 
 func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSession, error) {
+	s, err := iss.get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	if s.TTL == 0 {
+		err = iss.Del(ctx, key)
+		if err != nil {
+			logger.WithError(err).Error("could not delete invite expired session")
+		}
+		return nil, ErrInviteTTL
+	} else if s.TTL > 0 {
+		s.TTL--
+		err = iss.put(ctx, key, s)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+func (iss *InviteSessionStore) put(ctx context.Context, key string, session *inviteSession) error {
+	raw, err := json.Marshal(session)
+	if err != nil {
+		return err
+	}
+	return iss.RDB.Set(ctx, iss.key(key), raw, redis.KeepTTL).Err()
+}
+
+func (iss *InviteSessionStore) OwnerDel(ctx context.Context, key string, uid uuid.UUID) error {
+	s, err := iss.get(ctx, key)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(s.CreatedBy[:], uid[:]) {
+		return ErrSessionOwnership
+	}
+	return iss.Del(ctx, key)
+}
+
+func (iss *InviteSessionStore) Del(ctx context.Context, key string) error {
+	return iss.RDB.Del(ctx, iss.key(key)).Err()
+}
+
+func (iss *InviteSessionStore) get(ctx context.Context, key string) (*inviteSession, error) {
 	raw, err := iss.RDB.Get(ctx, iss.key(key)).Bytes()
 	if err != nil {
 		return nil, err
@@ -468,18 +510,6 @@ func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSess
 		return nil, err
 	}
 	return &s, nil
-}
-
-func (iss *InviteSessionStore) Put(ctx context.Context, key string, exp time.Duration, session *inviteSession) error {
-	raw, err := json.Marshal(session)
-	if err != nil {
-		return err
-	}
-	return iss.RDB.Set(ctx, iss.key(key), raw, exp).Err()
-}
-
-func (iss *InviteSessionStore) Del(ctx context.Context, key string) error {
-	return iss.RDB.Del(ctx, iss.key(key)).Err()
 }
 
 func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, error) {
@@ -505,7 +535,7 @@ func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, erro
 		}
 		ix := strings.LastIndex(keys[i], ":")
 		if ix >= 0 {
-			sessions[i].id = keys[i][ix:]
+			sessions[i].id = keys[i][ix+1:]
 		}
 	}
 	return sessions, nil
