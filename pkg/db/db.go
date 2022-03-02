@@ -119,7 +119,6 @@ func Connect(logger logrus.FieldLogger) (DB, error) {
 	os.Unsetenv("PGSERVICE")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	logger.Info(os.Getenv("DATABASE_URL"))
 	// url := os.ExpandEnv(os.Getenv("DATABASE_URL"))
 	url := postgresConnectString()
 	if url == "" {
@@ -159,40 +158,25 @@ func lookupAnyOf(keys ...string) (string, bool) {
 	return "", false
 }
 
-func redisURL() (string, bool) {
+func redisOpts() (*redis.Options, error) {
 	fullurl, ok := lookupAnyOf("REDIS_URL", "REDIS_TLS_URL")
 	if ok {
-		return fullurl, true
+		return redis.ParseURL(fullurl)
 	}
 	host := os.Getenv("REDIS_HOST")
 	port := os.Getenv("REDIS_PORT")
-	pw := os.Getenv("REDIS_PASSWORD")
-	var userinfo *url.Userinfo
-	if len(host) == 0 {
-		return "", false
+	if port == "" {
+		port = "6397"
 	}
-	if len(pw) > 0 {
-		userinfo = url.UserPassword(os.Getenv("REDIS_USER"), pw)
-	}
-	if len(port) == 0 {
-		port = "6379"
-	}
-	u := url.URL{
-		Scheme: "redis",
-		Host:   net.JoinHostPort(host, port),
-		User:   userinfo,
-	}
-	return u.String(), true
+	return &redis.Options{
+		Addr:     net.JoinHostPort(host, port),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	}, nil
 }
 
 func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
 	ctx := context.Background()
-	// url, ok := lookupAnyOf("REDIS_URL", "REDIS_TLS_URL")
-	url, ok := redisURL()
-	if !ok {
-		return nil, errors.New("$REDIS_URL not set")
-	}
-	opts, err := redis.ParseURL(url)
+	opts, err := redisOpts()
 	if err != nil {
 		return nil, err
 	}

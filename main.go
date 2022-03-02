@@ -193,7 +193,7 @@ func invitesPageHandler(body []byte, contentType, debugFile string, invitations 
 			return invitations.Accept(raw, ct)(c)
 		}
 	} else {
-		return invitations.Accept(body, "contentType")
+		return invitations.Accept(body, contentType)
 	}
 }
 

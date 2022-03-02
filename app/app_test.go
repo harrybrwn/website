@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -13,7 +15,9 @@ import (
 	"harrybrown.com/internal/mocks/mockdb"
 )
 
-func Test(t *testing.T) {}
+func Test(t *testing.T) {
+	fmt.Println(int(time.Millisecond * 500))
+}
 
 func TestInsertLogs(t *testing.T) {
 	is := is.New(t)

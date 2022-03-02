@@ -43,14 +43,6 @@ func (tp *testPath) GetID(req *http.Request) string {
 	return ""
 }
 
-type staticEncoding struct {
-	id string
-}
-
-func (se *staticEncoding) EncodeToString(_ []byte) string {
-	return se.id
-}
-
 func TestInviteCreate(t *testing.T) {
 	defer silent()()
 	type table struct {

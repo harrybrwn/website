@@ -37,7 +37,6 @@ fi
 
 source "$ENV_FILE"
 
-echo "$REDIS_URL"
 docker-compose exec                  \
   -e REDISCLI_AUTH="$REDIS_PASSWORD" \
   redis redis-cli  \

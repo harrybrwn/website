@@ -1,6 +1,23 @@
 import pytest
 
+import os
+import redis
 from models import User
+
+
+@pytest.fixture(scope="session")
+def rdb() -> redis.Redis:
+    return redis.Redis(
+        host="redis",
+        port=6379,
+        db=0,
+        password=os.getenv("REDIS_PASSWORD"),
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def clear_cache(rdb: redis.Redis):
+    rdb.flushall(False)
 
 
 @pytest.fixture(scope="module")

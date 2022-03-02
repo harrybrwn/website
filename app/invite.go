@@ -138,7 +138,7 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			Path:      filepath.Join("/", iv.Path.Path(key)),
 			ExpiresAt: time.UnixMilli(session.ExpiresAt),
 			CreatedBy: claims.UUID,
-			TTL:       p.TTL,
+			TTL:       session.TTL,
 			Roles:     session.Roles,
 		}
 		return c.JSON(200, &resp)
@@ -227,7 +227,6 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 		// Cleanup on success
-		//err = iv.del(ctx, key)
 		err = iv.store.Del(ctx, key)
 		if err != nil {
 			logger.WithError(err).Error("failed to destroy invite session")

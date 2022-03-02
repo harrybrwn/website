@@ -20,6 +20,9 @@ class Token:
         self.expires = blob["expires"]
         self.refresh_token = blob["refresh_token"]
 
+    def header(self) -> str:
+        return f"{self.type} {self.token}"
+
 
 class User:
     id: int

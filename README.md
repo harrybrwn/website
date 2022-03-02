@@ -22,3 +22,26 @@ bin/harrybrwn.com -env
 ```
 
 If you have the heroku cli, you can start the serer with `haroku local web`.
+
+
+## Tests
+
+### Backend Unit Tests
+
+```
+go test -tags ci ./...
+```
+
+### Backend Functional Tests
+
+```
+docker-compose -f docker-compose.test.yml build
+docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+docker-compose -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
+```
+
+### Frontend
+
+```
+yarn test
+```

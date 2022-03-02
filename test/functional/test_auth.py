@@ -13,9 +13,7 @@ def test_homepage():
 
 
 def test_admin_page_logedin(admin_token: Token):
-    res = requests.get(f"http://{host}/admin", headers={
-        "Authorization": f'{admin_token.type} {admin_token.token}',
-    })
+    res = requests.get(f"http://{host}/admin", headers={"Authorization": admin_token.header()})
     assert res.ok
     assert res.status_code == 200
 
@@ -33,17 +31,21 @@ def test_admin_page_failure():
 
 
 def test_runtime_as_admin(admin_token: Token):
-    t = admin_token
-    res = requests.get(f"http://{host}/api/runtime", headers={
-        "Authorization": f'{t.type} {t.token}',
-    })
+    res = requests.get(f"http://{host}/api/runtime", headers={"Authorization": admin_token.header()})
     assert res.ok
+    info = res.json()
+    assert info["name"] == "Harry Brown"
+    assert "age" in info
+    assert "uptime" in info
+    assert "birthday" in info
+    assert "goversion" in info
+    assert "debug" in info
+    assert "GOOS" in info
+    assert "GOARCH" in info
 
 
-def test_runtime_as_user(user_token):
-    res = requests.get(f"http://{host}/api/runtime", headers={
-        "Authorization": f'{user_token.type} {user_token.token}',
-    })
+def test_runtime_as_user(user_token: Token):
+    res = requests.get(f"http://{host}/api/runtime", headers={"Authorization": user_token.header()})
     assert not res.ok
     assert res.status_code >= 400 and res.status_code < 500
 
@@ -51,7 +53,7 @@ def test_runtime_as_user(user_token):
 def test_revoke_token(admin_token: Token):
     res = requests.post(
         f"http://{host}/api/revoke",
-        headers={"Authorization": f'{admin_token.type} {admin_token.token}'},
+        headers={"Authorization": admin_token.header()},
         json={"refresh_token": admin_token.refresh_token}
     )
     assert res.ok
