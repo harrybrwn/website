@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 
 import config
-from models import Token
+from models import Invite, Token
 
 NANOSECOND  = 1
 MICROSECOND = 1000 * NANOSECOND
@@ -59,22 +59,17 @@ def test_invite_timeout(admin_token: Token):
 		f"http://{config.host}/api/invite/create",
 		headers={"Authorization": admin_token.header()},
 		json={
-			"expires": SECOND * 5,
+			"timeout": SECOND * 1,
 		},
 	)
 	assert res.ok
-	j = res.json()
-	print(j["expires_at"])
-	print(type(j["expires_at"]))
-	expires_at = datetime.strptime(j["expires_at"], '%Y-%m-%dT%H:%M:%S.%fZ')
-	assert expires_at > datetime.now()
-	print(expires_at)
+	inv = Invite.from_json(res.json())
+	assert inv.expires_at > datetime.now()
 
-	res = requests.get(f"http://{config.host}{j['path']}", headers={"accept":"text/html"})
+	res = requests.get(f"http://{config.host}{inv.path}", headers={"accept":"text/html"})
 	assert res.ok
 	assert res.headers.get("Content-Type") == "text/html"
-	time.sleep(6)
-	res = requests.get(f"http://{config.host}{j['path']}", headers={"accept":"text/html"})
-	print(res)
-	print(res.text)
+
+	time.sleep(1)
+	res = requests.get(f"http://{config.host}{inv.path}", headers={"accept":"text/html"})
 	assert not res.ok

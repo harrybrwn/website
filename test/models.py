@@ -1,3 +1,4 @@
+from __future__ import annotations
 import datetime
 from typing import List
 
@@ -91,3 +92,32 @@ class User:
 
     def __str__(self):
         return f'User({self.id}, "{self.uuid}", "{self.username}", "{self.email}", {self.roles})'
+
+
+class Invite:
+    path: str
+    created_by: str
+    expires_at: datetime.datetime
+    email: str
+    roles: List[str]
+    ttl: int
+
+    @staticmethod
+    def from_json(j) -> Invite:
+        return Invite(
+            j.get("path"),
+            j.get("created_by"),
+            datetime.datetime.strptime(j["expires_at"], '%Y-%m-%dT%H:%M:%S.%fZ'),
+            j.get("email"),
+            j.get("roles"),
+            j.get("ttl"),
+        )
+
+    def __init__(self, path: str, created_by: str, expires_at: datetime.datetime, email: str, roles: List[str], ttl: int):
+        self.path = path
+        self.created_by = created_by
+        self.expires_at = expires_at
+        self.email = email
+        self.roles = roles
+        self.ttl = ttl
+

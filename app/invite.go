@@ -327,18 +327,14 @@ func (iss *InviteSessionStore) key(id string) string {
 func (iss *InviteSessionStore) Create(ctx context.Context, creator uuid.UUID, req *CreateInviteRequest) (*inviteSession, string, error) {
 	var (
 		b       [32]byte
-		timeout time.Duration
-		ttl     int
+		timeout = req.Timeout
+		ttl     = req.TTL
 	)
 	if req.Timeout == 0 {
 		timeout = defaultInviteTimeout
-	} else {
-		timeout = req.Timeout
 	}
 	if req.TTL == 0 {
 		ttl = defaultInviteTTL
-	} else {
-		ttl = req.TTL
 	}
 
 	s := inviteSession{
