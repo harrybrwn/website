@@ -40,9 +40,10 @@ const (
 )
 
 type Room struct {
-	ID      int    `json:"id"`
-	OwnerID int    `json:"owner_id"`
-	Name    string `json:"name"`
+	ID        int       `json:"id"`
+	OwnerID   int       `json:"owner_id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ChatRoomMember struct {
@@ -65,6 +66,7 @@ func NewStore(db db.DB) Store {
 }
 
 type Store interface {
+	CreateRoom(context.Context, int, string) (*Room, error)
 	GetChatRoom(context.Context, int) (*Room, error)
 	SaveMessage(ctx context.Context, msg *ChatRoomMessage) error
 }
@@ -74,7 +76,7 @@ type store struct {
 }
 
 func (rs *store) GetChatRoom(ctx context.Context, id int) (*Room, error) {
-	const query = `SELECT owner_id, name WHERE id = $1`
+	const query = `SELECT owner_id, name FROM chatroom WHERE id = $1`
 	var r Room
 	rows, err := rs.db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -88,6 +90,20 @@ func (rs *store) SaveMessage(ctx context.Context, msg *ChatRoomMessage) error {
 	const query = `INSERT INTO chatroom_messages (room, user_id, message) VALUES ($1, $2, $3)`
 	_, err := rs.db.ExecContext(ctx, query, msg.Room, msg.UserID, msg.Message)
 	return err
+}
+
+func (rs *store) CreateRoom(ctx context.Context, owner int, name string) (*Room, error) {
+	const query = `INSERT INTO chatroom (owner_id, name) VALUES ($1, $2) RETURNING id, created_at`
+	rows, err := rs.db.QueryContext(ctx, query, owner, name)
+	if err != nil {
+		return nil, err
+	}
+	var room = Room{OwnerID: owner, Name: name}
+	err = db.ScanOne(rows, &room.ID, &room.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &room, nil
 }
 
 func EchoHandler(w http.ResponseWriter, r *http.Request) error {

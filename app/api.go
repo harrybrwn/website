@@ -20,6 +20,7 @@ import (
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sirupsen/logrus"
+	"harrybrown.com/app/chat"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"nhooyr.io/websocket"
@@ -262,6 +263,24 @@ func SendMail(client EmailClient) echo.HandlerFunc {
 			return err
 		}
 		return c.JSON(200, response)
+	}
+}
+
+func CreateChatRoom(store chat.Store) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		claims := auth.GetClaims(c)
+		if claims == nil {
+			return echo.ErrUnauthorized
+		}
+		name := c.QueryParam("name")
+		if name == "" {
+			return echo.ErrBadRequest
+		}
+		room, err := store.CreateRoom(c.Request().Context(), claims.ID, name)
+		if err != nil {
+			return echo.ErrInternalServerError
+		}
+		return c.JSON(200, room)
 	}
 }
 

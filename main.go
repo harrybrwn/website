@@ -113,6 +113,7 @@ func main() {
 	}
 
 	userStore := app.NewUserStore(db)
+	chatStore := chat.NewStore(db)
 	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"})
 
 	jwtConf := app.NewTokenConfig()
@@ -158,7 +159,10 @@ func main() {
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/echo", func(c echo.Context) error { return chat.EchoHandler(c.Response(), c.Request()) })
+
 	api.GET("/chat/stream", app.ChatSocketHandler()) // TODO guard this before releasing
+	api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
+
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
 	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
