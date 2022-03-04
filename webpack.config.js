@@ -71,13 +71,6 @@ const makePlugins = (builder) => {
         ? "static/css/[contenthash:8].css"
         : "static/css/[name].[id].css",
     }),
-    builder.page("index", { pageDir: ".", chunks: ["main"] }),
-    builder.page("remora"),
-    builder.page("admin"),
-    builder.page("harry_y_tanya"),
-    builder.page("games"),
-    builder.page("404", { noChunks: true }),
-    builder.page("invite"),
 
     new CopyWebpackPlugin({
       patterns: [
@@ -138,6 +131,15 @@ module.exports = function (webpackEnv) {
   if (!isWatch && embedCSS) {
     plugins.push(new HTMLInlineCSSWebpackPlugin());
   }
+  plugins.push(
+    builder.page("index", { pageDir: ".", chunks: ["main"] }),
+    builder.page("remora"),
+    builder.page("admin"),
+    builder.page("harry_y_tanya"),
+    builder.page("games"),
+    builder.page("404", { noChunks: true }),
+    builder.page("invite"),
+  );
 
   for (const key in site.pages) {
     // TODO generate parts of the config with this

@@ -8,6 +8,8 @@ const twitter = {
   card: "summary_larg_image",
 };
 
+const built = new Date();
+
 const common = {
   author: pkg.author,
   domain: "harrybrwn.com",
@@ -15,7 +17,7 @@ const common = {
   previewImage: "https://harrybrwn.com/static/img/goofy.jpg",
   github: "https://github.com/harrybrwn",
   linkedin: "https://www.linkedin.com/in/harrison-brown-88823b185/",
-  built: new Date(),
+  built,
   og: true,
   robots: "index, archive, follow",
   twitter,
