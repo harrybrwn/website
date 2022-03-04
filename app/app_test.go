@@ -2,11 +2,9 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
@@ -16,7 +14,6 @@ import (
 )
 
 func Test(t *testing.T) {
-	fmt.Println(int(time.Millisecond * 500))
 }
 
 func TestInsertLogs(t *testing.T) {
