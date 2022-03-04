@@ -3,12 +3,20 @@
 set -e
 
 ENV_FILE=.env
-USE_DOCKER=false
+DOCKER=false
+
+
+function help() {
+  echo "$1 [-h|--help|-env|-docker] -- <args...>"
+  echo "  -env        environment file (default: .env)"
+  echo "  -docker     use docker to run the command"
+  echo "  -h, --help  print help message"
+}
 
 while :; do
   case $1 in
     -h|--help)
-      echo "psql.sh [-h|-help|-env|-docker] <psql args...>"
+      help "psql.sh"
       exit
       ;;
     -env)
@@ -16,7 +24,7 @@ while :; do
       shift 2
       ;;
     -docker)
-      USE_DOCKER=true
+      DOCKER=true
       shift
       ;;
     --)
@@ -36,7 +44,7 @@ fi
 
 source "$ENV_FILE"
 
-if $USE_DOCKER; then
+if $DOCKER; then
   # Reset the port because we are running this in a docker container
   echo 'using docker-compose'
   POSTGRES_PORT=5432

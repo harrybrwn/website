@@ -20,7 +20,8 @@ const (
 	// Name is the name of the application.
 	Name               = "harrybrown.com"
 	BuildDir           = "./build"
-	StaticCacheControl = "public, max-age=31919000"
+	StaticCacheControl = "public, max-age=604800" // 7 days
+	// StaticCacheControl = "private, max-age=604800" // 7 days
 )
 
 var (

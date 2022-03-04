@@ -9,11 +9,14 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
 	"harrybrown.com/app/chat"
@@ -42,6 +45,8 @@ var (
 	//tanyaStaticPage []byte
 	//go:embed build/chat/index.html
 	chatStaticPage []byte
+	//go:embed build/invite/index.html
+	inviteStaticPage []byte
 
 	//go:embed files/bookmarks.json
 	bookmarks []byte
@@ -107,18 +112,24 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	userStore := app.NewUserStore(db)
+	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"})
+
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
-	e.GET("/", app.Page(harryStaticPage, "index.html"))
+	e.Any("/", app.Page(harryStaticPage, "index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "index.html"))
-	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard)
+	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/chat", app.Page(chatStaticPage, "chat/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
+
+	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
+	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
@@ -128,13 +139,13 @@ func main() {
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
 
-	userStore := app.NewUserStore(db)
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
 		Users:  userStore,
 	}
 	api := e.Group("/api")
+	emailClient := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
@@ -148,6 +159,10 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/echo", func(c echo.Context) error { return chat.EchoHandler(c.Response(), c.Request()) })
 	api.GET("/chat/stream", app.ChatSocketHandler()) // TODO guard this before releasing
+	api.POST("/invite/create", invites.Create(), guard)
+	api.DELETE("/invite/:id", invites.Delete(), guard)
+	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
+	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
 	logger.WithField("time", app.StartTime).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
@@ -170,6 +185,21 @@ func NotFoundHandler() echo.HandlerFunc {
 			return echo.ErrNotFound
 		}
 		return c.HTMLBlob(404, notFoundStaticPage)
+	}
+}
+
+func invitesPageHandler(body []byte, contentType, debugFile string, invitations *app.Invitations) echo.HandlerFunc {
+	if app.Debug {
+		return func(c echo.Context) error {
+			raw, err := os.ReadFile(debugFile)
+			if err != nil {
+				return err
+			}
+			ct := http.DetectContentType(raw)
+			return invitations.Accept(raw, ct)(c)
+		}
+	} else {
+		return invitations.Accept(body, contentType)
 	}
 }
 
@@ -262,4 +292,15 @@ func staticCache(h http.Handler) http.Handler {
 
 func WrapHandler(h http.HandlerFunc) echo.HandlerFunc {
 	return echo.WrapHandler(h)
+}
+
+type InvitePathBuilder struct{ p string }
+
+func (ipb *InvitePathBuilder) Path(id string) string {
+	return filepath.Join("/", ipb.p, id)
+}
+
+func (ipb *InvitePathBuilder) GetID(r *http.Request) string {
+	list := strings.Split(r.URL.Path, string(filepath.Separator))
+	return list[2]
 }

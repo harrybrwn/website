@@ -74,10 +74,11 @@ const makePlugins = (builder) => {
     builder.page("index", { pageDir: ".", chunks: ["main"] }),
     builder.page("remora"),
     builder.page("admin"),
-    builder.page("404", { noChunks: true }),
     builder.page("harry_y_tanya"),
     builder.page("games"),
     builder.page("chat"),
+    builder.page("404", { noChunks: true }),
+    builder.page("invite"),
 
     new CopyWebpackPlugin({
       patterns: [
@@ -132,9 +133,10 @@ module.exports = function (webpackEnv) {
     isProd,
     htmlMinify,
   });
+  const embedCSS = false;
 
   let plugins = makePlugins(builder);
-  if (!isWatch) {
+  if (!isWatch && embedCSS) {
     plugins.push(new HTMLInlineCSSWebpackPlugin());
   }
 
@@ -161,6 +163,7 @@ module.exports = function (webpackEnv) {
         import: entryImport("pages/games.ts"),
       },
       chat: { import: entryImport("pages/chat.ts") },
+      invite: { import: entryImport("pages/invite.ts") },
     },
 
     devtool: builder.isProd ? undefined : "inline-source-map",

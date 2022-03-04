@@ -1,7 +1,59 @@
 import "~/frontend/styles/admin.css";
 import * as api from "~/frontend/api";
+import LoginManager from "~/frontend/util/LoginManager";
+import {
+  TOKEN_KEY,
+  storeToken,
+  deleteToken,
+  setCookie,
+} from "~/frontend/api/auth";
+import { clearCookie } from "~/frontend/util/cookies";
+import { SECOND } from "~/frontend/constants";
+import { millisecondsToStr } from "~/frontend/util/time";
 
 const main = () => {
+  let loginManager = new LoginManager({
+    interval: 5 * 60 * SECOND,
+    clearToken: () => {
+      deleteToken();
+      clearCookie(TOKEN_KEY);
+    },
+  });
+  document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
+    const e = ev.detail;
+    if (e.action == "login") {
+      storeToken(e.token);
+      setCookie(e.token);
+    } else {
+      if (!loginManager.isLoggedIn()) {
+        return;
+      }
+    }
+  });
+
+  let inviteTable = new Table(
+    "invite-list",
+    (_index: number, _offset: number): Promise<any[][]> => {
+      return api.invites().then((res: api.InviteList) => {
+        let rows = [];
+        if (res.invites == null) return [];
+        res.invites.sort((a: api.InviteURL, b: api.InviteURL): number => {
+          return (
+            new Date(a.expires_at).getTime() - new Date(b.expires_at).getTime()
+          );
+        });
+        for (let inv of res.invites) {
+          rows.push(inviteRow(inv));
+        }
+        return rows;
+      });
+    }
+  );
+  inviteTable.header(["url", "expires at", "roles"]);
+  let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
+  handleInvitationCreation(inviteTable, inviteForm);
+  inviteTable.render();
+
   let infoContainer = document.getElementById("server-info");
   api.runtimeInfo().then((info: api.RuntimeInfo) => {
     if (infoContainer == null) {
@@ -21,21 +73,59 @@ const main = () => {
       dl.appendChild(elem);
     }
     infoContainer.appendChild(dl);
-    // infoContainer.innerText = JSON.stringify(info);
   });
+  /*
   let table = new Table("logs", logsPaginator);
   table.header([
-    "id",
-    "method",
-    "status",
-    "ip",
-    "uri",
-    "referer",
-    "user agent",
-    "latency",
+    "id", "method", "status", "ip",
+    "uri", "referer", "user agent", "latency",
     "requested at",
   ]);
   table.render();
+  */
+};
+
+const createInviteRequest = (data: FormData): api.InviteRequest => {
+  let expires = (data.get("expires") as string) || undefined;
+  let email = (data.get("email") as string) || undefined;
+  let ttl = (data.get("ttl") as string) || undefined;
+  let roles = (data.get("roles") as string) || undefined;
+
+  let request: api.InviteRequest = {};
+  if (expires) {
+    let ex = new Date(expires);
+    // timeout in nanoseconds
+    request.timeout = (ex.getTime() - Date.now()) * 1e6;
+  }
+  if (ttl) request.ttl = parseInt(ttl);
+  if (email) request.email = email;
+  if (roles) request.roles = roles.split(",");
+  return request;
+};
+
+const inviteRow = (inv: api.InviteURL): string[] => {
+  let url = location.origin;
+  if (inv.path[0] != "/") url += "/";
+  if (inv.roles == null) inv.roles = [];
+  let d = new Date(inv.expires_at);
+  let diff = d.getTime() - Date.now();
+  return [
+    `${url}${inv.path}`,
+    `${millisecondsToStr(diff)}`,
+    inv.roles.join(", "),
+  ];
+};
+
+const handleInvitationCreation = (table: Table, form: HTMLFormElement) => {
+  form.addEventListener("submit", (ev: SubmitEvent) => {
+    ev.preventDefault();
+    let target = ev.target as HTMLFormElement;
+    let data = new FormData(target);
+    let request = createInviteRequest(data);
+    api.invite(request).then((invite: api.InviteURL) => {
+      table.pushRow(inviteRow(invite));
+    });
+  });
 };
 
 const logsPaginator = async (
@@ -100,10 +190,10 @@ class Table {
     this.headerNames = [];
 
     this.table = document.createElement("table");
-    this.table.setAttribute("cellspacing", "0");
-    this.table.setAttribute("cellpadding", "0");
     this.thead = document.createElement("thead");
     this.tbody = document.createElement("tbody");
+    this.table.setAttribute("cellspacing", "0");
+    this.table.setAttribute("cellpadding", "0");
     this.table.appendChild(this.thead);
     this.table.appendChild(this.tbody);
   }
@@ -147,7 +237,7 @@ class Table {
     this.thead.appendChild(h);
   }
 
-  addRow(row: any[]) {
+  private createRow(row: any[]): HTMLTableRowElement {
     let tr = document.createElement("tr");
     let i = 0;
     for (let val of row) {
@@ -157,7 +247,15 @@ class Table {
       tr.appendChild(el);
       i++;
     }
-    this.tbody.appendChild(tr);
+    return tr;
+  }
+
+  addRow(row: any[]) {
+    this.tbody.appendChild(this.createRow(row));
+  }
+
+  pushRow(row: any[]) {
+    this.tbody.insertBefore(this.createRow(row), this.tbody.firstChild);
   }
 
   body(rows: any[][]) {
@@ -211,7 +309,7 @@ const addColResizeHandlers = (el: HTMLElement) => {
     nextColWidth = 0;
 
     if (handlerSet) {
-      console.log("removeing mouseMove event handler");
+      console.log("removing mouseMove event handler");
       document.removeEventListener("mousemove", mouseMove);
       handlerSet = false;
     }

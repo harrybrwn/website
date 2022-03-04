@@ -8,10 +8,12 @@ export interface Token {
   type: string;
 }
 
+export type Role = string;
+
 export interface Claims {
   id: number;
   uuid: string;
-  roles: string[];
+  roles: Role[];
   aud: string[];
   iss: string;
   exp: number;

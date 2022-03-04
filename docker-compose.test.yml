@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  web:
+    image: harrybrwn.com-web:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: api
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testdb1}
+      POSTGRES_USER: ${POSTGRES_USER:-site}
+      POSTGRES_DB: ${POSTGRES_DB:-harrybrwn}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-testcache1}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      JWT_SEED: ${JWT_SEED}
+
+  tests:
+    image: python-tests:latest
+    command:
+      - "wait.sh"
+      - "web"
+      - "8080"
+      - "--"
+      - "pytest"
+      - "-s"
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+      target: python
+    volumes:
+      - .:/opt/harrybrwn
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testdb1}
+      POSTGRES_USER: ${POSTGRES_USER:-site}
+      POSTGRES_DB: ${POSTGRES_DB:-harrybrwn}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-testcache1}
+      API_HOST: "web"
+      API_PORT: 8080

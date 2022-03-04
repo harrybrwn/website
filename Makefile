@@ -13,8 +13,12 @@ clean:
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
-clean-mocks:
-	$(RM) -r internal/mocks
+coverage: coverage-ts coverage-go
+
+deep-clean:
+	$(RM) -r internal/mocks \
+		$(shell find . -name '.pytest_cache' -type d) \
+		$(shell find . -name '__pycache__' -type d)
 
 test-go:
 	@mkdir -p .testing
@@ -26,9 +30,24 @@ test-go:
 test-ts:
 	yarn test
 
+.PHONY: coverage-go coverage-ts
+coverage-go:
+	x-www-browser .testing/coverage.html
+
+coverage-ts:
+	yarn coverage
+
 lint-go:
 	go vet -tags ci ./...
 	golangci-lint run
+
+TOOLS=user-gen pwhash key-gen
+
+tools:
+	@mkdir -p ./bin
+	@for tool in $(TOOLS); do \
+		go build -trimpath -ldflags "-s -w" -o ./bin/$$tool ./cmd/$$tool; \
+	done
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
@@ -52,4 +71,16 @@ blog/resources/remora.svg: diagrams/remora.svg
 diagrams/remora.svg: diagrams/remora.drawio
 	./scripts/diagrams.svg
 
-.PHONY: build run test clean clean-mocks test-go test-ts resume
+.PHONY: build run test clean deep-clean test-go test-ts resume tools
+
+.PHONY: functional-setup build-functional
+build-functional:
+	docker-compose -f docker-compose.test.yml build
+
+functional-setup:
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml down
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml build
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+
+functional:
+	docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh

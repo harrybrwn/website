@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -9,6 +10,32 @@ import (
 	"harrybrown.com/pkg/log"
 )
 
+type ErrorCode int
+
+type Error struct {
+	Status   int         `json:"-"`
+	Code     ErrorCode   `json:"code"`
+	Message  interface{} `json:"message"`
+	Internal error       `json:"-"`
+}
+
+func (e *Error) Error() string {
+	if e.Internal != nil {
+		return fmt.Sprintf("code=%d, status=%d, message=%v, internal=%v", e.Code, e.Status, e.Message, e.Internal)
+	}
+	return fmt.Sprintf("code=%d, status=%d, message=%v", e.Code, e.Status, e.Message)
+}
+
+func (e *Error) Is(err error) bool { return errors.Is(e, err) }
+
+func WrapError(status int, err error, message ...interface{}) error {
+	e := &Error{Status: status, Internal: err}
+	if len(message) > 0 {
+		e.Message = message[0]
+	}
+	return e
+}
+
 // ErrorHandler is an error type for internal website errors.
 type ErrorHandler struct {
 	msg      string
@@ -16,19 +43,6 @@ type ErrorHandler struct {
 	file     string
 	funcname string
 	line     int
-}
-
-// Error creates a new error.
-func Error(status int, msg string) error {
-	pc, file, line, _ := runtime.Caller(1)
-	e := &ErrorHandler{
-		msg:      msg,
-		status:   status,
-		file:     file,
-		line:     line,
-		funcname: runtime.FuncForPC(pc).Name(),
-	}
-	return e
 }
 
 // Errorf create an error with a formatted message.

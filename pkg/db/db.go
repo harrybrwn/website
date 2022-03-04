@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"io"
+	"net"
+	"net/url"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -84,12 +87,40 @@ func Datastores(logger logrus.FieldLogger) (DB, *redis.Client, error) {
 	return db, rd, <-errs
 }
 
+func postgresConnectString() string {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL != "" {
+		return dbURL
+	}
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USER")
+	pw := os.Getenv("POSTGRES_PASSWORD")
+	db := os.Getenv("POSTGRES_DB")
+	var userinfo *url.Userinfo
+	if len(user) > 0 && len(pw) > 0 {
+		userinfo = url.UserPassword(user, pw)
+	}
+	if len(host) == 0 || len(port) == 0 || len(db) == 0 {
+		return ""
+	}
+	u := url.URL{
+		Scheme:   "postgres",
+		Host:     net.JoinHostPort(host, port),
+		User:     userinfo,
+		Path:     filepath.Join("/", db),
+		RawQuery: "sslmode=disable",
+	}
+	return u.String()
+}
+
 func Connect(logger logrus.FieldLogger) (DB, error) {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-	url := os.ExpandEnv(os.Getenv("DATABASE_URL"))
+	// url := os.ExpandEnv(os.Getenv("DATABASE_URL"))
+	url := postgresConnectString()
 	if url == "" {
 		return nil, errors.New("empty $DATABASE_URL")
 	}
@@ -127,13 +158,25 @@ func lookupAnyOf(keys ...string) (string, bool) {
 	return "", false
 }
 
+func redisOpts() (*redis.Options, error) {
+	fullurl, ok := lookupAnyOf("REDIS_URL", "REDIS_TLS_URL")
+	if ok {
+		return redis.ParseURL(fullurl)
+	}
+	host := os.Getenv("REDIS_HOST")
+	port := os.Getenv("REDIS_PORT")
+	if port == "" {
+		port = "6397"
+	}
+	return &redis.Options{
+		Addr:     net.JoinHostPort(host, port),
+		Password: os.Getenv("REDIS_PASSWORD"),
+	}, nil
+}
+
 func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
 	ctx := context.Background()
-	url, ok := lookupAnyOf("REDIS_URL", "REDIS_TLS_URL")
-	if !ok {
-		return nil, errors.New("$REDIS_URL not set")
-	}
-	opts, err := redis.ParseURL(url)
+	opts, err := redisOpts()
 	if err != nil {
 		return nil, err
 	}

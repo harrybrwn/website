@@ -4,10 +4,16 @@ set -e
 
 ENV_FILE=.env
 
+function help() {
+  echo "$1 [-h|--help|-env] -- <args...>"
+  echo "  -env        environment file (default: .env)"
+  echo "  -h, --help  print help message"
+}
+
 while :; do
   case $1 in
     -h|--help)
-      echo "redis-cli.sh [-h|-help|-env] <redis-cli args...>"
+      help "redis-cli.sh"
       exit
       ;;
     -env)
@@ -31,7 +37,6 @@ fi
 
 source "$ENV_FILE"
 
-echo "$REDIS_URL"
 docker-compose exec                  \
   -e REDISCLI_AUTH="$REDIS_PASSWORD" \
   redis redis-cli  \

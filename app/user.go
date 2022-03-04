@@ -52,7 +52,7 @@ var (
 type UserStore interface {
 	Login(context.Context, *Login) (*User, error)
 	Get(context.Context, uuid.UUID) (*User, error)
-	Create(context.Context, string, *User) (*User, error)
+	Create(ctx context.Context, password string, user *User) (*User, error)
 }
 
 func NewUserStore(db db.DB) *userStore {
@@ -68,9 +68,9 @@ type userStore struct {
 }
 
 type Login struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" form:"username"`
+	Email    string `json:"email" form:"email"`
+	Password string `json:"password" form:"password"`
 }
 
 const selectQueryHead = `SELECT
@@ -116,7 +116,7 @@ func (s *userStore) get(ctx context.Context, q string, args ...interface{}) (*Us
 	var u User
 	rows, err := s.db.QueryContext(ctx, q, args...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "QueryContext failed")
 	}
 	return &u, scanUser(rows, &u)
 }
@@ -165,6 +165,11 @@ func HashPassword(pw []byte) ([]byte, error) {
 	return bcrypt.GenerateFromPassword(pw, hashCost)
 }
 
+const createUserQuery = `
+	INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING id, created_at, updated_at`
+
 func (s *userStore) Create(ctx context.Context, password string, u *User) (*User, error) {
 	var err error
 	u.PWHash, err = HashPassword([]byte(password))
@@ -175,13 +180,9 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if len(u.Roles) == 0 {
 		u.Roles = []auth.Role{auth.RoleDefault}
 	}
-	const query = `
-		INSERT INTO "user" (uuid, username, email, pw_hash, roles, totp_secret)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING created_at, updated_at`
 	rows, err := s.db.QueryContext(
 		ctx,
-		query,
+		createUserQuery,
 		u.UUID,
 		u.Username,
 		u.Email,
@@ -192,7 +193,7 @@ func (s *userStore) Create(ctx context.Context, password string, u *User) (*User
 	if err != nil {
 		return nil, err
 	}
-	return u, db.ScanOne(rows, &u.CreatedAt, &u.UpdatedAt)
+	return u, db.ScanOne(rows, &u.ID, &u.CreatedAt, &u.UpdatedAt)
 }
 
 func (s *userStore) Update(ctx context.Context, u *User) error {

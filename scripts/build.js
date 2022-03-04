@@ -42,18 +42,13 @@ const fileCompressionLoader = {
   },
 };
 
-const defaultMetaTags = {
-  referrer: { name: "referrer", content: "no-referrer" },
-  robots: "index,archive,follow",
-  googlebot: "index,archive,follow",
-};
-
 const metaTags = (site) => {
   let tags = Object.assign(
     {
       title: site.title,
       author: site.author,
       description: site.description,
+      referrer: { name: "referrer", content: "no-referrer" },
       "og-url": { property: "og:url", content: `https://${site.domain}` },
       "og-title": { property: "og:title", content: site.title },
       "og-type": { property: "og:type", content: "website" },
@@ -65,9 +60,27 @@ const metaTags = (site) => {
       "og-locale": { property: "og:locale", content: "en_US" },
       "og-site-name": { property: "og:site_name", content: site.title },
     },
-    defaultMetaTags,
-    site.subject ? { subject: site.subject } : undefined
+    site.subject ? { subject: site.subject } : undefined,
+    site.robots ? { robots: site.robots, googlebot: site.robots } : undefined,
+    site.twitter
+      ? {
+          "twitter:card": site.twitter.card,
+          "twitter:domain": site.domain,
+          "twitter:site": site.twitter.site,
+          "twitter:creator": site.twitter.creator || site.twitter.site,
+          "twitter:image": site.twitter.image || site.previewImage,
+          "twitter:image:src": site.twitter.image || site.previewImage,
+          "twitter:description": site.description,
+        }
+      : undefined
   );
+
+  if (site.robots) {
+    tags = Object.assign(tags, {
+      robots: site.robots,
+      googlebot: site.robots,
+    });
+  }
 
   if (site.og) {
     if (typeof site.og !== "object") {
@@ -76,10 +89,11 @@ const metaTags = (site) => {
     tags = Object.assign(tags, {
       "og-url": {
         property: "og:url",
-        content: site.og.url || site.og.url || `https://${site.domain}`,
+        content: site.og.url || `https://${site.domain}`,
       },
       "og-title": {
-        property: site.og.title || site.title,
+        property: "og:title",
+        content: site.og.title || site.title,
       },
       "og-type": {
         property: "og:type",
@@ -102,16 +116,6 @@ const metaTags = (site) => {
         content: site.og.site_name || site.title,
       },
     });
-  }
-
-  if (site.twitter) {
-    tags["twitter:card"] = site.twitter.card;
-    tags["twitter:domain"] = site.domain;
-    tags["twitter:site"] = site.twitter.site;
-    tags["twitter:creator"] = site.twitter.creator || site.twitter.site;
-    tags["twitter:image"] = site.twitter.image || site.previewImage;
-    tags["twitter:image:src"] = site.twitter.image || site.previewImage;
-    tags["twitter:description"] = site.description;
   }
   return tags;
 };
