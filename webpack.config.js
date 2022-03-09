@@ -76,7 +76,7 @@ const makePlugins = (builder) => {
     builder.page("admin"),
     builder.page("harry_y_tanya"),
     builder.page("games"),
-    builder.page("chat"),
+    builder.page("chatroom"),
     builder.page("404", { noChunks: true }),
     builder.page("invite"),
 
@@ -162,7 +162,7 @@ module.exports = function (webpackEnv) {
       games: {
         import: entryImport("pages/games.ts"),
       },
-      chat: { import: entryImport("pages/chat.ts") },
+      chatroom: { import: entryImport("pages/chatroom.ts") },
       invite: { import: entryImport("pages/invite.ts") },
     },
 

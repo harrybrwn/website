@@ -43,8 +43,8 @@ var (
 	gamesStaticPage []byte
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
-	//go:embed build/chat/index.html
-	chatStaticPage []byte
+	//go:embed build/chatroom/index.html
+	chatroomStaticPage []byte
 	//go:embed build/invite/index.html
 	inviteStaticPage []byte
 
@@ -113,7 +113,6 @@ func main() {
 	}
 
 	userStore := app.NewUserStore(db)
-	chatStore := chat.NewStore(db)
 	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"})
 
 	jwtConf := app.NewTokenConfig()
@@ -126,7 +125,7 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
-	e.GET("/chat", app.Page(chatStaticPage, "chat/index.html"))
+	e.GET("/chat", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
@@ -160,8 +159,10 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/echo", func(c echo.Context) error { return chat.EchoHandler(c.Response(), c.Request()) })
 
+	chatRoom := app.ChatRoom{Store: chat.NewStore(db), RDB: rd}
 	api.GET("/chat/stream", app.ChatSocketHandler()) // TODO guard this before releasing
-	api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
+	api.POST("/chat/room", chatRoom.Create, guard)
+	api.GET("/chat/:id/connect", chatRoom.Connect)
 
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)

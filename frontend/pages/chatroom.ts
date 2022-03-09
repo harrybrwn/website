@@ -1,4 +1,6 @@
 import "~/frontend/styles/chat.css";
+import { websocketURL } from "~/frontend/util/websocket";
+import { Message } from "~/frontend/api/chat";
 
 const main = () => {
   let msgBar = document.getElementById(
@@ -13,10 +15,31 @@ const main = () => {
   let body = document.getElementById("conversation-messages");
   if (body == null) throw new Error("no message body");
 
-  let chatBody = new ChatBody(body);
-  let chatBar = new ChatBar(msgBar, submitMsg);
+  let userID = Math.round(Math.random() * 100);
+  let chatBody = new ChatBody(userID, body);
+  let chatBar = new ChatBar({
+    userID,
+    roomID: 1,
+    bar: msgBar,
+    submit: submitMsg,
+  });
 
+  let conn = new WebSocket(websocketURL(`/api/chat/1/connect?user=${userID}`));
+  conn.onmessage = (ev: MessageEvent) => {
+    console.log("received message:", ev.data, ev.origin);
+    let msg: Message = JSON.parse(ev.data);
+    chatBody.append(msg);
+  };
+  conn.onclose = (ev: CloseEvent) => {
+    console.warn("socket has closed:", ev.reason);
+  };
+  conn.onerror = (ev: Event) => {
+    console.error("websocket error:", ev);
+  };
   chatBar.setMessageHandler((msg: Message) => {
+    console.log("sending message:", msg);
+    let message = JSON.stringify(msg);
+    conn.send(message);
     chatBody.append(msg);
   });
 
@@ -30,20 +53,12 @@ const main = () => {
   });
 };
 
-const enum Direction {
-  Sent,
-  Received,
-}
-
-interface Message {
-  body: string;
-  dir: Direction;
-}
-
 class ChatBody {
   private container: HTMLElement;
+  private userID: number;
 
-  constructor(container: HTMLElement) {
+  constructor(userID: number, container: HTMLElement) {
+    this.userID = userID;
     this.container = container;
   }
 
@@ -54,16 +69,14 @@ class ChatBody {
 
     time.innerText = new Date().toString();
     text.innerText = msg.body;
-    switch (msg.dir) {
-      case Direction.Sent:
-        message.classList.add("sent");
-        break;
-      case Direction.Received:
-        message.classList.add("recv");
-        break;
+    if (msg.user_id == this.userID) {
+      message.classList.add("sent");
+    } else {
+      message.classList.add("recv");
     }
     message.appendChild(text);
     this.container.appendChild(message);
+    // Scroll down to show the new message
     message.scrollIntoView({
       behavior: "auto",
     });
@@ -74,11 +87,20 @@ class ChatBar {
   bar: HTMLInputElement;
   button: HTMLButtonElement;
   private handler: ((msg: Message) => void) | null;
+  private userID: number;
+  private roomID: number;
 
-  constructor(bar: HTMLInputElement, submit: HTMLButtonElement) {
+  constructor(opts: {
+    userID: number;
+    roomID: number;
+    bar: HTMLInputElement;
+    submit: HTMLButtonElement;
+  }) {
+    this.userID = opts.userID;
+    this.roomID = opts.roomID;
     this.handler = null;
-    this.bar = bar;
-    this.button = submit;
+    this.bar = opts.bar;
+    this.button = opts.submit;
     // Submit new message via send button
     this.button.addEventListener("click", (ev: MouseEvent) => this.message(ev));
     // Submit new message via enter key.
@@ -97,7 +119,13 @@ class ChatBar {
       return;
     }
     if (this.handler != null) {
-      this.handler({ body: this.bar.value, dir: Direction.Sent });
+      this.handler({
+        id: 0, // we do not know what the message id is yet
+        room: this.roomID,
+        body: this.bar.value,
+        user_id: this.userID,
+        created_at: new Date(),
+      });
     }
     this.bar.value = "";
   }
@@ -123,10 +151,12 @@ const createElement = (
 const handleKeyPresses = (bar: ChatBar) => {
   document.addEventListener("keydown", (ev: KeyboardEvent) => {
     const e = ev.target as HTMLElement;
-    if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") return;
-    ev.preventDefault();
+    if (e.tagName == "INPUT" || e.tagName == "TEXTAREA") {
+      return;
+    }
     switch (ev.key) {
       case "/":
+        ev.preventDefault();
         bar.focus();
         break;
     }

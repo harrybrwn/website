@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -15,6 +16,8 @@ func Test(t *testing.T) {
 		Addr:     "localhost:6379",
 	})
 	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	pubsub := rd.Subscribe(ctx)              // create a new pubsub
 	err := pubsub.PSubscribe(ctx, "*:msg:*") // subscribe to "*" channel
 	if err != nil {

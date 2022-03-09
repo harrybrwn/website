@@ -41,7 +41,7 @@ module.exports = {
       title: "Admin Panel",
       ...common,
     },
-    chat: {
+    chatroom: {
       title: "Harry's webchat",
       ...common,
     },

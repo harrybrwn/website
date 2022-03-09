@@ -2,9 +2,10 @@ package chat
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -13,7 +14,7 @@ import (
 	"nhooyr.io/websocket"
 )
 
-var logger logrus.FieldLogger
+var logger logrus.FieldLogger = logrus.StandardLogger()
 
 func SetLogger(l logrus.FieldLogger) { logger = l }
 
@@ -54,10 +55,11 @@ type ChatRoomMember struct {
 	LastSeen int64 `json:"last_seen"`
 }
 
-type ChatRoomMessage struct {
+type Message struct {
+	ID        int       `json:"id"`
 	Room      int       `json:"room"`
 	UserID    int       `json:"user_id"`
-	Message   string    `json:"message"`
+	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -67,15 +69,15 @@ func NewStore(db db.DB) Store {
 
 type Store interface {
 	CreateRoom(context.Context, int, string) (*Room, error)
-	GetChatRoom(context.Context, int) (*Room, error)
-	SaveMessage(ctx context.Context, msg *ChatRoomMessage) error
+	GetRoom(context.Context, int) (*Room, error)
+	SaveMessage(ctx context.Context, msg *Message) error
 }
 
 type store struct {
 	db db.DB
 }
 
-func (rs *store) GetChatRoom(ctx context.Context, id int) (*Room, error) {
+func (rs *store) GetRoom(ctx context.Context, id int) (*Room, error) {
 	const query = `SELECT owner_id, name FROM chatroom WHERE id = $1`
 	var r Room
 	rows, err := rs.db.QueryContext(ctx, query, id)
@@ -86,14 +88,16 @@ func (rs *store) GetChatRoom(ctx context.Context, id int) (*Room, error) {
 	return &r, db.ScanOne(rows, &r.OwnerID, &r.Name)
 }
 
-func (rs *store) SaveMessage(ctx context.Context, msg *ChatRoomMessage) error {
-	const query = `INSERT INTO chatroom_messages (room, user_id, message) VALUES ($1, $2, $3)`
-	_, err := rs.db.ExecContext(ctx, query, msg.Room, msg.UserID, msg.Message)
+func (rs *store) SaveMessage(ctx context.Context, msg *Message) error {
+	const query = `INSERT INTO chatroom_messages (room, user_id, message) ` +
+		`VALUES ($1, $2, $3)`
+	_, err := rs.db.ExecContext(ctx, query, msg.Room, msg.UserID, msg.Body)
 	return err
 }
 
 func (rs *store) CreateRoom(ctx context.Context, owner int, name string) (*Room, error) {
-	const query = `INSERT INTO chatroom (owner_id, name) VALUES ($1, $2) RETURNING id, created_at`
+	const query = `INSERT INTO chatroom (owner_id, name) ` +
+		`VALUES ($1, $2) RETURNING id, created_at`
 	rows, err := rs.db.QueryContext(ctx, query, owner, name)
 	if err != nil {
 		return nil, err
@@ -116,47 +120,62 @@ func EchoHandler(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	for {
 		err = Echo(ctx, c, l)
-		if err == nil {
-			continue
-		}
 		switch websocket.CloseStatus(err) {
 		case websocket.StatusNormalClosure:
+			logger.Info("closing with status normal closure")
 			return nil
-		case websocket.StatusGoingAway:
-			return err
-		case -1:
-			logger.WithError(err).Warn("error from echo handler")
 		default:
-			return err
-		}
-		if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
-			return nil
-		} else if errors.Is(err, context.Canceled) {
-			return err
-		} else if err != nil {
-			logger.WithError(err).Warn("error from echo handler")
+			if err != nil {
+				logger.WithError(err).Error("stopping socket")
+				return err
+			}
 		}
 	}
 }
 
+func EchoRead(ctx context.Context, c *websocket.Conn) {
+}
+
+func EchoWrite(ctx context.Context, c *websocket.Conn) {
+}
+
 func Echo(ctx context.Context, c *websocket.Conn, l *rate.Limiter) error {
+	logger.Info("doing echo")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	err := l.Wait(ctx)
 	if err != nil {
 		return err
 	}
-	typ, r, err := c.Reader(ctx)
-	if err != nil {
-		return err
-	}
-	w, err := c.Writer(ctx, typ)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(w, r)
-	if err != nil {
-		return err
-	}
-	return w.Close()
+	var (
+		wg   sync.WaitGroup
+		errs = make(chan error)
+	)
+	wg.Add(2)
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+	go func() {
+		defer wg.Done()
+		_, r, err := c.Reader(ctx)
+		if err != nil {
+			errs <- err
+			return
+		}
+		io.Copy(os.Stdout, r)
+	}()
+	go func() {
+		defer wg.Done()
+		w, err := c.Writer(ctx, websocket.MessageText)
+		if err != nil {
+			errs <- err
+			return
+		}
+		time.Sleep(time.Second * 5)
+		w.Write([]byte("got it"))
+		w.Close()
+	}()
+	err = <-errs
+	return err
 }

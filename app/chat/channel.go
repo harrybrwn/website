@@ -1,41 +1,30 @@
 package chat
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/go-redis/redis/v8"
-	"nhooyr.io/websocket"
 )
 
 type Channel interface {
+	Pub(*Message) error
+	Sub() (<-chan Message, error)
 }
 
-func NewChannel(store Store, rd redis.Cmdable, s *websocket.Conn) *channel {
-	return &channel{store: store, rd: rd, s: s}
+func NewChannel(rd redis.Cmdable, id int) *channel {
+	return &channel{rd: rd, id: id}
 }
 
 type channel struct {
-	rd    redis.Cmdable
-	s     *websocket.Conn
-	store Store
+	rd redis.Cmdable
+	// id is the room id
+	id int
 }
 
-func (c *channel) Listen(ctx context.Context) error {
-	for {
-		err := c.listen(ctx)
-		if err != nil {
-			return err
-		}
-	}
-}
-
-func (c *channel) listen(ctx context.Context) error {
-	typ, r, err := c.s.Reader(ctx)
-	if err != nil {
-		logger.WithError(err).Warn("could not get reader")
-		return err
-	}
-	fmt.Println(typ, r)
+// Pub publishes a message to the channel
+func (c *channel) Pub(msg *Message) error {
 	return nil
+}
+
+// Sub subscribes to a channel to listen to new m
+func (c *channel) Sub() (<-chan Message, error) {
+	return nil, nil
 }

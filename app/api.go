@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math"
 	mrand "math/rand"
@@ -264,6 +265,165 @@ func SendMail(client EmailClient) echo.HandlerFunc {
 		}
 		return c.JSON(200, response)
 	}
+}
+
+type ChatRoom struct {
+	Store      chat.Store
+	RDB        redis.UniversalClient
+	disconnect chan struct{}
+}
+
+func (cr *ChatRoom) Create(c echo.Context) error {
+	claims := auth.GetClaims(c)
+	if claims == nil {
+		return echo.ErrUnauthorized
+	}
+	name := c.QueryParam("name")
+	if name == "" {
+		return echo.ErrBadRequest
+	}
+	room, err := cr.Store.CreateRoom(c.Request().Context(), claims.ID, name)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	return c.JSON(200, room)
+}
+
+func (cr *ChatRoom) Connect(c echo.Context) error {
+	var params struct {
+		ID   int `param:"id"`
+		User int `query:"user"`
+	}
+	if err := c.Bind(&params); err != nil {
+		return err
+	}
+
+	logger := logger.WithFields(logrus.Fields{
+		"room_id": params.ID,
+		"user_id": params.User,
+	})
+
+	// TODO check that ID is an existing room and that the requester has access to it.
+
+	conn, err := websocket.Accept(c.Response(), c.Request(), &websocket.AcceptOptions{})
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+	defer conn.Close(websocket.StatusInternalError, "closing and returning from handler")
+	var (
+		ctx    = c.Request().Context()
+		pubsub = cr.RDB.PSubscribe(ctx, fmt.Sprintf("room:%d:user:*", params.ID))
+		recv   = pubsub.Channel()
+		msgs   = make(chan chat.Message)
+	)
+	defer pubsub.Close()
+	cr.disconnect = make(chan struct{})
+	logger.Info("connected")
+	defer func() { logger.Info("stopping websocket") }()
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	go func() {
+		for {
+			msg, err := cr.recv(ctx, msgs, conn)
+			switch websocket.CloseStatus(err) {
+			case websocket.StatusGoingAway:
+				return
+			default:
+				if err != nil {
+					logger.WithError(err).Warn("error from ws recv")
+					continue
+				}
+			}
+			msg.Room = params.ID
+			err = cr.publish(ctx, fmt.Sprintf("room:%d:user:%d", params.ID, params.User), msg)
+			if err != nil {
+				logger.WithError(err).Error("could not publish message")
+			}
+		}
+	}()
+
+	for {
+		select {
+		case rdMsg := <-recv:
+			var msg chat.Message
+			err = json.Unmarshal([]byte(rdMsg.Payload), &msg)
+			if err != nil {
+				logger.WithError(err).Error("failed to unmarshal message payload")
+				break
+			}
+			if msg.UserID == params.User {
+				break
+			}
+
+			msg.Room = params.ID
+			err = cr.send(ctx, conn, &msg)
+			if err != nil {
+				logger.WithError(err).Error("failed to send message to client")
+			}
+		// case msg := <-msgs:
+		// msg.Room = params.ID
+		// err := cr.publish(ctx, fmt.Sprintf("room:%d:user:%d", params.ID, params.User), &msg)
+		// if err != nil {
+		// 	logger.WithError(err).Error("could not publish message")
+		// }
+		case <-ctx.Done():
+			logger.Warn("context cancelled")
+		case <-cr.disconnect:
+			logger.Warn("disconnecting")
+			return nil
+		}
+	}
+}
+
+func (cr *ChatRoom) recv(ctx context.Context, msgs chan<- chat.Message, conn *websocket.Conn) (*chat.Message, error) {
+	_, r, err := conn.Reader(ctx)
+	if err != nil {
+		close(cr.disconnect)
+		return nil, err
+	}
+	var msg chat.Message
+	err = json.NewDecoder(r).Decode(&msg)
+	if err != nil {
+		return nil, err
+	}
+	select {
+	// case msgs <- msg:
+	default:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return &msg, nil
+}
+
+func (cr *ChatRoom) send(ctx context.Context, conn *websocket.Conn, msg *chat.Message) error {
+	w, err := conn.Writer(ctx, websocket.MessageText)
+	if err != nil {
+		close(cr.disconnect)
+		return errors.Wrap(err, "failed to get writer")
+	}
+	err = json.NewEncoder(w).Encode(msg)
+	if err != nil {
+		w.Close()
+		return err
+	}
+	if err = w.Close(); err != nil {
+		return errors.Wrap(err, "could not close websocket writer")
+	}
+	return nil
+}
+
+func (cr *ChatRoom) publish(
+	ctx context.Context,
+	channel string,
+	msg *chat.Message,
+) error {
+	raw, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return cr.RDB.Publish(ctx, channel, raw).Err()
 }
 
 func CreateChatRoom(store chat.Store) echo.HandlerFunc {
