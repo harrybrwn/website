@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
@@ -361,28 +362,39 @@ func HandleRuntimeInfo(startup time.Time) echo.HandlerFunc {
 }
 
 func RuntimeInfo(start time.Time) *Info {
-	return &Info{
+	info := &Info{
 		Name:      "Harry Brown",
 		Age:       GetAge(),
 		Birthday:  GetBirthday(),
 		GOVersion: runtime.Version(),
 		Uptime:    time.Since(start),
 		Debug:     Debug,
-		GOOS:      runtime.GOOS,
-		GOARCH:    runtime.GOARCH,
 	}
+	buildinfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		return info
+	}
+	info.Build = make(map[string]interface{})
+	for _, setting := range buildinfo.Settings {
+		info.Build[setting.Key] = setting.Value
+	}
+	info.Dependencies = buildinfo.Deps
+	info.Module = buildinfo.Main
+	info.GOVersion = buildinfo.GoVersion
+	return info
 }
 
 type Info struct {
-	Name      string        `json:"name,omitempty"`
-	Age       float64       `json:"age,omitempty"`
-	Uptime    time.Duration `json:"uptime,omitempty"`
-	GOVersion string        `json:"goversion,omitempty"`
-	Error     string        `json:"error,omitempty"`
-	Birthday  time.Time     `json:"birthday,omitempty"`
-	Debug     bool          `json:"debug"`
-	GOOS      string        `json:"GOOS,omitempty"`
-	GOARCH    string        `json:"GOARCH,omitempty"`
+	Name         string                 `json:"name,omitempty"`
+	Age          float64                `json:"age,omitempty"`
+	Uptime       time.Duration          `json:"uptime,omitempty"`
+	GOVersion    string                 `json:"goversion,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+	Birthday     time.Time              `json:"birthday,omitempty"`
+	Debug        bool                   `json:"debug"`
+	Build        map[string]interface{} `json:"build,omitempty"`
+	Dependencies []*debug.Module        `json:"dependencies,omitempty"`
+	Module       debug.Module           `json:"module,omitempty"`
 }
 
 var birthTimestamp = time.Date(
