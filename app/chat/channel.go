@@ -4,19 +4,16 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type Channel interface {
-	Pub(*Message) error
-	Sub() (<-chan Message, error)
-}
+type Channel interface{}
 
-func NewChannel(rd redis.Cmdable, id int) *channel {
-	return &channel{rd: rd, id: id}
+func NewChannel(rd redis.UniversalClient, room, user int) *channel {
+	return &channel{RDB: rd, Room: room, User: user}
 }
 
 type channel struct {
-	rd redis.Cmdable
-	// id is the room id
-	id int
+	RDB  redis.UniversalClient
+	Room int
+	User int
 }
 
 // Pub publishes a message to the channel

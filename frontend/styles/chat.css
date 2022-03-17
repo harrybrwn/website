@@ -27,6 +27,17 @@ main {
 	--sidebar-width: 300px;
 }
 
+@media only screen and (max-width: 600px) {
+	main {
+		--sidebar-width: 0px;
+	}
+	.rooms {
+		opacity: 0;
+		visibility: hidden;
+	}
+}
+
+
 .rooms {
 	position:absolute;
 	width: var(--sidebar-width);

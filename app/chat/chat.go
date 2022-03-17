@@ -133,12 +133,6 @@ func EchoHandler(w http.ResponseWriter, r *http.Request) error {
 	}
 }
 
-func EchoRead(ctx context.Context, c *websocket.Conn) {
-}
-
-func EchoWrite(ctx context.Context, c *websocket.Conn) {
-}
-
 func Echo(ctx context.Context, c *websocket.Conn, l *rate.Limiter) error {
 	logger.Info("doing echo")
 	ctx, cancel := context.WithCancel(ctx)

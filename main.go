@@ -125,7 +125,7 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
-	e.GET("/chat", app.Page(chatroomStaticPage, "chatroom/index.html"))
+	e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))

@@ -15,16 +15,19 @@ const main = () => {
   let body = document.getElementById("conversation-messages");
   if (body == null) throw new Error("no message body");
 
+  let roomID = parseInt(location.pathname.split("/")[2]);
   let userID = Math.round(Math.random() * 100);
   let chatBody = new ChatBody(userID, body);
   let chatBar = new ChatBar({
     userID,
-    roomID: 1,
+    roomID,
     bar: msgBar,
     submit: submitMsg,
   });
 
-  let conn = new WebSocket(websocketURL(`/api/chat/1/connect?user=${userID}`));
+  let conn = new WebSocket(
+    websocketURL(`/api/chat/${roomID}/connect?user=${userID}`)
+  );
   conn.onmessage = (ev: MessageEvent) => {
     console.log("received message:", ev.data, ev.origin);
     let msg: Message = JSON.parse(ev.data);

@@ -268,9 +268,8 @@ func SendMail(client EmailClient) echo.HandlerFunc {
 }
 
 type ChatRoom struct {
-	Store      chat.Store
-	RDB        redis.UniversalClient
-	disconnect chan struct{}
+	Store chat.Store
+	RDB   redis.UniversalClient
 }
 
 func (cr *ChatRoom) Create(c echo.Context) error {
@@ -314,10 +313,9 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 		ctx    = c.Request().Context()
 		pubsub = cr.RDB.PSubscribe(ctx, fmt.Sprintf("room:%d:user:*", params.ID))
 		recv   = pubsub.Channel()
-		msgs   = make(chan chat.Message)
+		stop   = make(chan struct{})
 	)
 	defer pubsub.Close()
-	cr.disconnect = make(chan struct{})
 	logger.Info("connected")
 	defer func() { logger.Info("stopping websocket") }()
 
@@ -326,14 +324,16 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 
 	go func() {
 		for {
-			msg, err := cr.recv(ctx, msgs, conn)
+			msg, err := cr.recv(ctx, conn)
 			switch websocket.CloseStatus(err) {
 			case websocket.StatusGoingAway:
+				close(stop)
 				return
 			default:
 				if err != nil {
 					logger.WithError(err).Warn("error from ws recv")
-					continue
+					close(stop)
+					return
 				}
 			}
 			msg.Room = params.ID
@@ -359,28 +359,36 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 
 			msg.Room = params.ID
 			err = cr.send(ctx, conn, &msg)
-			if err != nil {
-				logger.WithError(err).Error("failed to send message to client")
+			switch websocket.CloseStatus(err) {
+			case websocket.StatusGoingAway:
+				logger.Info("stopping")
+				close(stop)
+				return nil
+			default:
+				if err != nil {
+					logger.WithError(err).Error("failed to send message to client")
+					return err
+				}
 			}
-		// case msg := <-msgs:
-		// msg.Room = params.ID
-		// err := cr.publish(ctx, fmt.Sprintf("room:%d:user:%d", params.ID, params.User), &msg)
-		// if err != nil {
-		// 	logger.WithError(err).Error("could not publish message")
-		// }
 		case <-ctx.Done():
-			logger.Warn("context cancelled")
-		case <-cr.disconnect:
-			logger.Warn("disconnecting")
+			logger.WithError(ctx.Err()).Warn("context cancelled")
+			close(stop)
+			return nil
+		case <-stop:
+			logger.Info("stopping")
 			return nil
 		}
 	}
 }
 
-func (cr *ChatRoom) recv(ctx context.Context, msgs chan<- chat.Message, conn *websocket.Conn) (*chat.Message, error) {
+func (cr *ChatRoom) recv(ctx context.Context, conn *websocket.Conn) (*chat.Message, error) {
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 	_, r, err := conn.Reader(ctx)
 	if err != nil {
-		close(cr.disconnect)
 		return nil, err
 	}
 	var msg chat.Message
@@ -388,19 +396,17 @@ func (cr *ChatRoom) recv(ctx context.Context, msgs chan<- chat.Message, conn *we
 	if err != nil {
 		return nil, err
 	}
-	select {
-	// case msgs <- msg:
-	default:
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
 	return &msg, nil
 }
 
 func (cr *ChatRoom) send(ctx context.Context, conn *websocket.Conn, msg *chat.Message) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 	w, err := conn.Writer(ctx, websocket.MessageText)
 	if err != nil {
-		close(cr.disconnect)
 		return errors.Wrap(err, "failed to get writer")
 	}
 	err = json.NewEncoder(w).Encode(msg)
