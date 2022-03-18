@@ -2,16 +2,10 @@ package chat
 
 import (
 	"context"
-	"io"
-	"net/http"
-	"os"
-	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 	"harrybrown.com/pkg/db"
-	"nhooyr.io/websocket"
 )
 
 var logger logrus.FieldLogger = logrus.StandardLogger()
@@ -41,10 +35,11 @@ const (
 )
 
 type Room struct {
-	ID        int       `json:"id"`
-	OwnerID   int       `json:"owner_id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int               `json:"id"`
+	OwnerID   int               `json:"owner_id"`
+	Name      string            `json:"name"`
+	CreatedAt time.Time         `json:"created_at"`
+	Members   []*ChatRoomMember `json:"members"`
 }
 
 type ChatRoomMember struct {
@@ -89,9 +84,9 @@ func (rs *store) GetRoom(ctx context.Context, id int) (*Room, error) {
 }
 
 func (rs *store) SaveMessage(ctx context.Context, msg *Message) error {
-	const query = `INSERT INTO chatroom_messages (room, user_id, message) ` +
-		`VALUES ($1, $2, $3)`
-	_, err := rs.db.ExecContext(ctx, query, msg.Room, msg.UserID, msg.Body)
+	const query = `INSERT INTO chatroom_messages (room, user_id, body, created_at) ` +
+		`VALUES ($1, $2, $3, $4)`
+	_, err := rs.db.ExecContext(ctx, query, msg.Room, msg.UserID, msg.Body, msg.CreatedAt)
 	return err
 }
 
@@ -108,68 +103,4 @@ func (rs *store) CreateRoom(ctx context.Context, owner int, name string) (*Room,
 		return nil, err
 	}
 	return &room, nil
-}
-
-func EchoHandler(w http.ResponseWriter, r *http.Request) error {
-	c, err := websocket.Accept(w, r, &websocket.AcceptOptions{})
-	if err != nil {
-		return err
-	}
-	defer c.Close(websocket.StatusInternalError, "closing socket")
-	l := rate.NewLimiter(rate.Every(time.Millisecond*100), 10)
-	ctx := r.Context()
-	for {
-		err = Echo(ctx, c, l)
-		switch websocket.CloseStatus(err) {
-		case websocket.StatusNormalClosure:
-			logger.Info("closing with status normal closure")
-			return nil
-		default:
-			if err != nil {
-				logger.WithError(err).Error("stopping socket")
-				return err
-			}
-		}
-	}
-}
-
-func Echo(ctx context.Context, c *websocket.Conn, l *rate.Limiter) error {
-	logger.Info("doing echo")
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	err := l.Wait(ctx)
-	if err != nil {
-		return err
-	}
-	var (
-		wg   sync.WaitGroup
-		errs = make(chan error)
-	)
-	wg.Add(2)
-	go func() {
-		wg.Wait()
-		close(errs)
-	}()
-	go func() {
-		defer wg.Done()
-		_, r, err := c.Reader(ctx)
-		if err != nil {
-			errs <- err
-			return
-		}
-		io.Copy(os.Stdout, r)
-	}()
-	go func() {
-		defer wg.Done()
-		w, err := c.Writer(ctx, websocket.MessageText)
-		if err != nil {
-			errs <- err
-			return
-		}
-		time.Sleep(time.Second * 5)
-		w.Write([]byte("got it"))
-		w.Close()
-	}()
-	err = <-errs
-	return err
 }

@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS chatroom_messages (
 	-- Room ID
 	room       INT,
 	user_id    INT,
-	message    TEXT,
+	body    TEXT,
 	-- Messages are created by the client so we should store the client's
 	-- timezone.
 	created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

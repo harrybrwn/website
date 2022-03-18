@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math"
 	mrand "math/rand"
@@ -308,23 +307,25 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
-	defer conn.Close(websocket.StatusInternalError, "closing and returning from handler")
+	defer func() {
+		conn.Close(websocket.StatusInternalError, "closing and returning from handler")
+		logger.Info("stopping websocket")
+	}()
+	logger.Info("websocket connected")
+
 	var (
-		ctx    = c.Request().Context()
-		pubsub = cr.RDB.PSubscribe(ctx, fmt.Sprintf("room:%d:user:*", params.ID))
-		recv   = pubsub.Channel()
-		stop   = make(chan struct{})
+		ctx  = c.Request().Context()
+		stop = make(chan struct{})
+		ps   = chat.NewPubSub(cr.RDB, params.ID, params.User)
+		s    = chat.NewSocket(conn)
 	)
-	defer pubsub.Close()
-	logger.Info("connected")
-	defer func() { logger.Info("stopping websocket") }()
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	go func() {
 		for {
-			msg, err := cr.recv(ctx, conn)
+			msg, err := s.Recv(ctx)
 			switch websocket.CloseStatus(err) {
 			case websocket.StatusGoingAway:
 				close(stop)
@@ -336,32 +337,25 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 					return
 				}
 			}
-			msg.Room = params.ID
-			err = cr.publish(ctx, fmt.Sprintf("room:%d:user:%d", params.ID, params.User), msg)
+			err = cr.Store.SaveMessage(ctx, msg)
+			if err != nil {
+				logger.WithError(err).Error("could not write new message to database")
+				continue
+			}
+			err = ps.Pub(ctx, msg)
 			if err != nil {
 				logger.WithError(err).Error("could not publish message")
 			}
 		}
 	}()
 
+	messages := ps.Sub(ctx)
 	for {
 		select {
-		case rdMsg := <-recv:
-			var msg chat.Message
-			err = json.Unmarshal([]byte(rdMsg.Payload), &msg)
-			if err != nil {
-				logger.WithError(err).Error("failed to unmarshal message payload")
-				break
-			}
-			if msg.UserID == params.User {
-				break
-			}
-
-			msg.Room = params.ID
-			err = cr.send(ctx, conn, &msg)
+		case msg := <-messages:
+			err = s.Send(ctx, &msg)
 			switch websocket.CloseStatus(err) {
 			case websocket.StatusGoingAway:
-				logger.Info("stopping")
 				close(stop)
 				return nil
 			default:
@@ -379,57 +373,6 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 			return nil
 		}
 	}
-}
-
-func (cr *ChatRoom) recv(ctx context.Context, conn *websocket.Conn) (*chat.Message, error) {
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	default:
-	}
-	_, r, err := conn.Reader(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var msg chat.Message
-	err = json.NewDecoder(r).Decode(&msg)
-	if err != nil {
-		return nil, err
-	}
-	return &msg, nil
-}
-
-func (cr *ChatRoom) send(ctx context.Context, conn *websocket.Conn, msg *chat.Message) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	w, err := conn.Writer(ctx, websocket.MessageText)
-	if err != nil {
-		return errors.Wrap(err, "failed to get writer")
-	}
-	err = json.NewEncoder(w).Encode(msg)
-	if err != nil {
-		w.Close()
-		return err
-	}
-	if err = w.Close(); err != nil {
-		return errors.Wrap(err, "could not close websocket writer")
-	}
-	return nil
-}
-
-func (cr *ChatRoom) publish(
-	ctx context.Context,
-	channel string,
-	msg *chat.Message,
-) error {
-	raw, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	return cr.RDB.Publish(ctx, channel, raw).Err()
 }
 
 func CreateChatRoom(store chat.Store) echo.HandlerFunc {
@@ -532,16 +475,6 @@ func LogListHandler(db db.DB) echo.HandlerFunc {
 			return err
 		}
 		return c.JSON(200, logs)
-	}
-}
-
-func ChatSocketHandler() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ws, err := websocket.Accept(c.Response(), c.Request(), &websocket.AcceptOptions{})
-		if err != nil {
-			return echo.ErrInternalServerError.SetInternal(err)
-		}
-		return ws.Close(websocket.StatusNormalClosure, "not implemented yet")
 	}
 }
 

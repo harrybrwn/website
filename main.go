@@ -157,10 +157,8 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
-	api.Any("/echo", func(c echo.Context) error { return chat.EchoHandler(c.Response(), c.Request()) })
 
 	chatRoom := app.ChatRoom{Store: chat.NewStore(db), RDB: rd}
-	api.GET("/chat/stream", app.ChatSocketHandler()) // TODO guard this before releasing
 	api.POST("/chat/room", chatRoom.Create, guard)
 	api.GET("/chat/:id/connect", chatRoom.Connect)
 
