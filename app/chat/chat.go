@@ -170,11 +170,11 @@ func (cr *ChatRoom) Start(ctx context.Context, pubsub PubSub, socket Socket) err
 	return cr.writeLoop(ctx)
 }
 
-func (cr *ChatRoom) readLoop(ctx context.Context) error {
+func (cr *ChatRoom) readLoop(ctx context.Context) {
 	for {
 		msg, err := cr.s.Recv(ctx)
 		if e := cr.handleSocketError(err, "failed to receive from websocket"); e != nil {
-			return e
+			return
 		}
 		err = cr.Store.SaveMessage(ctx, msg)
 		if err != nil {

@@ -88,8 +88,18 @@ func run(ctx context.Context, c *Client) error {
 				return
 			}
 			lock.Lock()
-			io.Copy(os.Stdout, r)
-			os.Stdout.Write([]byte{'\n'})
+			_, err = io.Copy(os.Stdout, r)
+			if err != nil {
+				errs <- errors.Wrap(err, "could not copy to stdout")
+				lock.Unlock()
+				return
+			}
+			_, err = os.Stdout.Write([]byte{'\n'})
+			if err != nil {
+				errs <- errors.Wrap(err, "could not write newline to stdout")
+				lock.Unlock()
+				return
+			}
 			lock.Unlock()
 		}
 	}()

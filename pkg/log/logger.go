@@ -11,10 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var contextKey = "_logger"
+type contextKey string
+
+var loggerKey = contextKey("_logger")
 
 func FromContext(ctx context.Context) logrus.FieldLogger {
-	res := ctx.Value(contextKey)
+	res := ctx.Value(loggerKey)
 	if res == nil {
 		return logrus.StandardLogger()
 	}
@@ -22,7 +24,7 @@ func FromContext(ctx context.Context) logrus.FieldLogger {
 }
 
 func StashedInContext(ctx context.Context, logger logrus.FieldLogger) context.Context {
-	return context.WithValue(ctx, contextKey, logger)
+	return context.WithValue(ctx, loggerKey, logger)
 }
 
 // PrintLogger defines an interface for logging through printing.
