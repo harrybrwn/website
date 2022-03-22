@@ -7,29 +7,38 @@
     <title><%= title %></title>
   </head>
   <body>
-	<main id="app">
-		<div class="rooms">
-			<div class="rooms-header">
-				<h2>Chat Rooms</h2>
-			</div>
-			<div class="rooms-list">
-				<div>a</div>
-				<div>b</div>
-				<div>c</div>
-			</div>
-		</div>
+    <main id="app">
+      <div class="rooms">
+        <div class="rooms-header">
+          <h2>Chat Rooms</h2>
+        </div>
+        <div class="rooms-list">
+          <div>a</div>
+          <div>b</div>
+          <div>c</div>
+        </div>
+      </div>
 
-		<div class="chat">
-			<div class="room-name">
-				<svg height="50" width="50">
-					<circle cx="25" cy="25" r="20" fill="grey" />
-				</svg>
-				<p>Name</p>
-			</div>
-			<div id="conversation" class="conversation">
-				<div id="conversation-messages" class="conversation-messages">
-
-					<!-- <div class="message recv">
+      <div class="chat">
+        <div class="room-name">
+          <svg height="50" width="50">
+            <circle cx="25" cy="25" r="20" fill="grey" />
+          </svg>
+          <p>Name</p>
+          <div class="theme-toggle toggle-switch">
+            <label class="theme-toggle-label" for="theme-toggle">
+              <input
+                type="checkbox"
+                class="theme-toggle-checkbox"
+                id="theme-toggle"
+              />
+              <span class="theme-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div id="conversation" class="conversation">
+          <div id="conversation-messages" class="conversation-messages">
+            <!-- <div class="message recv">
 						<div class="message-text">Hello there</div>
 						<div class="message-time"></div>
 					</div>
@@ -71,16 +80,15 @@
 					<div class="message recv"><div class="message-text">oh nothing</div></div>
 					<div class="message sent"><div class="message-text">oh nothing</div></div>
 					<div class="message sent"><div class="message-text">oh nothing</div></div> -->
+          </div>
+        </div>
 
-				</div>
-			</div>
-
-			<div class="chat-bar">
-				<input id="new-msg-textbar" type="text" placeholder="Aa">
-				<!-- <textarea id="new-msg-textbar" rows="1" placeholder="Aa"></textarea> -->
-				<button id="submit-new-msg" type="submit">Send</button>
-			</div>
-		</div>
-	</main>
+        <div class="chat-bar">
+          <input id="new-msg-textbar" type="text" placeholder="Aa" />
+          <!-- <textarea id="new-msg-textbar" rows="1" placeholder="Aa"></textarea> -->
+          <button id="submit-new-msg" type="submit">Send</button>
+        </div>
+      </div>
+    </main>
   </body>
 </html>

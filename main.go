@@ -158,9 +158,11 @@ func main() {
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 
-	chatRoom := app.ChatRoom{Store: chat.NewStore(db), RDB: rd}
+	chatStore := chat.NewStore(db)
+	chatRoom := app.ChatRoom{Store: chatStore, RDB: rd}
 	api.POST("/chat/room", chatRoom.Create, guard)
 	api.GET("/chat/:id/connect", chatRoom.Connect)
+	api.GET("/chat/:id/messages", app.ListMessages(chatStore))
 
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)

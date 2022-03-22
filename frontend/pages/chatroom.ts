@@ -1,8 +1,14 @@
 import "~/frontend/styles/chat.css";
+import "~/frontend/components/toggle.css";
 import { websocketURL } from "~/frontend/util/websocket";
 import { Message } from "~/frontend/api/chat";
+import { ThemeManager } from "~/frontend/components/theme";
 
 const main = () => {
+  let themeManager = new ThemeManager();
+  // setInterval(() => {
+  //   themeManager.toggle();
+  // }, 1000 * 2);
   let msgBar = document.getElementById(
     "new-msg-textbar"
   ) as HTMLInputElement | null;

@@ -23,6 +23,7 @@ import (
 	"harrybrown.com/app/chat"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
+	"harrybrown.com/pkg/log"
 	"nhooyr.io/websocket"
 )
 
@@ -314,64 +315,37 @@ func (cr *ChatRoom) Connect(c echo.Context) error {
 	logger.Info("websocket connected")
 
 	var (
-		ctx  = c.Request().Context()
-		stop = make(chan struct{})
+		ctx  = log.StashedInContext(c.Request().Context(), logger)
 		ps   = chat.NewPubSub(cr.RDB, params.ID, params.User)
 		s    = chat.NewSocket(conn)
+		room = chat.OpenRoom(cr.Store, params.ID, params.User)
 	)
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	go func() {
-		for {
-			msg, err := s.Recv(ctx)
-			switch websocket.CloseStatus(err) {
-			case websocket.StatusGoingAway:
-				close(stop)
-				return
-			default:
-				if err != nil {
-					logger.WithError(err).Warn("error from ws recv")
-					close(stop)
-					return
-				}
-			}
-			err = cr.Store.SaveMessage(ctx, msg)
-			if err != nil {
-				logger.WithError(err).Error("could not write new message to database")
-				continue
-			}
-			err = ps.Pub(ctx, msg)
-			if err != nil {
-				logger.WithError(err).Error("could not publish message")
-			}
-		}
-	}()
+	err = room.Start(ctx, ps, s)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	messages := ps.Sub(ctx)
-	for {
-		select {
-		case msg := <-messages:
-			err = s.Send(ctx, &msg)
-			switch websocket.CloseStatus(err) {
-			case websocket.StatusGoingAway:
-				close(stop)
-				return nil
-			default:
-				if err != nil {
-					logger.WithError(err).Error("failed to send message to client")
-					return err
-				}
-			}
-		case <-ctx.Done():
-			logger.WithError(ctx.Err()).Warn("context cancelled")
-			close(stop)
-			return nil
-		case <-stop:
-			logger.Info("stopping")
-			return nil
+func ListMessages(store chat.Store) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var p struct {
+			ID    int `param:"id"`
+			Prev  int `query:"prev"`
+			Limit int `query:"limit"`
 		}
+		err := c.Bind(&p)
+		if err != nil {
+			return err
+		}
+		msgs, err := store.Messages(c.Request().Context(), p.ID, p.Prev, p.Limit)
+		if err != nil {
+			return echo.ErrNotFound
+		}
+		return c.JSON(200, msgs)
 	}
 }
 

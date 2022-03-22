@@ -1,14 +1,3 @@
-.debug {
-	border-width: 1px;
-	border-style: solid;
-	border-color: red;
-}
-.debug-blue {
-	border-width: 1px;
-	border-style: solid;
-	border-color: blue;
-}
-
 :root {
 	font-size: 18px;
 }
@@ -72,11 +61,18 @@ main {
 	width: 100%;
 
 	/* Bring the Room name to the front */
-	background-color: white;
+	/* background-color: white; */
 	z-index: 10;
+	opacity: 1;
 	box-shadow: 0 4px 2px -2px lightgray;
 
 	height: var(--name-height);
+}
+.dark-theme .room-name {
+	background-color: black;
+}
+.light-theme .room-name {
+	background-color: white;
 }
 
 .chat .conversation {

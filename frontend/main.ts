@@ -156,31 +156,7 @@ const webButtonClipboard = (num: number) => {
   });
 };
 
-const echo = () => {
-  let protocol = location.protocol == "https:" ? "wss" : "ws";
-  let ws = new WebSocket(new URL(`${protocol}://${location.host}/api/echo`));
-  let timer: NodeJS.Timer;
-  ws.onopen = (ev: Event): any => {
-    console.log("websocket open:", ev.type, ev.composedPath());
-  };
-  ws.onmessage = (ev: MessageEvent) => {
-    console.log("websocket message:", ev.source, ev.origin, ev.ports, ev.data);
-  };
-  ws.onerror = (ev: Event) => {
-    console.error(ev);
-    clearInterval(timer);
-  };
-  let i = 0;
-  const fn = () => {
-    console.log("sending echo");
-    ws.send(`hello ${i}`);
-    i++;
-  };
-  timer = setInterval(fn, SECOND * 20);
-};
-
 const main = () => {
-  echo();
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
     interval: 5 * 60 * SECOND,
