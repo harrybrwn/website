@@ -20,7 +20,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	nhooyr.io/websocket v1.8.7
 )
 
