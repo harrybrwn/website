@@ -11,6 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var logger = logrus.StandardLogger()
+
+func SetLogger(l *logrus.Logger) { logger = l }
+
+func GetLogger() *logrus.Logger { return logger }
+
 type contextKey string
 
 var loggerKey = contextKey("_logger")

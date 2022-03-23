@@ -68,7 +68,7 @@ var (
 	//go:embed frontend/templates
 	templates embed.FS
 
-	logger = logrus.New()
+	logger = log.GetLogger()
 )
 
 func main() {
@@ -81,7 +81,6 @@ func main() {
 	flag.BoolVar(&env, "env", env, "read .env")
 	flag.Parse()
 
-	app.SetLogger(logger)
 	e.Logger = log.WrapLogrus(logger)
 	e.Debug = app.Debug
 	e.DisableHTTP2 = false
@@ -117,6 +116,7 @@ func main() {
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
+	withUser := auth.ImplicitUser(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
 	e.Any("/", app.Page(harryStaticPage, "index.html"))
@@ -144,8 +144,8 @@ func main() {
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
 		Users:  userStore,
 	}
-	api := e.Group("/api")
 	emailClient := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
@@ -159,17 +159,17 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 
 	chatStore := chat.NewStore(db)
-	chatRoom := app.ChatRoom{Store: chatStore, RDB: rd}
-	api.POST("/chat/room", chatRoom.Create, guard)
-	api.GET("/chat/:id/connect", chatRoom.Connect)
-	api.GET("/chat/:id/messages", app.ListMessages(chatStore))
+	api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
+	api.GET("/chat/:id/room", app.GetRoom(chatStore), withUser)
+	api.GET("/chat/:id/connect", app.ChatRoomConnect(chatStore, rd), withUser)
+	api.GET("/chat/:id/messages", app.ListMessages(chatStore), withUser)
 
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
 	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
 	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
-	logger.WithField("time", app.StartTime).Info("server starting")
+	logger.WithFields(logrus.Fields{"time": app.StartTime}).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
 		logger.Fatal(err)

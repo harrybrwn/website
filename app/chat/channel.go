@@ -120,5 +120,8 @@ func (s *socket) Recv(ctx context.Context) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(msg.Body) == 0 {
+		return nil, errors.New("no message body")
+	}
 	return &msg, nil
 }

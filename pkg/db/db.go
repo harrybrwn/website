@@ -55,6 +55,12 @@ func (db *database) QueryContext(ctx context.Context, query string, v ...interfa
 	return db.DB.QueryContext(ctx, query, v...)
 }
 
+type PaginationOpts struct {
+	Prev   int
+	Offset int
+	Limit  int
+}
+
 // Datastores connects to all the datastores in parallel for faster cold starts.
 func Datastores(logger logrus.FieldLogger) (DB, *redis.Client, error) {
 	var (

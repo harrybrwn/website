@@ -154,6 +154,12 @@ export const bookmarks = async (): Promise<Bookmarks> => {
   );
 };
 
+export interface PageParams {
+  limit: number;
+  offset?: number;
+  prev?: number;
+}
+
 export interface RuntimeInfo {
   name: string;
   age: number;

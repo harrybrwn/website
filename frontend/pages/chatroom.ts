@@ -1,14 +1,27 @@
 import "~/frontend/styles/chat.css";
 import "~/frontend/components/toggle.css";
 import { websocketURL } from "~/frontend/util/websocket";
-import { Message } from "~/frontend/api/chat";
+import { SECOND } from "~/frontend/constants";
+import { Message, Room } from "~/frontend/api/chat";
 import { ThemeManager } from "~/frontend/components/theme";
+import {
+  TOKEN_KEY,
+  loadToken,
+  parseClaims,
+  deleteToken,
+} from "~/frontend/api/auth";
+import { clearCookie } from "~/frontend/util/cookies";
+import LoginManager from "~/frontend/util/LoginManager";
 
 const main = () => {
   let themeManager = new ThemeManager();
-  // setInterval(() => {
-  //   themeManager.toggle();
-  // }, 1000 * 2);
+  let loginManager = new LoginManager({
+    interval: 5 * 60 * SECOND,
+    clearToken: () => {
+      deleteToken();
+      clearCookie(TOKEN_KEY);
+    },
+  });
   let msgBar = document.getElementById(
     "new-msg-textbar"
   ) as HTMLInputElement | null;
@@ -21,8 +34,16 @@ const main = () => {
   let body = document.getElementById("conversation-messages");
   if (body == null) throw new Error("no message body");
 
+  let userID: number;
+  let t = loadToken();
+  if (t != null) {
+    let claims = parseClaims(t.token);
+    userID = claims.id;
+  } else {
+    userID = Math.round(Math.random() * 1000);
+  }
   let roomID = parseInt(location.pathname.split("/")[2]);
-  let userID = Math.round(Math.random() * 100);
+
   let chatBody = new ChatBody(userID, body);
   let chatBar = new ChatBar({
     userID,
@@ -34,6 +55,7 @@ const main = () => {
   let conn = new WebSocket(
     websocketURL(`/api/chat/${roomID}/connect?user=${userID}`)
   );
+  let open = true;
   conn.onmessage = (ev: MessageEvent) => {
     console.log("received message:", ev.data, ev.origin);
     let msg: Message = JSON.parse(ev.data);
@@ -41,11 +63,17 @@ const main = () => {
   };
   conn.onclose = (ev: CloseEvent) => {
     console.warn("socket has closed:", ev.reason);
+    open = false;
   };
   conn.onerror = (ev: Event) => {
     console.error("websocket error:", ev);
   };
   chatBar.setMessageHandler((msg: Message) => {
+    if (!open) {
+      // TODO put an error in front of the user
+      console.error("websocket is closed. cannot send message");
+      return;
+    }
     console.log("sending message:", msg);
     let message = JSON.stringify(msg);
     conn.send(message);
@@ -65,16 +93,26 @@ const main = () => {
 class ChatBody {
   private container: HTMLElement;
   private userID: number;
+  private room: Room | null;
 
   constructor(userID: number, container: HTMLElement) {
     this.userID = userID;
     this.container = container;
+    this.room = null;
   }
 
   append(msg: Message) {
     let message = createElement("div", "message");
     let text = createElement("div", "message-text");
     let time = createElement("div", "message-time");
+    let username = createElement("span", "msg-username");
+
+    if (this.room != null) {
+      let member = this.room.members.get(msg.user_id);
+      username.innerText = member ? member.username : `${msg.user_id}`;
+    } else {
+      username.innerText = `${msg.user_id}`;
+    }
 
     time.innerText = new Date().toString();
     text.innerText = msg.body;
@@ -84,6 +122,7 @@ class ChatBody {
       message.classList.add("recv");
     }
     message.appendChild(text);
+    message.appendChild(username);
     this.container.appendChild(message);
     // Scroll down to show the new message
     message.scrollIntoView({
