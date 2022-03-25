@@ -166,7 +166,7 @@ func main() {
 
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
-	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
+	api.GET("/invites", invites.List(), guard, auth.AdminOnly())
 	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
 	logger.WithFields(logrus.Fields{"time": app.StartTime}).Info("server starting")

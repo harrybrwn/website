@@ -14,6 +14,7 @@ const (
 	RoleDefault Role = "default"
 	RoleFamily  Role = "family"
 	RoleTanya   Role = "tanya"
+	RoleChat    Role = "chat"
 
 	ClaimsContextKey = "jwt-ctx-claims"
 	TokenContextKey  = "jwt-ctx-token"
