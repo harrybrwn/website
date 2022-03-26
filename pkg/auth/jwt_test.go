@@ -286,28 +286,116 @@ func TestAdminOnly(t *testing.T) {
 	}
 }
 
-func TestRole_Scan(t *testing.T) {
+func TestRole_ScanValue(t *testing.T) {
 	var (
 		is  = is.New(t)
 		r   Role
 		v   driver.Value
 		err error
 	)
-	is.NoErr(r.Scan("admin"))
-	is.Equal(r, Role("admin"))
-	v, err = r.Value()
-	is.NoErr(err)
-	is.Equal(v, string(r))
-	is.Equal(v, "admin")
+	for _, s := range []string{
+		"admin",
+		"default",
+		"family",
+		"tanya",
+	} {
+		is.NoErr(r.Scan(s))
+		is.Equal(r, ParseRole(s))
+		is.Equal(r.String(), s)
+		v, err = r.Value()
+		is.NoErr(err)
+		is.Equal(v, r)
+		is.Equal(v, ParseRole(s))
+	}
 
-	is.NoErr(r.Scan([]byte("hello")))
-	is.Equal(r, Role("hello"))
-	v, err = r.Value()
-	is.NoErr(err)
-	is.Equal(v, string(r))
-	is.Equal(v, "hello")
+	for _, s := range []string{
+		"",
+		"hello",
+		"____",
+	} {
+		r = RoleAdmin                       // r must change for the next checks to pass
+		is.Equal(r.Scan(s), ErrInvalidRole) // should fail with invalid role
+		is.Equal(r, RoleInvalid)
+		v, err = r.Value()
+		is.Equal(err, ErrInvalidRole)
+		is.Equal(v, RoleInvalid)
+	}
+	is.NoErr(r.Scan(int8(1)))
+	is.NoErr(r.Scan(int16(1)))
+	is.NoErr(r.Scan(int32(1)))
+	is.NoErr(r.Scan(int64(1)))
+	is.NoErr(r.Scan(int(1)))
+	is.NoErr(r.Scan(uint8(1)))
+	is.NoErr(r.Scan(uint16(1)))
+	is.NoErr(r.Scan(uint32(1)))
+	is.NoErr(r.Scan(uint64(1)))
+	is.NoErr(r.Scan(uint(1)))
+	is.NoErr(r.Scan([]byte("admin")))
+	is.True(errors.Is(r.Scan(float32(1)), ErrInvalidRole))
+	is.True(errors.Is(r.Scan(float64(1)), ErrInvalidRole))
+	is.True(errors.Is(r.Scan(complex64(1)), ErrInvalidRole))
+	is.True(errors.Is(r.Scan(complex128(1)), ErrInvalidRole))
 
-	is.True(r.Scan(12) != nil)
+	r = Role(65000)
+	is.Equal(r.String(), "")
+}
+
+func TestRoleRequired(t *testing.T) {
+	e := echo.New()
+	for i, tst := range []func(t *testing.T, c echo.Context){
+		func(t *testing.T, c echo.Context) {
+			h := RoleRequired(RoleFamily)
+			err := h(func(echo.Context) error {
+				t.Fatal("should not execute")
+				return nil
+			})(c)
+			if !errors.Is(echo.ErrForbidden, err) {
+				t.Error("wrong error")
+			}
+		},
+		func(t *testing.T, c echo.Context) {
+			h := RoleRequired(RoleFamily)
+			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleDefault}})
+			err := h(func(echo.Context) error {
+				t.Fatal("should not execute")
+				return nil
+			})(c)
+			if !errors.Is(echo.ErrForbidden, err) {
+				t.Fatal("wrong error")
+			}
+		},
+		func(t *testing.T, c echo.Context) {
+			h := RoleRequired(RoleAdmin)
+			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleAdmin}})
+			err := h(func(echo.Context) error {
+				return ErrInvalidRole
+			})(c)
+			if !errors.Is(ErrInvalidRole, err) {
+				t.Fatal("wrong error")
+			}
+		},
+		func(t *testing.T, c echo.Context) {
+			h := RoleRequired(RoleAdmin)
+			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleAdmin}})
+			err := h(func(echo.Context) error { return nil })(c)
+			if err != nil {
+				t.Error("should get nil error")
+			}
+		},
+	} {
+		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/", nil)
+			c := e.NewContext(req, rec)
+			tst(t, c)
+		})
+	}
+}
+
+func TestIsAdmin(t *testing.T) {
+	is := is.New(t)
+	is.True(!IsAdmin(&Claims{Roles: []Role{RoleDefault}}))
+	is.True(IsAdmin(&Claims{Roles: []Role{RoleAdmin}}))
 }
 
 func TestLogin(t *testing.T) {
