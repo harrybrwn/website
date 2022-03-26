@@ -2,9 +2,7 @@
 
 set -e
 
-
 help() {
-  # echo "$1 [flags...] [--] <command>"
   echo "wait.sh <host> <port> [flags...] [--] <command>"
   echo "Flags:"
   echo "     --help   print help message"
