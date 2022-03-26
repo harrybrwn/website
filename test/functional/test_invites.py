@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 
 import config
-from models import Invite, Token
+from models import Role, Invite, Token
 
 NANOSECOND  = 1
 MICROSECOND = 1000 * NANOSECOND
@@ -49,7 +49,7 @@ def test_create_invite_admin(admin_token: Token):
 	assert res.ok
 	j = res.json()
 	assert j["ttl"] == 15
-	assert j["roles"] == ["default", "family"]
+	assert j["roles"] == [Role.DEFAULT.value, Role.FAMILY.value]
 	res = requests.get(f"http://{config.host}{j['path']}")
 	assert res.ok
 
