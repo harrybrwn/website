@@ -464,7 +464,7 @@ func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, erro
 func asAuthRoles(ss []string) []auth.Role {
 	roles := make([]auth.Role, len(ss))
 	for i, s := range ss {
-		roles[i] = auth.Role(s)
+		roles[i] = auth.ParseRole(s)
 	}
 	return roles
 }

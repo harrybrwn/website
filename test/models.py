@@ -1,12 +1,22 @@
 from __future__ import annotations
 import datetime
 from typing import List
+import enum
 
 import requests
 import bcrypt
 
 from db import db
 import config
+
+
+@enum.unique
+class Role(enum.Enum):
+    INVALID = 0
+    ADMIN   = 1
+    DEFAULT = 2
+    FAMILY  = 3
+    TANYA   = 4
 
 
 class Token:
