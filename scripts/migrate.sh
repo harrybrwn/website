@@ -67,4 +67,3 @@ case $1 in
     run-migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
     ;;
 esac
-

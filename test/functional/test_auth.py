@@ -3,7 +3,7 @@ import base64
 import json
 
 import requests
-from models import Token
+from models import Role, Token
 from config import host
 import time
 
@@ -96,20 +96,19 @@ def test_token_claims_admin(admin_token: Token):
     meta = json.loads(b64decode(parts[0]))
     assert meta is not None
     claims = json.loads(b64decode(parts[1]))
-    assert 'admin' in claims['roles']
+    assert Role.ADMIN.value in claims["roles"]
     assert claims['iss'] == 'harrybrwn.com'
     assert claims['id'] != 0
     assert len(claims['uuid']) > 0
-    print(claims)
 
 
-def test_token_claims_admin(user_token: Token):
+def test_token_claims_user(user_token: Token):
     parts = user_token.token.split(".")
     assert len(parts) == 3
     meta = json.loads(b64decode(parts[0]))
     assert meta is not None
     claims = json.loads(b64decode(parts[1]))
-    assert 'default' in claims['roles']
+    assert Role.DEFAULT.value in claims['roles']
     assert claims['iss'] == 'harrybrwn.com'
     assert claims['id'] != 0
     assert len(claims['uuid']) > 0
