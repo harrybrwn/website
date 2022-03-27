@@ -5,7 +5,7 @@ services:
     image: postgres:13.6-alpine
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testdb1}
-      POSTGRES_USER: ${POSTGRES_USER:-site}
+      POSTGRES_USER: ${POSTGRES_USER:-web}
       POSTGRES_DB: ${POSTGRES_DB:-harrybrwn}
       # POSTGRES_PORT: ${POSTGRES_PORT}
     ports:

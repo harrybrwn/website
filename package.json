@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "My personal website",
   "scripts": {
-    "test": "jest --rootDir . -c config/jest.config.ts --coverage",
+    "test": "jest --rootDir . -c config/jest.config.ts",
     "test:ci": "jest --rootDir . -c config/jest.config.ts --coverage --runInBand --ci",
     "coverage": "x-www-browser .testing/jest/coverage/lcov-report/index.html",
     "build": "webpack --env prod --mode=production --progress",

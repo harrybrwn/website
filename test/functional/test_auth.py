@@ -1,9 +1,16 @@
 import pytest
+import base64
+import json
 
 import requests
-from models import Token
+from models import Role, Token
 from config import host
 import time
+
+
+def b64decode(s: str):
+    b = s.encode('utf-8')
+    return base64.decodebytes(b + b'=' * (-len(b) % 4))
 
 
 def test_homepage():
@@ -50,7 +57,7 @@ def test_runtime_as_user(user_token: Token):
     assert res.status_code >= 400 and res.status_code < 500
 
 
-def test_revoke_token(admin_token: Token):
+def test_token_revoke(admin_token: Token):
     res = requests.post(
         f"http://{host}/api/revoke",
         headers={"Authorization": admin_token.header()},
@@ -69,7 +76,7 @@ def test_revoke_token(admin_token: Token):
 # Generating JWT tokens relies on the current time. So keep this last so that
 # the session scoped token fixture is generated longer than a second before this
 # test runs.
-def test_refresh_token(user_token: Token):
+def test_token_refresh(user_token: Token):
     # generating two JWT tokens in the same second will result in the same "iat"
     # field and they will be the same.
     time.sleep(1.0)
@@ -81,3 +88,27 @@ def test_refresh_token(user_token: Token):
     assert tok.token != user_token.token
     assert tok.expires > user_token.expires
     assert tok.refresh_token == user_token.refresh_token
+
+
+def test_token_claims_admin(admin_token: Token):
+    parts = admin_token.token.split(".")
+    assert len(parts) == 3
+    meta = json.loads(b64decode(parts[0]))
+    assert meta is not None
+    claims = json.loads(b64decode(parts[1]))
+    assert Role.ADMIN.value in claims["roles"]
+    assert claims['iss'] == 'harrybrwn.com'
+    assert claims['id'] != 0
+    assert len(claims['uuid']) > 0
+
+
+def test_token_claims_user(user_token: Token):
+    parts = user_token.token.split(".")
+    assert len(parts) == 3
+    meta = json.loads(b64decode(parts[0]))
+    assert meta is not None
+    claims = json.loads(b64decode(parts[1]))
+    assert Role.DEFAULT.value in claims['roles']
+    assert claims['iss'] == 'harrybrwn.com'
+    assert claims['id'] != 0
+    assert len(claims['uuid']) > 0

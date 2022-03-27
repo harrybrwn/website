@@ -57,7 +57,7 @@ func run() error {
 
 	roles := make([]auth.Role, 0)
 	for _, r := range strings.Split(rolesflag, ",") {
-		switch auth.Role(strings.ToLower(strings.Trim(r, "\n\t "))) {
+		switch auth.ParseRole(strings.ToLower(strings.Trim(r, "\n\t "))) {
 		case auth.RoleAdmin:
 			roles = append(roles, auth.RoleAdmin)
 		case auth.RoleDefault:

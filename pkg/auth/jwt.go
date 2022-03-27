@@ -34,6 +34,11 @@ var (
 	ErrNoClaims           = errors.New("no claims found")
 )
 
+const (
+	ClaimsContextKey = "jwt-ctx-claims"
+	TokenContextKey  = "jwt-ctx-token"
+)
+
 type getter interface {
 	Get(string) interface{}
 }
