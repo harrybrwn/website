@@ -22,6 +22,9 @@ for tool in $TOOLS; do
 	golangci-lint)
 	  install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	  ;;
+	pack)
+	  install github.com/buildpacks/pack/cmd/pack@latest
+	  ;;
 	*)
 	  echo "Error: unknown tool $tool"
 	  exit 1
