@@ -16,4 +16,4 @@ mockgen -package mockusers -destination $dest/mockusers/store.go \
 	harrybrown.com/app UserStore
 
 mockgen -package mocksendgrid -destination $dest/mocksendgrid/client.go \
-  harrybrwn.com/app EmailClient
+  harrybrown.com/app EmailClient
