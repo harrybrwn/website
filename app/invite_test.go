@@ -158,7 +158,7 @@ func TestInviteCreate(t *testing.T) {
 			}
 			roles := make([]auth.Role, len(tt.body.Roles))
 			for i, r := range tt.body.Roles {
-				roles[i] = auth.Role(r)
+				roles[i] = auth.ParseRole(r)
 			}
 			if tt.expected == nil {
 				expires := tm.Add(tt.body.Timeout).UnixMilli()

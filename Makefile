@@ -73,14 +73,19 @@ diagrams/remora.svg: diagrams/remora.drawio
 
 .PHONY: build run test clean deep-clean test-go test-ts resume tools
 
-.PHONY: functional-setup build-functional
-build-functional:
-	docker-compose -f docker-compose.test.yml build
+functional-build:
+	scripts/functional.sh build
 
 functional-setup:
-	docker-compose -f docker-compose.yml -f docker-compose.test.yml down
-	docker-compose -f docker-compose.yml -f docker-compose.test.yml build
-	docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+	scripts/functional.sh build
+	scripts/functional.sh setup
 
-functional:
-	docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
+functional-run:
+	scripts/functional.sh run
+
+functional-stop:
+	scripts/functional.sh stop
+
+functional: functional-setup functional-run functional-stop
+
+.PHONY: functional functional-setup functional-run functional-run functional-build

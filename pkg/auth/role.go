@@ -7,20 +7,48 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Role string
+type Role uint32
 
 const (
-	RoleAdmin   Role = "admin"
-	RoleDefault Role = "default"
-	RoleFamily  Role = "family"
-	RoleTanya   Role = "tanya"
-
-	ClaimsContextKey = "jwt-ctx-claims"
-	TokenContextKey  = "jwt-ctx-token"
+	RoleInvalid Role = iota
+	RoleAdmin
+	RoleDefault
+	RoleFamily
+	RoleTanya
 )
+
+var RoleNames = [...]string{
+	RoleInvalid: "",
+	RoleAdmin:   "admin",
+	RoleDefault: "default",
+	RoleFamily:  "family",
+	RoleTanya:   "tanya",
+}
+
+func (r Role) String() string {
+	if int(r) >= len(RoleNames) {
+		return ""
+	}
+	return RoleNames[r]
+}
+
+func ParseRole(s string) Role {
+	switch s {
+	case "admin":
+		return RoleAdmin
+	case "default":
+		return RoleDefault
+	case "family":
+		return RoleFamily
+	case "tanya":
+		return RoleTanya
+	}
+	return RoleInvalid
+}
 
 var (
 	ErrAdminRequired = errors.New("admin access required")
+	ErrInvalidRole   = errors.New("invalid role")
 )
 
 func AdminOnly() echo.MiddlewareFunc {
@@ -66,18 +94,47 @@ func RoleRequired(required Role) echo.MiddlewareFunc {
 	}
 }
 
-func (r *Role) Scan(src interface{}) error {
+func (r *Role) Scan(src interface{}) (err error) {
+	var role Role
 	switch v := src.(type) {
 	case string:
-		*r = Role(v)
+		role = ParseRole(v)
 	case []uint8:
-		*r = Role(v)
+		role = ParseRole(string(v))
+	case int8:
+		role = Role(v)
+	case int16:
+		role = Role(v)
+	case int32:
+		role = Role(v)
+	case int64:
+		role = Role(v)
+	case int:
+		role = Role(v)
+	case uint8:
+		role = Role(v)
+	case uint16:
+		role = Role(v)
+	case uint32:
+		role = Role(v)
+	case uint64:
+		role = Role(v)
+	case uint:
+		role = Role(v)
 	default:
-		return errors.New("unknown type cannot become type auth.Role")
+		return errors.Wrap(ErrInvalidRole, "unknown type cannot become type auth.Role")
 	}
-	return nil
+	*r = role
+	if role == RoleInvalid {
+		return ErrInvalidRole
+	}
+	return
 }
 
 func (r *Role) Value() (driver.Value, error) {
-	return string(*r), nil
+	role := *r
+	if role == RoleInvalid {
+		return role, ErrInvalidRole
+	}
+	return role, nil
 }
