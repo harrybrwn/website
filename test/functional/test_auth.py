@@ -38,10 +38,9 @@ def test_runtime_as_admin(admin_token: Token):
     assert "age" in info
     assert "uptime" in info
     assert "birthday" in info
-    assert "goversion" in info
-    assert "debug" in info
-    assert "GOOS" in info
-    assert "GOARCH" in info
+    assert "build" in info
+    assert "dependencies" in info
+    assert "module" in info
 
 
 def test_runtime_as_user(user_token: Token):
