@@ -3,6 +3,7 @@
 /node_modules/
 /build/
 /.build/
+/.cache/
 *.log
 test-cover
 static/bootstrap-4.3.1-dist

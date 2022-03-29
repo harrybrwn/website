@@ -1,5 +1,7 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
 ENV=production
+TESTCACHE=.cache/test
+BUILDCACHE=.cache/build
 
 build:
 	sh scripts/build.sh
@@ -9,7 +11,7 @@ test: test-ts test-go
 lint: lint-go
 
 clean:
-	$(RM) -r bin .testing .build
+	$(RM) -r bin .cache
 	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
@@ -21,18 +23,18 @@ deep-clean:
 		$(shell find . -name '__pycache__' -type d)
 
 test-go:
-	@mkdir -p .testing
+	@mkdir -p .cache/test
 	go generate ./...
-	go test -tags ci ./... -covermode=atomic -coverprofile=.testing/coverprofile.txt
-	go tool cover -html=.testing/coverprofile.txt -o .testing/coverage.html
-	@#x-www-browser .testing/coverage.html
+	go test -tags ci ./... -covermode=atomic -coverprofile=.cache/test/coverprofile.txt
+	go tool cover -html=.cache/test/coverprofile.txt -o .cache/test/coverage.html
+	@#x-www-browser .cache/test/coverage.html
 
 test-ts:
 	yarn test
 
 .PHONY: coverage-go coverage-ts
 coverage-go:
-	x-www-browser .testing/coverage.html
+	x-www-browser .cache/test/coverage.html
 
 coverage-ts:
 	yarn coverage

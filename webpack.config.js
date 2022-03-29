@@ -21,7 +21,7 @@ const paths = {
   build: "./build",
   favicon: "./public/favicon.ico",
   rootDir: __dirname,
-  cache: "./.build/cache",
+  cache: "./.cache/build",
 };
 
 const sitemap = [
@@ -138,7 +138,7 @@ module.exports = function (webpackEnv) {
     builder.page("harry_y_tanya"),
     builder.page("games"),
     builder.page("404", { noChunks: true }),
-    builder.page("invite"),
+    builder.page("invite")
   );
 
   for (const key in site.pages) {
