@@ -1,4 +1,4 @@
-import "~/frontend/styles/admin.css";
+import "~/frontend/pages/admin/styles.css";
 import * as api from "~/frontend/api";
 import LoginManager from "~/frontend/util/LoginManager";
 import {

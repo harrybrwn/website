@@ -160,6 +160,7 @@ class Builder {
 
     let filename;
     if (page === "index" || page === "404") {
+      // Output should be in the root of the build folder
       filename = `${page}.html`;
     } else {
       filename = path.join(page, "index.html");
@@ -168,10 +169,9 @@ class Builder {
     return new HtmlWebpackPlugin(
       Object.assign(
         {
-          // filename: path.join(opts.pageDir, `${page}.html`),
           filename: filename,
           favicon: this.paths.favicon,
-          template: path.join(this.paths.source, opts.pageDir, `${page}.html`),
+          template: this.findTemplateFile(page, opts.pageDir),
           templateParameters: this.site.pages[page],
           chunks: chunks,
           meta: metaTags(this.site.pages[page]),
@@ -179,6 +179,21 @@ class Builder {
         this.isProd ? { minify: this.htmlMinify } : { cache: true }
       )
     );
+  }
+
+  findTemplateFile(page, pageDir) {
+    let name = `${page}.html`;
+    let files = [
+      path.join(this.paths.source, pageDir, name),
+      path.join(this.paths.source, pageDir, page, name),
+      path.join(this.paths.source, pageDir, page, "index.html"),
+    ];
+    for (let f of files) {
+      if (fs.existsSync(f)) {
+        return f;
+      }
+    }
+    return null;
   }
 }
 
