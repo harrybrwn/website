@@ -21,7 +21,7 @@ const paths = {
   build: "./build",
   favicon: "./public/favicon.ico",
   rootDir: __dirname,
-  cache: "./.build/cache",
+  cache: "./.cache/build",
 };
 
 const sitemap = [

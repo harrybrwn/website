@@ -12,7 +12,7 @@ export default {
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "/tmp/jest_rs",
-  cacheDirectory: ".testing/jest/cache",
+  cacheDirectory: ".cache/test/jest/cache",
 
   // Automatically clear mock calls, instances and results before every test
   clearMocks: true,
@@ -25,7 +25,7 @@ export default {
 
   // The directory where Jest should output its coverage files
   //coverageDirectory: "coverage",
-  coverageDirectory: ".testing/jest/coverage",
+  coverageDirectory: ".cache/test/jest/coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [

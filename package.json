@@ -5,7 +5,7 @@
   "scripts": {
     "test": "jest --rootDir . -c config/jest.config.ts",
     "test:ci": "jest --rootDir . -c config/jest.config.ts --coverage --runInBand --ci",
-    "coverage": "x-www-browser .testing/jest/coverage/lcov-report/index.html",
+    "coverage": "x-www-browser .cache/test/jest/coverage/lcov-report/index.html",
     "build": "webpack --env prod --mode=production --progress",
     "build:ci": "webpack --env ci --mode=production --no-devtool --no-cache",
     "dev": "webpack -w --mode development --env dev --progress",
