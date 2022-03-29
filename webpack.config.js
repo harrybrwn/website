@@ -159,7 +159,7 @@ module.exports = function (webpackEnv) {
         import: entryImport("pages/harry_y_tanya.ts"),
       },
       admin: {
-        import: entryImport("pages/admin.ts"),
+        import: entryImport("pages/admin/admin.ts"),
       },
       games: {
         import: entryImport("pages/games.ts"),
