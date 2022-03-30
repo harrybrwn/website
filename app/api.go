@@ -24,6 +24,7 @@ import (
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/ws"
 	"nhooyr.io/websocket"
 )
 
@@ -319,7 +320,7 @@ func ChatRoomConnect(store chat.Store, rdb redis.UniversalClient) func(c echo.Co
 		if err != nil {
 			return err
 		}
-		conn, err := websocket.Accept(c.Response(), c.Request(), &websocket.AcceptOptions{})
+		conn, err := ws.Accept(c.Response(), c.Request(), &ws.AcceptOptions{})
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
@@ -345,11 +346,13 @@ func ChatRoomConnect(store chat.Store, rdb redis.UniversalClient) func(c echo.Co
 
 func ListMessages(store chat.Store) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var p struct {
+		var p = struct {
 			ID     int `param:"id"`
 			Prev   int `query:"prev"`
 			Offset int `query:"offset"`
 			Limit  int `query:"limit"`
+		}{
+			Limit: 10,
 		}
 		err := c.Bind(&p)
 		if err != nil {
@@ -378,8 +381,10 @@ func GetRoom(store chat.Store) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
+		logger.WithField("id", r.ID).Info("got room request")
 		room, err := store.GetRoom(c.Request().Context(), r.ID)
 		if err != nil {
+			logger.WithError(err).Error("failed to get room")
 			return echo.ErrNotFound.SetInternal(err)
 		}
 		return c.JSON(200, room)

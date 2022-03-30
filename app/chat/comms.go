@@ -8,8 +8,11 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
+	"harrybrown.com/pkg/ws"
 	"nhooyr.io/websocket"
 )
+
+var ErrEmptyBody = errors.New("empty message body")
 
 type PubSub interface {
 	// Publish a message on the message queue
@@ -84,15 +87,18 @@ type Socket interface {
 	Recv(context.Context) (*Message, error)
 }
 
-func NewSocket(conn *websocket.Conn) Socket {
+func NewSocket(conn ws.Connection) Socket {
 	return &socket{conn: conn}
 }
 
 type socket struct {
-	conn *websocket.Conn
+	conn ws.Connection
 }
 
 func (s *socket) Send(ctx context.Context, msg *Message) error {
+	if msg == nil {
+		return errors.New("cannot send nil message")
+	}
 	w, err := s.conn.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return errors.Wrap(err, "failed to get writer")
@@ -113,15 +119,14 @@ func (s *socket) Recv(ctx context.Context) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	msg := Message{
-		CreatedAt: time.Now(),
-	}
+	var msg Message
 	err = json.NewDecoder(r).Decode(&msg)
 	if err != nil {
 		return nil, err
 	}
 	if len(msg.Body) == 0 {
-		return nil, errors.New("no message body")
+		return nil, ErrEmptyBody
 	}
+	msg.CreatedAt = time.Now()
 	return &msg, nil
 }

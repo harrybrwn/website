@@ -9,3 +9,4 @@ mockgen -package mockredis -destination $dest/mockredis/cmdable.go github.com/go
 mockgen -package mockusers -destination $dest/mockusers/store.go harrybrown.com/app UserStore
 mockgen -package mocksendgrid -destination $dest/mocksendgrid/client.go harrybrown.com/app EmailClient
 mockgen -package mockrows -destination $dest/mockrows/db.go harrybrown.com/pkg/db Rows
+mockgen -package mockws -destination $dest/mockws/ws.go harrybrown.com/pkg/ws Connection

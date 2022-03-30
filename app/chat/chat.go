@@ -121,6 +121,9 @@ func (rs *store) GetRoom(ctx context.Context, id int) (*Room, error) {
 func (rs *store) SaveMessage(ctx context.Context, msg *Message) error {
 	const query = `INSERT INTO chatroom_messages (room, user_id, body, created_at) ` +
 		`VALUES ($1, $2, $3, $4) RETURNING id`
+	if msg == nil {
+		return errors.New("cannot save nil message")
+	}
 	rows, err := rs.db.QueryContext(ctx, query, msg.Room, msg.UserID, msg.Body, msg.CreatedAt)
 	if err != nil {
 		return err
@@ -211,7 +214,11 @@ type ChatRoom struct {
 	logger logrus.FieldLogger
 }
 
-func OpenRoom(store Store, rdb redis.UniversalClient, room, user int) *ChatRoom {
+func OpenRoom(
+	store Store,
+	rdb redis.UniversalClient,
+	room, user int,
+) *ChatRoom {
 	return &ChatRoom{
 		Store:  store,
 		RDB:    rdb,
@@ -250,7 +257,8 @@ func (cr *ChatRoom) Start(ctx context.Context, pubsub PubSub, socket Socket) err
 func (cr *ChatRoom) readLoop(ctx context.Context) {
 	for {
 		msg, err := cr.s.Recv(ctx)
-		if e := cr.handleSocketError(err, "failed to receive from websocket"); e != nil {
+		if err != nil {
+			cr.handleSocketError(err, "failed to receive from websocket")
 			return
 		}
 		err = cr.Store.SaveMessage(ctx, msg)

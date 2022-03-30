@@ -2,7 +2,7 @@ import "~/frontend/styles/chat.css";
 import "~/frontend/components/toggle.css";
 import { websocketURL } from "~/frontend/util/websocket";
 import { SECOND } from "~/frontend/constants";
-import { Message, Room } from "~/frontend/api/chat";
+import { Message, Room, MessagesResponse, messages } from "~/frontend/api/chat";
 import { ThemeManager } from "~/frontend/components/theme";
 import {
   TOKEN_KEY,
@@ -42,7 +42,7 @@ const main = () => {
   } else {
     userID = Math.round(Math.random() * 1000);
   }
-  let roomID = parseInt(location.pathname.split("/")[2]);
+  const roomID = parseInt(location.pathname.split("/")[2]);
 
   let chatBody = new ChatBody(userID, body);
   let chatBar = new ChatBar({
@@ -52,24 +52,17 @@ const main = () => {
     submit: submitMsg,
   });
 
-  let conn = new WebSocket(
-    websocketURL(`/api/chat/${roomID}/connect?user=${userID}`)
-  );
-  let open = true;
+  let conn = new ChatSocket({ roomID, userID });
   conn.onmessage = (ev: MessageEvent) => {
     console.log("received message:", ev.data, ev.origin);
     let msg: Message = JSON.parse(ev.data);
     chatBody.append(msg);
   };
-  conn.onclose = (ev: CloseEvent) => {
-    console.warn("socket has closed:", ev.reason);
-    open = false;
-  };
   conn.onerror = (ev: Event) => {
     console.error("websocket error:", ev);
   };
   chatBar.setMessageHandler((msg: Message) => {
-    if (!open) {
+    if (!conn.open) {
       // TODO put an error in front of the user
       console.error("websocket is closed. cannot send message");
       return;
@@ -79,6 +72,15 @@ const main = () => {
     conn.send(message);
     chatBody.append(msg);
   });
+  let chat = new Chat({
+    bar: chatBar,
+    body: chatBody,
+    conn,
+    user: userID,
+    room: roomID,
+  });
+
+  let last_id = 0;
 
   handleKeyPresses(chatBar);
 
@@ -89,6 +91,63 @@ const main = () => {
     m.lastElementChild.scrollIntoView({ behavior: "auto" });
   });
 };
+
+class ChatSocket extends WebSocket {
+  roomID: number;
+  userID: number;
+  open: boolean;
+
+  constructor(
+    opts: {
+      roomID: number;
+      userID: number;
+    },
+    protocols?: string | string[] | undefined
+  ) {
+    let path = `/api/chat/${opts.roomID}/connect?user=${opts.userID}`;
+    super(websocketURL(path), protocols);
+    this.roomID = opts.roomID;
+    this.userID = opts.userID;
+    this.open = true;
+    this.onclose = (ev: CloseEvent) => {
+      console.warn("socket has closed:", ev.reason);
+      this.open = false;
+    };
+  }
+}
+
+class Chat {
+  bar: ChatBar;
+  body: ChatBody;
+  conn: ChatSocket;
+  room: number;
+  user: number;
+  last_message: number;
+
+  constructor(opts: {
+    bar: ChatBar;
+    body: ChatBody;
+    conn: ChatSocket;
+    room: number;
+    user: number;
+  }) {
+    this.bar = opts.bar;
+    this.body = opts.body;
+    this.conn = opts.conn;
+    this.room = opts.room;
+    this.user = opts.user;
+    this.last_message = 0;
+
+    messages(opts.room).then((msgs: MessagesResponse) => {
+      let l = msgs.messages.length;
+      for (let i = l - 1; i >= 0; i--) {
+        this.body.append(msgs.messages[i]);
+      }
+      this.last_message = msgs.messages[l - 1].id;
+      console.log(this.last_message);
+    });
+  }
+}
 
 class ChatBody {
   private container: HTMLElement;
