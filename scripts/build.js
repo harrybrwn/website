@@ -27,6 +27,23 @@ class InjectImagesPlugin {
   }
 }
 
+// use with webpack's resolve.alias
+const aliasesFromTsConfig = (tsconfig, dir) => {
+  if (!tsconfig.compilerOptions) {
+    return undefined;
+  }
+  let paths = tsconfig.compilerOptions.paths;
+  if (!paths) {
+    return undefined;
+  }
+  let result = {};
+  for (let key in paths) {
+    let p = path.parse(key);
+    result[p.dir] = dir;
+  }
+  return result;
+};
+
 const fileCompressionLoader = {
   loader: "image-webpack-loader",
   options: {
@@ -200,4 +217,5 @@ class Builder {
 module.exports = {
   Builder,
   metaTags,
+  aliasesFromTsConfig,
 };

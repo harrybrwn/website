@@ -8,9 +8,15 @@ const HTMLInlineCSSWebpackPlugin =
   require("html-inline-css-webpack-plugin").default;
 const SitemapPlugin = require("sitemap-webpack-plugin").default;
 const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
+const fs = require("fs");
+const hjson = require("hjson");
 
 const path = require("path");
 const build = require("./scripts/build");
+
+const tsconfig = hjson.parse(
+  fs.readFileSync("./tsconfig.json", { encoding: "ascii" })
+);
 
 // Used for build-time template parameters
 const site = require("./site");
@@ -18,7 +24,7 @@ const site = require("./site");
 const paths = {
   public: "./public",
   source: "./frontend",
-  build: "./build",
+  build: tsconfig.compilerOptions.outDir || "./build",
   favicon: "./public/favicon.ico",
   rootDir: __dirname,
   cache: "./.cache/build",
@@ -171,7 +177,7 @@ module.exports = function (webpackEnv) {
     resolve: {
       extensions: [".tsx", ".ts", ".jsx", ".js", ".css", ".svg"],
       alias: {
-        "@harrybrwn.com": path.resolve(paths.rootDir, "./") + "/",
+        "@harrybrwn.com": paths.rootDir,
         "~": paths.rootDir,
       },
     },
