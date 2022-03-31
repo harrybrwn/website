@@ -1,4 +1,4 @@
-import "~/frontend/styles/chat.css";
+import "./styles.css";
 import "~/frontend/components/toggle.css";
 import { websocketURL } from "~/frontend/util/websocket";
 import { SECOND } from "~/frontend/constants";

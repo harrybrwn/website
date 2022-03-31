@@ -164,7 +164,7 @@ module.exports = function (webpackEnv) {
       games: {
         import: entryImport("pages/games.ts"),
       },
-      chatroom: { import: entryImport("pages/chatroom.ts") },
+      chatroom: { import: entryImport("pages/chatroom/chatroom.ts") },
       invite: { import: entryImport("pages/invite.ts") },
     },
 
