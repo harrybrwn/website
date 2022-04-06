@@ -57,16 +57,11 @@ func run() error {
 
 	roles := make([]auth.Role, 0)
 	for _, r := range strings.Split(rolesflag, ",") {
-		switch auth.ParseRole(strings.ToLower(strings.Trim(r, "\n\t "))) {
-		case auth.RoleAdmin:
-			roles = append(roles, auth.RoleAdmin)
-		case auth.RoleDefault:
-			roles = append(roles, auth.RoleDefault)
-		case auth.RoleTanya:
-			roles = append(roles, auth.RoleTanya)
-		default:
-			return fmt.Errorf("unknown role: %s", r)
+		role := auth.ParseRole(r)
+		if role == auth.RoleInvalid {
+			return fmt.Errorf("invalid role: %s", r)
 		}
+		roles = append(roles, role)
 	}
 	if len(roles) == 0 {
 		roles = []auth.Role{auth.RoleDefault}

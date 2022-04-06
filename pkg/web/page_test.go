@@ -75,7 +75,7 @@ func TestPageTemplating(t *testing.T) {
 	}
 
 	if rr.Code != 200 {
-		t.Error("bad responce code")
+		t.Error("bad response code")
 	}
 
 	exp := "<p>title: Test Page</p>\n<p>path: /testing</p>"

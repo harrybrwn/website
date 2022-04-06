@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
-	"nhooyr.io/websocket"
+	"harrybrown.com/pkg/ws"
 )
 
 var logger logrus.FieldLogger = log.GetLogger()
@@ -295,10 +295,16 @@ func (cr *ChatRoom) writeLoop(ctx context.Context) error {
 }
 
 func (cr *ChatRoom) handleSocketError(e error, message string) error {
-	switch websocket.CloseStatus(e) {
-	case websocket.StatusGoingAway:
+	switch ws.CloseStatus(e) {
+	case ws.StatusGoingAway, ws.StatusNormalClosure:
 		close(cr.stop)
 		return nil
+	case ws.StatusAbnormalClosure, ws.StatusBadGateway, ws.StatusInternalError,
+		ws.StatusInvalidFramePayloadData, ws.StatusMandatoryExtension,
+		ws.StatusMessageTooBig, ws.StatusNoStatusRcvd, ws.StatusPolicyViolation,
+		ws.StatusProtocolError, ws.StatusServiceRestart, ws.StatusTLSHandshake,
+		ws.StatusTryAgainLater, ws.StatusUnsupportedData:
+		fallthrough
 	default:
 		if e != nil {
 			cr.logger.WithError(e).Error(message)

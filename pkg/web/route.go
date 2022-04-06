@@ -10,7 +10,7 @@ type Route interface {
 	// Path should return the path for that specific route.
 	Path() string
 
-	// Handler returns the handler that will be used to server up http responces.
+	// Handler returns the handler that will be used to server up http responses.
 	Handler() http.Handler
 
 	// Expand will expand the route if it has any nested routes. Returns nil if there
@@ -70,7 +70,7 @@ func NewNestedRoute(path string, routes ...Route) *NestedRoute {
 	}
 	return &NestedRoute{
 		BasePath:    path,
-		BaseHandler: http.HandlerFunc(NotImplimented),
+		BaseHandler: http.HandlerFunc(NotImplemented),
 		routes:      rts,
 	}
 }

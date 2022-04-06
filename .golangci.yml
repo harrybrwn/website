@@ -8,9 +8,26 @@ linter-settings:
   gocyclo:
     min-complexity: 10
 
-  gofumpt:
-    # Default: 1.15
-    lang-version: "1.17"
-
   misspell:
     locale: US
+
+  exhaustive:
+    default-signifies-exhaustive: false
+
+issues:
+  fix: false
+
+linters:
+  enable:
+    - misspell  # spelling
+    - tparallel # check t.Parallel in tests
+    - dupl      # code duplication checks
+    # - wsl       # linting whitespace
+    - bodyclose # check for http response body close
+    - tenv
+    - contextcheck
+    - gocyclo
+    - goimports
+    - exhaustive # enums in switch statements
+    - stylecheck
+    - rowserrcheck

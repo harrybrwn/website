@@ -41,7 +41,7 @@ type Page struct {
 	// will execute it's internal template blob and serve that.
 	Serve func(w http.ResponseWriter, r *http.Request)
 
-	// RequestHook is a handler function that alows users to modify the responce or the page.
+	// RequestHook is a handler function that alows users to modify the response or the page.
 	// Runs once for every request to the page.
 	RequestHook func(self *Page, w http.ResponseWriter, r *http.Request)
 
@@ -75,7 +75,7 @@ func (p *Page) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// ServerHTTP lets the Page struct impliment the http.Handler interface.
+// ServerHTTP lets the Page struct implement the http.Handler interface.
 func (p *Page) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if p.HotReload {
 		if err := p.init(); err != nil {
