@@ -258,7 +258,7 @@ func (cr *ChatRoom) readLoop(ctx context.Context) {
 	for {
 		msg, err := cr.s.Recv(ctx)
 		if err != nil {
-			cr.handleSocketError(err, "failed to receive from websocket")
+			_ = cr.handleSocketError(err, "failed to receive from websocket")
 			return
 		}
 		err = cr.Store.SaveMessage(ctx, msg)
