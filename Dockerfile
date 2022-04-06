@@ -19,8 +19,7 @@ COPY . .
 RUN yarn build
 
 # Golang builder
-ARG GO_VERSION=1.17.3-alpine
-FROM golang:1.17.3-alpine as builder
+FROM golang:1.18-alpine as builder
 RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
     CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /opt/harrybrwn/
