@@ -19,7 +19,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app"
-	"harrybrown.com/app/chat"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
@@ -116,7 +115,6 @@ func main() {
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
-	withUser := auth.ImplicitUser(jwtConf)
 	e.Pre(app.RequestLogRecorder(db, logger))
 
 	e.Any("/", app.Page(harryStaticPage, "index.html"))
@@ -158,11 +156,12 @@ func main() {
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 
-	chatStore := chat.NewStore(db)
-	api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
-	api.GET("/chat/:id/room", app.GetRoom(chatStore), withUser)
-	api.GET("/chat/:id/connect", app.ChatRoomConnect(chatStore, rd), withUser)
-	api.GET("/chat/:id/messages", app.ListMessages(chatStore), withUser)
+	//withUser := auth.ImplicitUser(jwtConf)
+	//chatStore := chat.NewStore(db)
+	//api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
+	//api.GET("/chat/:id/room", app.GetRoom(chatStore), withUser)
+	//api.GET("/chat/:id/connect", app.ChatRoomConnect(chatStore, rd), withUser)
+	//api.GET("/chat/:id/messages", app.ListMessages(chatStore), withUser)
 
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
