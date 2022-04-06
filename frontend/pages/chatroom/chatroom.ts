@@ -40,7 +40,10 @@ const main = () => {
     let claims = parseClaims(t.token);
     userID = claims.id;
   } else {
-    userID = Math.round(Math.random() * 1000);
+    // redirect to home
+    console.warn("not logged in");
+    window.location.pathname = "/";
+    return;
   }
   const roomID = parseInt(location.pathname.split("/")[2]);
 

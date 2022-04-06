@@ -132,14 +132,14 @@ module.exports = function (webpackEnv) {
     plugins.push(new HTMLInlineCSSWebpackPlugin());
   }
   plugins.push(
-    builder.page("index", { pageDir: ".", chunks: ["main"] }),
-    builder.page("remora"),
-    builder.page("admin"),
-    builder.page("harry_y_tanya"),
-    builder.page("games"),
-    builder.page("404", { noChunks: true }),
-    builder.page("invite"),
-    builder.page("chatroom")
+    builder.html("index", { pageDir: ".", chunks: ["main"] }),
+    builder.html("remora"),
+    builder.html("admin"),
+    builder.html("harry_y_tanya"),
+    builder.html("games"),
+    builder.html("404", { noChunks: true }),
+    builder.html("invite"),
+    builder.html("chatroom")
   );
 
   for (const key in site.pages) {

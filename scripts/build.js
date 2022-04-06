@@ -131,6 +131,13 @@ const defaultHtmlMinify = {
   removeStyleLinkTypeAttributes: true,
 };
 
+class Page {
+  constructor(name, builder) {
+    this.name = name;
+    this.builder = builder;
+  }
+}
+
 class Builder {
   constructor(opts) {
     this.paths = opts.paths;
@@ -139,7 +146,7 @@ class Builder {
     this.htmlMinify = opts.htmlMinify || defaultHtmlMinify;
   }
 
-  page(page, opts) {
+  html(page, opts) {
     if (opts === undefined) opts = {};
 
     if (!opts.pageDir) {
@@ -154,8 +161,17 @@ class Builder {
     }
     // Filter out the chunk if we cant find the typescript file
     chunks = chunks.filter((val) => {
-      val = path.join("frontend", opts.pageDir, val + ".ts");
-      return fs.existsSync(val);
+      let paths = [
+        path.join("frontend", opts.pageDir, val + ".ts"),
+        path.join("frontend", opts.pageDir, val, val + ".ts"),
+        path.join("frontend", opts.pageDir, val, "index.ts"),
+      ];
+      for (let p of paths) {
+        if (!fs.existsSync(p)) {
+          return true;
+        }
+      }
+      return false;
     });
 
     let filename;
