@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+  </head>
+  <body>
+    <main id="app">
+      <div class="rooms">
+        <div class="rooms-header">
+          <h2>Chat Rooms</h2>
+        </div>
+        <div class="rooms-list">
+          <div>placeholder 1</div>
+          <div>placeholder 2</div>
+          <div>placeholder 3</div>
+        </div>
+      </div>
+
+      <div class="chat">
+        <div class="room-name">
+          <svg height="50" width="50">
+            <circle cx="25" cy="25" r="20" fill="grey" />
+          </svg>
+          <p>Name</p>
+          <div class="theme-toggle toggle-switch">
+            <label class="theme-toggle-label" for="theme-toggle">
+              <input
+                type="checkbox"
+                class="theme-toggle-checkbox"
+                id="theme-toggle"
+              />
+              <span class="theme-toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div id="conversation" class="conversation">
+          <div id="conversation-messages" class="conversation-messages">
+
+            <!--
+            <div class="message recv">
+              <div class="message-text">Hello there</div>
+              <div class="message-time"></div>
+            </div>
+            <div class="message sent">
+              <div class="message-text">hi my dood</div>
+              <div class="message-time"></div>
+            </div>
+            <div class="message sent">
+              <div class="message-text">whats up?</div>
+            </div>
+            <div class="message sent">
+              <div class="message-text">whats up?</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message sent">
+              <div class="message-text">hi my dood</div>
+              <div class="message-time"></div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">
+                what the heck is even going on here you have built a chat app
+                that looks like shit and you haven't even finish the backend so
+                it doesn't even work!
+              </div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+            </div>
+            <div class="message sent">
+              <div class="message-text">
+                what the heck is even going on here you have built a chat app
+                that looks like shit and you haven't even finish the backend so
+                it doesn't even work!
+              </div>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+              <span class="msg-username">garry</span>
+            </div>
+            <div class="message recv">
+              <div class="message-text">oh nothing</div>
+              <span class="msg-username">garry</span>
+            </div>
+            <div class="message sent">
+              <div class="message-text">oh nothing</div>
+              <span class="msg-username">joe</span>
+            </div>
+            <div class="message sent">
+              <div class="message-text">oh nothing</div>
+              <span class="msg-username">joe</span>
+            </div>
+          -->
+
+          </div>
+        </div>
+
+        <div class="chat-bar">
+          <input id="new-msg-textbar" type="text" placeholder="Aa" />
+          <!-- <textarea id="new-msg-textbar" rows="1" placeholder="Aa"></textarea> -->
+          <button id="submit-new-msg" type="submit">Send</button>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

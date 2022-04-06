@@ -2,11 +2,36 @@ package log
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
+
+var logger = logrus.StandardLogger()
+
+func SetLogger(l *logrus.Logger) { logger = l }
+
+func GetLogger() *logrus.Logger { return logger }
+
+type contextKey string
+
+var loggerKey = contextKey("_logger")
+
+func FromContext(ctx context.Context) logrus.FieldLogger {
+	res := ctx.Value(loggerKey)
+	if res == nil {
+		return logrus.StandardLogger()
+	}
+	return res.(logrus.FieldLogger)
+}
+
+func StashedInContext(ctx context.Context, logger logrus.FieldLogger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
+}
 
 // PrintLogger defines an interface for logging through printing.
 type PrintLogger interface {

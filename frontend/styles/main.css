@@ -2,6 +2,12 @@
 @import "~/frontend/components/win95.css";
 @import "~/frontend/components/toggle.css";
 
+body {
+	margin-right: auto;
+	margin-left: auto;
+	max-width: 750px;
+}
+
 a:visited {
 	text-decoration: none;
 }

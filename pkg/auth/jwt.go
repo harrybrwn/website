@@ -85,20 +85,52 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			if err != nil {
 				return echo.ErrUnauthorized.SetInternal(err)
 			}
-
-			if !token.Valid {
-				return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
-			}
-			if len(claims.Audience) == 0 {
-				return echo.ErrBadRequest.SetInternal(ErrNoAudience)
-			}
-			if claims.Issuer != Issuer || claims.Audience[0] != TokenAudience {
-				return echo.ErrBadRequest.SetInternal(ErrBadIssuerOrAud)
+			err = isValid(token, &claims)
+			if err != nil {
+				return err
 			}
 			c.Set(ClaimsContextKey, &claims)
 			return next(c)
 		}
 	}
+}
+
+func ImplicitUser(conf TokenConfig) echo.MiddlewareFunc {
+	keyfunc := func(*jwt.Token) (interface{}, error) {
+		return conf.Public(), nil
+	}
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			req := c.Request()
+			auth, err := conf.GetToken(req)
+			if err != nil {
+				return next(c)
+			}
+			var claims Claims
+			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
+			if err != nil {
+				return next(c)
+			}
+			err = isValid(token, &claims)
+			if err == nil {
+				c.Set(ClaimsContextKey, &claims)
+			}
+			return next(c)
+		}
+	}
+}
+
+func isValid(token *jwt.Token, claims *Claims) error {
+	if !token.Valid {
+		return &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
+	}
+	if len(claims.Audience) == 0 {
+		return echo.ErrBadRequest.SetInternal(ErrNoAudience)
+	}
+	if claims.Issuer != Issuer || claims.Audience[0] != TokenAudience {
+		return echo.ErrBadRequest.SetInternal(ErrBadIssuerOrAud)
+	}
+	return nil
 }
 
 func ValidateRefreshToken(token string, keyfunc func(*jwt.Token) (interface{}, error)) (*Claims, error) {

@@ -161,10 +161,6 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 	}
 }
 
-const (
-	maxDuration time.Duration = 1<<63 - 1
-)
-
 func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
 	logs := LogManager{db: db, logger: logger}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -198,9 +194,8 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 				UserID:    userUUID,
 			}
 			LogRequest(logger, &l)
-			if l.Latency > maxDuration {
-				// Prevent out of range errors from postgres
-				l.Latency = maxDuration
+			if c.IsWebSocket() {
+				l.Latency = 0
 			}
 			e := logs.Write(ctx, &l)
 			if e != nil {

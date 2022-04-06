@@ -5,7 +5,6 @@ import {
   isExpired,
   refresh,
   loadRefreshToken,
-  clearRefreshToken,
   refreshExpiration,
 } from "~/frontend/api/auth";
 import { SECOND } from "~/frontend/constants";

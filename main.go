@@ -42,6 +42,8 @@ var (
 	gamesStaticPage []byte
 	//TODO go:embed build/tanya/index.html
 	//tanyaStaticPage []byte
+	//go:embed build/chatroom/index.html
+	chatroomStaticPage []byte
 	//go:embed build/invite/index.html
 	inviteStaticPage []byte
 
@@ -65,7 +67,7 @@ var (
 	//go:embed frontend/templates
 	templates embed.FS
 
-	logger = logrus.New()
+	logger = log.GetLogger()
 )
 
 func main() {
@@ -78,7 +80,6 @@ func main() {
 	flag.BoolVar(&env, "env", env, "read .env")
 	flag.Parse()
 
-	app.SetLogger(logger)
 	e.Logger = log.WrapLogrus(logger)
 	e.Debug = app.Debug
 	e.DisableHTTP2 = false
@@ -122,6 +123,7 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
+	e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
@@ -135,13 +137,13 @@ func main() {
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
 
-	api := e.Group("/api")
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
 		Users:  userStore,
 	}
 	emailClient := sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
@@ -153,12 +155,20 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
+
+	//withUser := auth.ImplicitUser(jwtConf)
+	//chatStore := chat.NewStore(db)
+	//api.POST("/chat/room", app.CreateChatRoom(chatStore), guard)
+	//api.GET("/chat/:id/room", app.GetRoom(chatStore), withUser)
+	//api.GET("/chat/:id/connect", app.ChatRoomConnect(chatStore, rd), withUser)
+	//api.GET("/chat/:id/messages", app.ListMessages(chatStore), withUser)
+
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
-	api.GET("/invite/list", invites.List(), guard, auth.AdminOnly())
+	api.GET("/invites", invites.List(), guard, auth.AdminOnly())
 	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
-	logger.WithField("time", app.StartTime).Info("server starting")
+	logger.WithFields(logrus.Fields{"time": app.StartTime}).Info("server starting")
 	err = e.Start(net.JoinHostPort("", port))
 	if err != nil {
 		logger.Fatal(err)

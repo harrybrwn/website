@@ -43,6 +43,10 @@ module.exports = {
       title: "Admin Panel",
       ...common,
     },
+    chatroom: {
+      title: "Harry's webchat",
+      ...common,
+    },
     games: {
       title: "Games",
       ...common,

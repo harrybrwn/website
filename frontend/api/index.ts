@@ -105,7 +105,7 @@ export const invite = async (req?: InviteRequest): Promise<InviteURL> => {
 };
 
 export const invites = async (): Promise<InviteList> => {
-  return fetch("/api/invite/list", {
+  return fetch("/api/invites", {
     method: "GET",
     headers: apiHeaders(),
   }).then((res) => {
@@ -153,6 +153,12 @@ export const bookmarks = async (): Promise<Bookmarks> => {
     }
   );
 };
+
+export interface PageParams {
+  limit: number;
+  offset?: number;
+  prev?: number;
+}
 
 export interface RuntimeInfo {
   name: string;

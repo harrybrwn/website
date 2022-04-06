@@ -1,5 +1,8 @@
 module harrybrown.com
 
+// See list of available go versions supported by heroku:
+// https://github.com/heroku/heroku-buildpack-go/blob/main/data.json#L3
+
 // +heroku goVersion go1.17.3
 go 1.17
 
@@ -17,11 +20,13 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+	nhooyr.io/websocket v1.8.7
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
