@@ -3,8 +3,8 @@ module harrybrown.com
 // See list of available go versions supported by heroku:
 // https://github.com/heroku/heroku-buildpack-go/blob/main/data.json#L3
 
-// +heroku goVersion go1.17.3
-go 1.17
+// +heroku goVersion go1.18
+go 1.18
 
 require (
 	github.com/go-redis/redis/v8 v8.11.4
