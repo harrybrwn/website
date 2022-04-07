@@ -165,12 +165,40 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Build testing images
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build
+
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v1
+      - name: Cache docker image layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Image
+        uses: docker/build-push-action@v2
+        with:
+          push: false # Don't push image to an image repository
+          load: true  # Finish the build by exporting as a regular docker image
+          tags: harrybrwn.com-web:latest,harrybrwn.com:latest
+          context: .
+          file: ./Dockerfile
+          target: api
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new
+
+      #- name: Build testing images
+      #  run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build
       - name: Start services
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
       - name: Run tests
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
+
+      - name: Move buildx cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
   migrate:
     name: Database Migrations
