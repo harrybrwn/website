@@ -204,8 +204,6 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
-      #- name: Build testing images
-      #  run: docker-compose -f docker-compose.yml -f docker-compose.test.yml build
       - name: Start services
         run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
       - name: Run tests
