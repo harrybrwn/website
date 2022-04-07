@@ -29,10 +29,10 @@ services:
       - "--"
       - "pytest"
       - "-s"
-    build:
-      dockerfile: ./Dockerfile
-      context: .
-      target: python
+    #build:
+    #  dockerfile: ./Dockerfile
+    #  context: .
+    #  target: python
     volumes:
       - .:/opt/harrybrwn
     environment:

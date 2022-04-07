@@ -179,7 +179,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Build Image
+      - name: Build Web Image
         uses: docker/build-push-action@v2
         with:
           push: false # Don't push image to an image repository
@@ -188,6 +188,18 @@ jobs:
           context: .
           file: ./Dockerfile
           target: api
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      - name: Build Testing Image
+        uses: docker/build-push-action@v2
+        with:
+          push: false # Don't push image to an image repository
+          load: true  # Finish the build by exporting as a regular docker image
+          tags: python-tests:latest,functional-tests:latest
+          context: .
+          file: ./Dockerfile
+          target: python
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
