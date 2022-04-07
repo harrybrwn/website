@@ -11,16 +11,16 @@ test: test-ts test-go
 lint: lint-go
 
 clean:
-	$(RM) -r bin .cache
-	$(RM) test-cover files/resume.pdf files/resume.log files/resume.aux
+	$(RM) -r bin .cache .pytest_cache .cache \
+		test-cover files/resume.pdf files/resume.log files/resume.aux \
+		$(shell find . -name '.pytest_cache' -type d) \
+		$(shell find . -name '__pycache__' -type d)
 	yarn clean
 
 coverage: coverage-ts coverage-go
 
-deep-clean:
-	$(RM) -r internal/mocks \
-		$(shell find . -name '.pytest_cache' -type d) \
-		$(shell find . -name '__pycache__' -type d)
+deep-clean: clean
+	$(RM) -r internal/mocks node_modules
 
 test-go:
 	@mkdir -p .cache/test

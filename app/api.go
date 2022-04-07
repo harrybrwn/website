@@ -132,7 +132,6 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 		return err
 	}
 
-	logger.WithField("refresh_token", tokenReq.RefreshToken).Info("received refresh token")
 	refreshClaims, err := auth.ValidateRefreshToken(tokenReq.RefreshToken, ts.keyfunc)
 	if err != nil {
 		return echo.ErrBadRequest.SetInternal(err)
