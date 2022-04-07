@@ -2,7 +2,8 @@ version: "3.8"
 
 services:
   web:
-    image: harrybrwn.com-web:latest
+    #image: harrybrwn.com-web:latest
+    image: harrybrwn-buildx-test:latest
     build:
       context: .
       dockerfile: ./Dockerfile
