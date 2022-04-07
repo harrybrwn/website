@@ -197,9 +197,14 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 			if c.IsWebSocket() {
 				l.Latency = 0
 			}
+			start = time.Now()
 			e := logs.Write(ctx, &l)
 			if e != nil {
-				logger.WithError(e).Error("could not record request")
+				logger.WithFields(logrus.Fields{
+					"error":          e,
+					"write_duration": time.Since(start).String(),
+					"uri":            l.URI,
+				}).Error("could not record request")
 			}
 			if err != nil {
 				return err
