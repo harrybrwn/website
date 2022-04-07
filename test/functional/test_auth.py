@@ -14,7 +14,6 @@ def b64decode(s: str):
 
 
 def test_homepage():
-    assert False
     res = requests.get(f"http://{host}/")
     assert res.ok
     assert res.status_code == 200
