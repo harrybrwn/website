@@ -48,39 +48,10 @@ func NewInvitations(rdb redis.Cmdable, path PathBuilder) *Invitations {
 	}
 }
 
-type inviteSession struct {
-	// CreatedBy is the user that created the invite.
-	CreatedBy uuid.UUID `json:"cb,omitempty"`
-	// TTL is the number of sign-up attempts before destroying the session.
-	TTL int `json:"tl,omitempty"`
-	// ExpiresAt is the timestamp unix millisecond timestamp at which the
-	// session expires.
-	ExpiresAt int64 `json:"ex,omitempty"`
-	// Force the invite to have only one valid email
-	Email string `json:"e,omitempty"`
-	// Roles is an array of roles used when creating the new user. Only Admin
-	// should be able to set roles.
-	//
-	// TODO if auth.Role is ever turned into an int, turn this into an int to
-	// skip any custom json marshaling for auth.Role.
-	Roles []auth.Role `json:"r,omitempty"`
-
-	id string `json:"-"`
-}
-
 const (
 	defaultInviteTTL     = 5
 	defaultInviteTimeout = time.Minute * 10
 )
-
-type CreateInviteRequest struct {
-	Timeout time.Duration `json:"timeout,omitempty"`
-	TTL     int           `json:"ttl,omitempty"`
-	Email   string        `json:"email,omitempty"`
-	Roles   []string      `json:"roles"`
-}
-
-// var now = time.Now
 
 // Create is the handler for people with accounts to create temporary invite links
 func (iv *Invitations) Create() echo.HandlerFunc {

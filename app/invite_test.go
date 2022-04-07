@@ -49,7 +49,7 @@ func TestInviteCreate(t *testing.T) {
 	type table struct {
 		id       string
 		claims   *auth.Claims
-		body     CreateInviteRequest
+		body     invite.CreateInviteRequest
 		expected error
 		internal error
 	}
@@ -59,25 +59,25 @@ func TestInviteCreate(t *testing.T) {
 			// Admin can change timeout
 			id:     "1",
 			claims: &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
-			body:   CreateInviteRequest{Timeout: time.Minute},
+			body:   invite.CreateInviteRequest{Timeout: time.Minute},
 		},
 		{
 			// Admin can change ttl
 			id:     "12",
 			claims: &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
-			body:   CreateInviteRequest{TTL: 64},
+			body:   invite.CreateInviteRequest{TTL: 64},
 		},
 		{
 			// Admin can change roles
 			id:     "123",
 			claims: &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
-			body:   CreateInviteRequest{Roles: []string{"some_role"}},
+			body:   invite.CreateInviteRequest{Roles: []string{"some_role"}},
 		},
 		{
 			// Regular user not allowed to change timeout
 			id:       "1234",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
-			body:     CreateInviteRequest{Timeout: time.Minute},
+			body:     invite.CreateInviteRequest{Timeout: time.Minute},
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrAdminRequired,
 		},
@@ -85,7 +85,7 @@ func TestInviteCreate(t *testing.T) {
 			// Regular user not allowed to change ttl
 			id:       "12345",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
-			body:     CreateInviteRequest{TTL: 1000},
+			body:     invite.CreateInviteRequest{TTL: 1000},
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrAdminRequired,
 		},
@@ -93,31 +93,31 @@ func TestInviteCreate(t *testing.T) {
 			// Regular user not allowed to change roles
 			id:       "123456",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
-			body:     CreateInviteRequest{Roles: []string{"admin"}},
+			body:     invite.CreateInviteRequest{Roles: []string{"admin"}},
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrAdminRequired,
 		},
 		{
 			id:     "2",
 			claims: &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
-			body:   CreateInviteRequest{Email: "t@t.com"},
+			body:   invite.CreateInviteRequest{Email: "t@t.com"},
 		},
 		{
 			id:     "3",
 			claims: &auth.Claims{Roles: []auth.Role{auth.RoleDefault}},
-			body:   CreateInviteRequest{Email: "t@t.com"},
+			body:   invite.CreateInviteRequest{Email: "t@t.com"},
 		},
 		{
 			id:       "4",
 			claims:   nil,
-			body:     CreateInviteRequest{},
+			body:     invite.CreateInviteRequest{},
 			expected: echo.ErrUnauthorized,
 			internal: auth.ErrNoClaims,
 		},
 		{
 			id:       "5",
 			claims:   &auth.Claims{Roles: []auth.Role{auth.RoleAdmin}},
-			body:     CreateInviteRequest{Timeout: -100},
+			body:     invite.CreateInviteRequest{Timeout: -100},
 			expected: ErrInvalidTimeout,
 			internal: nil,
 		},
@@ -161,7 +161,7 @@ func TestInviteCreate(t *testing.T) {
 			}
 			if tt.expected == nil {
 				expires := tm.Add(tt.body.Timeout).UnixMilli()
-				expectedSession, err := json.Marshal(&inviteSession{
+				expectedSession, err := json.Marshal(&invite.Session{
 					CreatedBy: tt.claims.UUID,
 					TTL:       tt.body.TTL,
 					ExpiresAt: expires,
@@ -199,25 +199,25 @@ func TestInviteAccept(t *testing.T) {
 	type table struct {
 		expected error
 		internal error
-		session  *inviteSession
-		mocks    func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession)
+		session  *invite.Session
+		mocks    func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session)
 	}
 	for i, tt := range []table{
 		{
-			session: &inviteSession{TTL: 5, Email: "t@t.io", ExpiresAt: 12},
-			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+			session: &invite.Session{TTL: 5, Email: "t@t.io", ExpiresAt: 12},
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
 		{
 			// Expired TTL of 0
-			session: &inviteSession{
+			session: &invite.Session{
 				TTL:       0,
 				Email:     "test@x.io",
 				ExpiresAt: 1001,
 				CreatedBy: uuid.New(),
 			},
-			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.Eq("invite:12345")).Return(redis.NewIntResult(0, nil))
 			},
@@ -226,25 +226,25 @@ func TestInviteAccept(t *testing.T) {
 		},
 		{
 			expected: echo.ErrForbidden,
-			session: &inviteSession{
+			session: &invite.Session{
 				TTL:       -1,
 				Email:     "test@x.io",
 				ExpiresAt: -10,
 				CreatedBy: uuid.New(),
 			},
-			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
 		{
 			// Always good TTL of -1
-			session: &inviteSession{
+			session: &invite.Session{
 				TTL:       -1,
 				Email:     "test@x.io",
 				ExpiresAt: 1001,
 				CreatedBy: uuid.New(),
 			},
-			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:12345"), s).Times(1)
 			},
 		},
@@ -252,7 +252,7 @@ func TestInviteAccept(t *testing.T) {
 			// Session not found
 			expected: echo.ErrNotFound,
 			internal: redis.Nil,
-			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *inviteSession) {
+			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, s *invite.Session) {
 				rdb.EXPECT().Get(
 					gomock.AssignableToTypeOf(context.Background()),
 					gomock.Eq("invite:12345"),
@@ -310,12 +310,12 @@ func TestInviteSignUp(t *testing.T) {
 	type table struct {
 		name               string
 		expected, internal error
-		session            *inviteSession
+		session            *invite.Session
 		mocks              func(t *testing.T, tt *table, mocks *mocks)
 		login              *Login
 	}
 
-	mockSessionUpdate := func(t *testing.T, rdb *mockredis.MockCmdable, session *inviteSession) *gomock.Call {
+	mockSessionUpdate := func(t *testing.T, rdb *mockredis.MockCmdable, session *invite.Session) *gomock.Call {
 		s := *session
 		s.TTL--
 		raw, err := json.Marshal(s)
@@ -342,7 +342,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "expired ttl",
-			session:  &inviteSession{TTL: 0},
+			session:  &invite.Session{TTL: 0},
 			expected: echo.ErrForbidden,
 			internal: invite.ErrInviteTTL,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -355,7 +355,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "Fail to update session with new ttl",
-			session:  &inviteSession{TTL: 10},
+			session:  &invite.Session{TTL: 10},
 			expected: echo.ErrNotFound,
 			internal: redis.Nil,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -365,7 +365,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "Fail to parse request body",
-			session:  &inviteSession{TTL: 64},
+			session:  &invite.Session{TTL: 64},
 			expected: echo.ErrBadRequest,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
 				mockSessionGet(t, mocks.rdb, gomock.Eq("invite:444"), tt.session)
@@ -374,7 +374,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "no email",
-			session:  &inviteSession{TTL: 12},
+			session:  &invite.Session{TTL: 12},
 			login:    &Login{Password: "yeet", Username: "abc"},
 			expected: ErrEmptyLogin,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -384,7 +384,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "no password",
-			session:  &inviteSession{TTL: -1},
+			session:  &invite.Session{TTL: -1},
 			login:    &Login{Email: "yeet@yeet.com", Username: "abc"},
 			expected: ErrEmptyLogin,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -393,7 +393,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "email missmatch",
-			session:  &inviteSession{TTL: 55, Email: "what@theheck.org"},
+			session:  &invite.Session{TTL: 55, Email: "what@theheck.org"},
 			login:    &Login{Email: "what@not_theheck.org", Password: "password1"},
 			expected: ErrInviteEmailMissmatch,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -403,7 +403,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:     "failed to create user",
-			session:  &inviteSession{TTL: -1},
+			session:  &invite.Session{TTL: -1},
 			login:    &Login{Email: "a@a.it", Password: "123", Username: "test-user"},
 			expected: echo.ErrInternalServerError, internal: randomError,
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
@@ -419,7 +419,7 @@ func TestInviteSignUp(t *testing.T) {
 		},
 		{
 			name:    "success",
-			session: &inviteSession{TTL: -1, Roles: []auth.Role{auth.RoleAdmin, auth.RoleDefault}},
+			session: &invite.Session{TTL: -1, Roles: []auth.Role{auth.RoleAdmin, auth.RoleDefault}},
 			login:   &Login{Email: "a@a.it", Password: "123", Username: "test-user"},
 			mocks: func(t *testing.T, tt *table, mocks *mocks) {
 				ctx := context.Background()
@@ -494,7 +494,7 @@ func TestInviteDelete(t *testing.T) {
 		expected, internal error
 		id                 string
 		claims             *auth.Claims
-		session            *inviteSession
+		session            *invite.Session
 		mocks              func(t *testing.T, rdb *mockredis.MockCmdable, tt *table)
 	}
 	for i, tt := range []table{
@@ -508,7 +508,7 @@ func TestInviteDelete(t *testing.T) {
 			name:     "fail to get session",
 			id:       "qwerty",
 			claims:   &auth.Claims{UUID: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
-			session:  &inviteSession{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
+			session:  &invite.Session{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			expected: echo.ErrNotFound,
 			internal: redis.Nil,
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
@@ -522,7 +522,7 @@ func TestInviteDelete(t *testing.T) {
 			name:     "wrong uuid",
 			id:       "123",
 			claims:   &auth.Claims{UUID: uuid.MustParse("11111111-4d00-458d-927d-d4416d10c68f")},
-			session:  &inviteSession{CreatedBy: uuid.MustParse("22222222-4d00-458d-927d-d4416d10c68f")},
+			session:  &invite.Session{CreatedBy: uuid.MustParse("22222222-4d00-458d-927d-d4416d10c68f")},
 			expected: echo.ErrForbidden,
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:123"), tt.session).Times(1)
@@ -532,7 +532,7 @@ func TestInviteDelete(t *testing.T) {
 			name:     "fail to delete session",
 			id:       "123321",
 			claims:   &auth.Claims{UUID: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
-			session:  &inviteSession{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
+			session:  &invite.Session{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			expected: echo.ErrInternalServerError,
 			internal: redis.ErrClosed,
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
@@ -545,7 +545,7 @@ func TestInviteDelete(t *testing.T) {
 			name:    "success",
 			id:      "123",
 			claims:  &auth.Claims{UUID: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
-			session: &inviteSession{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
+			session: &invite.Session{CreatedBy: uuid.MustParse("c310417d-4d00-458d-927d-d4416d10c68f")},
 			mocks: func(t *testing.T, rdb *mockredis.MockCmdable, tt *table) {
 				mockSessionGet(t, rdb, gomock.Eq("invite:123"), tt.session).Times(1)
 				rdb.EXPECT().Del(context.Background(), gomock.Eq("invite:123")).Return(redis.NewIntResult(0, nil))
@@ -591,8 +591,8 @@ func TestInviteList(t *testing.T) {
 		expected, internal error
 		claims             *auth.Claims
 		inviteList         *inviteList
-		sessions           []inviteSession
-		mock               func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession)
+		sessions           []invite.Session
+		mock               func(rdb *mockredis.MockCmdable, tt *table, sessions []invite.Session)
 	}
 	for i, tt := range []table{
 		{
@@ -604,7 +604,7 @@ func TestInviteList(t *testing.T) {
 			expected: echo.ErrInternalServerError,
 			internal: redis.Nil,
 			claims:   new(auth.Claims),
-			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []invite.Session) {
 				rdb.EXPECT().Keys(context.Background(), "invite:*").
 					Return(redis.NewStringSliceResult(nil, redis.Nil))
 			},
@@ -613,7 +613,7 @@ func TestInviteList(t *testing.T) {
 			name:       "no sessions",
 			inviteList: &inviteList{},
 			claims:     &auth.Claims{},
-			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []invite.Session) {
 				rdb.EXPECT().Keys(context.Background(), "invite:*").
 					Return(redis.NewStringSliceResult([]string{}, nil))
 			},
@@ -638,7 +638,7 @@ func TestInviteList(t *testing.T) {
 					},
 				},
 			},
-			sessions: []inviteSession{
+			sessions: []invite.Session{
 				{
 					CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
 					ExpiresAt: 100000,
@@ -648,7 +648,7 @@ func TestInviteList(t *testing.T) {
 					ExpiresAt: 1000000,
 				},
 			},
-			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []invite.Session) {
 				ctx := context.Background()
 				keys := []string{
 					"invite:1",
@@ -683,7 +683,7 @@ func TestInviteList(t *testing.T) {
 					},
 				},
 			},
-			sessions: []inviteSession{
+			sessions: []invite.Session{
 				{
 					CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
 					ExpiresAt: 1,
@@ -697,7 +697,7 @@ func TestInviteList(t *testing.T) {
 					ExpiresAt: 123,
 				},
 			},
-			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []inviteSession) {
+			mock: func(rdb *mockredis.MockCmdable, tt *table, sessions []invite.Session) {
 				ctx := context.Background()
 				keys := []string{"invite:1", "invite:2", "invite:3"}
 				rdb.EXPECT().Keys(ctx, "invite:*").
@@ -754,7 +754,7 @@ func TestInviteList(t *testing.T) {
 	}
 }
 
-func mockSessionGet(t *testing.T, rdb *mockredis.MockCmdable, key gomock.Matcher, s *inviteSession) *gomock.Call {
+func mockSessionGet(t *testing.T, rdb *mockredis.MockCmdable, key gomock.Matcher, s *invite.Session) *gomock.Call {
 	t.Helper()
 	raw, err := json.Marshal(s)
 	if err != nil {
@@ -770,7 +770,7 @@ func mockSessionSet(
 	rd *mockredis.MockCmdable,
 	key gomock.Matcher,
 	timeout gomock.Matcher,
-	s *inviteSession,
+	s *invite.Session,
 ) *gomock.Call {
 	t.Helper()
 	raw, err := json.Marshal(s)
