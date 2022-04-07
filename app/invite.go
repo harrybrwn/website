@@ -2,29 +2,23 @@ package app
 
 import (
 	"bytes"
-	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/invite"
 )
 
 var (
-	ErrInviteTTL            = errors.New("session ttl limit reached")
-	ErrSessionOwnership     = errors.New("cannot access session created by someone else")
 	ErrEmptyLogin           = &echo.HTTPError{Code: http.StatusBadRequest, Message: "empty login information"}
 	ErrInviteEmailMissmatch = &echo.HTTPError{Code: http.StatusForbidden, Message: "email does not match invitation"}
 	ErrInvalidTimeout       = &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid invite timeout"}
@@ -41,18 +35,16 @@ type PathBuilder interface {
 }
 
 type Invitations struct {
-	Path PathBuilder
+	Path   PathBuilder
+	Mailer EmailClient
 	// RDB   redis.Cmdable
-	store InviteStore
+	store invite.Store
 }
 
 func NewInvitations(rdb redis.Cmdable, path PathBuilder) *Invitations {
 	return &Invitations{
-		Path: path,
-		store: &InviteSessionStore{
-			RDB:    rdb,
-			Prefix: "invite",
-		},
+		Path:  path,
+		store: invite.NewStore(rdb, "invite"),
 	}
 }
 
@@ -88,14 +80,14 @@ type CreateInviteRequest struct {
 	Roles   []string      `json:"roles"`
 }
 
-var now = time.Now
+// var now = time.Now
 
 // Create is the handler for people with accounts to create temporary invite links
 func (iv *Invitations) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var (
 			err    error
-			p      CreateInviteRequest
+			p      invite.CreateInviteRequest
 			req    = c.Request()
 			ctx    = req.Context()
 			claims = auth.GetClaims(c)
@@ -134,7 +126,7 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 
-		resp := invite{
+		resp := invitation{
 			Path:      filepath.Join("/", iv.Path.Path(key)),
 			ExpiresAt: time.UnixMilli(session.ExpiresAt),
 			CreatedBy: claims.UUID,
@@ -200,7 +192,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 		session, err := iv.store.Get(ctx, key)
 		if err != nil {
 			switch err {
-			case ErrInviteTTL:
+			case invite.ErrInviteTTL:
 				return echo.ErrForbidden.SetInternal(err)
 			case redis.Nil:
 				return echo.ErrNotFound.SetInternal(err)
@@ -236,10 +228,10 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 }
 
 type inviteList struct {
-	Invites []invite `json:"invites"`
+	Invites []invitation `json:"invites"`
 }
 
-type invite struct {
+type invitation struct {
 	Path      string      `json:"path"`
 	CreatedBy uuid.UUID   `json:"created_by"`
 	ExpiresAt time.Time   `json:"expires_at"`
@@ -263,10 +255,10 @@ func (iv *Invitations) List() echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 
-		resp.Invites = make([]invite, 0, len(sessions))
+		resp.Invites = make([]invitation, 0, len(sessions))
 		if auth.IsAdmin(claims) {
 			for _, s := range sessions {
-				inv := invite{Path: iv.Path.Path(s.id)}
+				inv := invitation{Path: iv.Path.Path(s.ID)}
 				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
@@ -275,7 +267,7 @@ func (iv *Invitations) List() echo.HandlerFunc {
 				if !bytes.Equal(s.CreatedBy[:], claims.UUID[:]) {
 					continue
 				}
-				inv := invite{Path: iv.Path.Path(s.id)}
+				inv := invitation{Path: iv.Path.Path(s.ID)}
 				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
@@ -284,7 +276,7 @@ func (iv *Invitations) List() echo.HandlerFunc {
 	}
 }
 
-func setInviteFromSession(inv *invite, s *inviteSession) {
+func setInviteFromSession(inv *invitation, s *invite.Session) {
 	inv.Email = s.Email
 	inv.CreatedBy = s.CreatedBy
 	inv.ExpiresAt = time.UnixMilli(s.ExpiresAt)
@@ -304,167 +296,4 @@ func (iv *Invitations) Delete() echo.HandlerFunc {
 		}
 		return iv.store.OwnerDel(ctx, id, claims.UUID)
 	}
-}
-
-type InviteStore interface {
-	Create(context.Context, uuid.UUID, *CreateInviteRequest) (*inviteSession, string, error)
-	Get(context.Context, string) (*inviteSession, error)
-	View(context.Context, string) (*inviteSession, error)
-	OwnerDel(context.Context, string, uuid.UUID) error
-	Del(context.Context, string) error
-	List(ctx context.Context) ([]*inviteSession, error)
-}
-
-type InviteSessionStore struct {
-	RDB    redis.Cmdable
-	Prefix string
-}
-
-func (iss *InviteSessionStore) key(id string) string {
-	return fmt.Sprintf("%s:%s", iss.Prefix, id)
-}
-
-func (iss *InviteSessionStore) Create(ctx context.Context, creator uuid.UUID, req *CreateInviteRequest) (*inviteSession, string, error) {
-	var (
-		b       [32]byte
-		timeout = req.Timeout
-		ttl     = req.TTL
-	)
-	if req.Timeout == 0 {
-		timeout = defaultInviteTimeout
-	}
-	if req.TTL == 0 {
-		ttl = defaultInviteTTL
-	}
-
-	s := inviteSession{
-		CreatedBy: creator,
-		ExpiresAt: now().Add(timeout).UnixMilli(),
-		TTL:       ttl,
-		Email:     req.Email,
-		Roles:     asAuthRoles(req.Roles),
-	}
-	raw, err := json.Marshal(&s)
-	if err != nil {
-		return nil, "", err
-	}
-	_, err = rand.Read(b[:])
-	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to generate session id")
-	}
-	id := base64.RawURLEncoding.EncodeToString(b[:])
-	err = iss.RDB.Set(ctx, iss.key(id), raw, timeout).Err()
-	if err != nil {
-		return nil, "", err
-	}
-	return &s, id, nil
-}
-
-func (iss *InviteSessionStore) Get(ctx context.Context, key string) (*inviteSession, error) {
-	s, err := iss.View(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-	if s.TTL > 0 {
-		s.TTL--
-		err = iss.put(ctx, key, s)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return s, nil
-}
-
-func (iss *InviteSessionStore) View(ctx context.Context, key string) (*inviteSession, error) {
-	s, err := iss.get(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-	if s.TTL == 0 {
-		err = iss.Del(ctx, key)
-		if err != nil {
-			logger.WithError(err).Error("could not delete invite expired session")
-		}
-		return nil, ErrInviteTTL
-	}
-	return s, nil
-}
-
-func (iss *InviteSessionStore) put(ctx context.Context, key string, session *inviteSession) error {
-	raw, err := json.Marshal(session)
-	if err != nil {
-		return err
-	}
-	return iss.RDB.Set(ctx, iss.key(key), raw, redis.KeepTTL).Err()
-}
-
-func (iss *InviteSessionStore) OwnerDel(ctx context.Context, key string, uid uuid.UUID) error {
-	s, err := iss.get(ctx, key)
-	if err != nil {
-		if err == redis.Nil {
-			return echo.ErrNotFound
-		}
-		return echo.ErrInternalServerError.SetInternal(err)
-	}
-	if !bytes.Equal(s.CreatedBy[:], uid[:]) {
-		return echo.ErrForbidden.SetInternal(ErrSessionOwnership)
-	}
-	err = iss.Del(ctx, key)
-	if err != nil {
-		return echo.ErrInternalServerError.SetInternal(err)
-	}
-	return nil
-}
-
-func (iss *InviteSessionStore) Del(ctx context.Context, key string) error {
-	return iss.RDB.Del(ctx, iss.key(key)).Err()
-}
-
-func (iss *InviteSessionStore) get(ctx context.Context, key string) (*inviteSession, error) {
-	raw, err := iss.RDB.Get(ctx, iss.key(key)).Bytes()
-	if err != nil {
-		return nil, err
-	}
-	var s inviteSession
-	if err = json.Unmarshal(raw, &s); err != nil {
-		return nil, err
-	}
-	return &s, nil
-}
-
-func (iss *InviteSessionStore) List(ctx context.Context) ([]*inviteSession, error) {
-	keys, err := iss.RDB.Keys(ctx, fmt.Sprintf("%s:*", iss.Prefix)).Result()
-	if err != nil {
-		return nil, err
-	}
-	l := len(keys)
-	if l == 0 {
-		return []*inviteSession{}, nil
-	}
-	sessions := make([]*inviteSession, l)
-	rawsessions, err := iss.RDB.MGet(ctx, keys...).Result()
-	if err != nil {
-		return nil, err
-	}
-	for i, raw := range rawsessions {
-		s := raw.(string)
-		sessions[i] = new(inviteSession)
-		err = json.Unmarshal([]byte(s), sessions[i])
-		if err != nil {
-			return nil, err
-		}
-		ix := strings.LastIndex(keys[i], ":")
-		if ix >= 0 {
-			sessions[i].id = keys[i][ix+1:]
-		}
-	}
-	return sessions, nil
-}
-
-func asAuthRoles(ss []string) []auth.Role {
-	roles := make([]auth.Role, len(ss))
-	for i, s := range ss {
-		roles[i] = auth.ParseRole(s)
-	}
-	return roles
 }
