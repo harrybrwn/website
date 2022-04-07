@@ -2,12 +2,12 @@ version: "3.8"
 
 services:
   web:
-    #image: harrybrwn.com-web:latest
-    image: harrybrwn-buildx-test:latest
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-      target: api
+    image: harrybrwn.com-web:latest
+    # image: harrybrwn-buildx-test:latest
+    #build:
+    #  context: .
+    #  dockerfile: ./Dockerfile
+    #  target: api
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testdb1}
       POSTGRES_USER: ${POSTGRES_USER:-web}
