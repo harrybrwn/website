@@ -188,6 +188,7 @@ func TestInviteCreate(t *testing.T) {
 						CreatedBy:    tt.claims.UUID,
 						TTL:          tt.body.TTL,
 						Roles:        roles,
+						Domain:       Domain,
 					}).Return(nil)
 				}
 			}
