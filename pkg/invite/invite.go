@@ -15,7 +15,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/log"
 )
+
+var logger = log.GetLogger()
 
 const (
 	defaultInviteTTL     = 5
@@ -44,11 +47,24 @@ type Session struct {
 	ID string `json:"-"`
 }
 
+type Invitation struct {
+	Path         string      `json:"path"`
+	CreatedBy    uuid.UUID   `json:"created_by"`
+	ExpiresAt    time.Time   `json:"expires_at"`
+	Email        string      `json:"email,omitempty"`
+	ReceiverName string      `json:"receiver_name,omitempty"`
+	Roles        []auth.Role `json:"roles"`
+	TTL          int         `json:"ttl"`
+
+	Domain string `json:"-"`
+}
+
 type CreateInviteRequest struct {
-	Timeout time.Duration `json:"timeout,omitempty"`
-	TTL     int           `json:"ttl,omitempty"`
-	Email   string        `json:"email,omitempty"`
-	Roles   []string      `json:"roles"`
+	Timeout      time.Duration `json:"timeout,omitempty"`
+	TTL          int           `json:"ttl,omitempty"`
+	Email        string        `json:"email,omitempty"`
+	ReceiverName string        `json:"receiver_name,omitempty"`
+	Roles        []string      `json:"roles"`
 }
 
 type Store interface {
@@ -61,13 +77,19 @@ type Store interface {
 }
 
 func NewStore(rdb redis.Cmdable, prefix string) Store {
-	return &SessionStore{RDB: rdb, Prefix: prefix, Now: time.Now}
+	return &SessionStore{
+		RDB:    rdb,
+		Prefix: prefix,
+		KeyGen: DefaultKeyGen,
+		Now:    time.Now,
+	}
 }
 
 type SessionStore struct {
 	RDB    redis.Cmdable
 	Prefix string
 	Now    func() time.Time
+	KeyGen func() (string, error)
 }
 
 func (ss *SessionStore) key(id string) string {
@@ -76,7 +98,6 @@ func (ss *SessionStore) key(id string) string {
 
 func (ss *SessionStore) Create(ctx context.Context, creator uuid.UUID, req *CreateInviteRequest) (*Session, string, error) {
 	var (
-		b       [32]byte
 		timeout = req.Timeout
 		ttl     = req.TTL
 	)
@@ -101,16 +122,25 @@ func (ss *SessionStore) Create(ctx context.Context, creator uuid.UUID, req *Crea
 	if err != nil {
 		return nil, "", err
 	}
-	_, err = rand.Read(b[:])
+	id, err := ss.KeyGen()
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to generate session id")
+		return nil, "", err
 	}
-	id := base64.RawURLEncoding.EncodeToString(b[:])
 	err = ss.RDB.Set(ctx, ss.key(id), raw, timeout).Err()
 	if err != nil {
 		return nil, "", err
 	}
 	return &s, id, nil
+}
+
+func DefaultKeyGen() (string, error) {
+	var b [32]byte
+	_, err := rand.Read(b[:])
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate session id")
+	}
+	id := base64.RawURLEncoding.EncodeToString(b[:])
+	return id, nil
 }
 
 func (ss *SessionStore) Get(ctx context.Context, key string) (*Session, error) {
@@ -136,7 +166,7 @@ func (iss *SessionStore) View(ctx context.Context, key string) (*Session, error)
 	if s.TTL == 0 {
 		err = iss.Del(ctx, key)
 		if err != nil {
-			// logger.WithError(err).Error("could not delete invite expired session")
+			logger.WithError(err).Error("could not delete invite expired session")
 		}
 		return nil, ErrInviteTTL
 	}

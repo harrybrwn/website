@@ -43,15 +43,18 @@ def test_create_invite_admin(admin_token: Token):
 				"family"
 			],
 			"ttl": 15,
-			"expires": SECOND * 5
+			"expires": SECOND * 5,
+			"receiver_name": "jerry smith",
 		},
 	)
 	assert res.ok
 	j = res.json()
 	assert j["ttl"] == 15
 	assert j["roles"] == [Role.DEFAULT.value, Role.FAMILY.value]
+	assert j["receiver_name"] == "jerry smith"
 	res = requests.get(f"http://{config.host}{j['path']}")
 	assert res.ok
+	assert res.headers.get("content-type") == "text/html"
 
 
 def test_invite_timeout(admin_token: Token):

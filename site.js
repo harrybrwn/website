@@ -80,5 +80,10 @@ module.exports = {
       ...common,
       robots: false,
     },
+    invite_email: {
+      title: "You're Invited!",
+      ...common,
+      robots: false,
+    },
   },
 };

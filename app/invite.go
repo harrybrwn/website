@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/email"
 	"harrybrown.com/pkg/invite"
 )
 
@@ -36,12 +36,11 @@ type PathBuilder interface {
 
 type Invitations struct {
 	Path   PathBuilder
-	Mailer EmailClient
-	// RDB   redis.Cmdable
-	store invite.Store
+	Mailer invite.Mailer
+	store  invite.Store
 }
 
-func NewInvitations(rdb redis.Cmdable, path PathBuilder) *Invitations {
+func NewInvitations(rdb redis.Cmdable, path PathBuilder, mailer invite.Mailer) *Invitations {
 	return &Invitations{
 		Path:  path,
 		store: invite.NewStore(rdb, "invite"),
@@ -96,15 +95,28 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
-
-		resp := invitation{
-			Path:      filepath.Join("/", iv.Path.Path(key)),
-			ExpiresAt: time.UnixMilli(session.ExpiresAt),
-			CreatedBy: claims.UUID,
-			TTL:       session.TTL,
-			Roles:     session.Roles,
+		inv := invite.Invitation{
+			Path:         filepath.Join("/", iv.Path.Path(key)),
+			ExpiresAt:    time.UnixMilli(session.ExpiresAt),
+			CreatedBy:    claims.UUID,
+			TTL:          session.TTL,
+			Roles:        session.Roles,
+			Email:        session.Email,
+			ReceiverName: p.ReceiverName,
+			Domain:       Domain,
 		}
-		return c.JSON(200, &resp)
+
+		if iv.Mailer != nil && email.Valid(inv.Email) {
+			err = iv.Mailer.Send(ctx, &inv)
+			if err != nil {
+				return &echo.HTTPError{
+					Code:     http.StatusInternalServerError,
+					Message:  "failed to send email invite",
+					Internal: err,
+				}
+			}
+		}
+		return c.JSON(200, &inv)
 	}
 }
 
@@ -199,16 +211,7 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 }
 
 type inviteList struct {
-	Invites []invitation `json:"invites"`
-}
-
-type invitation struct {
-	Path      string      `json:"path"`
-	CreatedBy uuid.UUID   `json:"created_by"`
-	ExpiresAt time.Time   `json:"expires_at"`
-	Email     string      `json:"email,omitempty"`
-	Roles     []auth.Role `json:"roles"`
-	TTL       int         `json:"ttl"`
+	Invites []invite.Invitation `json:"invites"`
 }
 
 func (iv *Invitations) List() echo.HandlerFunc {
@@ -226,10 +229,10 @@ func (iv *Invitations) List() echo.HandlerFunc {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
 
-		resp.Invites = make([]invitation, 0, len(sessions))
+		resp.Invites = make([]invite.Invitation, 0, len(sessions))
 		if auth.IsAdmin(claims) {
 			for _, s := range sessions {
-				inv := invitation{Path: iv.Path.Path(s.ID)}
+				inv := invite.Invitation{Path: iv.Path.Path(s.ID)}
 				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
@@ -238,7 +241,7 @@ func (iv *Invitations) List() echo.HandlerFunc {
 				if !bytes.Equal(s.CreatedBy[:], claims.UUID[:]) {
 					continue
 				}
-				inv := invitation{Path: iv.Path.Path(s.ID)}
+				inv := invite.Invitation{Path: iv.Path.Path(s.ID)}
 				setInviteFromSession(&inv, s)
 				resp.Invites = append(resp.Invites, inv)
 			}
@@ -247,7 +250,7 @@ func (iv *Invitations) List() echo.HandlerFunc {
 	}
 }
 
-func setInviteFromSession(inv *invitation, s *invite.Session) {
+func setInviteFromSession(inv *invite.Invitation, s *invite.Session) {
 	inv.Email = s.Email
 	inv.CreatedBy = s.CreatedBy
 	inv.ExpiresAt = time.UnixMilli(s.ExpiresAt)

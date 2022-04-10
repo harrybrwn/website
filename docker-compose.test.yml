@@ -16,7 +16,6 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-testcache1}
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       JWT_SEED: ${JWT_SEED}
 
   tests:

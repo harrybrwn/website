@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -17,13 +18,17 @@ import (
 	"harrybrown.com/pkg/auth"
 )
 
+func init() {
+	logger.SetOutput(io.Discard)
+}
+
 func TestInviteSessionStore_Get(t *testing.T) {
 	// logger.SetOutput(io.Discard)
 	is := is.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	rdb := mockredis.NewMockCmdable(ctrl)
-	s := SessionStore{RDB: rdb, Prefix: "inv"}
+	s := SessionStore{RDB: rdb, Prefix: "inv", KeyGen: DefaultKeyGen}
 	ctx := context.Background()
 
 	// Decrement TTL
@@ -114,7 +119,7 @@ func TestInviteSessionStore_Create(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			rd := mockredis.NewMockCmdable(ctrl)
-			store := SessionStore{Prefix: "iss_create", RDB: rd}
+			store := SessionStore{Prefix: "iss_create", RDB: rd, KeyGen: DefaultKeyGen}
 			ctx := context.Background()
 			tt.mock(t, &tt, rd)
 			store.Now = now
@@ -135,7 +140,7 @@ func TestInviteSessionStore_Del(t *testing.T) {
 	defer ctrl.Finish()
 	rd := mockredis.NewMockCmdable(ctrl)
 	ctx := context.Background()
-	store := SessionStore{RDB: rd, Prefix: "i"}
+	store := SessionStore{RDB: rd, Prefix: "i", KeyGen: DefaultKeyGen}
 
 	uid := uuid.New()
 
@@ -155,7 +160,7 @@ func TestInviteSessionStore_List(t *testing.T) {
 	var err error
 	is := is.New(t)
 	rdb := mockredis.NewMockCmdable(ctrl)
-	s := SessionStore{RDB: rdb, Prefix: "inv"}
+	s := SessionStore{RDB: rdb, Prefix: "inv", KeyGen: DefaultKeyGen}
 	ctx := context.Background()
 	keys := []string{"inv:1", "inv:2", "inv:3"}
 	expected := []*Session{

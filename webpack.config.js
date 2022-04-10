@@ -145,7 +145,8 @@ module.exports = function (webpackEnv) {
     builder.html("games"),
     builder.html("404", { noChunks: true }),
     builder.html("invite"),
-    builder.html("chatroom")
+    builder.html("chatroom"),
+    builder.html("invite_email", { noChunks: true })
   );
 
   for (const key in site.pages) {

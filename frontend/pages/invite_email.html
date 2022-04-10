@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <style>
+      body {
+        margin-right: auto;
+        margin-left: auto;
+        max-width: 500px;
+      }
+      .btn {
+        position: relative;
+        border: 3px solid blue;
+        display: inline-block;
+        padding: 10px 20px 10px 20px;
+        border-radius: 6px;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(720deg);
+        }
+      }
+      .btn:hover {
+        border: 4px solid #a0a0ff;
+        animation-name: spin;
+        animation-duration: 750ms;
+        animation-timing-function: ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>😋 Harry Brown</h1>
+      <h2><%= title %></h2>
+      {{ if .ReceiverName }}
+      <p>Hi {{.ReceiverName}},</p>
+      {{end}}
+      <br />
+      <p>
+        You've been invited to create an account on Harry Brown's personal
+        website.
+      </p>
+      <br />
+      <p>See you soon,</p>
+      <p>Harry Brown</p>
+      <a href="https://{{.Domain}}{{ .Path }}">
+        <span class="btn"> Sign Up Here </span>
+      </a>
+    </main>
+  </body>
+</html>

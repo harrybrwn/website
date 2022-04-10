@@ -2,9 +2,14 @@
 
 set -e
 
+help() {
+    echo "$1 [build|setup|run|stop]"
+}
+
 case $1 in
   -h|--help)
-    echo "$0 [build|setup|run|stop]"
+    help "$0"
+    exit
     ;;
   build)
     docker-compose -f docker-compose.yml -f docker-compose.test.yml build
@@ -20,7 +25,9 @@ case $1 in
     docker-compose -f docker-compose.yml -f docker-compose.test.yml down
     ;;
   *)
+    help "$0"
     echo "Error: unknown command"
     exit 1
     ;;
 esac
+

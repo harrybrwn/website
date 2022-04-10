@@ -20,9 +20,11 @@ import (
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
 	"harrybrown.com/internal/mocks/mockdb"
+	"harrybrown.com/internal/mocks/mockinvite"
 	"harrybrown.com/internal/mocks/mockredis"
 	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/email"
 	"harrybrown.com/pkg/invite"
 )
 
@@ -129,13 +131,18 @@ func TestInviteCreate(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
+			mailer := mockinvite.NewMockMailer(ctrl)
 			tm := time.Now()
 			invites := Invitations{
-				Path: &testPath{p: "invite", id: tt.id, t: t},
+				Path:   &testPath{p: "invite", id: tt.id, t: t},
+				Mailer: mailer,
 				store: &invite.SessionStore{
 					RDB:    rdb,
 					Prefix: "invite",
 					Now:    func() time.Time { return tm },
+					KeyGen: func() (string, error) {
+						return tt.id, nil
+					},
 				},
 			}
 			defer ctrl.Finish()
@@ -172,6 +179,17 @@ func TestInviteCreate(t *testing.T) {
 				rdb.EXPECT().
 					Set(ctx, mockutil.HasPrefix("invite:"), expectedSession, tt.body.Timeout).
 					Return(redis.NewStatusResult("", nil))
+				if email.Valid(tt.body.Email) {
+					mailer.EXPECT().Send(ctx, &invite.Invitation{
+						Path:         "/invite/" + tt.id,
+						Email:        tt.body.Email,
+						ReceiverName: tt.body.ReceiverName,
+						ExpiresAt:    time.UnixMilli(expires),
+						CreatedBy:    tt.claims.UUID,
+						TTL:          tt.body.TTL,
+						Roles:        roles,
+					}).Return(nil)
+				}
 			}
 			err := invites.Create()(c)
 			is.True(errors.Is(err, tt.expected))
@@ -179,7 +197,7 @@ func TestInviteCreate(t *testing.T) {
 				is.True(errors.Is(httpErr.Internal, tt.internal))
 			}
 			if tt.expected == nil {
-				var resp invitation
+				var resp invite.Invitation
 				is.NoErr(json.NewDecoder(rec.Body).Decode(&resp))
 				is.True(len(resp.Path) > 0)
 			}
@@ -265,9 +283,11 @@ func TestInviteAccept(t *testing.T) {
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
+			mailer := mockinvite.NewMockMailer(ctrl)
 			invites := Invitations{
-				Path:  &testPath{p: "invite"},
-				store: &invite.SessionStore{RDB: rdb, Prefix: "invite"},
+				Path:   &testPath{p: "invite"},
+				Mailer: mailer,
+				store:  &invite.SessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -452,9 +472,11 @@ func TestInviteSignUp(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
 			db := mockdb.NewMockDB(ctrl)
+			mailer := mockinvite.NewMockMailer(ctrl)
 			rows := mockdb.NewMockRows(ctrl)
 			invites := Invitations{
-				Path: &testPath{p: "invite"},
+				Path:   &testPath{p: "invite"},
+				Mailer: mailer,
 				store: &invite.SessionStore{
 					RDB:    rdb,
 					Prefix: "invite",
@@ -557,9 +579,11 @@ func TestInviteDelete(t *testing.T) {
 			is := is.New(t)
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
+			mailer := mockinvite.NewMockMailer(ctrl)
 			invites := Invitations{
-				Path:  &testPath{p: "invite"},
-				store: &invite.SessionStore{RDB: rdb, Prefix: "invite"},
+				Path:   &testPath{p: "invite"},
+				Mailer: mailer,
+				store:  &invite.SessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -625,7 +649,7 @@ func TestInviteList(t *testing.T) {
 				Roles: []auth.Role{auth.RoleAdmin},
 			},
 			inviteList: &inviteList{
-				Invites: []invitation{
+				Invites: []invite.Invitation{
 					{
 						Path:      "/invite/1",
 						CreatedBy: uuid.MustParse("aabbccdd-816f-4d67-821b-64be606af220"),
@@ -675,7 +699,7 @@ func TestInviteList(t *testing.T) {
 				Roles: []auth.Role{auth.RoleDefault},
 			},
 			inviteList: &inviteList{
-				Invites: []invitation{
+				Invites: []invite.Invitation{
 					{
 						Path:      "/invite/3",
 						CreatedBy: uuid.MustParse("e5ccb6f1-816f-4d67-821b-64be606af220"),
@@ -720,9 +744,11 @@ func TestInviteList(t *testing.T) {
 			is := is.New(t)
 			ctrl := gomock.NewController(t)
 			rdb := mockredis.NewMockCmdable(ctrl)
+			mailer := mockinvite.NewMockMailer(ctrl)
 			invites := Invitations{
-				Path:  &testPath{p: "invite"},
-				store: &invite.SessionStore{RDB: rdb, Prefix: "invite"},
+				Path:   &testPath{p: "invite"},
+				Mailer: mailer,
+				store:  &invite.SessionStore{RDB: rdb, Prefix: "invite"},
 			}
 			defer ctrl.Finish()
 
@@ -763,19 +789,4 @@ func mockSessionGet(t *testing.T, rdb *mockredis.MockCmdable, key gomock.Matcher
 	return rdb.EXPECT().Get(
 		context.Background(), key,
 	).Return(redis.NewStringResult(string(raw), nil))
-}
-
-func mockSessionSet(
-	t *testing.T,
-	rd *mockredis.MockCmdable,
-	key gomock.Matcher,
-	timeout gomock.Matcher,
-	s *invite.Session,
-) *gomock.Call {
-	t.Helper()
-	raw, err := json.Marshal(s)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return rd.EXPECT().Set(context.Background(), key, raw, timeout)
 }
