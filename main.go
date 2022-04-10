@@ -7,7 +7,6 @@ import (
 	"embed"
 	"flag"
 	"html/template"
-	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -15,9 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/sendgrid/sendgrid-go"
@@ -139,32 +136,6 @@ func main() {
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
 	e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
-	e.GET("/invite_email", func(c echo.Context) error {
-		f, err := os.Open("build/invite_email/index.html")
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		b, err := io.ReadAll(f)
-		if err != nil {
-			return err
-		}
-		t, err := template.New("main").Parse(string(b))
-		if err != nil {
-			return err
-		}
-		c.Response().WriteHeader(200)
-		c.Response().Header().Set("Content-Type", "text/html")
-		return t.Execute(c.Response(), &invite.Invitation{
-			Path:         "/invite/123456",
-			Email:        "jimmy@harrybrwn.com",
-			ReceiverName: "Jimmy Smith",
-			CreatedBy:    uuid.New(),
-			Roles:        []auth.Role{auth.RoleAdmin, auth.RoleDefault, auth.RoleFamily, auth.RoleTanya},
-			ExpiresAt:    time.Now(),
-			Domain:       app.Domain,
-		})
-	})
 
 	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
 	e.POST("/invite/:id", invites.SignUp(userStore))
