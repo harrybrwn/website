@@ -66,6 +66,8 @@ var (
 	sitemap []byte
 	//go:embed build/sitemap.xml.gz
 	sitemapgz []byte
+	//go:embed build/invite_email/index.html
+	inviteEmailStatic []byte
 
 	//go:embed frontend/templates
 	templates embed.FS
@@ -120,7 +122,10 @@ func main() {
 	)
 	if apikey, ok := os.LookupEnv("SENDGRID_API_KEY"); ok && len(apikey) > 0 {
 		emailClient = sendgrid.NewSendClient(apikey)
-		mailer = newMailer(emailClient, nil)
+		mailer = newMailer(
+			emailClient,
+			template.Must(template.New("email-invite").Parse(string(inviteEmailStatic))),
+		)
 		logger.Info("found sendgrid api key")
 	} else {
 		logger.Info("emailing disabled: no sendgrid api key")
