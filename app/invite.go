@@ -115,6 +115,14 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 					Internal: err,
 				}
 			}
+			logger.WithFields(logrus.Fields{
+				"path":          inv.Path,
+				"expires_at":    inv.ExpiresAt,
+				"email":         inv.Email,
+				"receiver_name": inv.ReceiverName,
+			}).Info("emailing invitation")
+		} else {
+			logger.Info("not emailing invitation")
 		}
 		return c.JSON(200, &inv)
 	}
@@ -201,6 +209,12 @@ func (iv *Invitations) SignUp(users UserStore) echo.HandlerFunc {
 		if err != nil {
 			return echo.ErrInternalServerError.SetInternal(err)
 		}
+		logger.WithFields(logrus.Fields{
+			"email":     login.Email,
+			"username":  login.Username,
+			"roles":     session.Roles,
+			"invite_id": key,
+		}).Info("invite account creation success")
 		// Cleanup on success
 		err = iv.store.Del(ctx, key)
 		if err != nil {

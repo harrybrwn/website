@@ -119,8 +119,11 @@ func main() {
 		emailClient *sendgrid.Client
 	)
 	if apikey, ok := os.LookupEnv("SENDGRID_API_KEY"); ok && len(apikey) > 0 {
-		emailClient = sendgrid.NewSendClient(os.Getenv("SENDGRID_API_KEY"))
+		emailClient = sendgrid.NewSendClient(apikey)
 		mailer = newMailer(emailClient, nil)
+		logger.Info("found sendgrid api key")
+	} else {
+		logger.Info("emailing disabled: no sendgrid api key")
 	}
 	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"}, mailer)
 
