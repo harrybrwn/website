@@ -69,6 +69,7 @@ export interface InviteRequest {
   timeout?: number;
   ttl?: number;
   email?: string;
+  receiver_name?: string;
   roles?: string[];
 }
 
@@ -76,6 +77,8 @@ export interface InviteURL {
   path: string;
   created_by: string;
   expires_at: string;
+  email: string;
+  receiver_name: string;
   roles: string[];
   ttl: number;
 }
@@ -168,8 +171,7 @@ export interface RuntimeInfo {
   error: string;
   birthday: string;
   debug: boolean;
-  GOOS: string;
-  GOARCH: string;
+  build: { [key: string]: string };
 }
 
 /**

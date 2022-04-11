@@ -65,8 +65,11 @@ const main = () => {
       ...keyPairElem("uptime", info.uptime),
       ...keyPairElem("birthday", info.birthday),
       ...keyPairElem("debug", info.debug),
-      ...keyPairElem("GOOS", info.GOOS),
-      ...keyPairElem("GOARCH", info.GOARCH),
+      ...keyPairElem("GOOS", info.build.GOOS),
+      ...keyPairElem("GOARCH", info.build.GOARCH),
+      ...keyPairElem("vcs", info.build["vcs"]),
+      ...keyPairElem("commit", info.build["vcs.revision"]),
+      ...keyPairElem("commit.date", new Date(info.build["vcs.time"])),
     ];
     let dl: HTMLDListElement = document.createElement("dl");
     for (let elem of elements) {
@@ -88,6 +91,7 @@ const main = () => {
 const createInviteRequest = (data: FormData): api.InviteRequest => {
   let expires = (data.get("expires") as string) || undefined;
   let email = (data.get("email") as string) || undefined;
+  let receiverName = (data.get("recipient-name") as string) || undefined;
   let ttl = (data.get("ttl") as string) || undefined;
   let roles = (data.get("roles") as string) || undefined;
 
@@ -99,6 +103,7 @@ const createInviteRequest = (data: FormData): api.InviteRequest => {
   }
   if (ttl) request.ttl = parseInt(ttl);
   if (email) request.email = email;
+  if (receiverName) request.receiver_name = receiverName;
   if (roles) request.roles = roles.split(",");
   return request;
 };
