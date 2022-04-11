@@ -42,8 +42,9 @@ type Invitations struct {
 
 func NewInvitations(rdb redis.Cmdable, path PathBuilder, mailer invite.Mailer) *Invitations {
 	return &Invitations{
-		Path:  path,
-		store: invite.NewStore(rdb, "invite"),
+		Path:   path,
+		store:  invite.NewStore(rdb, "invite"),
+		Mailer: mailer,
 	}
 }
 
