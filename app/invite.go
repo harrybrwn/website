@@ -106,7 +106,16 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 			Domain:       Domain,
 		}
 
-		if iv.Mailer != nil && email.Valid(inv.Email) {
+		validEmail := email.Valid(inv.Email)
+		logger := logger.WithFields(logrus.Fields{
+			"path":          inv.Path,
+			"expires_at":    inv.ExpiresAt,
+			"email":         inv.Email,
+			"receiver_name": inv.ReceiverName,
+			"has_mailer":    iv.Mailer != nil,
+			"valid_email":   validEmail,
+		})
+		if iv.Mailer != nil && validEmail {
 			err = iv.Mailer.Send(ctx, &inv)
 			if err != nil {
 				return &echo.HTTPError{
@@ -115,12 +124,7 @@ func (iv *Invitations) Create() echo.HandlerFunc {
 					Internal: err,
 				}
 			}
-			logger.WithFields(logrus.Fields{
-				"path":          inv.Path,
-				"expires_at":    inv.ExpiresAt,
-				"email":         inv.Email,
-				"receiver_name": inv.ReceiverName,
-			}).Info("emailing invitation")
+			logger.Info("emailing invitation")
 		} else {
 			logger.Info("not emailing invitation")
 		}
