@@ -205,9 +205,9 @@ jobs:
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
       - name: Start services
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
+        run: scripts/functional.sh setup
       - name: Run tests
-        run: docker-compose -f docker-compose.yml -f docker-compose.test.yml run --rm tests scripts/functional-tests.sh
+        run: scripts/functional.sh test
 
       - name: Move buildx cache
         run: |
