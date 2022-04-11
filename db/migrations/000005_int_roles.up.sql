@@ -1,0 +1,2 @@
+ALTER TABLE "user"
+ALTER COLUMN roles TYPE VARCHAR(32)[];

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"database/sql/driver"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -100,7 +101,11 @@ func (r *Role) Scan(src interface{}) (err error) {
 	case string:
 		role = ParseRole(v)
 	case []uint8:
-		role = ParseRole(string(v))
+		r, err := strconv.ParseUint(string(v), 10, 32)
+		if err != nil {
+			return errors.Wrap(ErrInvalidRole, err.Error())
+		}
+		role = Role(r)
 	case int8:
 		role = Role(v)
 	case int16:
@@ -126,7 +131,7 @@ func (r *Role) Scan(src interface{}) (err error) {
 	}
 	*r = role
 	if role == RoleInvalid {
-		return ErrInvalidRole
+		return errors.Wrap(ErrInvalidRole, "scanned an invalid role")
 	}
 	return
 }

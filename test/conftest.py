@@ -2,7 +2,7 @@ import pytest
 
 import os
 import redis
-from models import User
+from models import User, Role
 
 
 @pytest.fixture(scope="session")
@@ -26,7 +26,7 @@ def user():
         "testuser",
         "test@harrybrwn.com",
         "password1",
-        ["default"],
+        [Role.DEFAULT],
     )
     u.create()
     yield u
@@ -39,7 +39,7 @@ def admin():
         "admin_user",
         "admin@example.com",
         "onetwothreefourfive",
-        ["admin"],
+        [Role.ADMIN],
     )
     u.create()
     yield u

@@ -42,12 +42,12 @@ class User:
     email: str
     password: str
     pw_hash: bytes
-    roles: List[str]
+    roles: List[Role]
     created_at: datetime.datetime
     updated_at: datetime.datetime
     token: Token
 
-    def __init__(self, username: str, email: str, password: str, roles: List[str]):
+    def __init__(self, username: str, email: str, password: str, roles: List[Role]):
         self.username = username
         self.email = email
         self.password = password
@@ -69,7 +69,12 @@ class User:
                 uuid_in(md5(random()::text || clock_timestamp()::text)::cstring),
                 %s, %s, %s, %s, ''
             ) RETURNING id, uuid, created_at, updated_at''',
-            (self.username, self.email, self.pw_hash, self.roles),
+            (
+                self.username,
+                self.email,
+                self.pw_hash,
+                [r.value for r in self.roles],
+            ),
         )
         res = cur.fetchone()
         self.id = res[0]

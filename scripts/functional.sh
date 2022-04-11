@@ -17,7 +17,7 @@ case $1 in
   setup)
     docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d db redis web
     ;;
-  run)
+  run|test)
     shift
     docker-compose -f docker-compose.yml -f docker-compose.test.yml run -u "$(id -u):$(id -g)" --rm tests scripts/functional-tests.sh "$@"
     ;;
