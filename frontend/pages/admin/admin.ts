@@ -3,6 +3,7 @@ import * as api from "~/frontend/api";
 import LoginManager from "~/frontend/util/LoginManager";
 import {
   TOKEN_KEY,
+  Role,
   storeToken,
   deleteToken,
   setCookie,
@@ -49,7 +50,7 @@ const main = () => {
       });
     }
   );
-  inviteTable.header(["url", "expires at", "roles"]);
+  inviteTable.header(["url", "email", "name", "expires at", "roles"]);
   let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
   handleInvitationCreation(inviteTable, inviteForm);
   inviteTable.render();
@@ -114,10 +115,18 @@ const inviteRow = (inv: api.InviteURL): string[] => {
   if (inv.roles == null) inv.roles = [];
   let d = new Date(inv.expires_at);
   let diff = d.getTime() - Date.now();
+  let roles: Role[] =
+    inv.roles == null || inv.roles.length == 0 ? [Role.Default] : inv.roles;
   return [
     `${url}${inv.path}`,
+    inv.email || "",
+    inv.receiver_name,
     `${millisecondsToStr(diff)}`,
-    inv.roles.join(", "),
+    roles
+      .map((v: Role) => {
+        return Role[v].toLowerCase();
+      })
+      .join(", "),
   ];
 };
 

@@ -1,4 +1,5 @@
 import {
+  Role,
   parseClaims,
   login,
   loadRefreshToken,
@@ -13,15 +14,15 @@ import { clearCookie } from "~/frontend/util/cookies";
 
 test("parse jwt claims", () => {
   let token =
-    "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6IjU3NDNlOGY1LTRkNmYtNDlhMC04MGZjLWQzMjAxZDQxYWJlNyIsInJvbGVzIjpbImFkbWluIl0sImlzcyI6ImhhcnJ5YnJ3bi5jb20iLCJhdWQiOlsicmVmcmVzaCJdLCJleHAiOjE2NDM1MzEwMTQsImlhdCI6MTY0MzA5OTAxNH0.DnesQeMrNeBnDnW0ROKe28mGvDxeoiph4YOjcUjRTkC1J0sf7wVTH36deuJfPbiD-MBFh1aPHMI0jX7djw76Ag";
+    "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6OCwidXVpZCI6IjI5ODI2Y2VhLTczYTEtNGY5Yi1hYzc4LWQ4OWNmZDM5ZWJkNSIsInJvbGVzIjpbMSwzLDRdLCJpc3MiOiJoYXJyeWJyd24uY29tIiwiYXVkIjpbInJlZnJlc2giXSwiZXhwIjoxNjUwMTI1NDE4LCJpYXQiOjE2NDk2OTM0MTh9.1Zirhyco3kNVKDxAMgW6Nmv24LHTtkSRohmz-Z1w02qYaB7UQC1c-KrTo3Mtnn7Ar2XPrQFB5NmWjv1QHml6Ag";
   let claims = parseClaims(token);
   expect(claims.id).not.toBeLessThan(1);
   expect(claims.uuid).not.toHaveLength(0);
-  expect(claims.uuid).toEqual("5743e8f5-4d6f-49a0-80fc-d3201d41abe7");
+  expect(claims.uuid).toEqual("29826cea-73a1-4f9b-ac78-d89cfd39ebd5");
   expect(claims.iss).toEqual("harrybrwn.com");
-  expect(claims.roles).toHaveLength(1);
+  expect(claims.roles).toHaveLength(3);
+  expect(claims.roles).toEqual([Role.Admin, Role.Family, Role.Tanya]);
   expect(claims.aud).toHaveLength(1);
-  expect(claims.roles[0]).toEqual("admin");
   expect(claims.aud[0]).toEqual("refresh");
 });
 

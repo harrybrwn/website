@@ -8,7 +8,13 @@ export interface Token {
   type: string;
 }
 
-export type Role = string;
+export enum Role {
+  Invalid = 0,
+  Admin,
+  Default,
+  Family,
+  Tanya,
+}
 
 export interface Claims {
   id: number;

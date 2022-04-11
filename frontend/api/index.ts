@@ -1,4 +1,4 @@
-import { loadToken } from "./auth";
+import { Role, loadToken } from "./auth";
 
 export interface PageHits {
   count: number;
@@ -70,6 +70,7 @@ export interface InviteRequest {
   ttl?: number;
   email?: string;
   receiver_name?: string;
+  // List of string roles because the server will parse them into the role enum.
   roles?: string[];
 }
 
@@ -79,7 +80,7 @@ export interface InviteURL {
   expires_at: string;
   email: string;
   receiver_name: string;
-  roles: string[];
+  roles: Role[];
   ttl: number;
 }
 
