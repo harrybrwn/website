@@ -212,8 +212,8 @@ func NotFoundHandler() echo.HandlerFunc {
 
 func newMailer(client *sendgrid.Client, t *template.Template) invite.Mailer {
 	m, err := invite.NewMailer(
-		email.Email{Name: "", Address: "admin@harrybrwn.com"},
-		"You're Invited",
+		email.Email{Name: "Harry Brown", Address: "admin@harrybrwn.com"},
+		"You're Invited!",
 		t,
 		client,
 	)
