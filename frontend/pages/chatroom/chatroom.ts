@@ -9,7 +9,7 @@ import {
   loadToken,
   parseClaims,
   deleteToken,
-} from "~/frontend/api/auth";
+} from "@harrybrwn.com/api/auth";
 import { clearCookie } from "~/frontend/util/cookies";
 import LoginManager from "~/frontend/util/LoginManager";
 

@@ -7,7 +7,7 @@ import {
   storeToken,
   setCookie,
   clearRefreshToken,
-} from "./api/auth";
+} from "@harrybrwn.com/api/auth";
 import { SECOND } from "./constants";
 import { clearCookie } from "./util/cookies";
 import LoginManager from "./util/LoginManager";

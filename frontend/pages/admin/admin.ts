@@ -1,5 +1,5 @@
 import "~/frontend/pages/admin/styles.css";
-import * as api from "~/frontend/api";
+import * as api from "@harrybrwn.com/api";
 import LoginManager from "~/frontend/util/LoginManager";
 import {
   TOKEN_KEY,

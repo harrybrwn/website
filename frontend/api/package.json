@@ -1,0 +1,13 @@
+{
+  "name": "@harrybrwn.com/api",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/harrybrwn/harrybrwn.com",
+      "directory": "frontend/api"
+  },
+  "author": "Harry Brown",
+  "license": "none",
+  "private": true
+}

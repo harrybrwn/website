@@ -1,4 +1,4 @@
-import { Token, Role, storeToken, Claims } from "~/frontend/api/auth";
+import { Token, Role, storeToken, Claims } from "@harrybrwn.com/api/auth";
 
 export const mockToken = (): Token => {
   let t = newToken({

@@ -6,7 +6,7 @@ import {
   refresh,
   loadRefreshToken,
   refreshExpiration,
-} from "~/frontend/api/auth";
+} from "@harrybrwn.com/api/auth";
 import { SECOND } from "~/frontend/constants";
 
 interface LoginManagerOptions {

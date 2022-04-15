@@ -180,7 +180,6 @@ module.exports = function (webpackEnv) {
     resolve: {
       extensions: [".tsx", ".ts", ".jsx", ".js", ".css", ".svg"],
       alias: {
-        "@harrybrwn.com": paths.rootDir,
         "~": paths.rootDir,
       },
     },

@@ -24,7 +24,7 @@ def clear_cache(rdb: redis.Redis):
 def user():
     u = User(
         "testuser",
-        "test@harrybrwn.com",
+        "test@example.com",
         "password1",
         [Role.DEFAULT],
     )
