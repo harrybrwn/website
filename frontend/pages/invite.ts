@@ -74,8 +74,8 @@ const handleFormActions = (form: HTMLFormElement) => {
       body: JSON.stringify(body),
     }).then(async (res) => {
       if (!res.ok) {
-        let msg = await res.json();
-        errorContainer.innerText = `Error: ${msg}`;
+        let error = await res.json();
+        errorContainer.innerText = `Error: ${error.message}`;
         return;
       }
       window.location.pathname = "/";

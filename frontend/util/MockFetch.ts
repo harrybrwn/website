@@ -36,6 +36,9 @@ export default class MockFetch {
 
   finish() {
     global.fetch = this.globalFetch;
+    if (this.callStack.length > 0) {
+      throw new Error(`expected ${this.callStack.length} more calls`);
+    }
     this.callStack = [];
     this.resultStack = [];
   }

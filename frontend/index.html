@@ -55,9 +55,18 @@
           </div>
           <div class="win95-window-body">
             <p>User Login</p>
-            <form method="POST" action="/api/token" id="login-form">
+            <form
+              method="POST"
+              action="/api/token"
+              enctype="application/json"
+              id="login-form"
+            >
               <!-- <input type="email" name="email" placeholder="Email" /> -->
-              <input type="text" name="identifier" placeholder="Username or Email" />
+              <input
+                type="text"
+                name="identifier"
+                placeholder="Username or Email"
+              />
               <input type="password" name="password" placeholder="Password" />
               <br />
               <input type="submit" />
@@ -76,8 +85,9 @@
             ping="/api/ping?link=<%=github%>"
             rel="noopener,noreferrer"
             title="All my random projects"
-            >github</a
           >
+            github
+          </a>
         </li>
         <li>
           <a
@@ -86,8 +96,9 @@
             ping="/api/ping?link=<%=linkedin%>"
             rel="noopener,noreferrer"
             title=""
-            >linkedin</a
           >
+            linkedin
+          </a>
         </li>
         <li>
           <a target="_blank" href="/static/files/HarrisonBrown.pdf">resume</a>
@@ -99,8 +110,9 @@
             ping="/api/ping?link=https://www.yourworldoftext.com/~harrybrwn/"
             rel="noopener,noreferrer"
             title="Write something on my wall"
-            >wall</a
           >
+            wall
+          </a>
         </li>
         <!-- <li><a href="/secret">secrets</a></li> -->
       </ul>
@@ -126,7 +138,8 @@
             href="https://github.com/harrybrwn/yt"
             ping="/api/ping?link=https://github.com/harrybrwn/yt"
             rel="noopener,noreferrer"
-            >yt</a
+          >
+            yt </a
           >: Youtube video/audio downloader.
         </li>
         <!-- <li><a href="/remora">remora</a></li> -->

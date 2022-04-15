@@ -35,9 +35,7 @@ describe("invitation api", () => {
         })
         .returns({
           ok: true,
-          json() {
-            return Promise.resolve({ path: path });
-          },
+          json: () => Promise.resolve({ path: path }),
         } as Response);
     });
     test("basic call", async () => {

@@ -15,6 +15,7 @@ import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import * as api from "./api";
 import { isEmail } from "~/frontend/util/email";
+import "~/frontend/components/InputForm";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
   let formOrNull = document.getElementById(formID) as HTMLFormElement | null;
@@ -27,11 +28,6 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
   form.addEventListener("submit", (event: SubmitEvent) => {
     event.preventDefault();
     let formData = new FormData(form);
-    // let email = formData.get("email") as string;
-    // if (!isEmail(email)) {
-    //   error.innerText = "invalid email";
-    //   return;
-    // }
     let email: string = "";
     let req = {
       username: formData.get("username") as string,
@@ -127,33 +123,6 @@ const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
     welcomeTicker++;
   };
   setInterval(fn, ms);
-};
-
-const webButtonClipboard = (num: number) => {
-  let tooltip = document.getElementById(`web-btn-${num}-tooltip`);
-  if (tooltip == null) {
-    console.error("could not find tooltip");
-    return;
-  }
-  if (tooltip.children.length == 0 || tooltip.children[0].tagName != "IMG") {
-    throw new Error("web button tooltip has no child image");
-  }
-  let button = tooltip.children[0] as HTMLImageElement;
-
-  const defaultMsg = "Copy code";
-  const payload = `<a href="${window.origin}/">\n  <img src="${button.src}" alt="Harry Brown" width="88" height="31">\n</a>`;
-
-  tooltip.setAttribute("data-text", defaultMsg);
-  const copy = () => {
-    navigator.clipboard.writeText(payload);
-    tooltip?.setAttribute("data-text", "Code copied!");
-    fetch(`/api/ping?action=web-button-${num}-copy`);
-  };
-  button.addEventListener("click", copy);
-  // tooltip.addEventListener("click", copy);
-  button.addEventListener("mouseout", () => {
-    tooltip?.setAttribute("data-text", defaultMsg);
-  });
 };
 
 const main = () => {
@@ -272,6 +241,32 @@ const main = () => {
   applyPageCount();
   webButtonClipboard(1);
   webButtonClipboard(2);
+};
+
+const webButtonClipboard = (num: number) => {
+  let tooltip = document.getElementById(`web-btn-${num}-tooltip`);
+  if (tooltip == null) {
+    console.error("could not find tooltip");
+    return;
+  }
+  if (tooltip.children.length == 0 || tooltip.children[0].tagName != "IMG") {
+    throw new Error("web button tooltip has no child image");
+  }
+  let button = tooltip.children[0] as HTMLImageElement;
+
+  const defaultMsg = "Copy code";
+  const payload = `<a href="${window.origin}/">\n  <img src="${button.src}" alt="Harry Brown" width="88" height="31">\n</a>`;
+
+  tooltip.setAttribute("data-text", defaultMsg);
+  const copy = () => {
+    navigator.clipboard.writeText(payload);
+    tooltip?.setAttribute("data-text", "Code copied!");
+    fetch(`/api/ping?action=web-button-${num}-copy`);
+  };
+  button.addEventListener("click", copy);
+  button.addEventListener("mouseout", () => {
+    tooltip?.setAttribute("data-text", defaultMsg);
+  });
 };
 
 main();

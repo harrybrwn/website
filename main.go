@@ -122,10 +122,7 @@ func main() {
 	)
 	if apikey, ok := os.LookupEnv("SENDGRID_API_KEY"); ok && len(apikey) > 0 {
 		emailClient = sendgrid.NewSendClient(apikey)
-		mailer = newMailer(
-			emailClient,
-			template.Must(template.New("email-invite").Parse(string(inviteEmailStatic))),
-		)
+		mailer = newInviteMailer(emailClient)
 		logger.Info("found sendgrid api key")
 	} else {
 		logger.Info("emailing disabled: no sendgrid api key")
@@ -210,11 +207,11 @@ func NotFoundHandler() echo.HandlerFunc {
 	}
 }
 
-func newMailer(client *sendgrid.Client, t *template.Template) invite.Mailer {
+func newInviteMailer(client *sendgrid.Client) invite.Mailer {
 	m, err := invite.NewMailer(
 		email.Email{Name: "Harry Brown", Address: "admin@harrybrwn.com"},
 		"You're Invited!",
-		t,
+		template.Must(template.New("email-invite").Parse(string(inviteEmailStatic))),
 		client,
 	)
 	if err != nil {

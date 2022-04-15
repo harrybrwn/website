@@ -1,14 +1,43 @@
-import { Token, storeToken } from "~/frontend/api/auth";
+import { Token, Role, storeToken, Claims } from "~/frontend/api/auth";
 
 export const mockToken = (): Token => {
-  let t = {
-    token:
-      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6ImU1Y2NiNmYxLTgxNmYtNGQ2Ny04MjFiLTY0YmU2MDZhZjIyMCIsInJvbGVzIjpbImFkbWluIiwidGFueWEiXSwiaXNzIjoiaGFycnlicnduLmNvbSIsImF1ZCI6WyJ1c2VyIl0sImV4cCI6MTY0NDk5NzM2OSwiaWF0IjoxNjQ0OTk3MzM5fQ.aekMkpbFt96dK-ktqyt4ns8bF5H1NpnxZrnB6EdGFM3c1epIQ97CiC3omeqMzKlktAgD4vrE72LiveiR3nOXDA",
-    expires: 1644997369,
-    type: "Bearer",
-    refresh:
-      "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXVpZCI6ImU1Y2NiNmYxLTgxNmYtNGQ2Ny04MjFiLTY0YmU2MDZhZjIyMCIsInJvbGVzIjpbImFkbWluIiwidGFueWEiXSwiaXNzIjoiaGFycnlicnduLmNvbSIsImF1ZCI6WyJyZWZyZXNoIl0sImV4cCI6MTY0NTQyOTMzOSwiaWF0IjoxNjQ0OTk3MzM5fQ.RLQfd3k7v5Vy2uvXxdlJ7N5Oq0ruiYzmEXqfDO63qLG1pcDFZWbseg4GAkQTypc-LlE63BrxMnBqRuUxLSSNBg",
-  };
+  let t = newToken({
+    id: 1,
+    uuid: "e5ccb6f1-816f-4d67-821b-64be606af220",
+    roles: [Role.Admin],
+    iss: "harrybrwn.com",
+    aud: ["user"],
+    exp: 1644997369,
+    iat: 1644997339,
+  });
   storeToken(t);
   return t;
+};
+
+const b64encode = (s: string): string => {
+  let b = btoa(s);
+  return b.replace("==", "").replace("=", "");
+};
+
+export const newToken = (claims: Claims, refExp?: number): Token => {
+  let exp = Math.round(claims.exp);
+  let cl = {
+    ...claims,
+  };
+  const base = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9";
+  const sig =
+    "RLQfd3k7v5Vy2uvXxdlJ7N5Oq0ruiYzmEXqfDO63qLG1pcDFZWbseg4GAkQTypc-LlE63BrxMnBqRuUxLSSNBg";
+  let encClaims = b64encode(JSON.stringify(cl));
+
+  if (refExp != undefined) cl.exp = Math.round(refExp);
+  else cl.exp = cl.exp + 24 * 60 * 60 * 1000;
+  cl.aud = ["refresh"];
+  let encRefClaims = b64encode(JSON.stringify(cl));
+
+  return {
+    type: "Bearer",
+    expires: exp,
+    token: base + "." + encClaims + "." + sig,
+    refresh: base + "." + encRefClaims + "." + sig,
+  };
 };

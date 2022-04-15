@@ -43,7 +43,6 @@ export default class LoginManager {
   }
 
   private async refresh(): Promise<Token | null> {
-    console.log("refreshing jwt token");
     let refreshToken = loadRefreshToken();
     if (refreshToken == null) {
       return new Promise<Token | null>((_resolve, reject) => {
@@ -76,7 +75,6 @@ export default class LoginManager {
     let expires = new Date(token.expires * 1000);
     let now = new Date();
     let ms = expires.getTime() - now.getTime() - SECOND;
-    //console.log("expires in", ms, "milliseconds at", expires);
     if (ms < 0) {
       return;
     }
@@ -120,20 +118,13 @@ export default class LoginManager {
       if (!isExpired(token)) {
         this.login(token);
       } else {
-        console.log("current token is expired");
         let refExp = refreshExpiration();
         if (refExp == null || refExp.getTime() < Date.now()) {
-          console.log("expired or no refresh token");
           this.clearToken();
         } else {
-          console.log("found token");
-          this.refresh()
-            .then(() => {
-              console.log("token refreshed");
-            })
-            .catch((error) => {
-              console.error("unable to refresh access token:", error);
-            });
+          this.refresh().catch((error) => {
+            console.error("unable to refresh access token:", error);
+          });
         }
       }
     }
@@ -142,7 +133,7 @@ export default class LoginManager {
     clearInterval(this.expirationCheckTimer);
 
     // window.addEventListener("beforeunload", (ev: BeforeUnloadEvent) => {});
-    document.addEventListener("visibilitychange", (ev: Event) => {
+    this.target.addEventListener("visibilitychange", (ev: Event) => {
       if (!document.hidden) {
         this.checkToken();
       }

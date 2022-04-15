@@ -13,7 +13,11 @@
     <main>
       <h2>Sign Up</h2>
       <form method="POST" id="signup-form">
+        {{ if .Email -}}
+        <input type="email" name="email" placeholder="Email" value="{{.Email}}/>
+        {{else -}}
         <input type="email" name="email" placeholder="Email" />
+        {{end -}}
         <input type="text" name="username" placeholder="Username" />
         <input type="password" name="password" placeholder="Password" />
         <input type="submit" />

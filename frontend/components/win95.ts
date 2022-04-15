@@ -1,39 +1,27 @@
+import "./win95.css";
+
 interface Win95Props {
   head?: HTMLElement[];
   body?: HTMLElement[];
   id?: string;
 }
 
-function Win95Window(props?: Win95Props) {
-  if (props && props.id) {
-    let win = document.getElementById(props.id);
-    if (win == null) {
-      throw new Error(`could not find ${props.id}`);
+class Win95Window extends HTMLElement {
+  head: Element;
+  body: Element;
+
+  constructor() {
+    super();
+    for (let i = 0; i < this.children.length; i++) {
+      console.log(this.children[i]);
     }
-    return win;
+    this.head = this.children[0] || document.createElement("div");
+    this.body = this.children[1] || document.createElement("div");
+    this.classList.add("win95-window");
+    this.head.classList.add("win95-window-head");
+    this.body.classList.add("win95-window-body");
   }
-
-  let head = document.createElement("div");
-  head.classList.add("win95-window-head");
-  let body = document.createElement("div");
-  body.classList.add("win95-window-body");
-
-  if (props) {
-    if (props.head) {
-      for (let i in props.head) {
-        head.appendChild(props.head[i]);
-      }
-    }
-    if (props.body) {
-      for (let i in props.body) {
-        body.appendChild(props.body[i]);
-      }
-    }
-  }
-
-  let win = document.createElement("div");
-  win.classList.add("win95-window");
-  win.appendChild(head);
-  win.appendChild(body);
-  return win;
 }
+
+customElements.define("win95-window", Win95Window, { extends: "div" });
+// customElements.define("win95-window", Win95Window);

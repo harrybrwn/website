@@ -2,6 +2,7 @@
   "name": "harrybrwn.com",
   "version": "0.0.1",
   "description": "My personal website",
+  "private": true,
   "scripts": {
     "test": "jest --rootDir . -c config/jest.config.ts",
     "test:ci": "jest --rootDir . -c config/jest.config.ts --coverage --runInBand --ci",
