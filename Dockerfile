@@ -13,7 +13,8 @@ RUN apk update && apk upgrade && \
     npm update -g npm
 # Cache dependancies
 WORKDIR /opt/harrybrwn
-COPY ./package.json ./yarn.lock /opt/harrybrwn/
+COPY ./package.json ./yarn.lock ./.nvmrc /opt/harrybrwn/
+COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN yarn install
 COPY . .
 RUN yarn build

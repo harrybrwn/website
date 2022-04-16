@@ -13,10 +13,14 @@ import (
 type ErrorCode int
 
 type Error struct {
-	Status   int         `json:"-"`
-	Code     ErrorCode   `json:"code"`
-	Message  interface{} `json:"message"`
-	Internal error       `json:"-"`
+	// HTTP Status
+	Status int `json:"-"`
+	// Internal error code
+	Code ErrorCode `json:"code"`
+	// Error message
+	Message interface{} `json:"message"`
+	// Internal error and should not be known to caller
+	Internal error `json:"-"`
 }
 
 func (e *Error) Error() string {

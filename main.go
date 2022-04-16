@@ -69,6 +69,9 @@ var (
 	//go:embed build/invite_email/index.html
 	inviteEmailStatic []byte
 
+	// go:embed build
+	// frontend embed.FS
+
 	//go:embed frontend/templates
 	templates embed.FS
 
@@ -115,6 +118,17 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// frontend, err := web.NewFileServer(mustSub(frontend, "build"))
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
+	// frontend.Alias("/", "/~harry")
+	// frontend.ApplyGlobalHeaders(http.Header{
+	// 	"Cache-Control": {app.StaticCacheControl},
+	// 	"Last-Modified": {app.StartTime.UTC().Format(http.TimeFormat)},
+	// })
+	// e.GET("/*", echo.WrapHandler(frontend))
+
 	userStore := app.NewUserStore(db)
 	var (
 		mailer      invite.Mailer
@@ -139,11 +153,8 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "remora/index.html"))
 	e.GET("/games", app.Page(gamesStaticPage, "games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "admin/index.html"), guard, auth.AdminOnly())
-	e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
+	// e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
-
-	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
-	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))
@@ -152,6 +163,9 @@ func main() {
 	e.GET("/sitemap.xml.gz", WrapHandler(sitemapHandler(sitemapgz, true)))
 	e.GET("/favicon.ico", faviconHandler())
 	e.GET("/manifest.json", json(manifest))
+
+	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
+	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	tokenSrv := app.TokenService{
 		Config: jwtConf,
@@ -335,4 +349,12 @@ func (ipb *InvitePathBuilder) Path(id string) string {
 func (ipb *InvitePathBuilder) GetID(r *http.Request) string {
 	list := strings.Split(r.URL.Path, string(filepath.Separator))
 	return list[2]
+}
+
+func mustSub(sys fs.FS, dir string) fs.FS {
+	f, err := fs.Sub(sys, dir)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	return f
 }

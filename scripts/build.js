@@ -176,12 +176,13 @@ class Builder {
     } else if (opts.noChunks) {
       chunks = [];
     }
+    const source = path.resolve(this.paths.rootDir, this.paths.source);
     // Filter out the chunk if we cant find the typescript file
     chunks = chunks.filter((val) => {
       let paths = [
-        path.join("frontend", opts.pageDir, val + ".ts"),
-        path.join("frontend", opts.pageDir, val, val + ".ts"),
-        path.join("frontend", opts.pageDir, val, "index.ts"),
+        path.join(source, opts.pageDir, val + ".ts"),
+        path.join(source, opts.pageDir, val, val + ".ts"),
+        path.join(source, opts.pageDir, val, "index.ts"),
       ];
       for (let p of paths) {
         if (!fs.existsSync(p)) {
@@ -216,10 +217,11 @@ class Builder {
 
   findTemplateFile(page, pageDir) {
     let name = `${page}.html`;
+    const base = path.join(this.paths.rootDir, this.paths.source, pageDir);
     let files = [
-      path.join(this.paths.source, pageDir, name),
-      path.join(this.paths.source, pageDir, page, name),
-      path.join(this.paths.source, pageDir, page, "index.html"),
+      path.join(base, name),
+      path.join(base, page, name),
+      path.join(base, page, "index.html"),
     ];
     for (let f of files) {
       if (fs.existsSync(f)) {

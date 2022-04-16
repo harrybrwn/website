@@ -12,9 +12,9 @@ lint: lint-go
 
 clean:
 	$(RM) -r bin .cache .pytest_cache .cache \
-		test-cover files/resume.pdf files/resume.log files/resume.aux \
 		$(shell find . -name '.pytest_cache' -type d) \
-		$(shell find . -name '__pycache__' -type d)
+		$(shell find . -name '__pycache__' -type d) \
+		test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
 coverage: coverage-ts coverage-go

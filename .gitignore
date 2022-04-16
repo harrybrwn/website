@@ -30,6 +30,7 @@ tests/*
 /scripts/*.sql
 /demo/
 requests.http
+gocoverage.txt
 
 # Notes
 NOTES*

@@ -4,15 +4,13 @@
   "description": "My personal website",
   "private": true,
   "scripts": {
-    "test": "jest --rootDir . -c config/jest.config.ts",
-    "test:ci": "jest --rootDir . -c config/jest.config.ts --coverage --runInBand --ci",
+    "test": "jest --rootDir . -c frontend/jest.config.ts",
+    "test:ci": "jest --rootDir . -c frontend/jest.config.ts --coverage --runInBand --ci",
     "coverage": "x-www-browser .cache/test/jest/coverage/lcov-report/index.html",
-    "build": "webpack --env prod --mode=production --progress",
-    "build:ci": "webpack --env ci --mode=production --no-devtool --no-cache",
-    "dev": "webpack -w --mode development --env dev --progress",
-    "dev-build": "webpack --mode development --env dev",
-    "clean": "rm -rf ./build",
-    "serve": "webpack-dev-server --mode development --env dev --content-base frontend --progress --hot"
+    "build": "webpack -c frontend/webpack.config.js --env prod --mode=production --progress",
+    "build:ci": "webpack -c frontend/webpack.config.js --env ci --mode=production --no-devtool --no-cache",
+    "dev": "webpack -c frontend/webpack.config.js -w --mode development --env dev --progress",
+    "clean": "rm -rf ./build"
   },
   "engines": {
     "node": "16.13.x",

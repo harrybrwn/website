@@ -59,6 +59,7 @@ help() {
   echo "  test    run the test container and all tests"
   echo "  stop    tear down all running containers"
   echo "  ps      list running containers"
+  echo "  logs    view container logs"
   echo "  help    get help on a sub-command if it has a help page"
   echo
   echo "Options"
@@ -68,7 +69,7 @@ help() {
 }
 
 build() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml build
+  docker-compose -f docker-compose.yml -f docker-compose.test.yml build "$@"
 }
 
 setup() {
@@ -95,9 +96,8 @@ ps() {
   docker-compose -f docker-compose.yml -f docker-compose.test.yml ps
 }
 
-t() {
-  echo "running t..."
-  echo "t args: $@"
+logs() {
+  docker-compose -f docker-compose.yml -f docker-compose.test.yml logs "$@"
 }
 
 CMD=""
@@ -162,8 +162,8 @@ case $CMD in
   ps)
     "$CMD" "${ARGS[@]}"
     ;;
-  t)
-    t "${ARGS[@]}"
+  logs)
+    "$CMD" "${ARGS[@]}"
     ;;
   *)
     help "${ARGS[@]}"

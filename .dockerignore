@@ -22,6 +22,7 @@
 /db/data/
 /.testing/
 /.pytest_cache
+.cache/
 **/__pycache__
 
 # Scripts

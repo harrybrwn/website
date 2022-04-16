@@ -1,7 +1,5 @@
 "use strict";
 
-const pkg = require("./package.json");
-
 const twitter = {
   site: "@harryb998",
   creator: "@harryb998",
@@ -11,7 +9,7 @@ const twitter = {
 const built = new Date();
 
 const common = {
-  author: pkg.author,
+  author: "Harry Brown",
   domain: "harrybrwn.com",
   description: "The home page of a humble backend software engineer.",
   previewImage: "https://harrybrwn.com/static/img/goofy.jpg",

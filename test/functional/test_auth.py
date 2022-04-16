@@ -13,20 +13,8 @@ def b64decode(s: str):
     return base64.decodebytes(b + b'=' * (-len(b) % 4))
 
 
-def test_homepage():
-    res = requests.get(f"http://{host}/")
-    assert res.ok
-    assert res.status_code == 200
-
-
 def test_admin_page_logedin(admin_token: Token):
     res = requests.get(f"http://{host}/admin", headers={"Authorization": admin_token.header()})
-    assert res.ok
-    assert res.status_code == 200
-
-
-def test_robots_txt():
-    res = requests.get(f"http://{host}/robots.txt")
     assert res.ok
     assert res.status_code == 200
 

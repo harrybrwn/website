@@ -12,7 +12,7 @@ const fs = require("fs");
 const hjson = require("hjson");
 
 const path = require("path");
-const build = require("./scripts/build");
+const build = require("../scripts/build");
 
 const tsconfig = hjson.parse(
   fs.readFileSync("./tsconfig.json", { encoding: "ascii" })
@@ -22,13 +22,20 @@ const tsconfig = hjson.parse(
 const site = require("./site");
 
 const paths = {
+  rootDir: path.resolve(__dirname, "../"),
   public: "./public",
   source: "./frontend",
   build: tsconfig.compilerOptions.outDir || "./build",
   favicon: "./public/favicon.ico",
-  rootDir: __dirname,
   cache: "./.cache/build",
 };
+
+const BABEL_CONFIG = path.resolve(
+  paths.rootDir,
+  paths.source,
+  "config",
+  "babel.config.js"
+);
 
 const sitemap = [
   {
@@ -51,7 +58,7 @@ const copy = (name) => {
     return copies;
   } else {
     return {
-      from: path.join(paths.public, name),
+      from: path.join(paths.rootDir, paths.public, name),
       to: name,
     };
   }
@@ -99,7 +106,11 @@ const makePlugins = (builder) => {
         copy("static/files"),
         {
           // Harry's OpenGraph Preview Image
-          from: path.join(builder.paths.source, "img/goofy.jpg"),
+          from: path.join(
+            builder.paths.rootDir,
+            builder.paths.source,
+            "img/goofy.jpg"
+          ),
           to: path.resolve(
             builder.paths.rootDir,
             builder.paths.build,
@@ -238,13 +249,9 @@ module.exports = function (webpackEnv) {
           use: {
             loader: require.resolve("babel-loader"),
             options: {
-              cacheDirectory: path.resolve(paths.cache, "babel"),
+              cacheDirectory: path.resolve(paths.rootDir, paths.cache, "babel"),
               cacheCompression: false,
-              configFile: path.resolve(
-                paths.rootDir,
-                "config",
-                "babel.config.js"
-              ), // use config/babel.config.js
+              configFile: BABEL_CONFIG,
               babelrc: false, // ignore any .babelrc file
             },
           },
@@ -287,7 +294,7 @@ module.exports = function (webpackEnv) {
       store: "pack",
       buildDependencies: {
         // This makes all dependencies of this file - build dependencies
-        config: [__filename, path.resolve("./site.js")],
+        // config: [__filename, path.resolve("./site.js")],
       },
     },
     devServer: {
