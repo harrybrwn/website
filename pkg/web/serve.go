@@ -76,7 +76,7 @@ func WithFailureHook(fn func(err error, file File, w io.Writer)) FileServerOptio
 }
 
 func WithURIHeaders(uri string, headers http.Header) FileServerOption {
-	return func(fs *FileServer) { fs.ApplyHeaders(uri, headers) }
+	return func(fs *FileServer) { _ = fs.ApplyHeaders(uri, headers) }
 }
 
 func WithGlobalHeaders(headers http.Header) FileServerOption {

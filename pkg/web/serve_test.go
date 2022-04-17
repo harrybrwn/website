@@ -201,7 +201,7 @@ func TestFindMimeType(t *testing.T) {
 		t.Errorf("wrong content encoding: got %q, want %q", contentEncoding, expectedEt)
 	}
 
-	contentType, contentEncoding, err = findMimeTypes(&file{body: appJsGz}, "app.js")
+	contentType, contentEncoding, err = findMimeTypes(&file{body: appJsGz}, "app.js.gz")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,6 +209,9 @@ func TestFindMimeType(t *testing.T) {
 	expectedEt = "gzip"
 	if contentType != expectedCt {
 		t.Errorf("wrong content type: got %q, want %q", contentType, expectedCt)
+	}
+	if contentEncoding != expectedEt {
+		t.Errorf("wrong content encoding: got %q, want %q", contentEncoding, expectedEt)
 	}
 }
 
