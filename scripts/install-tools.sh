@@ -25,6 +25,9 @@ for tool in $TOOLS; do
 	pack)
 	  install github.com/buildpacks/pack/cmd/pack@latest
 	  ;;
+	flarectl|cloudflarectl)
+	  install github.com/cloudflare/cloudflare-go/cmd/flarectl@latest
+	  ;;
 	*)
 	  echo "Error: unknown tool $tool"
 	  exit 1

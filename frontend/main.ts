@@ -54,17 +54,6 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
   });
 }
 
-function handleLogout(id: string, callback: () => void) {
-  let btn = document.getElementById(id);
-  if (btn == null) {
-    console.error("could not find logout button");
-    return;
-  }
-  btn.addEventListener("click", (ev: MouseEvent) => {
-    callback();
-  });
-}
-
 const applyPageCount = () => {
   let countBox = document.getElementById("hit-count");
   if (countBox == null) {
@@ -156,6 +145,16 @@ const main = () => {
     themeManager.toggle();
   });
 
+  // let logoutBtn = document.getElementById("logout-btn");
+  let logoutBtn = document.createElement("button");
+  logoutBtn.innerText = "Logout";
+  logoutBtn.addEventListener("click", () => {
+    loginManager.logout();
+    clearRefreshToken();
+  });
+  if (loginManager.isLoggedIn())
+    document.getElementById("settings")?.appendChild(logoutBtn);
+
   // Logged in stuff
   let links = document.querySelector(".links");
   if (!links) {
@@ -168,7 +167,6 @@ const main = () => {
       links?.appendChild(li);
     }
   }
-
   // Handle login and logout
   document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
     const e = ev.detail;
@@ -179,6 +177,7 @@ const main = () => {
       for (let li of privLinks) {
         links?.appendChild(li);
       }
+      document.getElementById("settings")?.appendChild(logoutBtn);
     } else {
       if (!loginManager.isLoggedIn()) {
         return;
@@ -186,15 +185,11 @@ const main = () => {
       for (let li of privLinks) {
         links?.removeChild(li);
       }
+      document.getElementById("settings")?.removeChild(logoutBtn);
     }
   });
 
   loginPanel.toggleOnClick();
-  handleLogout("logout-btn", () => {
-    loginManager.logout();
-    // TODO send revoke to token service
-    clearRefreshToken();
-  });
   handleLogin("login-form", (tok: Token) => {
     loginManager.login(tok);
     loginPanel.toggle();

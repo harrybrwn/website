@@ -1,5 +1,7 @@
 # www.harrybrwn.com
 
+![ci status](https://github.com/harrybrwn/harrybrwn.com/actions/workflows/ci.yml/badge.svg)
+
 This is the repo for my personal website.
 
 ## Build

@@ -41,7 +41,7 @@ coverage-ts:
 
 lint-go:
 	go vet -tags ci ./...
-	golangci-lint run
+	golangci-lint run --config ./config/golangci.yml
 
 TOOLS=user-gen pwhash key-gen
 

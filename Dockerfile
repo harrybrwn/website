@@ -28,9 +28,7 @@ WORKDIR /opt/harrybrwn
 RUN go mod download
 
 COPY --from=frontend /opt/harrybrwn .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
-	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/user-gen ./cmd/user-gen && \
-	CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/pwhash ./cmd/pwhash
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn
 
 # Main image
 FROM alpine:3.14 as api
