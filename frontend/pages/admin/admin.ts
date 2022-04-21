@@ -20,17 +20,6 @@ const main = () => {
       clearCookie(TOKEN_KEY);
     },
   });
-  document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
-    const e = ev.detail;
-    if (e.action == "login") {
-      storeToken(e.token);
-      setCookie(e.token);
-    } else {
-      if (!loginManager.isLoggedIn()) {
-        return;
-      }
-    }
-  });
 
   let inviteTable = new Table(
     "invite-list",
@@ -52,8 +41,27 @@ const main = () => {
   );
   inviteTable.header(["url", "email", "name", "expires at", "roles"]);
   let inviteForm = document.getElementById("invite-source") as HTMLFormElement;
+  if (loginManager.isLoggedIn()) {
+    inviteForm.style.visibility = "visible";
+  } else {
+    // redirect to home if not logged in
+    window.location.pathname = "/";
+    return;
+  }
   handleInvitationCreation(inviteTable, inviteForm);
   inviteTable.render();
+
+  document.addEventListener("tokenChange", (ev: TokenChangeEvent) => {
+    const e = ev.detail;
+    if (e.action == "login") {
+      storeToken(e.token);
+      setCookie(e.token);
+    } else {
+      if (!loginManager.isLoggedIn()) {
+        return;
+      }
+    }
+  });
 
   let infoContainer = document.getElementById("server-info");
   api.runtimeInfo().then((info: api.RuntimeInfo) => {

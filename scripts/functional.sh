@@ -2,7 +2,8 @@
 
 set -e
 
-declare -r SCRIPT="$0"
+readonly DIR="$(pwd)/$(dirname ${BASH_SOURCE[0]})"
+readonly SCRIPT="$0"
 
 get-help() {
   case "$1" in

@@ -15,6 +15,7 @@ static/bootstrap-4.3.1-dist
 __pycache__/
 
 # Config
+config/pki/
 config.json
 .vscode
 *.env
@@ -38,7 +39,7 @@ TODO*
 
 # Tools
 *.sh
-!scripts/*.sh
+!scripts/**/*.sh
 
 # Dev
 *.crt

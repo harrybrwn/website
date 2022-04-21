@@ -97,3 +97,7 @@ tr:nth-of-type(odd) {
 		border-bottom: 0;
 	}
 }
+
+.invite-form {
+	visibility: hidden;
+}
