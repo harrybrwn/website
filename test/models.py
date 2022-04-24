@@ -95,7 +95,7 @@ class User:
 
 
     def login(self):
-        res = requests.post(f"http://{config.host}/api/token", json={
+        res = requests.post(f"{config.scheme}://{config.host}/api/token", json={
             "username": self.username,
             "email": self.email,
             "password": self.password,
@@ -135,4 +135,3 @@ class Invite:
         self.email = email
         self.roles = roles
         self.ttl = ttl
-

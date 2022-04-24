@@ -12,7 +12,7 @@ const fs = require("fs");
 const hjson = require("hjson");
 
 const path = require("path");
-const build = require("../scripts/build");
+const build = require("./config/build");
 
 const tsconfig = hjson.parse(
   fs.readFileSync("./tsconfig.json", { encoding: "ascii" })
@@ -155,6 +155,7 @@ module.exports = function (webpackEnv) {
     builder.html("harry_y_tanya"),
     builder.html("games"),
     builder.html("404", { noChunks: true }),
+    builder.html("50x", { noChunks: true }),
     builder.html("invite"),
     builder.html("chatroom"),
     builder.html("invite_email", { noChunks: true })

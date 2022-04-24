@@ -14,10 +14,10 @@ SECOND      = 1000 * MILLISECOND
 
 
 def test_delete_nonexistent_invite(admin_token: Token):
-	res = requests.delete(f"http://{config.host}/api/invite/123")
+	res = requests.delete(f"{config.scheme}://{config.host}/api/invite/123")
 	assert not res.ok
 	res = requests.delete(
-		f"http://{config.host}/api/invite/123",
+		f"{config.scheme}://{config.host}/api/invite/123",
 		headers={"Authorization": admin_token.header()},
 	)
 	assert not res.ok
@@ -25,7 +25,7 @@ def test_delete_nonexistent_invite(admin_token: Token):
 
 def test_create_invite(admin_token: Token):
 	res = requests.post(
-		f"http://{config.host}/api/invite/create",
+		f"{config.scheme}://{config.host}/api/invite/create",
 		headers={"Authorization": admin_token.header()},
 	)
 	assert res.ok
@@ -35,7 +35,7 @@ def test_create_invite(admin_token: Token):
 
 def test_create_invite_admin(admin_token: Token):
 	res = requests.post(
-		f"http://{config.host}/api/invite/create",
+		f"{config.scheme}://{config.host}/api/invite/create",
 		headers={"Authorization": admin_token.header()},
 		json={
 			"roles": [
@@ -59,7 +59,7 @@ def test_create_invite_admin(admin_token: Token):
 
 def test_invite_timeout(admin_token: Token):
 	res = requests.post(
-		f"http://{config.host}/api/invite/create",
+		f"{config.scheme}://{config.host}/api/invite/create",
 		headers={"Authorization": admin_token.header()},
 		json={
 			"timeout": SECOND * 1,
@@ -69,10 +69,10 @@ def test_invite_timeout(admin_token: Token):
 	inv = Invite.from_json(res.json())
 	assert inv.expires_at > datetime.now()
 
-	res = requests.get(f"http://{config.host}{inv.path}", headers={"accept":"text/html"})
+	res = requests.get(f"{config.scheme}://{config.host}{inv.path}", headers={"accept":"text/html"})
 	assert res.ok
 	assert res.headers.get("Content-Type") == "text/html"
 
 	time.sleep(1)
-	res = requests.get(f"http://{config.host}{inv.path}", headers={"accept":"text/html"})
+	res = requests.get(f"{config.scheme}://{config.host}{inv.path}", headers={"accept":"text/html"})
 	assert not res.ok

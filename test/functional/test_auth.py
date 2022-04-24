@@ -5,7 +5,10 @@ import json
 import requests
 from models import Role, Token
 from config import host
+import config
 import time
+
+URL = f"{config.scheme}://{config.host}"
 
 
 def b64decode(s: str):
@@ -14,19 +17,19 @@ def b64decode(s: str):
 
 
 def test_admin_page_logedin(admin_token: Token):
-    res = requests.get(f"http://{host}/admin", headers={"Authorization": admin_token.header()})
+    res = requests.get(f"{URL}/admin", headers={"Authorization": admin_token.header()})
     assert res.ok
     assert res.status_code == 200
 
 
 def test_admin_page_failure():
-    res = requests.get(f"http://{host}/admin")
+    res = requests.get(f"{URL}/admin")
     assert not res.ok
     assert res.status_code == 401
 
 
 def test_runtime_as_admin(admin_token: Token):
-    res = requests.get(f"http://{host}/api/runtime", headers={"Authorization": admin_token.header()})
+    res = requests.get(f"{URL}/api/runtime", headers={"Authorization": admin_token.header()})
     assert res.ok
     info = res.json()
     assert info["name"] == "Harry Brown"
@@ -39,21 +42,21 @@ def test_runtime_as_admin(admin_token: Token):
 
 
 def test_runtime_as_user(user_token: Token):
-    res = requests.get(f"http://{host}/api/runtime", headers={"Authorization": user_token.header()})
+    res = requests.get(f"{URL}/api/runtime", headers={"Authorization": user_token.header()})
     assert not res.ok
     assert res.status_code >= 400 and res.status_code < 500
 
 
 def test_token_revoke(admin_token: Token):
     res = requests.post(
-        f"http://{host}/api/revoke",
+        f"{URL}/api/revoke",
         headers={"Authorization": admin_token.header()},
         json={"refresh_token": admin_token.refresh_token}
     )
     assert res.ok
     assert res.status_code == 200
 
-    res = requests.post(f"http://{host}/api/refresh", json={
+    res = requests.post(f"{URL}/api/refresh", json={
         "refresh_token": admin_token.refresh_token,
     })
     assert not res.ok
@@ -67,7 +70,7 @@ def test_token_refresh(user_token: Token):
     # generating two JWT tokens in the same second will result in the same "iat"
     # field and they will be the same.
     time.sleep(1.0)
-    res = requests.post(f"http://{host}/api/refresh", json={
+    res = requests.post(f"{URL}/api/refresh", json={
         "refresh_token": user_token.refresh_token,
     })
     assert res.ok

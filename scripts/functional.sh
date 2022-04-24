@@ -69,13 +69,38 @@ help() {
   return $ret
 }
 
+readonly SERVICES=("db" "redis" "api" "nginx")
+
+#############
+# Utilities #
+#############
+
+compose() {
+  docker-compose -f docker-compose.yml -f docker-compose.test.yml "$@"
+}
+
+running() {
+  for s in "${SERVICES[@]}"; do
+    local id="$(compose ps --quiet $s)"
+    local running="$(docker container inspect ${id} | jq -r '.[0].State.Running')"
+    if [ "${running}" != "true" ]; then
+      echo "service $s is down"
+      return 1
+    fi
+  done
+  return 0
+}
+
+############
+# Commands #
+############
+
 build() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml build "$@"
+  compose build "$@"
 }
 
 setup() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml \
-    up -d db redis web
+  compose up -d "${SERVICES[@]}"
 }
 
 run_tests() {
@@ -85,93 +110,97 @@ scripts/wait.sh "\$POSTGRES_HOST" "\$POSTGRES_PORT" -w 1 -- scripts/migrate.sh -
 scripts/wait.sh "\$API_HOST" "\$API_PORT" -w 1 -- pytest -s ${pytest_args}
 EOF
 )
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml \
-    run -u "$(id -u):$(id -g)" --rm tests bash -c "$script"
+  compose run \
+    -u "$(id -u):$(id -g)" --rm tests bash -c "$script"
 }
 
 stop() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml down
+  compose down
 }
 
 ps() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml ps
+  compose ps "$@"
 }
 
 logs() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml logs "$@"
+  compose logs "$@"
 }
 
-CMD=""
-ARGS=()
-# COLLECT_ALL is set to true when passing -- as an argument. This is used to
-# pass flags to programs beeing run in sub-commands.
-COLLECT_ALL=false
+main() {
+  CMD=""
+  ARGS=()
+  # COLLECT_ALL is set to true when passing -- as an argument. This is used to
+  # pass flags to programs beeing run in sub-commands.
+  COLLECT_ALL=false
 
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --)
-      COLLECT_ALL=true
-      shift
-      ;;
-    -h|--help)
-      if $COLLECT_ALL; then
-        ARGS+=("$1")
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      --)
+        COLLECT_ALL=true
         shift
-      else
-        help
-        exit
-      fi
-      ;;
-    -*|--*)
-      if [ -z "$CMD" ] && ! $COLLECT_ALL; then
-        echo "Error: unknown flag \"$1\""
-        help
-        exit 1
-      else
-        ARGS+=("$1")
+        ;;
+      -h|--help)
+        if $COLLECT_ALL; then
+          ARGS+=("$1")
+          shift
+        else
+          help
+          exit
+        fi
+        ;;
+      -*|--*)
+        if [ -z "$CMD" ] && ! $COLLECT_ALL; then
+          echo "Error: unknown flag \"$1\""
+          help
+          exit 1
+        else
+          ARGS+=("$1")
+          shift
+        fi
+        ;;
+      *)
+        if [ -z "$CMD" ]; then
+          CMD="$1"
+        else
+          ARGS+=("$1")
+        fi
         shift
-      fi
+        ;;
+    esac
+  done
+
+  case $CMD in
+    help)
+      help "${ARGS[@]}"
+      exit
+      ;;
+    build)
+      "$CMD" "${ARGS[@]}"
+      ;;
+    setup)
+      "$CMD" "${ARGS[@]}"
+      ;;
+    run|test)
+      run_tests "${ARGS[@]}"
+      ;;
+    stop|down)
+      stop "${ARGS[@]}"
+      ;;
+    ps)
+      "$CMD" "${ARGS[@]}"
+      ;;
+    logs)
+      "$CMD" "${ARGS[@]}"
       ;;
     *)
-      if [ -z "$CMD" ]; then
-        CMD="$1"
-      else
-        ARGS+=("$1")
+      help "${ARGS[@]}"
+      if [ -n "$CMD" ]; then
+        echo "Error: unknown command \"$CMD\""
+        exit 1
       fi
-      shift
+      exit
       ;;
   esac
-done
+}
 
-case $CMD in
-  help)
-    help "${ARGS[@]}"
-    exit
-    ;;
-  build)
-    "$CMD" "${ARGS[@]}"
-    ;;
-  setup)
-    "$CMD" "${ARGS[@]}"
-    ;;
-  run|test)
-    run_tests "${ARGS[@]}"
-    ;;
-  stop|down)
-    stop "${ARGS[@]}"
-    ;;
-  ps)
-    "$CMD" "${ARGS[@]}"
-    ;;
-  logs)
-    "$CMD" "${ARGS[@]}"
-    ;;
-  *)
-    help "${ARGS[@]}"
-    if [ -n "$CMD" ]; then
-      echo "Error: unknown command \"$CMD\""
-      exit 1
-    fi
-    exit
-    ;;
-esac
+main "$@"

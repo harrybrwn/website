@@ -1,11 +1,13 @@
 import requests
-from config import host
+from config import host, scheme
+
+URL = f"{scheme}://{host}"
 
 
 def test_homepage():
     for url in [
-        f"http://{host}/",
-        f"http://{host}/~harry"
+        f"{URL}/",
+        f"{URL}/~harry"
     ]:
         res = requests.get(url)
         assert res.ok
@@ -15,7 +17,7 @@ def test_homepage():
 
 
 def test_robots_txt():
-    res = requests.get(f"http://{host}/robots.txt")
+    res = requests.get(f"{URL}/robots.txt")
     assert res.ok
     assert res.status_code == 200
     assert res.headers["Content-Type"].startswith("text/plain")
@@ -24,14 +26,14 @@ def test_robots_txt():
 
 
 def test_manifest_json():
-    res = requests.get(f"http://{host}/manifest.json")
+    res = requests.get(f"{URL}/manifest.json")
     assert res.ok
     assert res.headers.get("Content-Type") == "application/json"
     assert "Content-Length" in res.headers
 
 
 def test_favicon():
-    res = requests.get(f"http://{host}/favicon.ico")
+    res = requests.get(f"{URL}/favicon.ico")
     assert res.ok
     assert res.headers.get("Content-Type") == "image/x-icon"
     assert "Content-Length" in res.headers
@@ -39,12 +41,12 @@ def test_favicon():
 
 
 def test_sitmap():
-    res = requests.get(f"http://{host}/sitemap.xml")
+    res = requests.get(f"{URL}/sitemap.xml")
     assert "Content-Length" in res.headers
     assert res.headers["Content-Type"].startswith("text/xml")
     assert "Content-Encoding" not in res.headers
     assert "Last-Modified" in res.headers
-    res = requests.get(f"http://{host}/sitemap.xml.gz")
+    res = requests.get(f"{URL}/sitemap.xml.gz")
     assert res.headers["Content-Type"].startswith("text/xml")
     assert res.headers["Content-Encoding"] == "gzip"
     assert "Content-Length" in res.headers
@@ -52,11 +54,11 @@ def test_sitmap():
 
 
 def test_static_images():
-    res = requests.get(f"http://{host}/static/img/goofy.jpg")
+    res = requests.get(f"{URL}/static/img/goofy.jpg")
     assert res.ok
     assert "Content-Length" in res.headers
     assert res.headers["Content-Type"] == "image/jpeg"
-    res = requests.get(f"http://{host}/static/img/github.svg")
+    res = requests.get(f"{URL}/static/img/github.svg")
     assert res.ok
     assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
@@ -64,7 +66,7 @@ def test_static_images():
 
 
 def test_resume():
-    res = requests.get(f"http://{host}/static/files/HarrisonBrown.pdf")
+    res = requests.get(f"{URL}/static/files/HarrisonBrown.pdf")
     assert res.ok
     assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
@@ -72,8 +74,20 @@ def test_resume():
 
 
 def test_bootstrap_css():
-    res = requests.get(f"http://{host}/static/css/bootstrap.min.css")
+    res = requests.get(f"{URL}/static/css/bootstrap.min.css")
     assert res.ok
     assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
     assert res.headers.get("Content-Type").startswith("text/css")
+
+
+def private_pages():
+    results = [
+        requests.get(f"{URL}/invite_email"),
+        requests.get(f"{URL}/harry_y_tanya"),
+        requests.get(f"{URL}/invite_email/index.html"),
+        requests.get(f"{URL}/harry_y_tanya/inex.html"),
+    ]
+    for res in results:
+        assert not res.ok
+        assert res.status_code == 404

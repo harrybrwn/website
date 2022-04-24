@@ -186,24 +186,39 @@ jobs:
         with:
           push: false # Don't push image to an image repository
           load: true  # Finish the build by exporting as a regular docker image
+          # Must match the image name in docker-compose.yml
           tags: harrybrwn.com-web:latest,harrybrwn.com:latest
           context: .
           file: ./Dockerfile
           target: api
           builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-from: type=local,src=/tmp/.buildx-cache # Use the old cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-      - name: Build Testing Image
+      - name: Build api image
         uses: docker/build-push-action@v2
         with:
           push: false # Don't push image to an image repository
           load: true  # Finish the build by exporting as a regular docker image
+          # Must match the image name in docker-compose.yml
+          tags: harrybrwn-api:latest,harrybrwn.com-api:latest
+          context: .
+          file: ./Dockerfile
+          target: api
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=local,src=/tmp/.buildx-cache-new
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      - name: Build testing image
+        uses: docker/build-push-action@v2
+        with:
+          push: false # Don't push image to an image repository
+          load: true  # Finish the build by exporting as a regular docker image
+          # Must match the image name in docker-compose.yml
           tags: python-tests:latest,functional-tests:latest
           context: .
           file: ./Dockerfile
           target: python
           builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-from: type=local,src=/tmp/.buildx-cache-new
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
       - name: Move buildx cache
         run: |
@@ -214,7 +229,6 @@ jobs:
         run: scripts/functional.sh setup
       - name: Run tests
         run: scripts/functional.sh test
-
 
   migrate:
     name: Database Migrations

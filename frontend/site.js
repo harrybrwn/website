@@ -73,6 +73,10 @@ module.exports = {
       title: "404 Not Found",
       ...common,
     },
+    "50x": {
+      title: "",
+      ...common,
+    },
     invite: {
       title: "You're Invited!",
       ...common,

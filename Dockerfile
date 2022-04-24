@@ -13,11 +13,12 @@ RUN apk update && apk upgrade && \
     npm update -g npm
 # Cache dependancies
 WORKDIR /opt/harrybrwn
-COPY ./package.json ./yarn.lock /opt/harrybrwn/
+COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
 COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN yarn install
-COPY . .
+COPY public /opt/harrybrwn/public
 RUN yarn build
+COPY . .
 
 # Golang builder
 FROM golang:1.18-alpine as builder
@@ -39,21 +40,30 @@ ENTRYPOINT ["/app/harrybrwn"]
 
 # Testing tools
 FROM python:3.9-slim-buster as python
+VOLUME /opt/harrybrwn
 ENV PATH="/root/.poetry/bin:$PATH"
 ENV POETRY_VIRTUALENVS_CREATE=false
+# Tell python's 'requests' to use the system certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+WORKDIR /opt/harrybrwn/test
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y curl netcat build-essential libffi-dev libpq-dev python3-dev && \
+    apt install -y \
+        curl netcat build-essential \
+        libffi-dev libpq-dev python3-dev \
+        vim less && \
     pip install --user --upgrade pip && \
     curl \
         -sSL \
-        https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-
+        https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - && \
+    echo "alias l='ls -lA --group-directories-first --color=always'" >> /root/.bashrc
 COPY test/pyproject.toml test/poetry.lock /opt/harrybrwn/test/
-COPY scripts/migrate.sh scripts/wait.sh /usr/local/bin/
-WORKDIR /opt/harrybrwn/test
 RUN poetry install
-# Grabe some go tools from our go builder.
-COPY --from=builder /go/bin/migrate /opt/harrybrwn/bin/user-gen /usr/local/bin/
-VOLUME /opt/harrybrwn
+# Random tools
+COPY scripts/migrate.sh scripts/wait.sh /usr/local/bin/
+# Install self signed cert
+COPY config/pki/certs/ca.crt /usr/local/share/ca-certificates/HarryBrown.crt
+RUN update-ca-certificates
+# Grab some go tools from our go builder.
+COPY --from=builder /go/bin/migrate /usr/local/bin/
 WORKDIR /opt/harrybrwn
