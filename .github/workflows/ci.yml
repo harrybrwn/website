@@ -188,8 +188,8 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: registry.digitalocean.com/webreef
-          username: {{ secrets.DO_API_KEY }}
-          password: {{ secrets.DO_API_KEY }}
+          username: ${{ secrets.DO_API_KEY }}
+          password: ${{ secrets.DO_API_KEY }}
 
       # - name: Build api image
       #   uses: docker/build-push-action@v2
@@ -213,8 +213,8 @@ jobs:
       - name: Build and push
         uses: docker/bake-action@master
         env:
-          GIT_COMMIT: {{ github.sha }}
-          SOURCE_HASH: {{ steps.api-source-hash.outputs.source-hash }}
+          GIT_COMMIT: ${{ github.sha }}
+          SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
         with:
           push: true
           load: true
