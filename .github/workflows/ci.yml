@@ -152,10 +152,17 @@ jobs:
       run: |
         go generate ./...
         go test -tags ci -v -cover ./...
+    - name: Store frontend build
+      uses: actions/upload-artifact@v3
+      with:
+        name: frontend-build
+        path: ./build
+        retention-days: 1
 
   functional:
     name: Functional Tests
     runs-on: ubuntu-latest
+    needs: [build]
     env:
       POSTGRES_PASSWORD: testing_db_pw
       POSTGRES_USER: ci
@@ -228,6 +235,10 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
+      - name: Download Frontend build
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
       - name: Start services
         run: scripts/functional.sh setup
       - name: Run tests

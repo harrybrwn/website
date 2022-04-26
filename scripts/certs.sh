@@ -113,6 +113,7 @@ EOF
 		-days 825 -sha256
 }
 
+# Flags
 INSTALL="true"
 
 usage() {

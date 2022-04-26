@@ -95,8 +95,11 @@ running() {
 # Commands #
 ############
 
+export GIT_COMMIT=`git rev-parse HEAD`
+export SOURCE_HASH=`./scripts/sourcehash.sh -e '*_test.go'`
+
 build() {
-  compose build "$@"
+   compose build "$@"
 }
 
 setup() {
