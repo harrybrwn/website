@@ -10,7 +10,7 @@ def test_homepage():
         f"{URL}/~harry"
     ]:
         res = requests.get(url)
-        assert res.ok
+        assert res.ok, f"bad url: {url}"
         assert res.status_code == 200
         assert res.headers["Content-Type"].startswith("text/html")
         assert "Last-Modified" in res.headers
@@ -30,6 +30,7 @@ def test_manifest_json():
     assert res.ok
     assert res.headers.get("Content-Type") == "application/json"
     assert "Content-Length" in res.headers
+    assert "Last-Modified" in res.headers
 
 
 def test_favicon():
@@ -47,20 +48,16 @@ def test_sitmap():
     assert "Content-Encoding" not in res.headers
     assert "Last-Modified" in res.headers
     res = requests.get(f"{URL}/sitemap.xml.gz")
-    assert res.headers["Content-Type"].startswith("text/xml")
-    assert res.headers["Content-Encoding"] == "gzip"
-    assert "Content-Length" in res.headers
+    assert res.headers["Content-Type"] == "application/gzip"
     assert "Last-Modified" in res.headers
 
 
 def test_static_images():
     res = requests.get(f"{URL}/static/img/goofy.jpg")
     assert res.ok
-    assert "Content-Length" in res.headers
     assert res.headers["Content-Type"] == "image/jpeg"
     res = requests.get(f"{URL}/static/img/github.svg")
     assert res.ok
-    assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
     assert res.headers["Content-Type"] == "image/svg+xml"
 
@@ -68,7 +65,6 @@ def test_static_images():
 def test_resume():
     res = requests.get(f"{URL}/static/files/HarrisonBrown.pdf")
     assert res.ok
-    assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
     assert res.headers.get("Content-Type") == "application/pdf"
 
@@ -76,7 +72,6 @@ def test_resume():
 def test_bootstrap_css():
     res = requests.get(f"{URL}/static/css/bootstrap.min.css")
     assert res.ok
-    assert "Content-Length" in res.headers
     assert "Last-Modified" in res.headers
     assert res.headers.get("Content-Type").startswith("text/css")
 

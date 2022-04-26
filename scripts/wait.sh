@@ -12,24 +12,12 @@ help() {
 }
 
 WAIT=1
-HOST="$1"
-if [ -z "$HOST" ]; then
-  help
-  echo "Error: no host given"
-  exit 1
-fi
-shift
-PORT="$1"
-if [ -z "$PORT" ]; then
-  help
-  echo "Error: no host given"
-  exit 1
-fi
-shift
+HOST=""
+PORT=""
 
 while :; do
   case $1 in
-    --help)
+    -h|--help)
       help
       exit
       ;;
@@ -54,7 +42,14 @@ while :; do
       break
       ;;
     *)
-      break
+      if [ -z "$1" ]; then
+        break
+      elif [ -z "$HOST" ]; then
+        HOST="$1"
+      elif [ -z "$PORT" ]; then
+        PORT="$1"
+      fi
+      shift
       ;;
     esac
 done
@@ -74,4 +69,4 @@ while ! nc -z "$HOST" "$PORT"; do
   sleep $WAIT
 done
 
-$@
+"$@"

@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  nginx:
+    volumes:
+      - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
+      - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
+
+  api:
+    volumes:
+      - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
+      - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro

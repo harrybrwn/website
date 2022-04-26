@@ -76,7 +76,7 @@ readonly SERVICES=("db" "redis" "api" "nginx")
 #############
 
 compose() {
-  docker-compose -f docker-compose.yml -f docker-compose.test.yml "$@"
+  docker-compose -f docker-compose.yml -f config/docker-compose.test.yml "$@"
 }
 
 running() {
@@ -106,8 +106,8 @@ setup() {
 run_tests() {
   local pytest_args="${@:-test/}"
   local script=$(cat <<-EOF
-scripts/wait.sh "\$POSTGRES_HOST" "\$POSTGRES_PORT" -w 1 -- scripts/migrate.sh -env none -- up
-scripts/wait.sh "\$API_HOST" "\$API_PORT" -w 1 -- pytest -s ${pytest_args}
+scripts/wait.sh "\${POSTGRES_HOST}" "\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh -env none -- up
+scripts/wait.sh "\${APP_HOST}" "\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}
 EOF
 )
   compose run \
@@ -133,7 +133,7 @@ main() {
   # pass flags to programs beeing run in sub-commands.
   COLLECT_ALL=false
 
-  while [[ $# -gt 0 ]]; do
+  while [ $# -gt 0 ]; do
     case $1 in
       --)
         COLLECT_ALL=true

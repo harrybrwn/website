@@ -29,19 +29,55 @@ services:
     networks:
       - backend
 
+  nginx:
+    image: nginx:1.20.2-alpine
+    volumes:
+      - ./build:/var/www/harrybrwn.com:ro
+      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./config/nginx/snippets:/etc/nginx/snippets:ro
+      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
+      - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
+    networks:
+      backend:
+        aliases:
+          - nginx
+          # Custom container hostname for other containers, mainly for testing.
+          - harrybrwn.local
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+
   api:
-    image: harrybrwn-api:latest
-    hostname: api
-    domainname: api
+    image: registry.digitalocean.com/webreef/harrybrwn/api:latest
+    # image: harrybrwn/api:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: api
+      args:
+        GIT_COMMIT: ${GIT_COMMIT}
+        SOURCE_HASH: ${SOURCE_HASH}
+      labels:
+        com.harrybrwn.api.description: "API for harrybrwn.com"
+        com.harrybrwn.api.commit: ${GIT_COMMIT}
+        com.harrybrwn.api.source_hash: ${SOURCE_HASH}
+      # Configuration for `docker buildx bake`
+      x-bake:
+        tags:
+          - registry.digitalocean.com/webreef/harrybrwn/api:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
     command: -port 8081
     networks:
       - backend
     ports:
       - 8080:8081
+    depends_on:
+      - db
+      - redis
     environment:
       # Redis
       - REDIS_HOST=redis
@@ -60,24 +96,6 @@ services:
     volumes:
       - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
       - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
-
-  nginx:
-    image: nginx:1.20.2-alpine
-    volumes:
-      - ./build:/var/www/harrybrwn.com:ro
-      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./config/nginx/snippets:/etc/nginx/snippets:ro
-      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
-      - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
-    networks:
-      backend:
-        aliases:
-          - nginx
-          # Custom container hostname for other containers, mainly for testing.
-          - harrybrwn.local
-    ports:
-      - "80:80"
-      - "443:443"
 
 volumes:
   database:

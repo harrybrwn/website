@@ -168,10 +168,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
       - name: Setup docker buildx
         uses: docker/setup-buildx-action@v1
         id: buildx
         with:
+          # `docker build` becomes an alias for `docker buildx build`
           install: true
       - name: Cache docker image layers
         uses: actions/cache@v2
@@ -180,33 +184,41 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
+      - name: Login to container registry
+        uses: docker/login-action@v1
+        with:
+          registry: registry.digitalocean.com/webreef
+          username: {{ secrets.DO_API_KEY }}
+          password: {{ secrets.DO_API_KEY }}
 
-      - name: Build Web Image
-        uses: docker/build-push-action@v2
+      # - name: Build api image
+      #   uses: docker/build-push-action@v2
+      #   with:
+      #     push: true # Don't push image to an image repository
+      #     load: true  # Finish the build by exporting as a regular docker image
+      #     # Must match the image name in docker-compose.yml
+      #     tags: registry.digitalocean.com/webreef/harrybrwn/api:latest
+      #     context: .
+      #     file: ./Dockerfile
+      #     target: api
+      #     builder: ${{ steps.buildx.outputs.name }}
+      #     cache-from: type=local,src=/tmp/.buildx-cache-new
+      #     cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      #     platforms:
+      #       - "linux/amd64"
+      #       - "linux/arm/v7"
+      - name: Get source hash
+        id: api-source-hash
+        run: echo "::set-output name=source-hash::$(scripts/sourcehash.sh --lang go -e '*_test.go')"
+      - name: Build and push
+        uses: docker/bake-action@master
+        env:
+          GIT_COMMIT: {{ github.sha }}
+          SOURCE_HASH: {{ steps.api-source-hash.outputs.source-hash }}
         with:
-          push: false # Don't push image to an image repository
-          load: true  # Finish the build by exporting as a regular docker image
-          # Must match the image name in docker-compose.yml
-          tags: harrybrwn.com-web:latest,harrybrwn.com:latest
-          context: .
-          file: ./Dockerfile
-          target: api
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache # Use the old cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-      - name: Build api image
-        uses: docker/build-push-action@v2
-        with:
-          push: false # Don't push image to an image repository
-          load: true  # Finish the build by exporting as a regular docker image
-          # Must match the image name in docker-compose.yml
-          tags: harrybrwn-api:latest,harrybrwn.com-api:latest
-          context: .
-          file: ./Dockerfile
-          target: api
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache-new
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          push: true
+          load: true
+
       - name: Build testing image
         uses: docker/build-push-action@v2
         with:
@@ -220,6 +232,7 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=/tmp/.buildx-cache-new
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+
       - name: Move buildx cache
         run: |
           rm -rf /tmp/.buildx-cache

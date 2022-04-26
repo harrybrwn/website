@@ -1,4 +1,7 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
+GIT_COMMIT=$(shell git rev-parse HEAD)
+SOURCE_HASH=$(shell ./scripts/sourcehash.sh -e '*_test.go')
+VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 ENV=production
 TESTCACHE=.cache/test
 BUILDCACHE=.cache/build
@@ -91,3 +94,7 @@ functional-stop:
 functional: functional-setup functional-run functional-stop
 
 .PHONY: functional functional-setup functional-run functional-run functional-build
+
+bake:
+	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker buildx bake
+

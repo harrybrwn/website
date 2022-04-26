@@ -184,6 +184,7 @@ func logs(h http.Handler) http.HandlerFunc {
 		logger.WithFields(logrus.Fields{
 			"uri":         r.RequestURI,
 			"host":        r.Host,
+			"status":      r.Response.StatusCode,
 			"method":      r.Method,
 			"remote_addr": r.RemoteAddr,
 			"referer":     r.Referer(),

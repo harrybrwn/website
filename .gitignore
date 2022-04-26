@@ -15,11 +15,13 @@ static/bootstrap-4.3.1-dist
 __pycache__/
 
 # Config
-config/pki/
-config.json
 .vscode
 *.env
 *.pgpass
+/config/pki/
+/config/docker/docker-bake.hcl
+/config/docker/buildkit-config.toml
+scripts/buildx.sh
 
 # Testing
 /.testing/

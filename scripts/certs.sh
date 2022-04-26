@@ -48,7 +48,7 @@ server_cert() {
 	local key=""
 	local ext=""
 	local alt_names=()
-	while :; do
+	while [ $# -gt 0 ]; do
 		case $1 in
 			-alt)
 				alt_names+=("$2")
@@ -67,6 +67,7 @@ server_cert() {
 				shift 2
 				;;
 			*)
+				echo "Unknown flag \"$1\""
 				break
 				;;
 		esac
