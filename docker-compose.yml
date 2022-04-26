@@ -30,11 +30,17 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.20.2-alpine
+    image: harrybrwn/nginx:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx
+      args:
+        SITE: harrybrwn.com
     volumes:
-      - ./build:/var/www/harrybrwn.com:ro
-      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./config/nginx/snippets:/etc/nginx/snippets:ro
+      # - ./build:/var/www/harrybrwn.com:ro
+      # - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+      # - ./config/nginx/snippets:/etc/nginx/snippets:ro
       - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
       - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
     networks:

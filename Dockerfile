@@ -1,9 +1,4 @@
-# Hugo
-ARG HUGO_VERSION=0.90.1-ext
-FROM klakegg/hugo:${HUGO_VERSION} as hugo
-ARG ENVIRONMENT=production
-COPY . /app
-# RUN hugo --environment ${ENVIRONMENT}
+# syntax=docker/dockerfile:1.3
 
 # Frontend Build
 ARG NODE_VERSION=16.13.1-alpine
@@ -37,6 +32,13 @@ LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
 RUN apk update && apk upgrade && apk add -l tzdata
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 ENTRYPOINT ["/app/harrybrwn"]
+
+# Webserver Frontend
+FROM nginx:1.20.2-alpine as nginx
+ARG SITE
+COPY --from=frontend /opt/harrybrwn/build/ /var/www/${SITE}/
+COPY --from=frontend /opt/harrybrwn/config/nginx/conf.d/harrybrwn.conf /etc/nginx/conf.d/
+COPY --from=frontend /opt/harrybrwn/config/nginx/snippets/ /etc/nginx/snippets
 
 # Testing tools
 FROM python:3.9-slim-buster as python

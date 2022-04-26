@@ -3,6 +3,8 @@ name: ci
 
 env:
   GO_VERSION: 1.18
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  DOCKER_BUILDKIT: '1'
 
 jobs:
   lint:
@@ -191,7 +193,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          # key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-buildx-always_cache
           restore-keys: |
             ${{ runner.os }}-buildx-
 
@@ -209,7 +212,17 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           platforms: linux/amd64
-
+      - name: Build nginx server image
+        uses: docker/build-push-action@v2
+        with:
+          load: true  # Finish the build by exporting as a regular docker image
+          # Must match the image name in docker-compose.yml
+          tags: harrybrwn/nginx:latest
+          context: .
+          target: nginx
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=local,src=/tmp/.buildx-cache-new
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
       - name: Build testing image
         uses: docker/build-push-action@v2
         with:
@@ -234,10 +247,6 @@ jobs:
         with:
           name: frontend-build
           path: ./build/
-      - name: debugging
-        run: |
-          ls -la
-          ls -la ./build || true
       - name: Start services
         run: scripts/functional.sh setup
       - name: Run tests
