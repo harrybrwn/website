@@ -169,7 +169,7 @@ jobs:
           fetch-depth: 0
 
       - name: Generate test certs
-        run: scripts/certs.sh
+        run: scripts/certs.sh --no-install
 
       - name: Set up QEMU
         id: qemu

@@ -113,6 +113,35 @@ EOF
 		-days 825 -sha256
 }
 
+INSTALL="true"
+
+usage() {
+	echo "Usage"
+	echo "  certs.sh [flags...]"
+	echo
+	echo "Flags"
+	echo "  -h, --help        show this help message"
+	echo "      --no-install  skip the certificate installation step"
+	echo
+}
+
+while [ $# -gt 0 ]; do
+	case $1 in
+		-h|--help)
+			usage
+			exit
+			;;
+		--no-install)
+			INSTALL="false"
+			shift
+			;;
+		*)
+			echo "Error: unknown flag: \"$1\""
+			exit 1
+			;;
+	esac
+done
+
 rm -rf "${PKI}"
 mkdir -p "${PKI}/certs"
 
@@ -120,6 +149,9 @@ ca_cert "harrybrwn local dev"
 server_cert -cn "harrybrwn.local" \
 	-alt "www.harrybrwn.local" \
 	-alt "home.harrybrwn.local"
-load_cert "${CA_CRT}"
 
 ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
+
+if [ "$INSTALL" = "true" ]; then
+	load_cert "${CA_CRT}"
+fi
