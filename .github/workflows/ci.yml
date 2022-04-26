@@ -216,8 +216,11 @@ jobs:
           GIT_COMMIT: ${{ github.sha }}
           SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
         with:
+          files:
+            - docker-compose.yml
+            - config/docker-compose.ci.yml
           push: true
-          load: true
+          load: false
 
       - name: Build testing image
         uses: docker/build-push-action@v2

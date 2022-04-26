@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      x-bake:
+        cache-from:
+          - type=local,src=/tmp/.buildx-cache-new
+        cache-to:
+          - type=local,mode=max,dest=/tmp/.buildx-cache-new
