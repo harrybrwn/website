@@ -168,6 +168,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Generate test certs
+        run: scripts/certs.sh
+
       - name: Set up QEMU
         id: qemu
         uses: docker/setup-qemu-action@v1
@@ -204,11 +207,8 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-          platforms:
-            - "linux/amd64"
+          platforms: linux/amd64
 
-      - name: Generate test certs
-        run: scripts/certs.sh
       - name: Build testing image
         uses: docker/build-push-action@v2
         with:
