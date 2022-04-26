@@ -216,9 +216,7 @@ jobs:
           GIT_COMMIT: ${{ github.sha }}
           SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
         with:
-          files:
-            - docker-compose.yml
-            - config/docker-compose.ci.yml
+          files: docker-compose.yml,config/docker-compose.ci.yml
           push: true
           load: false
 
