@@ -5,6 +5,6 @@ services:
     build:
       x-bake:
         cache-from:
-          - type=local,src=/tmp/.buildx-cache-new
+          - type=gha
         cache-to:
-          - type=local,mode=max,dest=/tmp/.buildx-cache-new
+          - type=gha,mode=max

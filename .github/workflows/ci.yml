@@ -191,35 +191,24 @@ jobs:
           username: ${{ secrets.DO_API_KEY }}
           password: ${{ secrets.DO_API_KEY }}
 
-      # - name: Build api image
-      #   uses: docker/build-push-action@v2
-      #   with:
-      #     push: true # Don't push image to an image repository
-      #     load: true  # Finish the build by exporting as a regular docker image
-      #     # Must match the image name in docker-compose.yml
-      #     tags: registry.digitalocean.com/webreef/harrybrwn/api:latest
-      #     context: .
-      #     file: ./Dockerfile
-      #     target: api
-      #     builder: ${{ steps.buildx.outputs.name }}
-      #     cache-from: type=local,src=/tmp/.buildx-cache-new
-      #     cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-      #     platforms:
-      #       - "linux/amd64"
-      #       - "linux/arm/v7"
-      - name: Get source hash
-        id: api-source-hash
-        run: echo "::set-output name=source-hash::$(scripts/sourcehash.sh --lang go -e '*_test.go')"
-      - name: Build and push
-        uses: docker/bake-action@master
-        env:
-          GIT_COMMIT: ${{ github.sha }}
-          SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
+      - name: Build api image
+        uses: docker/build-push-action@v2
         with:
-          files: docker-compose.yml,config/docker-compose.ci.yml
-          push: true
-          load: false
+          push: false # Don't push image to an image repository
+          load: true  # Finish the build by exporting as a regular docker image
+          # Must match the image name in docker-compose.yml
+          tags: registry.digitalocean.com/webreef/harrybrwn/api:latest
+          context: .
+          file: ./Dockerfile
+          target: api
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+          platforms:
+            - "linux/amd64"
 
+      - name: Generate test certs
+        run: scripts/certs.sh
       - name: Build testing image
         uses: docker/build-push-action@v2
         with:

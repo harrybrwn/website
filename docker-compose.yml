@@ -67,6 +67,7 @@ services:
       x-bake:
         tags:
           - registry.digitalocean.com/webreef/harrybrwn/api:latest
+          - registry.digitalocean.com/webreef/harrybrwn/api:${GIT_COMMIT:-development}
         platforms:
           - linux/amd64
           - linux/arm/v7
