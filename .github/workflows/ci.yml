@@ -233,6 +233,12 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: frontend-build
+      - name: debugging
+        run: |
+          ls -la
+          ls -la ./build || true
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Start services
         run: scripts/functional.sh setup
       - name: Run tests
