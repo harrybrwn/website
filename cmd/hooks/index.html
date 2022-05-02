@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Harry Brown Github Login</title>
+    <style>
+      body {
+		    margin-top: 20px;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 350px;
+      }
+    </style>
+  </head>
+  <body>
+    <form action="/login/github" method="GET">
+      <input type="text" name="username" placeholder="Github Username" />
+      <input type="submit" value="Login With Github" />
+    </form>
+
+    <br>
+
+    <form id="create-hook" action="/hook/create" method="POST">
+      <input type="text" name="repo" />
+      <input type="submit" value="Create" />
+    </form>
+  </body>
+  <script>
+    let f = document.getElementById("create-hook");
+    f.addEventListener("submit", function(event) {
+      event.preventDefault();
+      console.log(this);
+      let d = new FormData(this);
+      let obj = {};
+      d.forEach((entry, key, parent) => {
+        obj[key] = entry.valueOf();
+      })
+      console.log(JSON.stringify(obj));
+      fetch(`/hook/create`, {method: "POST"}).then((res) => {});
+    });
+  </script>
+</html>

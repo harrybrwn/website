@@ -1,0 +1,265 @@
+package main
+
+import (
+	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	_ "embed"
+	"encoding/hex"
+	"errors"
+	"flag"
+	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/google/go-github/v43/github"
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+	githuboauth "golang.org/x/oauth2/github"
+	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/session"
+)
+
+var (
+	//go:embed index.html
+	index []byte
+	//go:embed login.html
+	loginHTML []byte
+
+	logger = log.GetLogger()
+)
+
+func main() {
+	var host string
+	if err := godotenv.Load(); err != nil {
+		logger.WithError(err).Warn("could not load .env")
+	}
+	if err := validateEnv(); err != nil {
+		logger.WithError(err).Fatal("invalid configuration")
+	}
+
+	port := 8889
+	flag.IntVar(&port, "port", port, "specify server port")
+	flag.StringVar(&host, "host", os.Getenv("GH_HOOK_CALLBACK_HOST"), "server's domain name, used for creating webhooks")
+	flag.Parse()
+
+	if host == "" {
+		logger.Fatal("no server host given, set -host or $SERVER_HOST")
+	}
+
+	gh := GithubAuthService{
+		Sessions:    session.NewMemStore[ghSession](-1),
+		AuthSession: session.NewMemStore[oauthSession](time.Minute * 2),
+		Config: oauth2.Config{
+			ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+			ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+			Endpoint:     githuboauth.Endpoint,
+			RedirectURL: fmt.Sprintf(
+				"https://%s/authorize/github",
+				host,
+			),
+			Scopes: []string{
+				"user:email",
+				"write:repo_hook",
+				"read:repo_hook",
+				"repo_deployment",
+			},
+		},
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		if GithubLoggedIn(r) {
+			w.WriteHeader(200)
+			w.Write(index)
+		} else {
+			w.WriteHeader(200)
+			w.Write(loginHTML)
+		}
+	})
+	mux.HandleFunc("/login/github", gh.Login)
+	mux.HandleFunc("/authorize/github", gh.Authorize)
+	mux.HandleFunc("/logout/github", gh.SignOut)
+	mux.HandleFunc("/hooks/github", callback())
+
+	addr := fmt.Sprintf(":%d", port)
+	logger.WithFields(logrus.Fields{
+		"address": addr,
+		"time":    time.Now(),
+	}).Info("starting server")
+	http.ListenAndServe(addr, logs(mux))
+}
+
+const callbackSecret = "e5c172c9302d3bec1ae54314d2f1be70301cca1c289afb94adac83066128c31e"
+
+func callback() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			SendError(w, http.StatusBadRequest, nil)
+			return
+		}
+		ct := r.Header.Get("Content-Type")
+		spec, err := ParseHookSpec(r.Header)
+		if err != nil {
+			SendError(w, http.StatusBadRequest, err, "failed to parse event")
+			return
+		}
+		logger.WithFields(logrus.Fields{
+			"user-agent":       r.UserAgent(),
+			"content-type":     ct,
+			"github-delivery":  spec.Delivery,
+			"github-event":     spec.Event,
+			"hook-id":          spec.ID,
+			"hook-target-id":   spec.TargetID,
+			"hook-target-type": spec.TargetType,
+		}).Info("webhook callback")
+
+		payload, err := github.ValidatePayload(r, []byte(callbackSecret))
+		if err != nil {
+			SendError(w, http.StatusBadRequest, err)
+			return
+		}
+		event, err := github.ParseWebHook(github.WebHookType(r), payload)
+		if err != nil {
+			SendError(w, http.StatusBadRequest, err)
+			return
+		}
+		switch ev := event.(type) {
+		case *github.PushEvent:
+			fmt.Println(ev)
+		case *github.DeploymentEvent:
+			fmt.Println(ev)
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}
+}
+
+type HookSpec struct {
+	Delivery   string
+	ID         int
+	Event      string
+	TargetID   int
+	TargetType string
+	Signature  []byte
+}
+
+func ParseHookSpec(h http.Header) (*HookSpec, error) {
+	id, err := strconv.ParseInt(h.Get("X-GitHub-Hook-ID"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	target, err := strconv.ParseInt(h.Get("X-GitHub-Hook-Installation-Target-ID"), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	signature, err := getSignature256(h)
+	if err != nil {
+		return nil, err
+	}
+	return &HookSpec{
+		ID:         int(id),
+		TargetID:   int(target),
+		Event:      h.Get("X-GitHub-Event"),
+		Delivery:   h.Get("X-GitHub-Delivery"),
+		TargetType: h.Get("X-GitHub-Hook-Installation-Target-Type"),
+		Signature:  signature,
+	}, nil
+}
+
+func getSignature256(h http.Header) ([]byte, error) {
+	s := h.Get("X-Hub-Signature-256")
+	if len(s) == 0 {
+		return nil, errors.New("no signature")
+	}
+	s = strings.Replace(s, "sha256=", "", 1)
+	return hex.DecodeString(s)
+}
+
+func verifySignature(body, signature []byte) (err error) {
+	mac := hmac.New(sha256.New, []byte(callbackSecret))
+	if _, err = mac.Write(body); err != nil {
+		return err
+	}
+	if !bytes.Equal(mac.Sum(nil), signature) {
+		return errors.New("invalid signature")
+	}
+	return nil
+}
+
+func redirect(w http.ResponseWriter, location string) {
+	w.Header().Set("Location", location)
+	w.WriteHeader(http.StatusFound)
+	logger.WithField("location", location).Info("redirecting")
+}
+
+type response struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *response) WriteHeader(status int) {
+	r.status = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func logs(h http.Handler) http.HandlerFunc {
+	logger := log.GetLogger()
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp := response{ResponseWriter: w}
+		h.ServeHTTP(&resp, r)
+		logger := logger.WithFields(logrus.Fields{
+			"uri":          r.RequestURI,
+			"host":         r.Host,
+			"status":       fmt.Sprintf("%d %s", resp.status, http.StatusText(resp.status)),
+			"method":       r.Method,
+			"remote_addr":  r.RemoteAddr,
+			"referer":      r.Referer(),
+			"query":        r.URL.RawQuery,
+			"content-type": r.Header.Get("Content-Type"),
+			"user-agent":   r.UserAgent(),
+		})
+		if resp.status >= 400 {
+			logger.Error("request")
+		} else if resp.status >= 300 {
+			logger.Warn("request")
+		} else {
+			logger.Info("request")
+		}
+	}
+}
+
+func getState() string {
+	var b [32]byte
+	rand.Read((b[:]))
+	return hex.EncodeToString(b[:])
+}
+
+func SendError(w http.ResponseWriter, status int, err error, msgs ...string) {
+	msg := strings.Join(msgs, ": ")
+	logger.WithFields(logrus.Fields{
+		"status": status,
+		"error":  err,
+	}).Error(msg)
+	w.WriteHeader(status)
+	w.Write([]byte(msg))
+}
+
+func validateEnv() error {
+	for _, key := range []string{
+		"GITHUB_CLIENT_ID",
+		"GITHUB_CLIENT_SECRET",
+		"GH_HOOK_CALLBACK_HOST",
+	} {
+		k, ok := os.LookupEnv(key)
+		if !ok || len(k) == 0 {
+			return fmt.Errorf("could not find environment variable %q", key)
+		}
+	}
+	return nil
+}

@@ -14,5 +14,4 @@ gzip_types
 	audio/mpeg
 	audio/x-m4a
 	text/css
-	text/plain
-	text/html;
+	text/plain;

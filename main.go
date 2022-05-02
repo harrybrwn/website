@@ -88,6 +88,7 @@ func main() {
 	flag.BoolVar(&env, "env", env, "read .env")
 	flag.Parse()
 
+	logger.SetOutput(log.GetOutput("LOG_OUTPUT"))
 	e.Logger = log.WrapLogrus(logger)
 	e.Debug = app.Debug
 	e.DisableHTTP2 = false

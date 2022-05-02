@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  nginx:
+    volumes:
+      - ./build:/var/www/harrybrwn.com:ro
+      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./config/nginx/snippets:/etc/nginx/snippets:ro
+  api:
+    command: -port 8081 -d -env
+    volumes:
+      - ./build:/app/build:ro
+      # - ./.env:/app/.env:ro
+
+  hooks:
+    volumes:
+      - .env:/app/.env:ro

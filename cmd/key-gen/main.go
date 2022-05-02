@@ -24,10 +24,23 @@ func run() error {
 	var (
 		out     string
 		genSeed bool
+		genHex  bool
+		length  = 32
 	)
 	flag.StringVar(&out, "o", out, "output the keypair")
 	flag.BoolVar(&genSeed, "seed", genSeed, "generate a seed instead of an ed25519 key pair")
+	flag.BoolVar(&genHex, "hex", genHex, "generate some random hex values")
+	flag.IntVar(&length, "len", length, "length of generated values")
 	flag.Parse()
+
+	if genHex {
+		b := make([]byte, length)
+		if _, err := rand.Read(b); err != nil {
+			return err
+		}
+		fmt.Println(hex.EncodeToString(b))
+		return nil
+	}
 
 	if genSeed {
 		seed := make([]byte, ed25519.SeedSize)

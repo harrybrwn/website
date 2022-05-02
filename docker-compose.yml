@@ -7,15 +7,19 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testdb1}
       POSTGRES_USER: ${POSTGRES_USER:-web}
       POSTGRES_DB: ${POSTGRES_DB:-harrybrwn}
+    networks:
+      - backend
     ports:
       - "9432:5432"
     volumes:
       - database:/var/lib/postgresql/data/
-    networks:
-      - backend
+    env_file:
+      - .env
 
   redis:
     image: redis:6.2.6-alpine
+    networks:
+      - backend
     ports:
       - ${REDIS_PORT:-6379}:${REDIS_PORT:-6379}
     command:
@@ -24,12 +28,13 @@ services:
       - ${REDIS_PORT:-6379}
       - --requirepass
       - ${REDIS_PASSWORD:-testcache1}
+    env_file:
+      - .env
     volumes:
       - cache-data:/data
-    networks:
-      - backend
 
   nginx:
+    # image: registry.digitalocean.com/webreef/harrybrwn/nginx:latest
     image: harrybrwn/nginx:latest
     build:
       context: .
@@ -38,11 +43,8 @@ services:
       args:
         SITE: harrybrwn.com
     volumes:
-      # - ./build:/var/www/harrybrwn.com:ro
-      # - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
-      # - ./config/nginx/snippets:/etc/nginx/snippets:ro
-      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
-      - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
+      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn.com/server.crt:ro
+      - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn.com/server.key:ro
     networks:
       backend:
         aliases:
@@ -52,40 +54,27 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    depends_on:
-      - api
 
   api:
-    image: registry.digitalocean.com/webreef/harrybrwn/api:latest
-    # image: harrybrwn/api:latest
+    # image: registry.digitalocean.com/webreef/harrybrwn/api:latest
+    image: harrybrwn/api:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: api
-      args:
-        GIT_COMMIT: ${GIT_COMMIT}
-        SOURCE_HASH: ${SOURCE_HASH}
       labels:
         com.harrybrwn.api.description: "API for harrybrwn.com"
-        com.harrybrwn.api.commit: ${GIT_COMMIT}
-        com.harrybrwn.api.source_hash: ${SOURCE_HASH}
-      # Configuration for `docker buildx bake`
-      x-bake:
-        tags:
-          - registry.digitalocean.com/webreef/harrybrwn/api:latest
-          # - registry.digitalocean.com/webreef/harrybrwn/api:${GIT_COMMIT:-development}
-        platforms:
-          - linux/amd64
-          - linux/arm/v7
+        com.harrybrwn.api.commit: ${GIT_COMMIT:-dev}
+        com.harrybrwn.api.source_hash: ${SOURCE_HASH:-0000}
     command: -port 8081
-    networks:
-      - backend
-    ports:
-      - 8080:8081
-    depends_on:
-      - db
-      - redis
+    env_file:
+      - .env
     environment:
+      # Misc
+      - ENV=dev
+      - LOG_OUTPUT=stdout
+      - JWT_SEED
+      - SENDGRID_API_KEY
       # Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -96,13 +85,21 @@ services:
       - POSTGRES_PASSWORD
       - POSTGRES_USER
       - POSTGRES_DB
-      # Misc
-      - ENV
-      - JWT_SEED
-      - SENDGRID_API_KEY
-    volumes:
-      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/letsencrypt/live/harrybrwn.com/fullchain.pem:ro
-      - ./config/pki/certs/harrybrwn.com/server.key:/etc/letsencrypt/live/harrybrwn.com/privkey.pem:ro
+    networks:
+      - backend
+
+  hooks:
+    image: harybrwn/hooks:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: hooks
+    networks:
+      - backend
+    ports:
+      - 8889:8889
+    env_file:
+      - config/env/hooks.env
 
 volumes:
   database:

@@ -8,6 +8,7 @@ BUILDCACHE=.cache/build
 
 build:
 	sh scripts/build.sh
+	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose build
 
 test: test-ts test-go
 

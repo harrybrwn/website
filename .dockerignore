@@ -6,6 +6,7 @@
 # Config
 /config/env/
 /config/postgres/
+/config/docker/
 /Dockerfile
 /docker-compose.*
 /Procfile

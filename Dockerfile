@@ -24,21 +24,29 @@ WORKDIR /opt/harrybrwn
 RUN go mod download
 
 COPY --from=frontend /opt/harrybrwn .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
+    CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/hooks ./cmd/hooks
 
 # Main image
 FROM alpine:3.14 as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
 RUN apk update && apk upgrade && apk add -l tzdata
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
+WORKDIR /app
 ENTRYPOINT ["/app/harrybrwn"]
 
 # Webserver Frontend
 FROM nginx:1.20.2-alpine as nginx
-ARG SITE
-COPY --from=frontend /opt/harrybrwn/build/ /var/www/${SITE}/
-COPY --from=frontend /opt/harrybrwn/config/nginx/conf.d/harrybrwn.conf /etc/nginx/conf.d/
-COPY --from=frontend /opt/harrybrwn/config/nginx/snippets/ /etc/nginx/snippets
+COPY --from=frontend /opt/harrybrwn/build/ /var/www/harrybrwn.com/
+COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
+COPY config/nginx/ /etc/nginx/
+
+# Build hook server
+FROM alpine:3.14 as hooks
+RUN apk update && apk upgrade && apk add -l tzdata
+COPY --from=builder /opt/harrybrwn/bin/hooks /app/hooks
+WORKDIR /app
+ENTRYPOINT ["/app/hooks"]
 
 # Testing tools
 FROM python:3.9-slim-buster as python

@@ -3,15 +3,7 @@ version: "3.8"
 services:
   tests:
     image: python-tests:latest
-    command:
-      - "wait.sh"
-      # - "api"
-      # - "8081"
-      - "harrybrwn.local"
-      - "443"
-      - "--"
-      - "pytest"
-      - "-s"
+    command: 'true'
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -27,11 +19,6 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-testcache1}
       APP_HOST: "harrybrwn.local"
       SSL: "true"
-      # APP_HOST: "api"
-      # APP_PORT: 8081
     networks:
       # Found when using the default docker-compose.yml file
       - backend
-
-networks:
-  backend:
