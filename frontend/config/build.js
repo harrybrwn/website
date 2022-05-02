@@ -193,7 +193,9 @@ class Builder {
     });
 
     let filename;
-    if (page === "index" || page === "404") {
+    if (opts.filename) {
+      filename = opts.filename;
+    } else if (page === "index") {
       // Output should be in the root of the build folder
       filename = `${page}.html`;
     } else {

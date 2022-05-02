@@ -233,7 +233,7 @@ const main = () => {
   });
 
   welcomeBannerColors(document.querySelector(".welcome-banner"), SECOND);
-  applyPageCount();
+  // applyPageCount();
   webButtonClipboard(1);
   webButtonClipboard(2);
 };

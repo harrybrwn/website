@@ -154,8 +154,8 @@ module.exports = function (webpackEnv) {
     builder.html("admin"),
     builder.html("harry_y_tanya"),
     builder.html("games"),
-    builder.html("404", { noChunks: true }),
-    builder.html("50x", { noChunks: true }),
+    builder.html("404", { noChunks: true, filename: "404.html" }),
+    builder.html("50x", { noChunks: true, filename: "50x.html" }),
     builder.html("invite"),
     builder.html("chatroom"),
     builder.html("invite_email", { noChunks: true })
