@@ -20,7 +20,7 @@ const (
 	// Name is the name of the application.
 	Name               = "harrybrown.com"
 	BuildDir           = "./build"
-	StaticCacheControl = "public, max-age=604800" // 7 days
+	StaticCacheControl = "public, must-revalidate, max-age=604800" // 7 days
 	// StaticCacheControl = "private, max-age=604800" // 7 days
 )
 
@@ -39,7 +39,7 @@ func Page(raw []byte, filename string) echo.HandlerFunc {
 		}
 		b, err := os.ReadFile(filename)
 		if err != nil {
-			panic(err)
+			logger.WithError(err).Error("could not open file")
 		}
 		if http.DetectContentType(b) == "application/x-gzip" {
 			hf = asGzip(hf)
@@ -49,7 +49,6 @@ func Page(raw []byte, filename string) echo.HandlerFunc {
 		hf = func(c echo.Context) error {
 			h := c.Response().Header()
 			staticLastModified(h)
-			h.Set("Cache-Control", StaticCacheControl)
 			return c.Blob(200, ct, raw)
 		}
 		if http.DetectContentType(raw) == "application/x-gzip" {
