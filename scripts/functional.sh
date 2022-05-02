@@ -118,7 +118,7 @@ EOF
 }
 
 stop() {
-  compose down
+  compose down "$@"
 }
 
 ps() {

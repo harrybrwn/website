@@ -148,6 +148,7 @@ mkdir -p "${PKI}/certs"
 
 ca_cert "harrybrwn local dev"
 server_cert -cn "harrybrwn.local" \
+	-alt "*.harrybrwn.local"   \
 	-alt "www.harrybrwn.local" \
 	-alt "home.harrybrwn.local"
 
@@ -155,4 +156,6 @@ ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
 
 if [ "$INSTALL" = "true" ]; then
 	load_cert "${CA_CRT}"
+	# sudo cp "${CA_CRT}" /usr/local/share/ca-certificates/harrybrwn.crt
+	# sudo update-ca-certificates --fresh
 fi

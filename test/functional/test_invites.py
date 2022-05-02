@@ -52,7 +52,7 @@ def test_create_invite_admin(admin_token: Token):
 	assert j["ttl"] == 15
 	assert j["roles"] == [Role.DEFAULT.value, Role.FAMILY.value]
 	assert j["receiver_name"] == "jerry smith"
-	res = requests.get(f"http://{config.host}{j['path']}")
+	res = requests.get(f"{config.scheme}://{config.host}{j['path']}")
 	assert res.ok
 	assert res.headers.get("content-type") == "text/html"
 

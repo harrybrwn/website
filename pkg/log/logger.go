@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,6 +17,26 @@ var logger = logrus.StandardLogger()
 func SetLogger(l *logrus.Logger) { logger = l }
 
 func GetLogger() *logrus.Logger { return logger }
+
+func GetOutput(envkey string) io.Writer {
+	out, ok := os.LookupEnv(envkey)
+	if !ok {
+		return os.Stdout
+	}
+	fdout := strings.ToLower(out)
+	if fdout == "1" || fdout == "stdout" {
+		return os.Stdout
+	} else if fdout == "2" || fdout == "stderr" {
+		return os.Stderr
+	}
+	file, err := os.Open(out)
+	if err != nil {
+		logger.Warnf("failed to open log file: %w", err)
+		return os.Stdout
+	}
+	// TODO do log file rotation
+	return file
+}
 
 type contextKey string
 
