@@ -9,6 +9,10 @@ import (
 	"strings"
 )
 
+type Source interface {
+	Get(key string) string
+}
+
 // Get will get the value associated with an env key.
 func Get(key string) string {
 	return os.Getenv(key)

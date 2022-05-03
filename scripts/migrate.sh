@@ -2,9 +2,10 @@
 
 set -e
 
-ENV_FILE=.env
 DIR=db/migrations
 DOCKER=false
+DB=""
+ENV_FILES=()
 
 function help() {
   echo "$1 [-h|--help|-env|-docker] -- [create] <args...>"
@@ -13,14 +14,18 @@ function help() {
   echo "  -h, --help  print help message"
 }
 
-while :; do
+while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)
       help "migrate.sh"
       exit
       ;;
+    -d|--database)
+    	DB="$2"
+      shift 2
+      ;;
     -env)
-      ENV_FILE="$2"
+      ENV_FILES+=("$2")
       shift 2
       ;;
     -docker)
@@ -37,13 +42,20 @@ while :; do
     esac
 done
 
-# Don't fail with no env file. Will use this script in ci and containers.
-if [ -f "$ENV_FILE" ]; then
-  source "$ENV_FILE"
+if [ ${#ENV_FILES} -eq 0 ]; then
+  ENV_FILES+=("config/env/db.env")
 fi
 
+for file in "${ENV_FILES[@]}"; do
+  if [ ! -f "$file" ]; then
+    echo "Error: $file does not exist"
+    exit 1
+  fi
+  source "$file"
+done
+
 if [ -z "$DATABASE_URL" ]; then
-  DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+  DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${DB:-$POSTGRES_DB}?sslmode=disable"
 fi
 
 unset PGSERVICEFILE

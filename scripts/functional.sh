@@ -69,7 +69,7 @@ help() {
   return $ret
 }
 
-readonly SERVICES=("db" "redis" "api" "nginx")
+readonly SERVICES=("db" "redis" "nginx" "api" "hooks")
 
 #############
 # Utilities #
@@ -109,7 +109,7 @@ setup() {
 run_tests() {
   local pytest_args="${@:-test/}"
   local script=$(cat <<-EOF
-scripts/wait.sh "\${POSTGRES_HOST}" "\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh -env none -- up
+scripts/wait.sh "\${POSTGRES_HOST}" "\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh up
 scripts/wait.sh "\${APP_HOST}" "\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}
 EOF
 )

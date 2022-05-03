@@ -2,7 +2,7 @@
 
 set -e
 
-ENV_FILE=.env
+ENV_FILES=()
 
 function help() {
   echo "$1 [-h|--help|-env] -- <args...>"
@@ -17,7 +17,7 @@ while :; do
       exit
       ;;
     -env)
-      ENV_FILE="$2"
+      ENV_FILES+=("$2")
       shift 2
       ;;
     --)
@@ -30,17 +30,22 @@ while :; do
     esac
 done
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "$ENV_FILE does not exist"
-  exit 1
+if [ ${#ENV_FILES} -eq 0 ]; then
+  ENV_FILES+=(".env")
 fi
 
-source "$ENV_FILE"
+for file in "${ENV_FILES[@]}"; do
+  if [ ! -f "$file" ]; then
+    echo "Error: $file does not exist"
+    exit 1
+  fi
+  source "$file"
+done
 
 docker-compose exec                  \
   -e REDISCLI_AUTH="$REDIS_PASSWORD" \
   redis redis-cli  \
-  -h "$REDIS_HOST" \
-  -p "$REDIS_PORT" $@
+  -h "${REDIS_HOST:-localhost}" \
+  -p "${REDIS_PORT:-6379}" "$@"
 
 # vim: ts=2 sts=2 sw=2

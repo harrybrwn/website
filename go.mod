@@ -19,6 +19,7 @@ require (
 	github.com/sendgrid/rest v2.6.8+incompatible
 	github.com/sendgrid/sendgrid-go v3.11.0+incompatible
 	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211

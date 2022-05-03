@@ -44,6 +44,11 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+    environment:
+      ENV: production
+    env_file:
+      - config/env/sendgrid.env
+      - config/env/prod.env
 
   hooks:
    deploy:

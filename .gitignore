@@ -16,7 +16,7 @@ __pycache__/
 
 # Config
 .vscode
-*.env
+.env
 *.pgpass
 /config/pki/
 /config/docker/docker-bake.hcl
@@ -41,8 +41,9 @@ TODO*
 
 # Tools
 *.sh
-!scripts/**/*.sh
 scripts/deploy.sh
+!scripts/**/*.sh
+!db/postgres/*.sh
 
 # Dev
 *.crt

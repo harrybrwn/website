@@ -1,0 +1,6 @@
+*.env
+dev
+
+!hooks.env
+!api.env
+!db.env

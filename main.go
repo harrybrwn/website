@@ -5,7 +5,6 @@ package main
 
 import (
 	"embed"
-	"flag"
 	"html/template"
 	"io/fs"
 	"net"
@@ -19,6 +18,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
@@ -81,11 +81,12 @@ var (
 func main() {
 	var (
 		port = "8080"
-		env  bool
+		env  []string
 		e    = echo.New()
 	)
-	flag.StringVar(&port, "port", port, "the port to run the server on")
-	flag.BoolVar(&env, "env", env, "read .env")
+	flag.StringVarP(&port, "port", "p", port, "the port to run the server on")
+	flag.StringArrayVar(&env, "env", env, "environment files")
+	flag.BoolVarP(&app.Debug, "debug", "d", app.Debug, "run the app in debug mode")
 	flag.Parse()
 
 	logger.SetOutput(log.GetOutput("LOG_OUTPUT"))
@@ -94,10 +95,8 @@ func main() {
 	e.DisableHTTP2 = false
 	e.HideBanner = true
 
-	if env {
-		if err := godotenv.Load(); err != nil {
-			logger.WithError(err).Warn("could not load .env")
-		}
+	if err := godotenv.Load(env...); err != nil {
+		logger.WithError(err).Warn("could not load .env")
 	}
 
 	if app.Debug {
@@ -118,17 +117,6 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-
-	// frontend, err := web.NewFileServer(mustSub(frontend, "build"))
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
-	// frontend.Alias("/", "/~harry")
-	// frontend.ApplyGlobalHeaders(http.Header{
-	// 	"Cache-Control": {app.StaticCacheControl},
-	// 	"Last-Modified": {app.StartTime.UTC().Format(http.TimeFormat)},
-	// })
-	// e.GET("/*", echo.WrapHandler(frontend))
 
 	userStore := app.NewUserStore(db)
 	var (

@@ -4,14 +4,8 @@ services:
   nginx:
     volumes:
       - ./build:/var/www/harrybrwn.com:ro
-      - ./config/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./config/nginx/snippets:/etc/nginx/snippets:ro
+      - ./config/nginx:/etc/nginx:ro
   api:
-    command: -port 8081 -d -env
+    command: -p 8081 -d
     volumes:
       - ./build:/app/build:ro
-      # - ./.env:/app/.env:ro
-
-  hooks:
-    volumes:
-      - .env:/app/.env:ro

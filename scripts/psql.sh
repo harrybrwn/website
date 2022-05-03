@@ -2,9 +2,9 @@
 
 set -e
 
-ENV_FILE=.env
 DOCKER=false
-
+ENV_FILES=()
+DB=""
 
 function help() {
   echo "$1 [-h|--help|-env|-docker] -- <args...>"
@@ -13,14 +13,18 @@ function help() {
   echo "  -h, --help  print help message"
 }
 
-while :; do
+while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)
       help "psql.sh"
       exit
       ;;
+    -d|--database)
+    	DB="$2"
+      shift 2
+      ;;
     -env)
-      ENV_FILE="$2"
+      ENV_FILES+=("$2")
       shift 2
       ;;
     -docker)
@@ -37,33 +41,27 @@ while :; do
     esac
 done
 
-if [ ! -f "$ENV_FILE" ]; then
-  echo "$ENV_FILE does not exist"
-  exit 1
+if [ ${#ENV_FILES} -eq 0 ]; then
+  ENV_FILES+=("config/env/db.env")
 fi
 
-source "$ENV_FILE"
+for file in "${ENV_FILES[@]}"; do
+  if [ ! -f "$file" ]; then
+    echo "Error: $file does not exist"
+    exit 1
+  fi
+  source "$file"
+done
 
 if $DOCKER; then
   # Reset the port because we are running this in a docker container
   echo 'using docker-compose'
   POSTGRES_PORT=5432
-  PGPASS_LINE="$POSTGRES_HOST:$POSTGRES_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD"
-  docker-compose exec -e PGPASS_LINE="$PGPASS_LINE" db bash -c 'echo $PGPASS_LINE > /root/.pgpass && chmod 0600 /root/.pgpass'
-  docker-compose exec             \
-    -e PGPASSFILE='/root/.pgpass' \
-    -e PSQL_PAGER=less            \
-    db psql             \
-    -h "$POSTGRES_HOST" \
-    -p "$POSTGRES_PORT" \
-    "$POSTGRES_DB" "$POSTGRES_USER" "$@"
+  uri="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/${DB:-$POSTGRES_DB}"
+  docker-compose exec -e PSQL_PAGER=less db psql "${uri}" "$@"
 else
-  if [ ! -d config/postgres ]; then mkdir -p config/postgres; fi
-  PGPASSFILE="config/postgres/$(basename $ENV_FILE).pgpass"
-  PGPASS_LINE="$POSTGRES_HOST:$POSTGRES_PORT:$POSTGRES_DB:$POSTGRES_USER:$POSTGRES_PASSWORD"
-  echo "$PGPASS_LINE" > $PGPASSFILE
-  chmod 0600 $PGPASSFILE
-  PGPASSFILE="$PGPASSFILE" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" "$POSTGRES_DB" "$POSTGRES_USER" "$@"
+  uri="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-localhost}:${POSTGRES_PORT:-5432}/${DB:-$POSTGRES_DB}"
+  psql "${uri}" "$@"
 fi
 
 # vim: ts=2 sts=2 sw=2

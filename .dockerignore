@@ -1,20 +1,20 @@
 # Notes
-/README*
-/TODO*
-/NOTES*
+README*
+TODO*
+NOTES*
 
 # Config
 /config/env/
 /config/postgres/
 /config/docker/
 /Dockerfile
-/docker-compose.*
 /Procfile
 /Makefile
 /.vscode/
 /.env
 /.dockerignore
 /.gitignore
+docker-compose.*
 
 # Data
 /.git/

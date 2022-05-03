@@ -172,11 +172,15 @@ func redisOpts() (*redis.Options, error) {
 	host := os.Getenv("REDIS_HOST")
 	port := os.Getenv("REDIS_PORT")
 	if port == "" {
-		port = "6397"
+		port = "6379"
+	}
+	pw := os.Getenv("REDIS_PASSWORD")
+	if len(pw) == 0 {
+		return nil, errors.New("no password given for redis")
 	}
 	return &redis.Options{
 		Addr:     net.JoinHostPort(host, port),
-		Password: os.Getenv("REDIS_PASSWORD"),
+		Password: pw,
 	}, nil
 }
 
