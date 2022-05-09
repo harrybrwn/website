@@ -47,3 +47,31 @@ docker-compose -f docker-compose.test.yml run --rm tests scripts/functional-test
 ```
 yarn test
 ```
+
+## Deployment
+
+```
+docker context use harrybrwn # send docker commands to prod box
+docker network rm ingress
+docker network create --driver overlay --ingress --scope swarm --ipv6 harrybrwn-net
+# make should all worker nodes are connected at this point
+docker node ls
+docker stack rm harrybrwn
+# Build
+env $(cat .env) docker buildx bake \
+  -f docker-compose.yml \
+  -f config/docker/buildx.yml \
+  --push
+docker-compose \
+    -f docker-compose.yml \
+    -f config/docker/prod.yml config | \
+  docker stack deploy \
+   --resolve-image always \
+   --with-registry-auth \
+   --prune \
+   -c - \
+   harrybrwn
+docker service ls
+docker service logs -f harrybrwn_nginx
+```
+

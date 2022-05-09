@@ -47,6 +47,9 @@ lint-go:
 	go vet -tags ci ./...
 	golangci-lint run --config ./config/golangci.yml
 
+lint-sh:
+	shellcheck -x $(shell find ./scripts/ -name '*.sh' -type f)
+
 TOOLS=user-gen pwhash key-gen
 
 tools:
@@ -97,5 +100,26 @@ functional: functional-setup functional-run functional-stop
 .PHONY: functional functional-setup functional-run functional-run functional-build
 
 bake:
-	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker buildx bake
+	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
+		-f docker-compose.yml -f config/docker/logging.yml -f config/docker/prod.yml config | \
+		docker buildx bake -f - -f config/docker/buildx.yml --load
 
+deploy-dev:
+	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
+	  	-f docker-compose.yml -f config/docker/logging.yml -f config/docker/dev.yml config | \
+		docker stack deploy        \
+			--resolve-image always \
+			--with-registry-auth   \
+			--prune                \
+			-c -                   \
+			hb
+
+deploy:
+	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
+	  	-f docker-compose.yml -f config/docker/logging.yml -f config/docker/prod.yml config | \
+		docker stack deploy        \
+			--resolve-image always \
+			--with-registry-auth   \
+			--prune                \
+			-c -                   \
+			harrybrwn

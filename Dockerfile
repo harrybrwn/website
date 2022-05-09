@@ -4,7 +4,8 @@
 ARG NODE_VERSION=16.13.1-alpine
 FROM node:16.13.1-alpine as frontend
 RUN apk update && apk upgrade && \
-    npm config set update-notifier false && \
+    mkdir -p /usr/local/sbin/ && \
+    ln -s /usr/local/bin/node /usr/local/sbin/node && \
     npm update -g npm
 # Cache dependancies
 WORKDIR /opt/harrybrwn
@@ -40,6 +41,7 @@ FROM nginx:1.20.2-alpine as nginx
 COPY --from=frontend /opt/harrybrwn/build/ /var/www/harrybrwn.com/
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/ /etc/nginx/
+RUN rm /etc/nginx/conf.d/default.conf
 
 # Build hook server
 FROM alpine:3.14 as hooks

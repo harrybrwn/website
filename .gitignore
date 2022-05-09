@@ -21,6 +21,7 @@ __pycache__/
 /config/pki/
 /config/docker/docker-bake.hcl
 /config/docker/buildkit-config.toml
+/config/registry/htpasswd
 scripts/buildx.sh
 
 # Testing

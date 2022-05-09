@@ -1,0 +1,4 @@
+ARG FLUENTBIT_VERSION
+FROM fluent/fluent-bit:${FLUENTBIT_VERSION}
+COPY config/logging/fluent-bit.conf /fluent-bit/etc/fluent-bit.conf
+COPY config/logging/fluent-bit-parsers.conf /fluent-bit/etc/parsers.conf

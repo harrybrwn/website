@@ -16,7 +16,9 @@ var logger = logrus.StandardLogger()
 
 func SetLogger(l *logrus.Logger) { logger = l }
 
-func GetLogger() *logrus.Logger { return logger }
+func GetLogger() *logrus.Logger {
+	return logger
+}
 
 func GetOutput(envkey string) io.Writer {
 	out, ok := os.LookupEnv(envkey)

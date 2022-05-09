@@ -2,12 +2,18 @@ version: "3.8"
 
 services:
   db:
+    image: 10.0.0.101:5000/harrybrwn/postgres:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.db
     deploy:
       placement:
         constraints:
           - "node.role==manager"
       restart_policy:
         condition: on-failure
+        max_attempts: 5
+        delay: 2s
 
   redis:
     deploy:
@@ -16,6 +22,8 @@ services:
           - "node.role==manager"
       restart_policy:
         condition: on-failure
+        max_attempts: 5
+        delay: 2s
 
   nginx:
     deploy:
@@ -26,40 +34,45 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
-        max_attempts: 3
+        max_attempts: 5
         window: 120s
+      update_config:
+        parallelism: 1
+        delay: 1s
+        order: stop-first
+    healthcheck:
+      interval: 5m
     volumes:
       - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn.com/server.crt:ro
       - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn.com/server.key:ro
 
   api:
     deploy:
-      replicas: 3
+      replicas: 4
       placement:
         max_replicas_per_node: 2
-        # constraints:
-        #   - "node.role!=manager"
+        constraints:
+          - "node.role==worker"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+      update_config:
+        parallelism: 1
+        delay: 2s
+        order: stop-first
+    environment:
+      ENV: production
+    env_file:
+      - config/env/sendgrid.env
+      # - config/env/api.prod.env
+
+  hooks:
+    deploy:
+      replicas: 1
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
         window: 120s
-    environment:
-      ENV: production
-    env_file:
-      - config/env/sendgrid.env
-      - config/env/prod.env
-
-  hooks:
-   deploy:
-     replicas: 1
-     restart_policy:
-       condition: on-failure
-       delay: 5s
-       max_attempts: 3
-       window: 120s
-
-networks:
-  backend:
-    driver: overlay
-    external: true

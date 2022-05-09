@@ -14,6 +14,8 @@ NOTES*
 /.env
 /.dockerignore
 /.gitignore
+config/*.md
+config/NOTES
 docker-compose.*
 
 # Data
@@ -23,9 +25,24 @@ docker-compose.*
 /db/data/
 /.testing/
 /.pytest_cache
-/.cache/
+/.cache
+/bin/
 **/__pycache__
 
 # Scripts
 /scripts/requests.http
 /scripts/*.sql
+/scripts/buildx.sh
+/scripts/psql.sh
+/scripts/migrate.sh
+/scripts/functional.sh
+/scripts/certs.sh
+/scripts/mockgen.sh
+/scripts/install-tools.sh
+/scripts/diagrams.sh
+/scripts/infra/
+/scripts/heroku-api.sh
+/scripts/build.sh
+nslookup.sh
+dev.sh
+deploy.sh

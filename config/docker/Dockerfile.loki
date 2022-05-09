@@ -1,0 +1,4 @@
+ARG LOKI_VERSION
+FROM grafana/loki:${LOKI_VERSION}
+COPY config/logging/loki.yml /mnt/local-config.yaml
+CMD ["-config.file=/mnt/local-config.yaml"]

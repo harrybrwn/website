@@ -206,7 +206,7 @@ module.exports = function (webpackEnv) {
       chunkFilename: isProd
         ? "static/js/[contenthash].chunk.js"
         : "static/js/[name].chunk.js",
-      assetModuleFilename: builder.isProd
+      assetModuleFilename: isProd
         ? "static/a/[contenthash:16][ext]"
         : "static/a/[name][id][ext]",
     },

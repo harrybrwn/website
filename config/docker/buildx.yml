@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  api:
+    build:
+      x-bake:
+        tags:
+          - 10.0.0.101:5000/harrybrwn/api:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+  hooks:
+    build:
+      x-bake:
+        tags:
+          - 10.0.0.101:5000/harrybrwn/hooks:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7

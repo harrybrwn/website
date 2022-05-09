@@ -1,0 +1,95 @@
+version: "3.8"
+
+services:
+
+  fluentbit:
+    image: 10.0.0.101:5000/harrybrwn/fluent-bit:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.fluentbit
+      args:
+        - FLUENTBIT_VERSION=1.9.3
+        #- FLUENTBIT_VERSION=1.9.3-debug
+    ports:
+      - '24224:24224/tcp'
+      - '24224:24224/udp'
+    networks:
+      - backend
+    deploy:
+      # We want exactly one per host
+      mode: global
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+
+  loki:
+    image: 10.0.0.101:5000/harrybrwn/loki:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.loki
+      args:
+        - LOKI_VERSION=2.5.0
+    ports:
+      - "3100:3100"
+      - "9096:9096" # grpc
+    volumes:
+      - grafana:/tmp/loki
+    networks:
+      - backend
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.logs==true"
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+
+  grafana:
+    image: 10.0.0.101:5000/harrybrwn/grafana:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.grafana
+      args:
+        - GRAFANA_VERSION=latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana:/var/lib/grafana
+    networks:
+      - backend
+    deploy:
+      placement:
+        constraints:
+          - "node.labels.logs==true"
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+
+  nginx:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.nginx.{{ .ID }}'
+  db:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.postgres.{{ .ID }}'
+  redis:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.redis.{{ .ID }}'
+  api:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.api.{{ .ID }}'
+  hooks:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.hooks.{{ .ID }}'
+
+volumes:
+  grafana:

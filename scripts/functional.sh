@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-readonly DIR="$(pwd)/$(dirname ${BASH_SOURCE[0]})"
+# readonly DIR="$(pwd)/$(dirname "${BASH_SOURCE[0]}")"
 readonly SCRIPT="$0"
 
 get-help() {
@@ -38,9 +38,9 @@ get-help() {
   return 0
 }
 
-help() {
+function help() {
   local ret=0
-  if [ -n "$1" ]; then
+  if [ -n "${1:-}" ]; then
     if get-help "$@"; then
       return 0
     else
@@ -81,8 +81,9 @@ compose() {
 
 running() {
   for s in "${SERVICES[@]}"; do
-    local id="$(compose ps --quiet $s)"
-    local running="$(docker container inspect ${id} | jq -r '.[0].State.Running')"
+    local id running
+    id="$(compose ps --quiet "$s")"
+    running="$(docker container inspect "${id}" | jq -r '.[0].State.Running')"
     if [ "${running}" != "true" ]; then
       echo "service $s is down"
       return 1
@@ -95,8 +96,9 @@ running() {
 # Commands #
 ############
 
-export GIT_COMMIT=`git rev-parse HEAD`
-export SOURCE_HASH=`./scripts/sourcehash.sh -e '*_test.go'`
+declare -x GIT_COMMIT SOURCE_HASH
+GIT_COMMIT=$(git rev-parse HEAD)
+SOURCE_HASH=$(./scripts/sourcehash.sh -e '*_test.go')
 
 build() {
    compose build "$@"
@@ -107,8 +109,9 @@ setup() {
 }
 
 run_tests() {
-  local pytest_args="${@:-test/}"
-  local script=$(cat <<-EOF
+  local pytest_args script
+  pytest_args="${*:-test/}"
+  script=$(cat <<-EOF
 scripts/wait.sh "\${POSTGRES_HOST}" "\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh up
 scripts/wait.sh "\${APP_HOST}" "\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}
 EOF

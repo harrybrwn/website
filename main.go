@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -89,6 +90,7 @@ func main() {
 	flag.BoolVarP(&app.Debug, "debug", "d", app.Debug, "run the app in debug mode")
 	flag.Parse()
 
+	logger.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339})
 	logger.SetOutput(log.GetOutput("LOG_OUTPUT"))
 	e.Logger = log.WrapLogrus(logger)
 	e.Debug = app.Debug
@@ -173,6 +175,13 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
+	api.Any("/health/ready", func(c echo.Context) error {
+		// TODO make this more reflect the "ready" state
+		return c.Blob(200, "application/json", []byte(`{"status":"ok"}`))
+	})
+	api.Any("/health/alive", func(c echo.Context) error {
+		return c.Blob(200, "application/json", []byte(`{"status":"ok"}`))
+	})
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)

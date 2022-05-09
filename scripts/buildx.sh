@@ -9,6 +9,7 @@ REGISTY=registry.digitalocean.com/webreef
 PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v6
 IMAGE=
 PUSH=false
+CACERT=''
 
 CONTEXT=.
 DOCKERFILE=./Dockerfile
@@ -29,6 +30,7 @@ Flags:
         --registry  push to a spesific registry       (default: '$REGISTRY')
         --platform  comma separated list of platforms (default: '$PLATFORMS')
         --push      push to the registry after build  (default: '$PUSH')
+        --cacert    ca certificate for pushing to registries
     -h, --help      print help message"
         exit 0
         ;;
@@ -60,6 +62,14 @@ Flags:
         PUSH=true
         shift
         ;;
+    --cacert)
+        CACERT="$2"
+        if [ ! -f "${CACERT}" ]; then
+            echo "Error: file \"${CACERT}\" does not exist!"
+            exit 1
+        fi
+        shift 2
+        ;;
     -*)
         echo "Error: unknown flag '$1'"
         exit 1
@@ -75,11 +85,9 @@ if [ -z "$BUILDKIT_NAME" ]; then
     echo 'Error: no buildkit name'
     exit 1
 elif [ -z "$IMAGE" ]; then
-    echo 'Error: no tag given'
-    exit 1
+    echo 'Warning: no tag given'
 elif [ -z "$PLATFORMS" ]; then
-    echo 'Error: no tag'
-    exit 1
+    echo 'Warning: no platforms'
 fi
 
 if [ ! -d "$CONTEXT" ]; then
@@ -97,8 +105,7 @@ if ! docker buildx use $BUILDKIT_NAME ; then
     CREATE_FLAGS="$CREATE_FLAGS --driver-opt network=host"
     if [ -n "$BUILDKIT_CONFIG" ]; then
         if [ ! -f "$BUILDKIT_CONFIG" ]; then
-            echo "Error: no such file '$BUILDKIT_CONFIG'"
-            # exit 1
+            echo "Warning: no such file '$BUILDKIT_CONFIG'"
         else
             CREATE_FLAGS="$CREATE_FLAGS --config $BUILDKIT_CONFIG"
         fi
@@ -106,20 +113,10 @@ if ! docker buildx use $BUILDKIT_NAME ; then
     docker buildx create $CREATE_FLAGS
     docker buildx inspect --bootstrap
     docker run --privileged --rm tonistiigi/binfmt --install all
+    if [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
+        container="$(docker buildx inspect "$BUILDKIT_NAME" | awk '/Name:/{print $2}' | grep -Ev "^$BUILDKIT_NAME\$")"
+        docker container cp "${CACERT}" "buildx_buildkit_${container}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
+        docker container exec "buildx_buildkit_${container}" update-ca-certificates --verbose --force
+        docker container restart "buildx_buildkit_${container}"
+    fi
 fi
-exit
-
-# FLAGS=""
-# if $PUSH; then
-#     FLAGS="$FLAGS --push"
-# fi
-
-# docker buildx build            \
-#     $FLAGS                     \
-#     --builder "$BUILDKIT_NAME" \
-#     --platform $PLATFORMS  \
-#     -t "$REGISTRY/$IMAGE"  \
-#     -f $DOCKERFILE         \
-#     --output type=registry \
-#     $CONTEXT
-

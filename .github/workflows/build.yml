@@ -28,15 +28,22 @@ jobs:
           registry: registry.digitalocean.com/webreef
           username: ${{ secrets.DO_API_KEY }}
           password: ${{ secrets.DO_API_KEY }}
+
       - name: Get source hash
         id: api-source-hash
         run: echo "::set-output name=source-hash::$(scripts/sourcehash.sh --lang go -e '*_test.go')"
+
+      - name: observe buildx
+        run: |
+          docker buildx ls
+          docker buildx inspect ${{ steps.buildx.outputs.name }}
+
       - name: Build and push
         uses: docker/bake-action@master
         env:
           GIT_COMMIT: ${{ github.sha }}
           SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
         with:
-          files: docker-compose.yml
+          files: docker-compose.yml,config/docker/buildx.yml
           push: true
           load: false
