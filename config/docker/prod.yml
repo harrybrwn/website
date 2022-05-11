@@ -2,10 +2,6 @@ version: "3.8"
 
 services:
   db:
-    image: 10.0.0.101:5000/harrybrwn/postgres:latest
-    build:
-      context: .
-      dockerfile: config/docker/Dockerfile.db
     deploy:
       placement:
         constraints:

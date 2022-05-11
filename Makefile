@@ -101,8 +101,11 @@ functional: functional-setup functional-run functional-stop
 
 bake:
 	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
-		-f docker-compose.yml -f config/docker/logging.yml -f config/docker/prod.yml config | \
-		docker buildx bake -f - -f config/docker/buildx.yml --load
+		-f docker-compose.yml        \
+		-f config/docker/logging.yml \
+		-f config/docker/prod.yml    \
+		config | \
+		docker buildx bake -f - -f config/docker/buildx.yml --push
 
 deploy-dev:
 	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
@@ -116,9 +119,12 @@ deploy-dev:
 
 deploy:
 	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
-	  	-f docker-compose.yml -f config/docker/logging.yml -f config/docker/prod.yml config | \
+	  	-f docker-compose.yml        \
+		-f config/docker/logging.yml \
+		-f config/docker/prod.yml    \
+		config | \
 		docker stack deploy        \
-			--resolve-image always \
+			--resolve-image=always \
 			--with-registry-auth   \
 			--prune                \
 			-c -                   \

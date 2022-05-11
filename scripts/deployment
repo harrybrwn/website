@@ -1,0 +1,101 @@
+#!/bin/bash
+
+set -eu
+
+GIT_COMMIT="$(git rev-parse HEAD)"
+SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
+export GIT_COMMIT SOURCE_HASH
+
+# Flags
+CONTEXT=harrybrwn
+NETWORK=harrybrwn-net
+COMPOSE_FILES=("docker-compose.yml")
+PROD=true
+DEV=false
+LOGGING=true
+ARGS=()
+
+usage() {
+	echo "Usage"
+	echo "  deployment [flags...]"
+	echo
+	echo "Flags"
+	echo "  -h --help             get help message"
+	echo "     --context <name>   name of docker context to use (default $CONTEXT)"
+	echo "     --network <name>   name of docker swarm network to check for and create (default $NETWORK)"
+	echo
+}
+
+while [ $# -gt 0 ]; do
+	case $1 in
+		-h|--help)
+			usage
+		 	exit
+			;;
+		--context)
+			CONTEXT="$2"
+			shift 2
+			;;
+		--network)
+			NETWORK="$2"
+			shift 2
+			;;
+		-c|--compose-file)
+		 	COMPOSE_FILES+=("$2")
+			shift 2
+			;;
+		--dev)
+		 	DEV=true
+			PROD=false
+			shift
+			;;
+		--no-logging)
+			LOGGING=false
+			shift
+			;;
+		-*|--*)
+			echo "Error: unknown flag \"$1\""
+			exit 1
+			;;
+		*)
+		 	ARGS+=("$1")
+			shift
+			;;
+	esac
+done
+
+current_context="$(docker context inspect --format '{{.Name}}')"
+if [ "$current_context" != "$CONTEXT" ]; then
+	if ! docker context inspect "$CONTEXT" > /dev/null 2>&1; then
+		echo "Error: context $CONTEXT does not exist"
+		exit 1
+	fi
+	docker context use "$CONTEXT"
+fi
+
+if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
+  docker network create \
+    --driver overlay    \
+    --ingress           \
+    --scope swarm       \
+    --ipv6              \
+    "$NETWORK"
+fi
+
+COMPOSE_ARGS=()
+for f in "${COMPOSE_FILES[@]}"; do
+	COMPOSE_ARGS+=("--file" "$f")
+done
+
+if $LOGGING; then
+	COMPOSE_ARGS+=("--file" "config/docker/logging.yml")
+fi
+
+if $PROD; then
+	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
+else
+	COMPOSE_ARGS+=("--file" "config/docker/dev.yml")
+fi
+
+echo docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+# docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"

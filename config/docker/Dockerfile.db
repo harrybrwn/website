@@ -1,2 +1,3 @@
-FROM postgres:13.6-alpine
+ARG BASE_IMAGE_VERSION=14.2
+FROM postgres:${BASE_IMAGE_VERSION}
 COPY db/postgres/ /docker-entrypoint-initdb.d/

@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: config/docker/Dockerfile.fluentbit
       args:
-        - FLUENTBIT_VERSION=1.9.3
-        #- FLUENTBIT_VERSION=1.9.3-debug
+        # - FLUENTBIT_VERSION=1.9.3
+        - FLUENTBIT_VERSION=1.9.3-debug
     ports:
       - '24224:24224/tcp'
       - '24224:24224/udp'
@@ -37,9 +37,9 @@ services:
     networks:
       - backend
     deploy:
+      replicas: 1
       placement:
-        constraints:
-          - "node.labels.logs==true"
+        constraints: [node.labels.logs == true]
       restart_policy:
         condition: on-failure
         max_attempts: 5
@@ -58,9 +58,9 @@ services:
     networks:
       - backend
     deploy:
+      replicas: 1
       placement:
-        constraints:
-          - "node.labels.logs==true"
+        constraints: [node.labels.logs == true]
       restart_policy:
         condition: on-failure
         max_attempts: 5

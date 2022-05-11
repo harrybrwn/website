@@ -4,6 +4,11 @@ server:
   http_listen_port: 3100
   grpc_listen_port: 9096
 
+# Workaround for weird behavior in docker swarm
+# https://github.com/grafana/loki/issues/4699#issuecomment-977843834
+frontend:
+    address: 127.0.0.1
+
 common:
   path_prefix: /tmp/loki
   storage:

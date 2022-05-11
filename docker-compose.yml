@@ -3,10 +3,13 @@ version: "3.8"
 services:
   db:
     # image: postgres:13.6-alpine
-    image: 10.0.0.101:5000/harrybrwn/postgres:latest
+    image: ${REGISTRY}/harrybrwn/postgres:latest
     build:
       context: .
       dockerfile: config/docker/Dockerfile.db
+      args:
+        # - BASE_IMAGE_VERSION=13.6-alpine
+        - BASE_IMAGE_VERSION=14.2-alpine3.15
     environment:
       - POSTGRES_DATABASES=harrybrwn_api,harrybrwn_hooks
     networks:
@@ -50,7 +53,6 @@ services:
       - "443:443"
 
   api:
-    # image: harrybrwn/api:latest
     image: 10.0.0.101:5000/harrybrwn/api:latest
     build:
       context: .
@@ -77,7 +79,7 @@ services:
       - backend
 
   hooks:
-    image: 10.0.0.101:5000/harybrwn/hooks:latest
+    image: 10.0.0.101:5000/harrybrwn/hooks:latest
     build:
       context: .
       dockerfile: Dockerfile

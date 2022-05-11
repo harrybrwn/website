@@ -16,3 +16,27 @@ services:
         platforms:
           - linux/amd64
           - linux/arm/v7
+  fluentbit:
+    build:
+      x-bake:
+        tags:
+          - 10.0.0.101:5000/harrybrwn/fluent-bit:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+  loki:
+    build:
+      x-bake:
+        tags:
+          - 10.0.0.101:5000/harrybrwn/loki:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+  grafana:
+    build:
+      x-bake:
+        tags:
+          - 10.0.0.101:5000/harrybrwn/loki:latest
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
