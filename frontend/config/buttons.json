@@ -1,0 +1,74 @@
+[
+	{
+		"href": "http://www.theoldnet.com/#frombadge",
+		"title": "Are you tired of this new Internet yet? Time to Get TheOldNet!",
+		"src": "./img/88x31/theoldnet.gif",
+		"alt": "The Old Net"
+	},
+	{
+		"href":"https://geocities.restorativland.org/",
+		"title":"Homepage of the retro internet",
+		"src":"./img/88x31/geo-cities.gif",
+		"alt":"Geo Cities"
+	},
+	{
+		"href":"https://code.visualstudio.com/",
+		"title":"VS Code",
+		"src":"./img/88x31/vscode.gif",
+		"alt":"Visual Studio Code"
+	},
+	{
+		"href":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+		"title":"The Linux kernel",
+		"src":"./img/88x31/linux.gif",
+		"alt":"The Linux kernel"
+	},
+	{
+		"href":"https://www.vim.org/",
+		"title":"Vim",
+		"src":"./img/88x31/vim.gif",
+		"alt":"Vim"
+	},
+	{
+		"href":"https://en.wikipedia.org/wiki/Vi",
+		"title":"Vi",
+		"src":"./img/88x31/vi_now.gif",
+		"alt":"Vi Now"
+	},
+	{
+		"href":"https://www.palemoon.org/",
+		"title":"Palemoon",
+		"src":"./img/88x31/palemoon.gif",
+		"alt":"Palemoon web browser"
+	},
+	{
+		"href":"https://madville.neocities.org",
+		"title":"A beautifully retro site",
+		"src":"./img/88x31/madville.gif",
+		"alt":"A beautifully retro site"
+	},
+	{
+		"href":"https://en.wikipedia.org/wiki/Netscape",
+		"title":"Netscape Navigator",
+		"src":"./img/88x31/netnow2.gif",
+		"alt":"Netscape Navigator"
+	},
+	{
+		"href":"https://cyber.dabamos.de/88x31/index.html",
+		"title":"So many buttons!",
+		"src":"./img/88x31/88x31.gif",
+		"alt":"Eighty eight by thirty one"
+	},
+	{
+		"href":"/static/files/amd-athlon-64-x2-datasheet.pdf",
+		"title":"AMD Athlon 64 X2",
+		"src":"./img/88x31/amd_powered.gif",
+		"alt":"Powered by AMD"
+	},
+	{
+		"href":"https://devils.neocities.org/",
+		"title": "Devils",
+		"src":"./img/88x31/devils-neocities.gif",
+		"alt":"Devils"
+	}
+]

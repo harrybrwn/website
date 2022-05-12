@@ -38,7 +38,7 @@ ENTRYPOINT ["/app/harrybrwn"]
 
 # Webserver Frontend
 FROM nginx:1.20.2-alpine as nginx
-COPY --from=frontend /opt/harrybrwn/build/ /var/www/harrybrwn.com/
+COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/ /etc/nginx/
 RUN rm /etc/nginx/conf.d/default.conf

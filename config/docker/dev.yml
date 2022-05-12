@@ -3,9 +3,34 @@ version: "3.8"
 services:
   nginx:
     volumes:
-      - ./build:/var/www/harrybrwn.com:ro
+      - ./build/harrybrwn.com:/var/www/harrybrwn.com:ro
       - ./config/nginx:/etc/nginx:ro
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+  db:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+  redis:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+        delay: 10s
   api:
     command: -p 8081 -d
     volumes:
       - ./build:/app/build:ro
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+        delay: 10s
+  hooks:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5

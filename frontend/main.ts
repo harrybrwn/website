@@ -93,27 +93,6 @@ const focusOnLoginEmail = () => {
   }
 };
 
-const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
-  if (banner == null) {
-    return;
-  }
-  let welcomeTicker = 0;
-  let colors = [
-    "red",
-    "orange",
-    // "yellow",
-    "mediumspringgreen",
-    "blue",
-    "purple",
-    "pink",
-  ];
-  const fn = () => {
-    banner.style.color = colors[welcomeTicker % colors.length];
-    welcomeTicker++;
-  };
-  setInterval(fn, ms);
-};
-
 const main = () => {
   let themeManager = new ThemeManager();
   let loginManager = new LoginManager({
@@ -236,6 +215,27 @@ const main = () => {
   // applyPageCount();
   webButtonClipboard(1);
   webButtonClipboard(2);
+};
+
+const welcomeBannerColors = (banner: HTMLElement | null, ms: number) => {
+  if (banner == null) {
+    return;
+  }
+  let welcomeTicker = 0;
+  let colors = [
+    "red",
+    "orange",
+    // "yellow",
+    "mediumspringgreen",
+    "blue",
+    "purple",
+    "pink",
+  ];
+  const fn = () => {
+    banner.style.color = colors[welcomeTicker % colors.length];
+    welcomeTicker++;
+  };
+  setInterval(fn, ms);
 };
 
 const webButtonClipboard = (num: number) => {

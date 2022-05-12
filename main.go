@@ -32,42 +32,42 @@ import (
 //go:generate sh scripts/mockgen.sh
 
 var (
-	//go:embed build/index.html
+	//go:embed build/harrybrwn.com/index.html
 	harryStaticPage []byte
-	//go:embed build/remora/index.html
+	//go:embed build/harrybrwn.com/remora/index.html
 	remoraStaticPage []byte
-	//go:embed build/harry_y_tanya/index.html
+	//go:embed build/harrybrwn.com/harry_y_tanya/index.html
 	hytStaticPage []byte
-	//go:embed build/404.html
+	//go:embed build/harrybrwn.com/404.html
 	notFoundStaticPage []byte
-	//go:embed build/admin/index.html
+	//go:embed build/harrybrwn.com/admin/index.html
 	adminStaticPage []byte
-	//go:embed build/games/index.html
+	//go:embed build/harrybrwn.com/games/index.html
 	gamesStaticPage []byte
-	//TODO go:embed build/tanya/index.html
+	//TODO go:embed build/harrybrwn.com/tanya/index.html
 	//tanyaStaticPage []byte
-	//go:embed build/chatroom/index.html
+	//go:embed build/harrybrwn.com/chatroom/index.html
 	chatroomStaticPage []byte
-	//go:embed build/invite/index.html
+	//go:embed build/harrybrwn.com/invite/index.html
 	inviteStaticPage []byte
 
 	//go:embed files/bookmarks.json
 	bookmarks []byte
-	//go:embed build/pub.asc
+	//go:embed build/harrybrwn.com/pub.asc
 	gpgPubkey []byte
-	//go:embed build/robots.txt
+	//go:embed build/harrybrwn.com/robots.txt
 	robots []byte
-	//go:embed build/favicon.ico
+	//go:embed build/harrybrwn.com/favicon.ico
 	favicon []byte
-	//go:embed build/manifest.json
+	//go:embed build/harrybrwn.com/manifest.json
 	manifest []byte
-	//go:embed build/static
+	//go:embed build/harrybrwn.com/static
 	static embed.FS
-	//go:embed build/sitemap.xml
+	//go:embed build/harrybrwn.com/sitemap.xml
 	sitemap []byte
-	//go:embed build/sitemap.xml.gz
+	//go:embed build/harrybrwn.com/sitemap.xml.gz
 	sitemapgz []byte
-	//go:embed build/invite_email/index.html
+	//go:embed build/harrybrwn.com/invite_email/index.html
 	inviteEmailStatic []byte
 
 	// go:embed build

@@ -105,7 +105,9 @@ bake:
 		-f config/docker/logging.yml \
 		-f config/docker/prod.yml    \
 		config | \
-		docker buildx bake -f - -f config/docker/buildx.yml --push
+		docker buildx bake \
+			-f - \
+			-f config/docker/buildx.yml --push
 
 deploy-dev:
 	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \

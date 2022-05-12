@@ -9,7 +9,7 @@ REGISTY=registry.digitalocean.com/webreef
 PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v6
 IMAGE=
 PUSH=false
-CACERT=''
+CACERT="${DOCKER_CONFIG:-$HOME/.docker}/ca.pem"
 
 CONTEXT=.
 DOCKERFILE=./Dockerfile
@@ -30,7 +30,7 @@ Flags:
         --registry  push to a spesific registry       (default: '$REGISTRY')
         --platform  comma separated list of platforms (default: '$PLATFORMS')
         --push      push to the registry after build  (default: '$PUSH')
-        --cacert    ca certificate for pushing to registries
+        --cacert    ca certificate for pushing to registries (default: '$CACERT')
     -h, --help      print help message"
         exit 0
         ;;
@@ -113,10 +113,11 @@ if ! docker buildx use $BUILDKIT_NAME ; then
     docker buildx create $CREATE_FLAGS
     docker buildx inspect --bootstrap
     docker run --privileged --rm tonistiigi/binfmt --install all
-    if [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
-        container="$(docker buildx inspect "$BUILDKIT_NAME" | awk '/Name:/{print $2}' | grep -Ev "^$BUILDKIT_NAME\$")"
-        docker container cp "${CACERT}" "buildx_buildkit_${container}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
-        docker container exec "buildx_buildkit_${container}" update-ca-certificates --verbose --force
-        docker container restart "buildx_buildkit_${container}"
-    fi
+fi
+
+if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
+    container="$(docker buildx inspect "$BUILDKIT_NAME" | awk '/Name:/{print $2}' | grep -Ev "^$BUILDKIT_NAME\$")"
+    docker container cp "${CACERT}" "buildx_buildkit_${container}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
+    docker container exec "buildx_buildkit_${container}" update-ca-certificates --verbose --force
+    docker container restart "buildx_buildkit_${container}"
 fi

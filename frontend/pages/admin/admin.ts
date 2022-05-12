@@ -1,5 +1,6 @@
 import "~/frontend/pages/admin/styles.css";
 import * as api from "@harrybrwn.com/api";
+import { logs, RequestLog } from "@harrybrwn.com/api/logs";
 import LoginManager from "~/frontend/util/LoginManager";
 import {
   TOKEN_KEY,
@@ -154,10 +155,9 @@ const logsPaginator = async (
   limit: number,
   offset: number
 ): Promise<any[][]> => {
-  return api
-    .logs({ limit: limit, offset: offset, reverse: true })
-    .then((logs: api.RequestLog[]) =>
-      logs.map((log: api.RequestLog, index: number) => [
+  return logs({ limit: limit, offset: offset, reverse: true }).then(
+    (logs: RequestLog[]) =>
+      logs.map((log: RequestLog, index: number) => [
         log.id,
         log.method,
         log.status,
@@ -168,7 +168,7 @@ const logsPaginator = async (
         `${log.latency / 1e6} ms`,
         log.requested_at,
       ])
-    );
+  );
 };
 
 const keyPairElem = (name: string, value: any): [HTMLElement, HTMLElement] => {

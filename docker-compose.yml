@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: config/docker/Dockerfile.db
       args:
-        # - BASE_IMAGE_VERSION=13.6-alpine
-        - BASE_IMAGE_VERSION=14.2-alpine3.15
+        # - BASE_IMAGE_VERSION=14.2-alpine3.15
+        - BASE_IMAGE_VERSION=13.6-alpine
     environment:
       - POSTGRES_DATABASES=harrybrwn_api,harrybrwn_hooks
     networks:
@@ -49,8 +49,12 @@ services:
           # Custom container hostname for other containers, mainly for testing.
           - harrybrwn.local
     ports:
-      - "80:80"
-      - "443:443"
+      - target: 80
+        published: 80
+        mode: host
+      - target: 443
+        published: 443
+        mode: host
 
   api:
     image: 10.0.0.101:5000/harrybrwn/api:latest

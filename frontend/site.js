@@ -6,11 +6,12 @@ const twitter = {
   card: "summary_larg_image",
 };
 
+const domain = "harrybrwn.com";
 const built = new Date();
 
 const common = {
   author: "Harry Brown",
-  domain: "harrybrwn.com",
+  domain,
   description: "The home page of a humble backend software engineer.",
   previewImage: "https://harrybrwn.com/static/img/goofy.jpg",
   github: "https://github.com/harrybrwn",
@@ -19,7 +20,6 @@ const common = {
   og: true,
   robots: "index, archive, follow",
   twitter,
-  robots: "index, archive, follow",
 };
 
 module.exports = {
@@ -56,7 +56,7 @@ module.exports = {
     tanya: {
       title: "Tanya Rivera",
       domain: common.domain,
-      description: "Tanya Rivera's personal website.",
+      description: "Tanya Rivera's website.",
       previewImage: "https://harrybrwn.com/static/img/tanya/cities.jpg",
       linkedin: "https://www.linkedin.com/in/",
       built: new Date(),
@@ -71,10 +71,10 @@ module.exports = {
     },
     404: {
       title: "404 Not Found",
-      ...common,
+      domain: "harrybrwn.com",
     },
     "50x": {
-      title: "",
+      title: "Error",
       ...common,
     },
     invite: {

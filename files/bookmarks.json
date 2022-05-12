@@ -213,6 +213,16 @@
                 "games",
                 "multiplayer"
             ]
-        }
+        },
+		{
+			"url": "https://www.cameronsworld.net/",
+			"name": "Cameron's World",
+			"description": "A geocities tribute page.",
+			"tags": [
+				"art",
+				"history",
+				"web"
+			]
+		}
     ]
 }

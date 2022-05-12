@@ -10,9 +10,9 @@ export GIT_COMMIT SOURCE_HASH
 CONTEXT=harrybrwn
 NETWORK=harrybrwn-net
 COMPOSE_FILES=("docker-compose.yml")
-PROD=true
 DEV=false
 LOGGING=true
+DRY=false
 ARGS=()
 
 usage() {
@@ -21,8 +21,10 @@ usage() {
 	echo
 	echo "Flags"
 	echo "  -h --help             get help message"
-	echo "     --context <name>   name of docker context to use (default $CONTEXT)"
-	echo "     --network <name>   name of docker swarm network to check for and create (default $NETWORK)"
+	echo "     --context <name>   name of docker context to use (default: \"$CONTEXT\")"
+	echo "     --network <name>   name of docker swarm network to check for and create (default: \"$NETWORK\")"
+	echo "     --dev              run for development environment (default: $DEV)"
+	echo "     --dry-run          print the docker-compose command but don't run it (default: $DRY)"
 	echo
 }
 
@@ -46,13 +48,16 @@ while [ $# -gt 0 ]; do
 			;;
 		--dev)
 		 	DEV=true
-			PROD=false
 			shift
 			;;
 		--no-logging)
 			LOGGING=false
 			shift
 			;;
+    --dry-run)
+      DRY=true
+      shift
+      ;;
 		-*|--*)
 			echo "Error: unknown flag \"$1\""
 			exit 1
@@ -64,22 +69,23 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-current_context="$(docker context inspect --format '{{.Name}}')"
-if [ "$current_context" != "$CONTEXT" ]; then
-	if ! docker context inspect "$CONTEXT" > /dev/null 2>&1; then
-		echo "Error: context $CONTEXT does not exist"
-		exit 1
-	fi
-	docker context use "$CONTEXT"
-fi
-
-if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
-  docker network create \
-    --driver overlay    \
-    --ingress           \
-    --scope swarm       \
-    --ipv6              \
-    "$NETWORK"
+if ! $DEV; then
+  current_context="$(docker context inspect --format '{{.Name}}')"
+  if [ "$current_context" != "$CONTEXT" ]; then
+    if ! docker context inspect "$CONTEXT" > /dev/null 2>&1; then
+      echo "Error: context $CONTEXT does not exist"
+      exit 1
+    fi
+    docker context use "$CONTEXT"
+  fi
+  if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
+    docker network create \
+      --driver overlay    \
+      --ingress           \
+      --scope swarm       \
+      --ipv6              \
+      "$NETWORK"
+  fi
 fi
 
 COMPOSE_ARGS=()
@@ -91,11 +97,21 @@ if $LOGGING; then
 	COMPOSE_ARGS+=("--file" "config/docker/logging.yml")
 fi
 
-if $PROD; then
-	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
-else
+if $DEV; then
 	COMPOSE_ARGS+=("--file" "config/docker/dev.yml")
+else
+	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
 
-echo docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
-# docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+for arg in "${ARGS[@]}"; do
+	case $arg in
+		migrate)
+		;;
+	esac
+done
+
+if $DRY; then
+  echo docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+else
+  docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+fi
