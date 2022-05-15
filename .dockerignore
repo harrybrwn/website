@@ -34,7 +34,6 @@ docker-compose.*
 /scripts/*.sql
 /scripts/buildx.sh
 /scripts/psql.sh
-/scripts/migrate.sh
 /scripts/functional.sh
 /scripts/certs.sh
 /scripts/mockgen.sh
