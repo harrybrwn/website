@@ -46,6 +46,9 @@ const sitemap = [
   {
     path: "/static/files/HarrisonBrown.pdf",
   },
+  {
+    path: "/bookmarks",
+  },
 ];
 
 const copy = (name) => {
@@ -162,7 +165,8 @@ module.exports = function (webpackEnv) {
     builder.html("50x", { noChunks: true, filename: "50x.html" }),
     builder.html("invite"),
     builder.html("chatroom"),
-    builder.html("invite_email", { noChunks: true })
+    builder.html("invite_email", { noChunks: true }),
+    builder.html("bookmarks")
   );
 
   for (const key in site.pages) {
@@ -179,6 +183,7 @@ module.exports = function (webpackEnv) {
       games: { import: entryImport("pages/games.ts") },
       chatroom: { import: entryImport("pages/chatroom/chatroom.ts") },
       invite: { import: entryImport("pages/invite.ts") },
+      bookmarks: { import: entryImport("pages/bookmarks/bookmarks.ts") },
     },
 
     devtool: builder.isProd ? undefined : "inline-source-map",

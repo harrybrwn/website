@@ -53,6 +53,10 @@ module.exports = {
       title: "Tanya y Harry",
       ...common,
     },
+    bookmarks: {
+      title: "Bookmarks",
+      ...common,
+    },
     tanya: {
       title: "Tanya Rivera",
       domain: common.domain,
@@ -71,7 +75,7 @@ module.exports = {
     },
     404: {
       title: "404 Not Found",
-      domain: "harrybrwn.com",
+      domain: common.domain,
     },
     "50x": {
       title: "Error",

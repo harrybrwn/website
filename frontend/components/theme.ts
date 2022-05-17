@@ -32,7 +32,8 @@ export class ThemeManager {
     this.theme = loadTheme("theme");
     let toggle = getToggle();
     if (toggle == null) {
-      throw new Error("could not get theme toggle button");
+      // throw new Error("could not get theme toggle button");
+      console.error("could not get theme toggle button");
     }
     this.themeToggle = toggle as HTMLInputElement;
     switch (this.theme) {

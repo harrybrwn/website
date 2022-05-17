@@ -74,32 +74,6 @@ export const invites = async (): Promise<InviteList> => {
   });
 };
 
-export interface Bookmark {
-  url: string;
-  name: string;
-  description: string;
-  tags: string[];
-}
-
-export interface Bookmarks {
-  links: Bookmark[];
-}
-
-/**
- * bookmarks will fetch a list of bookmarks from the api.
- * @returns list of bookmarks
- */
-export const bookmarks = async (): Promise<Bookmarks> => {
-  return fetch(`${window.location.origin}/api/bookmarks`).then(
-    (resp: Response) => {
-      if (!resp.ok) {
-        throw new Error("could not get bookmarks");
-      }
-      return resp.json();
-    }
-  );
-};
-
 export interface PageParams {
   limit: number;
   offset?: number;
@@ -132,3 +106,9 @@ export const runtimeInfo = async (): Promise<RuntimeInfo> => {
     return resp.json();
   });
 };
+
+export type { Bookmarks, Bookmark } from "./bookmarks";
+export type { RequestLog, LogOpts } from "./logs";
+export { bookmarks } from "./bookmarks";
+export { login, refresh } from "./auth";
+export { logs } from "./logs";

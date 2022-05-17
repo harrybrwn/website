@@ -2,6 +2,7 @@ import "./styles/main.css";
 import {
   TOKEN_KEY,
   Token,
+  Login,
   login,
   deleteToken,
   storeToken,
@@ -13,7 +14,6 @@ import { clearCookie } from "./util/cookies";
 import LoginManager from "./util/LoginManager";
 import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
-import * as api from "./api";
 import { isEmail } from "~/frontend/util/email";
 import "~/frontend/components/InputForm";
 
@@ -28,11 +28,10 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
   form.addEventListener("submit", (event: SubmitEvent) => {
     event.preventDefault();
     let formData = new FormData(form);
-    let email: string = "";
-    let req = {
+    let req: Login = {
       username: formData.get("username") as string,
-      email: email,
       password: formData.get("password") as string,
+      email: "",
     };
     let identifier = formData.get("identifier") as string;
     if (isEmail(identifier)) {
@@ -53,17 +52,6 @@ function handleLogin(formID: string, callback: (t: Token) => void) {
       });
   });
 }
-
-const applyPageCount = () => {
-  let countBox = document.getElementById("hit-count");
-  if (countBox == null) {
-    return;
-  }
-  let container = countBox;
-  api.hits("/").then((hits) => {
-    container.innerText = `page visits: ${hits.count}`;
-  });
-};
 
 const anchor = (href: string, text: string): HTMLAnchorElement => {
   let a = document.createElement("a");

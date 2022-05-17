@@ -6,6 +6,8 @@ import {
   refresh,
   loadRefreshToken,
   refreshExpiration,
+  parseClaims,
+  clearRefreshToken,
 } from "@harrybrwn.com/api/auth";
 import { SECOND } from "~/frontend/constants";
 
@@ -54,6 +56,14 @@ export default class LoginManager {
         reject(new Error("stored refresh token has zero length"));
       });
     }
+    let claims = parseClaims(refreshToken);
+    let d = new Date(claims.exp * 1000);
+    if (Date.now() < d.getTime()) {
+      return new Promise<Token | null>((_resolve, reject) => {
+        reject(new Error("refresh token is expired"));
+      });
+    }
+
     return refresh(refreshToken)
       .then((tok: Token) => {
         this.dispatch(tok);
@@ -92,21 +102,8 @@ export default class LoginManager {
     }, ms);
   }
 
-  private async checkToken() {
-    let token = loadToken();
-    if (token == null) {
-      if (loadRefreshToken() != null) {
-        await this.refresh();
-      }
-    } else if (isExpired(token)) {
-      await this.refresh();
-    }
-  }
-
   constructor(options?: LoginManagerOptions) {
-    if (!options) {
-      options = {};
-    }
+    if (!options) options = {};
     this.loggedIn = false;
     this.target = options.target || document;
     this.refreshTokenTimeout = null;
@@ -129,13 +126,14 @@ export default class LoginManager {
       }
     }
 
+    // We only want to allocate a timer, so create one and clear right after.
     this.expirationCheckTimer = setInterval(() => {}, 120 * SECOND);
     clearInterval(this.expirationCheckTimer);
 
     // window.addEventListener("beforeunload", (ev: BeforeUnloadEvent) => {});
     this.target.addEventListener("visibilitychange", (ev: Event) => {
       if (!document.hidden) {
-        this.checkToken();
+        //this.checkToken();
       }
     });
   }

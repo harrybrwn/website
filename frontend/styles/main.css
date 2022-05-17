@@ -16,7 +16,7 @@ a:visited {
 	width: 45%;
 }
 
-.links {
+.links, .pages {
 	columns: 2;
 }
 

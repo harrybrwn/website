@@ -1,20 +1,58 @@
 {
-	"links": [
-		{
-			"url": "https://caltopo.com/map.html",
-			"name": "CalTOPO",
-			"description": "A map showing various geological features.",
-			"tags": [
-				"tools",
-				"science"
-			]
+	"tags": {
+		"tools": {
+			"color": "blue"
 		},
+		"art": {
+			"color": "blue"
+		},
+		"blog": {
+			"color": "blue"
+		},
+		"computers": {
+			"color": "blue"
+		},
+		"games": {
+			"color": "blue"
+		},
+		"history": {
+			"color": "blue"
+		},
+		"math": {
+			"color": "green"
+		},
+		"multiplayer": {
+			"color": "blue"
+		},
+		"people": {
+			"color": "blue"
+		},
+		"science": {
+			"color": "blue"
+		},
+		"silly": {
+			"color": "blue"
+		},
+		"web": {
+			"color": "cadetblue"
+		}
+	},
+	"links": [
 		{
 			"url": "https://primes.utm.edu/primes/lists/all.txt",
 			"name": "The Largest Known Primes",
 			"description": "The 5,000 largest known prime numbers including when it was discovered and who discovered it.",
 			"tags": [
 				"math"
+			]
+		},
+		{
+			"url": "https://caltopo.com/map.html",
+			"name": "CalTOPO",
+			"description": "A map showing various geological and environmental features.",
+			"tags": [
+				"tools",
+				"science"
 			]
 		},
 		{
@@ -37,7 +75,7 @@
 		{
 			"url": "https://gurka.se/",
 			"name": "Gurka",
-			"description": "Literally just a cucumber.",
+			"description": "Just a spinning cucumber.",
 			"tags": [
 				"silly"
 			]
@@ -90,8 +128,8 @@
 		},
 		{
 			"url": "https://robpike.io/",
-			"name": "Rob Pike's website",
-			"description": "",
+			"name": "Rob Pike",
+			"description": "Rob Pike's personal website",
 			"tags": [
 				"silly",
 				"people"
@@ -165,7 +203,7 @@
 		{
 			"url": "https://shitstorm.dirkdirk.com/",
 			"name": "Shit Storm",
-			"description": "",
+			"description": "A literal storm of shit.",
 			"tags": [
 				"silly"
 			]
@@ -187,33 +225,33 @@
 				"silly"
 			]
 		},
-        {
-            "url": "https://skribbl.io/",
-            "name": "skribble.io",
-            "description": "Multiplayer guess-the-drawing game.",
-            "tags": [
-                "games",
-                "multiplayer"
-            ]
-        },
-        {
-            "url": "https://digdig.io/",
-            "name": "digdig.io",
-            "description": "",
-            "tags": [
-                "games",
-                "multiplayer"
-            ]
-        },
-        {
-            "url": "https://agar.io",
-            "name": "agar.io",
-            "description": "",
-            "tags": [
-                "games",
-                "multiplayer"
-            ]
-        },
+		{
+			"url": "https://skribbl.io/",
+			"name": "skribble.io",
+			"description": "Multiplayer guess-the-drawing game.",
+			"tags": [
+				"games",
+				"multiplayer"
+			]
+		},
+		{
+			"url": "https://digdig.io/",
+			"name": "digdig.io",
+			"description": "Dig around and grow by collecting resources. Don't get eaten by the other miners!",
+			"tags": [
+				"games",
+				"multiplayer"
+			]
+		},
+		{
+			"url": "https://agar.io",
+			"name": "agar.io",
+			"description": "",
+			"tags": [
+				"games",
+				"multiplayer"
+			]
+		},
 		{
 			"url": "https://www.cameronsworld.net/",
 			"name": "Cameron's World",
@@ -222,6 +260,74 @@
 				"art",
 				"history",
 				"web"
+			]
+		},
+		{
+			"url": "https://artvee.com/",
+			"name": "Discover Classical Art",
+			"description": "A searchable site full of public domain art.",
+			"tags": [
+				"art",
+				"history"
+			]
+		},
+		{
+			"url": "https://isrupertmurdochdead.com/",
+			"name": "Is Rupert Murdoch Dead?",
+			"description": "Tells you yes or no depending on whether or not Rupert Murdoch is still alive.",
+			"tags": [
+				"silly",
+				"people"
+			]
+		},
+		{
+			"url": "https://pablotheflamingo.com/",
+			"name": "Pablo The Flamingo",
+			"description": "An obnoxious flamingo",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "http://www.clicktoremove.com/",
+			"name": "Click to Remove",
+			"description": "Click to remove or something, i don't know.",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://www.pointlesssites.com/",
+			"name": "Pointless Sites",
+			"description": "List of very useless websites.",
+			"tags": [
+				"silly",
+				"web"
+			]
+		},
+		{
+			"url": "https://bouncingdvdlogo.com/",
+			"name": "Bouncing DVD Logo",
+			"description": "A bouncing DVD logo",
+			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://pirate.monkeyness.com/api.html",
+			"name": "Pirate Monkeynesses",
+			"description": "Random pirate themed monkey-business. They also have an API.",
+			"tags": [
+				"silly",
+				"web"
+			]
+		},
+		{
+			"url": "https://www.my70stv.com/",
+			"name": "My 70s TV",
+			"description": "Classic 70s style TV that can play any number of different movies, tv shows, sports, or news all from the 1970s.",
+			"tags": [
+				"history"
 			]
 		}
     ]
