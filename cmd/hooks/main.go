@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/go-github/v43/github"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -48,12 +49,13 @@ func main() {
 	flag.StringVar(&host, "host", os.Getenv("GH_HOOK_CALLBACK_HOST"), "server's domain name, used for creating webhooks")
 	flag.Parse()
 
+	logger.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339})
 	if host == "" {
 		logger.Fatal("no server host given, set -host or $SERVER_HOST")
 	}
 
 	gh := GithubAuthService{
-		Sessions:    session.NewMemStore[ghSession](-1),
+		Sessions:    session.NewMemStore[ghSession](time.Minute),
 		AuthSession: session.NewMemStore[oauthSession](time.Minute * 2),
 		Config: oauth2.Config{
 			ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
@@ -72,8 +74,9 @@ func main() {
 		},
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	r := chi.NewRouter()
+	r.Use(logs)
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		if GithubLoggedIn(r) {
 			w.WriteHeader(200)
@@ -83,17 +86,17 @@ func main() {
 			w.Write(loginHTML)
 		}
 	})
-	mux.HandleFunc("/login/github", gh.Login)
-	mux.HandleFunc("/authorize/github", gh.Authorize)
-	mux.HandleFunc("/logout/github", gh.SignOut)
-	mux.HandleFunc("/hooks/github", callback())
+	r.Get("/login/github", gh.Login)
+	r.Post("/authorize/github", gh.Authorize)
+	r.Post("/logout/github", gh.SignOut)
+	r.Post("/hooks/github", callback())
 
 	addr := fmt.Sprintf(":%d", port)
 	logger.WithFields(logrus.Fields{
 		"address": addr,
 		"time":    time.Now(),
 	}).Info("starting server")
-	http.ListenAndServe(addr, logs(mux))
+	http.ListenAndServe(addr, r)
 }
 
 const callbackSecret = "e5c172c9302d3bec1ae54314d2f1be70301cca1c289afb94adac83066128c31e"
@@ -208,9 +211,9 @@ func (r *response) WriteHeader(status int) {
 	r.ResponseWriter.WriteHeader(status)
 }
 
-func logs(h http.Handler) http.HandlerFunc {
+func logs(h http.Handler) http.Handler {
 	logger := log.GetLogger()
-	return func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := response{ResponseWriter: w}
 		h.ServeHTTP(&resp, r)
 		logger := logger.WithFields(logrus.Fields{
@@ -231,7 +234,7 @@ func logs(h http.Handler) http.HandlerFunc {
 		} else {
 			logger.Info("request")
 		}
-	}
+	})
 }
 
 func getState() string {

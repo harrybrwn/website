@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-type IDGenerator interface {
-	ID() string
-}
-
 type Manager[T any] struct {
 	Store Store[T]
 	GenID func() string

@@ -33,7 +33,7 @@ func GetOutput(envkey string) io.Writer {
 	}
 	file, err := os.Open(out)
 	if err != nil {
-		logger.Warnf("failed to open log file: %w", err)
+		logger.Warnf("failed to open log file: %v", err)
 		return os.Stdout
 	}
 	// TODO do log file rotation

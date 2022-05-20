@@ -33,3 +33,4 @@ linters:
     - rowserrcheck
   disable:
     - errcheck
+    - deadcode
