@@ -54,6 +54,10 @@ export default class MockFetch {
   }
 
   call(input: RequestInfo, init?: RequestInit | undefined): Promise<Response> {
+    if (this.resultStack.length == 0)
+      throw new Error("no results left in the stack");
+    if (this.callStack.length == 0)
+      throw new Error("no fetch calls left in the stack");
     let result = this.resultStack.pop();
     let expected = this.callStack.pop();
     expect(result).not.toEqual(undefined);

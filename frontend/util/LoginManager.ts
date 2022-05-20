@@ -47,21 +47,12 @@ export default class LoginManager {
   private async refresh(): Promise<Token | null> {
     let refreshToken = loadRefreshToken();
     if (refreshToken == null) {
-      return new Promise<Token | null>((_resolve, reject) => {
-        reject(new Error("could not get refresh token from localStorage"));
-      });
+      return Promise.reject(
+        new Error("could not get refresh token from localStorage")
+      );
     }
     if (refreshToken.length == 0) {
-      return new Promise<Token | null>((_resolve, reject) => {
-        reject(new Error("stored refresh token has zero length"));
-      });
-    }
-    let claims = parseClaims(refreshToken);
-    let d = new Date(claims.exp * 1000);
-    if (Date.now() < d.getTime()) {
-      return new Promise<Token | null>((_resolve, reject) => {
-        reject(new Error("refresh token is expired"));
-      });
+      return Promise.reject(new Error("stored refresh token has zero length"));
     }
 
     return refresh(refreshToken)

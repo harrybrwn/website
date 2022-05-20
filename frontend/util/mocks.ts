@@ -30,7 +30,7 @@ export const newToken = (claims: Claims, refExp?: number): Token => {
   let encClaims = b64encode(JSON.stringify(cl));
 
   if (refExp != undefined) cl.exp = Math.round(refExp);
-  else cl.exp = cl.exp + 24 * 60 * 60 * 1000;
+  else cl.exp = cl.exp + 24 * 60 * 60;
   cl.aud = ["refresh"];
   let encRefClaims = b64encode(JSON.stringify(cl));
 
