@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: config/docker/Dockerfile.fluentbit
       args:
-        # - FLUENTBIT_VERSION=1.9.3
-        - FLUENTBIT_VERSION=1.9.3-debug
+        - FLUENTBIT_VERSION=1.9.3
+        #- FLUENTBIT_VERSION=1.9.3-debug
     ports:
       - '24224:24224/tcp'
       - '24224:24224/udp'
@@ -21,6 +21,10 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 5
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/
+      - /sys/fs/cgroup:/sys/fs/cgroup
 
   loki:
     image: 10.0.0.101:5000/harrybrwn/loki:latest
@@ -79,27 +83,27 @@ services:
     logging:
       driver: fluentd
       options:
-        tag: 'docker.nginx.{{ .ID }}'
+        tag: 'docker.logs.nginx.{{ .ID }}'
   db:
     logging:
       driver: fluentd
       options:
-        tag: 'docker.postgres.{{ .ID }}'
+        tag: 'docker.logs.postgres.{{ .ID }}'
   redis:
     logging:
       driver: fluentd
       options:
-        tag: 'docker.redis.{{ .ID }}'
+        tag: 'docker.logs.redis.{{ .ID }}'
   api:
     logging:
       driver: fluentd
       options:
-        tag: 'docker.api.{{ .ID }}'
+        tag: 'docker.logs.api.{{ .ID }}'
   hooks:
     logging:
       driver: fluentd
       options:
-        tag: 'docker.hooks.{{ .ID }}'
+        tag: 'docker.logs.hooks.{{ .ID }}'
 
 volumes:
   grafana:
