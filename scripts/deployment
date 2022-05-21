@@ -99,6 +99,7 @@ fi
 
 if $DEV; then
 	COMPOSE_ARGS+=("--file" "config/docker/dev.yml")
+	CONTEXT="default"
 else
 	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
@@ -111,7 +112,7 @@ for arg in "${ARGS[@]}"; do
 done
 
 if $DRY; then
-  echo docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+  echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
 else
-  docker-compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+  docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
 fi

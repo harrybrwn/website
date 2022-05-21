@@ -32,6 +32,12 @@ services:
     ports:
       - "3100:3100"
       - "9096:9096" # grpc
+    environment:
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+    env_file:
+      - config/env/db.env
     volumes:
       - grafana:/tmp/loki
     networks:
@@ -52,6 +58,12 @@ services:
         - GRAFANA_VERSION=latest
     ports:
       - "3000:3000"
+    environment:
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+    env_file:
+      - config/env/db.env
     volumes:
       - grafana:/var/lib/grafana
     networks:

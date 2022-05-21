@@ -11,7 +11,7 @@ services:
         # - BASE_IMAGE_VERSION=14.2-alpine3.15
         - BASE_IMAGE_VERSION=13.6-alpine
     environment:
-      - POSTGRES_DATABASES=harrybrwn_api,harrybrwn_hooks
+      - POSTGRES_DATABASES=harrybrwn_api,harrybrwn_hooks,grafana
     networks:
       - backend
     ports:
