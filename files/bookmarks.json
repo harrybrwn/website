@@ -329,6 +329,24 @@
 			"tags": [
 				"history"
 			]
+		},
+		{
+			"url": "https://phocks.org/stumble/creepy/",
+			"name": "136 Creepy Wiki Articles",
+			"description": "A list of 136 creep wikipedia articles.",
+			"tags": [
+				"creepy",
+				"web"
+			]
+		},
+		{
+			"url": "https://v1r.eu/",
+			"name": "v1r.eu",
+			"description": "Strange personal webpage with some random goofy pages. My favorite is /terry.",
+			"tags": [
+				"people",
+				"creepy"
+			]
 		}
     ]
 }

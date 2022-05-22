@@ -36,7 +36,7 @@ services:
     build:
       x-bake:
         tags:
-          - 10.0.0.101:5000/harrybrwn/loki:latest
+          - 10.0.0.101:5000/harrybrwn/grafana:latest
         platforms:
           - linux/amd64
           - linux/arm/v7

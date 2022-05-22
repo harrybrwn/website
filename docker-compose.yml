@@ -2,8 +2,7 @@ version: "3.8"
 
 services:
   db:
-    # image: postgres:13.6-alpine
-    image: ${REGISTRY}/harrybrwn/postgres:latest
+    image: 10.0.0.101:5000/harrybrwn/postgres:latest
     build:
       context: .
       dockerfile: config/docker/Dockerfile.db
@@ -18,8 +17,6 @@ services:
       - "5432:5432"
     volumes:
       - database:/var/lib/postgresql/data/
-      # Can't have this volume in prod deployment
-      # - ./db/postgres:/docker-entrypoint-initdb.d:ro
     env_file:
       - config/env/db.env
 

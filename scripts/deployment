@@ -70,21 +70,13 @@ while [ $# -gt 0 ]; do
 done
 
 if ! $DEV; then
-  current_context="$(docker context inspect --format '{{.Name}}')"
-  if [ "$current_context" != "$CONTEXT" ]; then
-    if ! docker context inspect "$CONTEXT" > /dev/null 2>&1; then
-      echo "Error: context $CONTEXT does not exist"
-      exit 1
-    fi
-    docker context use "$CONTEXT"
-  fi
   if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
-    docker network create \
-      --driver overlay    \
-      --ingress           \
-      --scope swarm       \
-      --ipv6              \
-      "$NETWORK"
+   docker network create \
+     --driver overlay    \
+     --ingress           \
+     --scope swarm       \
+     --ipv6              \
+     "$NETWORK"
   fi
 fi
 
