@@ -1,14 +1,11 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
-GIT_COMMIT=$(shell git rev-parse HEAD)
-SOURCE_HASH=$(shell ./scripts/sourcehash.sh -e '*_test.go')
-VERSION=$(shell git describe --tags --abbrev=0)-$(shell git rev-parse --short HEAD)
 ENV=production
 TESTCACHE=.cache/test
 BUILDCACHE=.cache/build
 
 build:
 	sh scripts/build.sh
-	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose build
+	docker-compose build
 
 test: test-ts test-go
 
@@ -100,34 +97,19 @@ functional: functional-setup functional-run functional-stop
 .PHONY: functional functional-setup functional-run functional-run functional-build
 
 bake:
-	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
-		-f docker-compose.yml        \
-		-f config/docker/logging.yml \
-		-f config/docker/prod.yml    \
-		config | \
-		docker buildx bake \
-			-f - \
-			-f config/docker/buildx.yml --push
-
-deploy-dev:
-	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
-	  	-f docker-compose.yml -f config/docker/logging.yml -f config/docker/dev.yml config | \
-		docker stack deploy        \
-			--resolve-image always \
-			--with-registry-auth   \
-			--prune                \
-			-c -                   \
-			hb
+	scripts/deployment bake
 
 deploy:
-	GIT_COMMIT=$(GIT_COMMIT) SOURCE_HASH=$(SOURCE_HASH) docker-compose \
-	  	-f docker-compose.yml        \
-		-f config/docker/logging.yml \
-		-f config/docker/prod.yml    \
-		config | \
-		docker stack deploy        \
-			--resolve-image=always \
-			--with-registry-auth   \
-			--prune                \
-			-c -                   \
-			harrybrwn
+	scripts/deployment --stack harrybrwn deploy
+
+deploy-dev:
+	scripts/deployment --stack hb --dev deploy
+
+deploy-infra:
+	docker --context harrybrwn stack deploy \
+		--prune \
+		--with-registry-auth \
+		--compose-file config/docker-compose.infra.yml \
+		infra
+
+.PHONY: bake deploy deploy-dev

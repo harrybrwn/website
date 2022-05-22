@@ -143,7 +143,7 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-rm -rf "${PKI}"
+rm -rf "${PKI}/certs"
 mkdir -p "${PKI}/certs"
 
 ca_cert "harrybrwn local dev"

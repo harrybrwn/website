@@ -9,7 +9,8 @@ RUN apk update  && \
     mkdir -p /usr/local/sbin/ && \
     ln -s /usr/local/bin/node /usr/local/sbin/node && \
     npm update -g npm
-RUN git clone --depth 1 https://github.com/harrybrwn/hextris.git /opt/hextris && \
+RUN git clone --depth 1 --branch v1.1.1 \
+    https://github.com/harrybrwn/hextris.git /opt/hextris && \
     rm -rf \
        /opt/hextris/.git       \
        /opt/hextris/CNAME      \
@@ -30,10 +31,16 @@ FROM golang:1.18-alpine as builder
 RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
     CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /opt/harrybrwn/
-WORKDIR /opt/harrybrwn
+WORKDIR /opt/harrybrwn/
 RUN go mod download
-
-COPY --from=frontend /opt/harrybrwn .
+COPY pkg pkg/
+COPY app app/
+COPY cmd cmd/
+COPY files files/
+COPY internal internal/
+COPY main.go .
+COPY frontend/templates frontend/templates/
+COPY --from=frontend /opt/harrybrwn/build build/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
     CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/hooks ./cmd/hooks
 

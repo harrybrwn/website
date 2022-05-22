@@ -5,6 +5,8 @@ services:
       x-bake:
         tags:
           - 10.0.0.101:5000/harrybrwn/api:latest
+          - ${REGISTRY}/harrybrwn/api:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/api:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
@@ -13,22 +15,8 @@ services:
       x-bake:
         tags:
           - 10.0.0.101:5000/harrybrwn/hooks:latest
-        platforms:
-          - linux/amd64
-          - linux/arm/v7
-  fluentbit:
-    build:
-      x-bake:
-        tags:
-          - 10.0.0.101:5000/harrybrwn/fluent-bit:latest
-        platforms:
-          - linux/amd64
-          - linux/arm/v7
-  loki:
-    build:
-      x-bake:
-        tags:
-          - 10.0.0.101:5000/harrybrwn/loki:latest
+          - ${REGISTRY}/harrybrwn/hooks:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/hooks:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
@@ -37,6 +25,25 @@ services:
       x-bake:
         tags:
           - 10.0.0.101:5000/harrybrwn/grafana:latest
+          - ${REGISTRY}/harrybrwn/grafana:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/grafana:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
+
+  # fluentbit:
+  #   build:
+  #     x-bake:
+  #       tags:
+  #         - 10.0.0.101:5000/harrybrwn/fluent-bit:latest
+  #       platforms:
+  #         - linux/amd64
+  #         - linux/arm/v7
+  # loki:
+  #   build:
+  #     x-bake:
+  #       tags:
+  #         - 10.0.0.101:5000/harrybrwn/loki:latest
+  #       platforms:
+  #         - linux/amd64
+  #         - linux/arm/v7

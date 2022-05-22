@@ -3,13 +3,14 @@ version: "3.8"
 services:
 
   fluentbit:
-    image: 10.0.0.101:5000/harrybrwn/fluent-bit:latest
-    build:
-      context: .
-      dockerfile: config/docker/Dockerfile.fluentbit
-      args:
-        - FLUENTBIT_VERSION=1.9.3
-        #- FLUENTBIT_VERSION=1.9.3-debug
+    # image: 10.0.0.101:5000/harrybrwn/fluent-bit:latest
+    # build:
+    #   context: .
+    #   dockerfile: config/docker/Dockerfile.fluentbit
+    #   args:
+    #     - FLUENTBIT_VERSION=1.9.3
+    #     #- FLUENTBIT_VERSION=1.9.3-debug
+    image: fluent/fluent-bit:1.9.3
     ports:
       - '24224:24224/tcp'
       - '24224:24224/udp'
@@ -25,14 +26,21 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers/:/var/lib/docker/containers/
       - /sys/fs/cgroup:/sys/fs/cgroup
+    configs:
+      - source: fluent-bit
+        target: /fluent-bit/etc/fluent-bit.conf
+      - source: fluent-bit-parsers
+        target: /fluent-bit/etc/parsers.conf
 
   loki:
-    image: 10.0.0.101:5000/harrybrwn/loki:latest
-    build:
-      context: .
-      dockerfile: config/docker/Dockerfile.loki
-      args:
-        - LOKI_VERSION=2.5.0
+    # image: 10.0.0.101:5000/harrybrwn/loki:latest
+    # build:
+    #   context: .
+    #   dockerfile: config/docker/Dockerfile.loki
+    #   args:
+    #     - LOKI_VERSION=2.5.0
+    image: grafana/loki:2.5.0
+    command: ["-config.file=/mnt/loki-config.yml"]
     ports:
       - "3100:3100"
       - "9096:9096" # grpc
@@ -46,6 +54,9 @@ services:
       - grafana:/tmp/loki
     networks:
       - backend
+    configs:
+      - source: loki-config.yml
+        target: /mnt/loki-config.yml
     deploy:
       replicas: 1
       restart_policy:
@@ -107,3 +118,11 @@ services:
 
 volumes:
   grafana:
+
+configs:
+  loki-config.yml:
+    file: ./config/logging/loki.yml
+  fluent-bit-parsers:
+    file: ./config/logging/fluent-bit-parsers.conf
+  fluent-bit:
+    file: ./config/logging/fluent-bit.conf

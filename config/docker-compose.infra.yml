@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  registry:
+    image: registry:2
+    environment:
+      - REGISTRY_HTTP_ADDR=0.0.0.0:443
+      - REGISTRY_HTTP_TLS_CERTIFICATE=/run/secrets/registry-server-cert
+      - REGISTRY_HTTP_TLS_KEY=/run/secrets/registry-server-key
+      - REGISTRY_AUTH=htpasswd
+      - REGISTRY_AUTH_HTPASSWD_PATH=/run/secrets/registry-htpasswd-file
+      - REGISTRY_AUTH_HTPASSWD_REALM=registry.harybrwn.com
+    volumes:
+      - registry:/var/lib/registry
+    ports:
+      - "5000:443"
+    secrets:
+      - registry-server-cert
+      - registry-server-key
+      - registry-htpasswd-file
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - "node.role==manager"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 120s
+
+secrets:
+  registry-server-cert:
+    file: ${HOME}/.config/docker/certs/dell-amd/server-cert.pem
+  registry-server-key:
+    file: ${HOME}/.config/docker/certs/dell-amd/server-key.pem
+  registry-htpasswd-file:
+    file: ./registry/htpasswd
+
+volumes:
+  registry:

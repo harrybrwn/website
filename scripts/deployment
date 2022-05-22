@@ -2,9 +2,16 @@
 
 set -eu
 
+GIT_TAG="$(git describe --tags --abbrev=0)"
+GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
-export GIT_COMMIT SOURCE_HASH
+export GIT_COMMIT GIT_BRANCH SOURCE_HASH
+
+if [ -f "./.env" ]; then
+	source "./.env"
+	export REGISTRY
+fi
 
 # Flags
 CONTEXT=harrybrwn
@@ -13,18 +20,25 @@ COMPOSE_FILES=("docker-compose.yml")
 DEV=false
 LOGGING=true
 DRY=false
+STACK="harrybrwn"
 ARGS=()
 
 usage() {
 	echo "Usage"
-	echo "  deployment [flags...]"
+	echo "  deployment [flags...] [command|compose command]"
+	echo
+	echo "Commands"
+	echo "  deploy  call 'docker stack deploy'"
+	echo "  bake    call 'docker buildx bake'"
 	echo
 	echo "Flags"
-	echo "  -h --help             get help message"
-	echo "     --context <name>   name of docker context to use (default: \"$CONTEXT\")"
-	echo "     --network <name>   name of docker swarm network to check for and create (default: \"$NETWORK\")"
-	echo "     --dev              run for development environment (default: $DEV)"
-	echo "     --dry-run          print the docker-compose command but don't run it (default: $DRY)"
+	echo "  -h, --help                 get help message"
+	echo "      --context <name>       name of docker context to use (default: \"$CONTEXT\")"
+	echo "      --network <name>       name of docker swarm network to check for and create (default: \"$NETWORK\")"
+	echo "      --dev                  run for development environment (default: $DEV)"
+	echo "      --dry-run              print the docker-compose command but don't run it (default: $DRY)"
+	echo "      --stack <name>         docker stack name (default: \"$STACK\")"
+	echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[@]})"
 	echo
 }
 
@@ -69,16 +83,6 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-if ! $DEV; then
-  if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
-   docker network create \
-     --driver overlay    \
-     --ingress           \
-     --scope swarm       \
-     --ipv6              \
-     "$NETWORK"
-  fi
-fi
 
 COMPOSE_ARGS=()
 for f in "${COMPOSE_FILES[@]}"; do
@@ -86,7 +90,7 @@ for f in "${COMPOSE_FILES[@]}"; do
 done
 
 if $LOGGING; then
-	COMPOSE_ARGS+=("--file" "config/docker/logging.yml")
+	COMPOSE_ARGS+=("--file" "config/docker-compose.logging.yml")
 fi
 
 if $DEV; then
@@ -96,15 +100,57 @@ else
 	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
 
+deploy() {
+	if ! $DEV; then
+	  if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
+	    docker network create \
+	      --driver overlay    \
+	      --ingress           \
+	      --scope swarm       \
+	      --ipv6              \
+	      "$NETWORK"
+	  fi
+	fi
+	docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+		docker --context "${CONTEXT}" stack deploy \
+			--resolve-image=always \
+			--with-registry-auth   \
+			--prune                \
+			--compose-file -       \
+			harrybrwn
+}
+
 for arg in "${ARGS[@]}"; do
 	case $arg in
 		migrate)
 		;;
+		yee)
+			echo "yee"
+			;;
+		test)
+		 	cat .env
+			echo "${REGISTRY}"
+			break
+		;;
+		deploy)
+			deploy
+			break
+		;;
+		bake)
+			docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+				docker --context default buildx bake \
+					--file - \
+					--file config/docker/buildx.yml \
+					--push
+			break
+		;;
+		*)
+			if $DRY; then
+				echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+			else
+				docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+			fi
+			break
+		;;
 	esac
 done
-
-if $DRY; then
-  echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
-else
-  docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
-fi
