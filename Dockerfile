@@ -3,10 +3,19 @@
 # Frontend Build
 ARG NODE_VERSION=16.13.1-alpine
 FROM node:16.13.1-alpine as frontend
-RUN apk update && apk upgrade && \
+RUN apk update  && \
+    apk upgrade && \
+    apk add git && \
     mkdir -p /usr/local/sbin/ && \
     ln -s /usr/local/bin/node /usr/local/sbin/node && \
     npm update -g npm
+RUN git clone --depth 1 https://github.com/harrybrwn/hextris.git /opt/hextris && \
+    rm -rf \
+       /opt/hextris/.git       \
+       /opt/hextris/CNAME      \
+       /opt/hextris/README.md  \
+       /opt/hextris/.gitignore \
+       /opt/hextris/.github
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
@@ -40,6 +49,7 @@ ENTRYPOINT ["/app/harrybrwn"]
 FROM nginx:1.20.2-alpine as nginx
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
+COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
 COPY config/nginx/ /etc/nginx/
 RUN rm /etc/nginx/conf.d/default.conf
 

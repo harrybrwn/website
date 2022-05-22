@@ -24,7 +24,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 9,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -34,7 +34,7 @@
         "uid": "P982945308D3682D1"
       },
       "gridPos": {
-        "h": 18,
+        "h": 24,
         "w": 24,
         "x": 0,
         "y": 0
@@ -56,7 +56,7 @@
             "type": "loki",
             "uid": "P982945308D3682D1"
           },
-          "expr": "{job=\"fluentbit\", type=\"logs\"} | json |\n  server_name != \"grafana.harrybrwn.com\"",
+          "expr": "{job=\"fluentbit\", type=\"logs\"}\n  != \"an upstream response is buffered to a temporary file\"\n  | json\n  | server_name != \"grafana.harrybrwn.com\"",
           "refId": "A"
         }
       ],
@@ -73,7 +73,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 24
       },
       "id": 6,
       "options": {
@@ -108,7 +108,7 @@
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 32
       },
       "id": 4,
       "options": {
@@ -142,13 +142,13 @@
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Main",
   "uid": "STD_hYXnk",
-  "version": 5,
+  "version": 4,
   "weekStart": ""
 }
