@@ -1,6 +1,12 @@
 *.env
-dev
+*.prod.env
 
+# Contains API keys
+sendgrid.env
+heroku.env
+cloudflare.env
+
+dev
 !hooks.env
 !api.env
 !db.env

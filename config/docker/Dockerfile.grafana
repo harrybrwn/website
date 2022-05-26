@@ -2,4 +2,4 @@ ARG GRAFANA_VERSION
 FROM grafana/grafana:${GRAFANA_VERSION}
 COPY config/logging/grafana/datasources.yml /etc/grafana/provisioning/datasources/datasource.yml
 COPY config/logging/grafana/dashboards.yml /etc/grafana/provisioning/dashboards/dashboards.yml
-COPY config/logging/grafana/dashboards /var/lib/grafana/dashboards
+COPY config/logging/grafana/dashboards /etc/grafana/provisioning/dashboards/dashboards

@@ -100,10 +100,10 @@ bake:
 	scripts/deployment bake
 
 deploy:
-	scripts/deployment --stack harrybrwn deploy
+	scripts/deployment --stack harrybrwn up
 
 deploy-dev:
-	scripts/deployment --stack hb --dev deploy
+	scripts/deployment --stack hb --dev up
 
 deploy-infra:
 	docker --context harrybrwn stack deploy \

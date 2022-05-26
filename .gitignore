@@ -50,3 +50,6 @@ scripts/deploy.sh
 *.crt
 *.key
 *.pub
+
+# Wait I want these
+!config/**/*.sh

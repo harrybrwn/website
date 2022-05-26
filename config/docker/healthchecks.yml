@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  nginx:
+    depends_on:
+      - fluentbit
+      - api
+      - hooks
+      - registry
+      - s3
+  db:
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "harrybrwn"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - fluentbit
+  redis:
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - fluentbit
+  api:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:8081/api/health/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - fluentbit
+      - db
+      - redis
+  registry:
+    depends_on:
+      - fluentbit
+      - redis
+      - s3
+  hooks:
+    depends_on:
+      - fluentbit
+  s3:
+    depends_on:
+      - fluentbit
+
+  fluentbit:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:2021"]
+      interval: 5s
+      timeout: 2s
+      retries: 8
+  grafana:
+    depends_on:
+      - fluentbit
+      - loki
+      - prometheus
+      - db
+  prometheus:
+    # healthcheck:
+    #   test: wget -q -O- localhost:9090/-/ready|grep -E '^Prometheus is ready.$'
+    #   interval: 10s
+    #   retries: 5
+    depends_on:
+      - fluentbit
+  loki:
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:3100/ready"]
+    depends_on:
+      - fluentbit
+  nginx-metrics-exporter:
+    depends_on:
+      - nginx

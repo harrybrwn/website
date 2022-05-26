@@ -2,10 +2,10 @@ version: "3.8"
 
 services:
   db:
-    image: 10.0.0.101:5000/harrybrwn/postgres:latest
+    image: ${REGISTRY}/harrybrwn/postgres:latest
     build:
-      context: .
-      dockerfile: config/docker/Dockerfile.db
+      context: config/docker/postgres
+      dockerfile: Dockerfile
       args:
         # - BASE_IMAGE_VERSION=14.2-alpine3.15
         - BASE_IMAGE_VERSION=13.6-alpine
@@ -21,25 +21,34 @@ services:
       - config/env/db.env
 
   redis:
-    image: redis:6.2.6-alpine
+    image: ${REGISTRY}/harrybrwn/redis:latest
+    build:
+      context: .
+      dockerfile: config/redis/Dockerfile
+      args:
+        - REDIS_VERSION=6.2.6-alpine
     networks:
       - backend
     ports:
       - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
-    command: --port ${REDIS_PORT:-6379} --requirepass ${REDIS_PASSWORD}
+    env_file:
+      - config/env/redis.env
     volumes:
       - cache-data:/data
 
   nginx:
-    # image: registry.digitalocean.com/webreef/harrybrwn/nginx:latest
-    image: 10.0.0.101:5000/harrybrwn/nginx:latest
+    image: ${REGISTRY}/harrybrwn/nginx:latest
     build:
       context: .
       dockerfile: Dockerfile
       target: nginx
+      args:
+        - REGISTRY_UI_ROOT=/var/www/registry.hryb.dev
     volumes:
       - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn.com/server.crt:ro
       - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn.com/server.key:ro
+      - ./config/pki/certs/hryb.local/server.crt:/etc/hryb.dev/server.crt:ro
+      - ./config/pki/certs/hryb.local/server.key:/etc/hryb.dev/server.key:ro
     networks:
       backend:
         aliases:
@@ -52,9 +61,13 @@ services:
       - target: 443
         published: 443
         mode: host
+    environment:
+      - REGISTRY_TITLE=Harry's Docker Registry
+      - REGISTRY_URL=https://registry.hryb.local
+      - CATALOG_ELEMENTS_LIMIT=15
 
   api:
-    image: 10.0.0.101:5000/harrybrwn/api:latest
+    image: ${REGISTRY}/harrybrwn/api:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -62,12 +75,13 @@ services:
       labels:
         com.harrybrwn.api.description: "api for harrybrwn.com"
         com.harrybrwn.api.commit: ${GIT_COMMIT:-dev}
+        com.harrybrwn.api.branch: ${GIT_BRANCH:-dev}
         com.harrybrwn.api.source_hash: ${SOURCE_HASH:-0000}
     command: --port 8081
     env_file:
-      - .env
       - config/env/api.env
       - config/env/db.env
+      - config/env/redis.env
     environment:
       - ENV=dev
       - LOG_OUTPUT=stdout
@@ -78,9 +92,11 @@ services:
       - POSTGRES_DB=harrybrwn_api
     networks:
       - backend
+    volumes:
+      - /etc/hostname:/etc/hostname:ro
 
   hooks:
-    image: 10.0.0.101:5000/harrybrwn/hooks:latest
+    image: ${REGISTRY}/harrybrwn/hooks:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -98,9 +114,61 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
 
+  registry:
+    image: ${REGISTRY}/harrybrwn/registry:latest
+    build:
+      context: .
+      dockerfile: config/registry/Dockerfile
+      args:
+        - REGISTRY_VERSION=2
+    environment:
+      - REGISTRY_LOG_LEVEL=debug
+      - REGISTRY_AUTH=htpasswd
+      - REGISTRY_AUTH_HTPASSWD_PATH=/run/secrets/registry-htpasswd-file
+      - REGISTRY_AUTH_HTPASSWD_REALM=registry.hryb.dev
+    env_file:
+      - config/env/redis.env
+      - config/env/registry.env
+      - config/env/minio.env
+    secrets:
+      - registry-htpasswd-file
+    networks:
+      - backend
+
+  s3:
+    image: ${REGISTRY}/harrybrwn/s3:latest
+    build:
+      context: config/docker/minio
+      dockerfile: Dockerfile
+      args:
+        - MINIO_VERSION=RELEASE.2022-05-23T18-45-11Z.fips
+        - MC_VERSION=RELEASE.2022-05-09T04-08-26Z.fips
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - 9000:9000 # api
+      - 9001:9001 # web ui
+    volumes:
+      - s3:/data
+    env_file:
+      - config/env/minio.env
+    environment:
+      - HB_MC_ALIAS_NAME=hryb
+      - HB_MC_ALIAS_URL=http://s3:9000
+      - HB_DEFAULT_BUCKET=registry.hryb.dev
+      - MINIO_PROMETHEUS_AUTH_TYPE=public
+      - MINIO_PROMETHEUS_URL=http://prometheus:9090
+      - MINIO_PROMETHEUS_JOB_ID=minio-job
+    networks:
+      - backend
+
 volumes:
   database:
   cache-data:
+  s3:
 
 networks:
   backend:
+
+secrets:
+  registry-htpasswd-file:
+    file: ./config/registry/htpasswd

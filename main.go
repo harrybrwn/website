@@ -27,6 +27,8 @@ import (
 	"harrybrown.com/pkg/invite"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //go:generate sh scripts/mockgen.sh
@@ -136,7 +138,7 @@ func main() {
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.Guard(jwtConf)
-	e.Pre(app.RequestLogRecorder(db, logger))
+	e.Pre(app.RequestLogRecorder(logger))
 
 	e.Any("/", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
@@ -175,13 +177,9 @@ func main() {
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
-	api.Any("/health/ready", func(c echo.Context) error {
-		// TODO make this more reflect the "ready" state
-		return c.Blob(200, "application/json", []byte(`{"status":"ok"}`))
-	})
-	api.Any("/health/alive", func(c echo.Context) error {
-		return c.Blob(200, "application/json", []byte(`{"status":"ok"}`))
-	})
+	api.Any("/health/ready", app.Ready(db, rd))
+	api.Any("/health/alive", app.Alive)
+	api.GET("/metrics/prometheus", WrapHandler(promhttp.Handler().ServeHTTP))
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)

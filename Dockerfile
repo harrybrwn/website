@@ -16,7 +16,9 @@ RUN git clone --depth 1 --branch v1.1.1 \
        /opt/hextris/CNAME      \
        /opt/hextris/README.md  \
        /opt/hextris/.gitignore \
-       /opt/hextris/.github
+       /opt/hextris/.github && \
+    git clone --depth 1 --branch main \
+        https://github.com/Joxit/docker-registry-ui.git /opt/docker-registry-ui
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
@@ -47,18 +49,28 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
 # Main image
 FROM alpine:3.14 as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
-RUN apk update && apk upgrade && apk add -l tzdata
+RUN apk update && apk upgrade && apk add -l tzdata curl
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
 ENTRYPOINT ["/app/harrybrwn"]
 
 # Webserver Frontend
 FROM nginx:1.20.2-alpine as nginx
+ARG REGISTRY_UI_ROOT
+ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
+RUN apk update && \
+    apk upgrade && \
+    apk add ca-certificates && \
+    rm -rf /var/cache/apk/*
+COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
+RUN update-ca-certificates
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
+COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
+COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/
 COPY config/nginx/ /etc/nginx/
-RUN rm /etc/nginx/conf.d/default.conf
+COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 
 # Build hook server
 FROM alpine:3.14 as hooks

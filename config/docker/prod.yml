@@ -2,6 +2,8 @@ version: "3.8"
 
 services:
   db:
+    env_file:
+      - config/env/db.prod.env
     deploy:
       placement:
         constraints:
@@ -36,13 +38,16 @@ services:
         parallelism: 1
         delay: 1s
         order: stop-first
-    healthcheck:
-      interval: 5m
     volumes:
       - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn.com/server.crt:ro
       - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn.com/server.key:ro
+      - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/hryb.dev/server.crt:ro
+      - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
+    environment:
+      - REGISTRY_URL=https://registry.hryb.dev
 
   api:
+    hostname: 'api-{{.Node.Hostname}}-{{.Node.ID}}'
     deploy:
       replicas: 4
       placement:
@@ -62,9 +67,13 @@ services:
       ENV: production
     env_file:
       - config/env/sendgrid.env
+      - config/env/db.prod.env
       # - config/env/api.prod.env
 
   hooks:
+    env_file:
+      - config/env/sendgrid.env
+      - config/env/db.prod.env
     deploy:
       replicas: 1
       restart_policy:
@@ -73,11 +82,67 @@ services:
         max_attempts: 3
         window: 120s
 
+  fluentbit:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
   loki:
+    env_file:
+      - config/env/db.prod.env
     deploy:
       placement:
         constraints: [node.labels.logs == true]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+        delay: 10s
   grafana:
     deploy:
       placement:
         constraints: [node.labels.logs == true]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+        delay: 10s
+  prometheus:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 5
+        delay: 10s
+
+  registry:
+    volumes:
+      - registry:/var/lib/registry
+      - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/hryb.dev/server.crt:ro
+      - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+      placement:
+        constraints:
+          - "node.role==manager"
+    env_file:
+      - config/env/minio.prod.env
+
+  s3:
+    deploy:
+      placement:
+        constraints: [node.labels.s3 == true]
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    env_file:
+      - config/env/minio.prod.env
+
+volumes:
+  registry:
+    external: true

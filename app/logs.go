@@ -160,14 +160,12 @@ func LogRequest(logger logrus.FieldLogger, l *RequestLog) {
 	}
 }
 
-func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc {
-	logs := LogManager{db: db, logger: logger}
+func RequestLogRecorder(logger logrus.FieldLogger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
 			req := c.Request()
 			res := c.Response()
-			ctx := req.Context()
 			ip := req.Header.Get("CF-Connecting-IP")
 			if ip == "" {
 				ip, _, _ = net.SplitHostPort(req.RemoteAddr)
@@ -193,22 +191,7 @@ func RequestLogRecorder(db db.DB, logger logrus.FieldLogger) echo.MiddlewareFunc
 				UserID:    userUUID,
 			}
 			LogRequest(logger, &l)
-			if c.IsWebSocket() {
-				l.Latency = 0
-			}
-			start = time.Now()
-			e := logs.Write(ctx, &l)
-			if e != nil {
-				logger.WithFields(logrus.Fields{
-					"error":          e,
-					"write_duration": time.Since(start).String(),
-					"uri":            l.URI,
-				}).Error("could not record request")
-			}
-			if err != nil {
-				return err
-			}
-			return e
+			return err
 		}
 	}
 }

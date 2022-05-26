@@ -4,7 +4,6 @@ services:
   registry:
     image: registry:2
     environment:
-      - REGISTRY_HTTP_ADDR=0.0.0.0:443
       - REGISTRY_HTTP_TLS_CERTIFICATE=/run/secrets/registry-server-cert
       - REGISTRY_HTTP_TLS_KEY=/run/secrets/registry-server-key
       - REGISTRY_AUTH=htpasswd
@@ -13,7 +12,9 @@ services:
     volumes:
       - registry:/var/lib/registry
     ports:
-      - "5000:443"
+      - published: 5000
+        target: 5000
+        mode: host
     secrets:
       - registry-server-cert
       - registry-server-key
@@ -35,7 +36,9 @@ secrets:
   registry-server-key:
     file: ${HOME}/.config/docker/certs/dell-amd/server-key.pem
   registry-htpasswd-file:
-    file: ./registry/htpasswd
+    # file: ./registry/htpasswd
+    file: ./config/registry/htpasswd
 
 volumes:
   registry:
+    external: true

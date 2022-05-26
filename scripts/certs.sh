@@ -114,7 +114,7 @@ EOF
 }
 
 # Flags
-INSTALL="true"
+INSTALL=true
 
 usage() {
 	echo "Usage"
@@ -133,7 +133,7 @@ while [ $# -gt 0 ]; do
 			exit
 			;;
 		--no-install)
-			INSTALL="false"
+			INSTALL=false
 			shift
 			;;
 		*)
@@ -147,14 +147,12 @@ rm -rf "${PKI}/certs"
 mkdir -p "${PKI}/certs"
 
 ca_cert "harrybrwn local dev"
-server_cert -cn "harrybrwn.local" \
-	-alt "*.harrybrwn.local"   \
-	-alt "www.harrybrwn.local" \
-	-alt "home.harrybrwn.local"
+server_cert -cn "harrybrwn.local" -alt "*.harrybrwn.local"
+server_cert -cn "hryb.local" -alt "*.hryb.local" -alt "*.s3.hryb.local"
 
 ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
 
-if [ "$INSTALL" = "true" ]; then
+if $INSTALL; then
 	load_cert "${CA_CRT}"
 	# sudo cp "${CA_CRT}" /usr/local/share/ca-certificates/harrybrwn.crt
 	# sudo update-ca-certificates --fresh

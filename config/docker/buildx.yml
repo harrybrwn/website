@@ -1,49 +1,101 @@
 version: "3.8"
+
 services:
+
   api:
     build:
       x-bake:
         tags:
-          - 10.0.0.101:5000/harrybrwn/api:latest
+          - ${REGISTRY}/harrybrwn/api:latest
           - ${REGISTRY}/harrybrwn/api:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/api:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
+
   hooks:
     build:
       x-bake:
         tags:
-          - 10.0.0.101:5000/harrybrwn/hooks:latest
+          - ${REGISTRY}/harrybrwn/hooks:latest
           - ${REGISTRY}/harrybrwn/hooks:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/hooks:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
+
   grafana:
     build:
       x-bake:
         tags:
-          - 10.0.0.101:5000/harrybrwn/grafana:latest
+          - ${REGISTRY}/harrybrwn/grafana:latest
           - ${REGISTRY}/harrybrwn/grafana:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/grafana:${GIT_BRANCH}
         platforms:
           - linux/amd64
           - linux/arm/v7
 
-  # fluentbit:
-  #   build:
-  #     x-bake:
-  #       tags:
-  #         - 10.0.0.101:5000/harrybrwn/fluent-bit:latest
-  #       platforms:
-  #         - linux/amd64
-  #         - linux/arm/v7
-  # loki:
-  #   build:
-  #     x-bake:
-  #       tags:
-  #         - 10.0.0.101:5000/harrybrwn/loki:latest
-  #       platforms:
-  #         - linux/amd64
-  #         - linux/arm/v7
+  fluentbit:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/fluent-bit:latest
+          - ${REGISTRY}/harrybrwn/fluent-bit:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/fluent-bit:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
+  loki:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/loki:latest
+          - ${REGISTRY}/harrybrwn/loki:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/loki:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
+  registry:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/registry:latest
+          - ${REGISTRY}/harrybrwn/registry:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/registry:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
+  s3:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/s3:latest
+          - ${REGISTRY}/harrybrwn/s3:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/s3:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+
+  redis:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/redis:latest
+          - ${REGISTRY}/harrybrwn/redis:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/redis:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
+  prometheus:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/prometheus:latest
+          - ${REGISTRY}/harrybrwn/prometheus:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/prometheus:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7

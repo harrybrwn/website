@@ -1,8 +1,11 @@
 package app
 
 import (
+	"net/http"
 	"os"
 
+	"github.com/go-redis/redis/v8"
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/app/chat"
 	"harrybrown.com/pkg/log"
@@ -33,4 +36,30 @@ func init() {
 func SetLogger(l *logrus.Logger) {
 	logger = l
 	chat.SetLogger(l)
+}
+
+type Pingable interface {
+	Ping() error
+}
+
+func Ready(db Pingable, rd redis.Cmdable) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		blob := `{"status":"ok"}`
+		status := 200
+		err := rd.Ping(c.Request().Context()).Err()
+		if err != nil {
+			blob = `{"status":"waiting","reason":"redis"}`
+			status = http.StatusServiceUnavailable
+		}
+		err = db.Ping()
+		if err != nil {
+			blob = `{"status":"waiting","reason":"postgres"}`
+			status = http.StatusServiceUnavailable
+		}
+		return c.Blob(status, "application/json", []byte(blob))
+	}
+}
+
+func Alive(c echo.Context) error {
+	return c.Blob(200, "application/json", []byte(`{"status":"ok"}`))
 }

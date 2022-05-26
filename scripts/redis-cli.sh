@@ -31,7 +31,7 @@ while :; do
 done
 
 if [ ${#ENV_FILES} -eq 0 ]; then
-  ENV_FILES+=(".env")
+  ENV_FILES+=(".env" "config/env/redis.env")
 fi
 
 for file in "${ENV_FILES[@]}"; do

@@ -3,14 +3,13 @@ version: "3.8"
 services:
 
   fluentbit:
-    # image: 10.0.0.101:5000/harrybrwn/fluent-bit:latest
-    # build:
-    #   context: .
-    #   dockerfile: config/docker/Dockerfile.fluentbit
-    #   args:
-    #     - FLUENTBIT_VERSION=1.9.3
-    #     #- FLUENTBIT_VERSION=1.9.3-debug
-    image: fluent/fluent-bit:1.9.3
+    image: ${REGISTRY}/harrybrwn/fluent-bit:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.fluentbit
+      args:
+        - FLUENTBIT_VERSION=1.9.3
+        # - FLUENTBIT_VERSION=1.9.3-debug
     ports:
       - '24224:24224/tcp'
       - '24224:24224/udp'
@@ -19,28 +18,23 @@ services:
     deploy:
       # We want exactly one per host
       mode: global
-      restart_policy:
-        condition: on-failure
-        max_attempts: 5
     volumes:
+      # Collecting info about docker
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers/:/var/lib/docker/containers/
       - /sys/fs/cgroup:/sys/fs/cgroup
-    configs:
-      - source: fluent-bit
-        target: /fluent-bit/etc/fluent-bit.conf
-      - source: fluent-bit-parsers
-        target: /fluent-bit/etc/parsers.conf
+      # Collecing system info
+      - /proc:/mnt/host/proc:ro
+      - /sys:/mnt/host/sys:ro
+      #- /etc/hostname:/etc/hostname:ro
 
   loki:
-    # image: 10.0.0.101:5000/harrybrwn/loki:latest
-    # build:
-    #   context: .
-    #   dockerfile: config/docker/Dockerfile.loki
-    #   args:
-    #     - LOKI_VERSION=2.5.0
-    image: grafana/loki:2.5.0
-    command: ["-config.file=/mnt/loki-config.yml"]
+    image: ${REGISTRY}/harrybrwn/loki:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.loki
+      args:
+        - LOKI_VERSION=2.5.0
     ports:
       - "3100:3100"
       - "9096:9096" # grpc
@@ -54,18 +48,9 @@ services:
       - grafana:/tmp/loki
     networks:
       - backend
-    configs:
-      - source: loki-config.yml
-        target: /mnt/loki-config.yml
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 5
-        delay: 10s
 
   grafana:
-    image: 10.0.0.101:5000/harrybrwn/grafana:latest
+    image: ${REGISTRY}/harrybrwn/grafana:latest
     build:
       context: .
       dockerfile: config/docker/Dockerfile.grafana
@@ -83,12 +68,27 @@ services:
       - grafana:/var/lib/grafana
     networks:
       - backend
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-        max_attempts: 5
-        delay: 10s
+
+  prometheus:
+    image: ${REGISTRY}/harrybrwn/prometheus:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.prometheus
+      args:
+        - PROMETHEUS_VERSION=v2.35.0
+    networks:
+      - backend
+    ports:
+      - 9090:9090
+    volumes:
+      - prometheus:/prometheus
+
+  nginx-metrics-exporter:
+    image: nginx/nginx-prometheus-exporter:0.10.0
+    command:
+      - "-nginx.scrape-uri=http://prometheus:1d414708232df0e2cad6a277135b210b8bd8e41ccc31a9a6d0e935fa595b62b3@nginx/stub_status"
+    networks:
+      - backend
 
   nginx:
     logging:
@@ -115,14 +115,12 @@ services:
       driver: fluentd
       options:
         tag: 'docker.logs.hooks.{{ .ID }}'
+  registry:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.logs.registry.{{ .ID }}'
 
 volumes:
   grafana:
-
-configs:
-  loki-config.yml:
-    file: ./config/logging/loki.yml
-  fluent-bit-parsers:
-    file: ./config/logging/fluent-bit-parsers.conf
-  fluent-bit:
-    file: ./config/logging/fluent-bit.conf
+  prometheus:

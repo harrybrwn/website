@@ -8,7 +8,8 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 5
+        max_attempts: 6
+
   db:
     deploy:
       restart_policy:
@@ -19,7 +20,6 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 5
-        delay: 10s
   api:
     command: -p 8081 -d
     volumes:
@@ -27,10 +27,42 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 5
-        delay: 10s
+        max_attempts: 6
   hooks:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 5
+        max_attempts: 6
+  registry:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+  s3:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+  fluentbit:
+    build:
+      args:
+        - FLUENTBIT_VERSION=1.9.3-debug
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+  prometheus:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+  loki:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+  grafana:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6

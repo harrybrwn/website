@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  ocis:
+    image: owncloud/ocis:${OCIS_DOCKER_TAG:-latest}
+    entrypoint: ["/bin/sh"]
+    # run ocis init to initialize a configuration file with random secrets
+    # it will fail on subsequent runs, because the config file already exists
+    # therefore we ignore the error and then start the ocis server
+    command: ["-c", "ocis init || true; ocis server"]
+    ports:
+      - 9200:9200
+    networks:
+      - backend
+    environment:
+      # OCIS_URL: http://localhost:9200
+      # OCIS_DOMAIN: drive.harrybrwn.local
+      OCIS_URL: https://drive.harrybrwn.local
+      OCIS_INSECURE: "true"
+      OCIS_LOG_LEVEL: debug
+      OCIS_LOG_COLOR: "true"
+      OCIS_LOG_PRETTY: "true"
+      PROXY_TLS: "false"
+      PROXY_LOG_LEVEL: debug
+      PROXY_INSECURE_BACKENDS: "true"
+      GRAPH_LDAP_INSECURE: "true"
+      # OCIS_OIDC_ISSUER: "http://ocis:9200"
+      IDM_CREATE_DEMO_USERS: "${DEMO_USERS:-true}"
+      IDM_ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin}" # this overrides the admin password from the configuration file
+    volumes:
+      - ocis-config:/etc/ocis
+      - ocis-data:/var/lib/ocis
+
+volumes:
+  ocis-config:
+  ocis-data:

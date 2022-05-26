@@ -6,11 +6,22 @@ GIT_TAG="$(git describe --tags --abbrev=0)"
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
-export GIT_COMMIT GIT_BRANCH SOURCE_HASH
+export GIT_COMMIT GIT_BRANCH GIT_TAG SOURCE_HASH
 
 if [ -f "./.env" ]; then
+	if [ -n "${REGISTRY:-}" ]; then
+		_REG="${REGISTRY}"
+	fi
 	source "./.env"
+	if [ -n "${_REG:-}" ]; then
+		REGISTRY="${_REG}"
+		unset _REG
+	fi
 	export REGISTRY
+fi
+
+if [ -n "${COMPOSE_FILE:-}" ]; then
+  unset COMPOSE_FILE
 fi
 
 # Flags
@@ -28,8 +39,9 @@ usage() {
 	echo "  deployment [flags...] [command|compose command]"
 	echo
 	echo "Commands"
-	echo "  deploy  call 'docker stack deploy'"
+	echo "  up      call 'docker stack deploy'"
 	echo "  bake    call 'docker buildx bake'"
+	echo "  infra   deploy bootstrapping infrastructure like a container registry"
 	echo
 	echo "Flags"
 	echo "  -h, --help                 get help message"
@@ -40,6 +52,15 @@ usage() {
 	echo "      --stack <name>         docker stack name (default: \"$STACK\")"
 	echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[@]})"
 	echo
+}
+
+has_vol() {
+	if $DRY; then
+		echo "docker --context \"${CONTEXT}\" volume inspect \"$1\" > /dev/null 2>&1"
+	else
+		docker --context "${CONTEXT}" volume inspect "$1" > /dev/null 2>&1
+	fi
+	return $?
 }
 
 while [ $# -gt 0 ]; do
@@ -100,57 +121,111 @@ else
 	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
 
+dodocker() {
+	if $DRY; then
+		echo "docker $@"
+	else
+		docker "$@"
+	fi
+}
+
+dodocker-compose() {
+	if $DRY; then
+		echo "docker-compose $@"
+	else
+		docker-compose "$@"
+	fi
+}
+
+registry_volume() {
+	if ! has_vol registry; then
+		dodocker --context "${CONTEXT}" volume create --driver 'local' registry
+	fi
+}
+
 deploy() {
 	if ! $DEV; then
-	  if ! docker network inspect "$NETWORK" > /dev/null 2>&1; then
-	    docker network create \
+	  if ! docker --context "${CONTEXT}" network inspect "${NETWORK}" > /dev/null 2>&1; then
+	    dodocker --context "${CONTEXT}" network create \
 	      --driver overlay    \
 	      --ingress           \
 	      --scope swarm       \
 	      --ipv6              \
-	      "$NETWORK"
+	      "${NETWORK}"
 	  fi
 	fi
-	docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
-		docker --context "${CONTEXT}" stack deploy \
-			--resolve-image=always \
-			--with-registry-auth   \
-			--prune                \
-			--compose-file -       \
-			harrybrwn
+	registry_volume
+	if $DRY; then
+		echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
+			docker --context "${CONTEXT}" stack deploy \
+				--resolve-image=always \
+				--with-registry-auth   \
+				--prune                \
+				--compose-file -       \
+				"${STACK}"
+	else
+		docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+			docker --context "${CONTEXT}" stack deploy \
+				--resolve-image=always \
+				--with-registry-auth   \
+				--prune                \
+				--compose-file -       \
+				"${STACK}"
+	fi
+}
+
+infra() {
+	if $DEV; then
+		echo "Error: cannot deploy infrastructure to dev environment"
+		exit 1
+	fi
+	registry_volume
+	dodocker --project-directory $(pwd) --context "${CONTEXT}" stack deploy \
+		--compose-file config/docker-compose.infra.yml \
+		--with-registry-auth                           \
+		--prune \
+		infra
 }
 
 for arg in "${ARGS[@]}"; do
 	case $arg in
 		migrate)
-		;;
-		yee)
-			echo "yee"
 			;;
-		test)
-		 	cat .env
-			echo "${REGISTRY}"
-			break
-		;;
-		deploy)
+		up)
 			deploy
 			break
-		;;
-		bake)
-			docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
-				docker --context default buildx bake \
-					--file - \
-					--file config/docker/buildx.yml \
-					--push
+			;;
+		infra)
+			infra
 			break
-		;;
-		*)
+			;;
+		build)
+			echo "Error: use \"bake\""
+			break
+			;;
+		help)
+			usage
+			break
+			;;
+		bake)
 			if $DRY; then
-				echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+				echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
+					docker --context default buildx bake \
+						--file - \
+						--file config/docker/buildx.yml \
+						--push
 			else
-				docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+				docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+					docker --context default buildx bake \
+						--file - \
+						--file config/docker/buildx.yml \
+						--push
 			fi
 			break
-		;;
+			;;
+		*)
+			dodocker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+			break
+			;;
 	esac
 done

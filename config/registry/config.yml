@@ -1,0 +1,49 @@
+version: 0.1
+log:
+  formatter: json
+  fields:
+    service: registry
+
+storage:
+  delete:
+    enabled: true
+  redirect:
+    disable: true
+  cache:
+    blobdescriptor: redis
+  s3:
+    region: us-east-1
+    regionendpoint: http://s3:9000/
+    bucket: registry.hryb.dev
+    encrypt: false
+    secure: true
+    v4auth: true
+    chunksize: 33554432 # 32mb => 32 * 1024 * 1024
+    rootdirectory: /
+
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+  debug:
+    addr: :5001
+    prometheus:
+      enabled: true
+      path: /metrics
+
+health:
+  storagedriver:
+    enabled: true
+    # 5 minutes
+    interval: 300s
+    threshold: 3
+
+redis:
+  addr: redis:6379
+  dialtimeout: 10s
+  readtimeout: 10s
+  writetimeout: 10s
+  pool:
+    maxidle: 32
+    maxactive: 64
+    idletimeout: 300s

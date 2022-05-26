@@ -62,11 +62,11 @@ type PaginationOpts struct {
 }
 
 // Datastores connects to all the datastores in parallel for faster cold starts.
-func Datastores(logger logrus.FieldLogger) (DB, *redis.Client, error) {
+func Datastores(logger logrus.FieldLogger) (*database, *redis.Client, error) {
 	var (
 		wg   sync.WaitGroup
 		errs = make(chan error)
-		db   DB
+		db   *database
 		rd   *redis.Client
 	)
 	wg.Add(2)
@@ -120,7 +120,7 @@ func postgresConnectString() string {
 	return u.String()
 }
 
-func Connect(logger logrus.FieldLogger) (DB, error) {
+func Connect(logger logrus.FieldLogger) (*database, error) {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)

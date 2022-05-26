@@ -10,6 +10,7 @@ ENV_FILES=()
 function help() {
   echo "$1 [-h|--help|-env|-docker] -- [create] <args...>"
   echo "  -env        environment file (default: .env)"
+  echo "  -d          use a different database"
   echo "  -docker     use docker to run the command"
   echo "  -h, --help  print help message"
 }
@@ -79,3 +80,4 @@ case $1 in
     run-migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
     ;;
 esac
+

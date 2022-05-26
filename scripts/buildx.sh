@@ -118,6 +118,9 @@ fi
 if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
     container="$(docker buildx inspect "$BUILDKIT_NAME" | awk '/Name:/{print $2}' | grep -Ev "^$BUILDKIT_NAME\$")"
     docker container cp "${CACERT}" "buildx_buildkit_${container}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
+    if [ -f config/pki/certs/ca.crt ]; then
+      docker container cp config/pki/certs/ca.crt "buildx_buildkit_${container}:/usr/local/share/ca-certificates/harrybrwn-local-rootca.crt"
+    fi
     docker container exec "buildx_buildkit_${container}" update-ca-certificates --verbose --force
     docker container restart "buildx_buildkit_${container}"
 fi
