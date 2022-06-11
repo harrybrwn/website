@@ -34,6 +34,16 @@ services:
       - fluentbit
       - db
       - redis
+  backups:
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8082/health/ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - fluentbit
+      - db
+      - s3
   registry:
     depends_on:
       - fluentbit
@@ -43,6 +53,11 @@ services:
     depends_on:
       - fluentbit
   s3:
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "http://localhost:9000/minio/health/cluster"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
     depends_on:
       - fluentbit
 
@@ -68,8 +83,12 @@ services:
   loki:
     healthcheck:
       test: ["CMD", "curl", "-f", "localhost:3100/ready"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
     depends_on:
       - fluentbit
+      - s3
   nginx-metrics-exporter:
     depends_on:
       - nginx

@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.3
+ARG ALPINE_VERSION=3.14
 
+#
 # Frontend Build
+#
 ARG NODE_VERSION=16.13.1-alpine
 FROM node:16.13.1-alpine as frontend
 RUN apk update  && \
@@ -22,39 +25,62 @@ RUN git clone --depth 1 --branch v1.1.1 \
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
-COPY ./frontend/ /opt/harrybrwn/frontend/
+COPY frontend/api frontend/api
 RUN yarn install
+COPY ./frontend/ /opt/harrybrwn/frontend/
 COPY public /opt/harrybrwn/public
 RUN yarn build
 COPY . .
 
+#
 # Golang builder
+#
 FROM golang:1.18-alpine as builder
 RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
     CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /opt/harrybrwn/
 WORKDIR /opt/harrybrwn/
 RUN go mod download
+# build flags
+ENV LINK='-s -w'
+ENV GOFLAGS='-trimpath'
+ENV CGO_ENABLED=0
 COPY pkg pkg/
 COPY app app/
-COPY cmd cmd/
+COPY cmd/hooks cmd/hooks
+RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
+COPY cmd/backups cmd/backups
+RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
 COPY files files/
 COPY internal internal/
 COPY main.go .
 COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build build/
-RUN CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/harrybrwn && \
-    CGO_ENABLED=0 go build -trimpath -ldflags "-w -s" -o bin/hooks ./cmd/hooks
+RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
+#
 # Main image
-FROM alpine:3.14 as api
+#
+FROM alpine:${ALPINE_VERSION} as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
 RUN apk update && apk upgrade && apk add -l tzdata curl
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
 ENTRYPOINT ["/app/harrybrwn"]
 
+#
+# Database Backup service
+#
+# ARG ALPINE_VERSION = 3.14
+FROM alpine:${ALPINE_VERSION} as backups
+RUN apk update && apk add postgresql-client
+COPY --from=builder /opt/harrybrwn/bin/backups /usr/local/bin/
+ENTRYPOINT ["backups"]
+
+#
 # Webserver Frontend
+#
 FROM nginx:1.20.2-alpine as nginx
 ARG REGISTRY_UI_ROOT
 ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
@@ -62,24 +88,30 @@ RUN apk update && \
     apk upgrade && \
     apk add ca-certificates && \
     rm -rf /var/cache/apk/*
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
 RUN update-ca-certificates
-COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
-COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
 COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/
-COPY config/nginx/ /etc/nginx/
+COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
+COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
+COPY config/nginx/ /etc/nginx/
 
+#
 # Build hook server
+#
 FROM alpine:3.14 as hooks
 RUN apk update && apk upgrade && apk add -l tzdata
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=builder /opt/harrybrwn/bin/hooks /app/hooks
 WORKDIR /app
 ENTRYPOINT ["/app/hooks"]
 
+#
 # Testing tools
+#
 FROM python:3.9-slim-buster as python
 VOLUME /opt/harrybrwn
 ENV PATH="/root/.poetry/bin:$PATH"

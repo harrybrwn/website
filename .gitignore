@@ -18,6 +18,7 @@ __pycache__/
 .vscode
 .env
 *.pgpass
+config/provision.prod.json
 /config/pki/
 /config/docker/docker-bake.hcl
 /config/docker/buildkit-config.toml

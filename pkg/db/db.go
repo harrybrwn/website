@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
-	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/url"
@@ -12,7 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/go-redis/redis/v8"
+	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -93,10 +96,10 @@ func Datastores(logger logrus.FieldLogger) (*database, *redis.Client, error) {
 	return db, rd, <-errs
 }
 
-func postgresConnectString() string {
+func postgresConnectString() (string, error) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL != "" {
-		return dbURL
+		return dbURL, nil
 	}
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
@@ -107,8 +110,11 @@ func postgresConnectString() string {
 	if len(user) > 0 && len(pw) > 0 {
 		userinfo = url.UserPassword(user, pw)
 	}
-	if len(host) == 0 || len(port) == 0 || len(db) == 0 {
-		return ""
+	if len(port) == 0 {
+		port = "5432"
+	}
+	if len(host) == 0 {
+		return "", errors.New("no database host")
 	}
 	u := url.URL{
 		Scheme:   "postgres",
@@ -117,7 +123,7 @@ func postgresConnectString() string {
 		Path:     filepath.Join("/", db),
 		RawQuery: "sslmode=disable",
 	}
-	return u.String()
+	return u.String(), nil
 }
 
 func Connect(logger logrus.FieldLogger) (*database, error) {
@@ -126,13 +132,13 @@ func Connect(logger logrus.FieldLogger) (*database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	// url := os.ExpandEnv(os.Getenv("DATABASE_URL"))
-	url := postgresConnectString()
-	if url == "" {
-		return nil, errors.New("empty $DATABASE_URL")
+	url, err := postgresConnectString()
+	if err != nil {
+		return nil, errors.WithStack(errors.Wrap(err, "invalid database url"))
 	}
 	db, err := sql.Open("postgres", url)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	if err = db.Ping(); err == nil {
 		return &database{DB: db}, nil
@@ -211,4 +217,32 @@ func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
 			return nil, errors.New("redis client dial timeout")
 		}
 	}
+}
+
+func S3CredentialsProvider() (credentials.Provider, error) {
+	value, err := S3CredentialsValue()
+	if err != nil {
+		return nil, err
+	}
+	return &credentials.StaticProvider{Value: *value}, nil
+}
+
+func S3CredentialsValue() (*credentials.Value, error) {
+	const (
+		envAccessKey = "S3_ACCESS_KEY"
+		envSecretKey = "S3_SECRET_KEY"
+	)
+	access := os.Getenv(envAccessKey)
+	secret := os.Getenv(envSecretKey)
+	if len(access) == 0 {
+		return nil, fmt.Errorf("s3 access key not found in %q", envAccessKey)
+	}
+	if len(secret) == 0 {
+		return nil, fmt.Errorf("s3 secret key not found in %q", envSecretKey)
+	}
+	return &credentials.Value{
+		AccessKeyID:     access,
+		SecretAccessKey: secret,
+		SessionToken:    "",
+	}, nil
 }

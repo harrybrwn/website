@@ -33,7 +33,7 @@ http:
 
 health:
   storagedriver:
-    enabled: true
+    enabled: false # This ends up being pretty noisy
     # 5 minutes
     interval: 300s
     threshold: 3

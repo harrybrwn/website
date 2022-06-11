@@ -77,6 +77,7 @@ services:
         com.harrybrwn.api.commit: ${GIT_COMMIT:-dev}
         com.harrybrwn.api.branch: ${GIT_BRANCH:-dev}
         com.harrybrwn.api.source_hash: ${SOURCE_HASH:-0000}
+    # entrypoint: ["wait.sh", "fluentbit:24224", "db:5432", "redis:6379", "--", "/app/harrybrwn"]
     command: --port 8081
     env_file:
       - config/env/api.env
@@ -92,8 +93,6 @@ services:
       - POSTGRES_DB=harrybrwn_api
     networks:
       - backend
-    volumes:
-      - /etc/hostname:/etc/hostname:ro
 
   hooks:
     image: ${REGISTRY}/harrybrwn/hooks:latest
@@ -113,6 +112,25 @@ services:
       - POSTGRES_DB=harrybrwn_hooks
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+
+  backups:
+    image: ${REGISTRY}/harrybrwn/backups:latest
+    build:
+      target: backups
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - S3_ENDPOINT=s3:9000
+      - BACKUPS_BUCKET=db-backups
+    env_file:
+      - config/env/db-backup.env
+      - config/env/db.env
+    networks:
+      - backend
+    ports:
+      - 8082:8082
 
   registry:
     image: ${REGISTRY}/harrybrwn/registry:latest
@@ -138,8 +156,8 @@ services:
   s3:
     image: ${REGISTRY}/harrybrwn/s3:latest
     build:
-      context: config/docker/minio
-      dockerfile: Dockerfile
+      context: ./config
+      dockerfile: docker/minio/Dockerfile
       args:
         - MINIO_VERSION=RELEASE.2022-05-23T18-45-11Z.fips
         - MC_VERSION=RELEASE.2022-05-09T04-08-26Z.fips
@@ -154,10 +172,11 @@ services:
     environment:
       - HB_MC_ALIAS_NAME=hryb
       - HB_MC_ALIAS_URL=http://s3:9000
-      - HB_DEFAULT_BUCKET=registry.hryb.dev
+      - HB_DEFAULT_BUCKETS=registry.hryb.dev,loki-logs,db-backups
       - MINIO_PROMETHEUS_AUTH_TYPE=public
       - MINIO_PROMETHEUS_URL=http://prometheus:9090
-      - MINIO_PROMETHEUS_JOB_ID=minio-job
+      - MINIO_PROMETHEUS_JOB_ID=minio-cluster
+      - MINIO_SERVER_URL=http://s3:9000/
     networks:
       - backend
 
@@ -172,3 +191,5 @@ networks:
 secrets:
   registry-htpasswd-file:
     file: ./config/registry/htpasswd
+  nginx-prometheus-passwd:
+    file: ./config/nginx/metrics.passwd

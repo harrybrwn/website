@@ -347,6 +347,14 @@
 				"people",
 				"creepy"
 			]
+		},
+		{
+			"url": "http://whatthecommit.com/index.html",
+			"name": "whatthecommit",
+			"description": "Randomly generated commit messages.",
+			"tags": [
+				"silly"
+			]
 		}
     ]
 }

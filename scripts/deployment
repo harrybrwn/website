@@ -121,6 +121,10 @@ else
 	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
 
+network_exists() {
+	docker --context "${CONTEXT}" network inspect "${1}" > /dev/null 2>&1
+}
+
 dodocker() {
 	if $DRY; then
 		echo "docker $@"
@@ -145,12 +149,18 @@ registry_volume() {
 
 deploy() {
 	if ! $DEV; then
-	  if ! docker --context "${CONTEXT}" network inspect "${NETWORK}" > /dev/null 2>&1; then
+	  if ! network_exists "${NETWORK}" ; then
+			# Delete the default ingress network if it exists.
+			if network_exists 'ingress'; then
+				dodocker --context "${CONTEXT}" network rm 'ingress'
+			fi
+			# Create the new ingress network
 	    dodocker --context "${CONTEXT}" network create \
 	      --driver overlay    \
 	      --ingress           \
 	      --scope swarm       \
-	      --ipv6              \
+				--ipv6              \
+				--opt com.docker.network.driver.overlay.vxlanid_list=4096 \
 	      "${NETWORK}"
 	  fi
 	fi
@@ -175,12 +185,8 @@ deploy() {
 }
 
 infra() {
-	if $DEV; then
-		echo "Error: cannot deploy infrastructure to dev environment"
-		exit 1
-	fi
 	registry_volume
-	dodocker --project-directory $(pwd) --context "${CONTEXT}" stack deploy \
+	dodocker --context "${CONTEXT}" stack deploy     \
 		--compose-file config/docker-compose.infra.yml \
 		--with-registry-auth                           \
 		--prune \
@@ -221,6 +227,23 @@ for arg in "${ARGS[@]}"; do
 						--file config/docker/buildx.yml \
 						--push
 			fi
+			break
+			;;
+		provision)
+			go build -trimpath -o bin/provision ./cmd/provision
+			CONFIGS=(--config=config/provision.json)
+			if $DEV; then
+				source ./config/env/minio.env
+				CONFIGS+=(--config=config/provision.dev.json)
+			else
+				source ./config/env/prod/minio.env
+				CONFIGS+=(--config=config/provision.prod.json)
+			fi
+			export S3_ENDPOINT
+			export S3_ACCESS_KEY="${MINIO_ROOT_USER}"
+			export S3_SECRET_KEY="${MINIO_ROOT_PASSWORD}"
+
+			bin/provision "${CONFIGS[@]}" "${ARGS[@]:1}"
 			break
 			;;
 		*)

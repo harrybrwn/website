@@ -28,11 +28,22 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 6
+    environment:
+      - ENV=dev
   hooks:
     deploy:
       restart_policy:
         condition: on-failure
         max_attempts: 6
+    environment:
+      - ENV=dev
+  backups:
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 6
+    environment:
+      - ENV=dev
   registry:
     deploy:
       restart_policy:
@@ -51,6 +62,8 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 3
+    # environment:
+    #   - ENV=dev
   prometheus:
     deploy:
       restart_policy:

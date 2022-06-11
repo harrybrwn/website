@@ -2,26 +2,29 @@ version: "3.8"
 
 services:
   db:
-    env_file:
-      - config/env/db.prod.env
     deploy:
+      replicas: 1
       placement:
+        max_replicas_per_node: 1
         constraints:
           - "node.role==manager"
       restart_policy:
         condition: on-failure
-        max_attempts: 5
+        max_attempts: 3
         delay: 2s
+    env_file:
+      - config/env/prod/db.env
+      - config/env/swarm_data.env
 
   redis:
     deploy:
-      placement:
-        constraints:
-          - "node.role==manager"
+      replicas: 1
       restart_policy:
         condition: on-failure
-        max_attempts: 5
+        max_attempts: 3
         delay: 2s
+    env_file:
+      - config/env/swarm_data.env
 
   nginx:
     deploy:
@@ -34,10 +37,6 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
-      update_config:
-        parallelism: 1
-        delay: 1s
-        order: stop-first
     volumes:
       - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn.com/server.crt:ro
       - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn.com/server.key:ro
@@ -45,9 +44,11 @@ services:
       - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
     environment:
       - REGISTRY_URL=https://registry.hryb.dev
+    env_file:
+      - config/env/swarm_data.env
 
   api:
-    hostname: 'api-{{.Node.Hostname}}-{{.Node.ID}}'
+    hostname: '{{.Task.Name}}-{{.Node.Hostname}}'
     deploy:
       replicas: 4
       placement:
@@ -56,18 +57,19 @@ services:
           - "node.role==worker"
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 5
-        window: 120s
       update_config:
         parallelism: 1
         delay: 2s
         order: stop-first
     environment:
-      ENV: production
+      - ENV=production
+      - LOG_FORMAT=json
     env_file:
       - config/env/sendgrid.env
-      - config/env/db.prod.env
+      - config/env/prod/db.env
+      - config/env/swarm_data.env
       # - config/env/api.prod.env
 
   hooks:
@@ -78,70 +80,107 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 10s
         max_attempts: 3
         window: 120s
+    environment:
+      - ENV=production
+      - LOG_FORMAT=json
+    env_file:
+      - config/env/swarm_data.env
+
+  backups:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      placement:
+        constraints:
+          - "node.role==worker"
+    env_file:
+      - config/env/prod/db-backup.env
+      - config/env/swarm_data.env
+    environment:
+      - ENV=production
+      - LOG_FORMAT=json
 
   fluentbit:
+    # hostname: '{{ .Task.Name }}-{{ .Node.Hostname }}'
+    hostname: 'fluentbit-{{ .Node.Hostname }}'
     deploy:
       restart_policy:
         condition: on-failure
         max_attempts: 5
+    env_file:
+      - config/env/swarm_data.env
+    environment:
+      - ENV=production
   loki:
     env_file:
       - config/env/db.prod.env
     deploy:
+      replicas: 1
       placement:
         constraints: [node.labels.logs == true]
-    deploy:
-      replicas: 1
       restart_policy:
         condition: on-failure
         max_attempts: 5
         delay: 10s
+    env_file:
+      - config/env/swarm_data.env
+      - config/env/prod/loki.env
   grafana:
     deploy:
       placement:
         constraints: [node.labels.logs == true]
-    deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
         max_attempts: 5
         delay: 10s
+    env_file:
+      - config/env/swarm_data.env
   prometheus:
     deploy:
       replicas: 1
+      placement:
+        constraints: [node.labels.logs == true]
       restart_policy:
         condition: on-failure
         max_attempts: 5
         delay: 10s
+    env_file:
+      - config/env/swarm_data.env
 
   registry:
     volumes:
       - registry:/var/lib/registry
-      - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/hryb.dev/server.crt:ro
-      - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
     deploy:
       replicas: 2
       restart_policy:
         condition: on-failure
         max_attempts: 6
       placement:
-        constraints:
-          - "node.role==manager"
+        max_replicas_per_node: 2
     env_file:
-      - config/env/minio.prod.env
+      - config/env/prod/minio.env
+      - config/env/swarm_data.env
 
   s3:
     deploy:
+      replicas: 1
       placement:
+        max_replicas_per_node: 1
         constraints: [node.labels.s3 == true]
       restart_policy:
         condition: on-failure
         max_attempts: 3
     env_file:
-      - config/env/minio.prod.env
+      - config/env/prod/minio.env
+      - config/env/swarm_data.env
+    environment:
+      - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hryb.dev
 
 volumes:
   registry:

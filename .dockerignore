@@ -47,3 +47,7 @@ docker-compose.*
 nslookup.sh
 dev.sh
 deploy.sh
+
+# Want these
+!/config/docker/freeradius/rules
+!/config/docker/freeradius/debian

@@ -1,0 +1,41 @@
+{
+  "s3": {
+    "AccessKey": "root",
+    "SecretKey": "minio-testbed001",
+    "Endpoint": "localhost:9000",
+    "users": [
+      {
+        "AccessKey": "loki",
+        "SecretKey": "minio-testbed001-loki",
+        "policies": ["loki"]
+      },
+      {
+        "AccessKey": "registry",
+        "SecretKey": "minio-testbed001-registry",
+        "Policies": ["registry"]
+      },
+      {
+        "AccessKey": "backups",
+        "SecretKey": "minio-testbed001-backups",
+        "Policies": ["backups"]
+      }
+    ]
+  },
+  "db": {
+    "host": "localhost",
+    "port": "5432",
+    "root_user": "harrybrwn",
+    "password": "testbed01",
+    "Users": [
+      {
+        "Name": "grafana",
+        "Password": "testbed02"
+      },
+      {
+        "Name": "db-backups",
+        "Password": "testbed01"
+      }
+    ],
+    "Databases": []
+  }
+}

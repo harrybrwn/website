@@ -112,8 +112,8 @@ run_tests() {
   local pytest_args script
   pytest_args="${*:-test/}"
   script=$(cat <<-EOF
-scripts/wait.sh "\${POSTGRES_HOST}" "\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh up
-scripts/wait.sh "\${APP_HOST}" "\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}
+scripts/wait.sh "\${POSTGRES_HOST}:\${POSTGRES_PORT}" -w 1 -- scripts/migrate.sh up
+scripts/wait.sh "\${APP_HOST}:\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}
 EOF
 )
   compose run \

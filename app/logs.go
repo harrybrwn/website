@@ -174,6 +174,13 @@ func RequestLogRecorder(logger logrus.FieldLogger) echo.MiddlewareFunc {
 			if err != nil {
 				c.Error(err)
 			}
+			switch req.RequestURI {
+			case
+				"/api/metrics/prometheus",
+				"/api/health/ready",
+				"/api/health/alive":
+				return err
+			}
 			var userUUID uuid.UUID
 			claims := auth.GetClaims(c)
 			if claims != nil {

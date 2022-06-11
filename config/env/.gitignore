@@ -1,12 +1,19 @@
 *.env
 *.prod.env
+prod/
 
 # Contains API keys
 sendgrid.env
 heroku.env
 cloudflare.env
+github.env
 
 dev
+nginx-passwd.env
+
 !hooks.env
 !api.env
 !db.env
+!swarm_data.env
+!loki.env
+!minio.env

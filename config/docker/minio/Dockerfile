@@ -9,5 +9,5 @@ RUN echo https://dl.min.io/client/mc/release/linux-${TARGETARCH}/archive/mc.${MC
 RUN curl -fsSL -o /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-${TARGETARCH}/archive/mc.${MC_VERSION} && \
 	chmod +x /usr/local/bin/mc
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
+COPY docker/minio/docker-entrypoint.sh /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]

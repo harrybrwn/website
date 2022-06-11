@@ -12,12 +12,111 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger = logrus.StandardLogger()
+var std = logrus.StandardLogger()
 
-func SetLogger(l *logrus.Logger) { logger = l }
+type (
+	FieldLogger = logrus.FieldLogger
+	Logger      = logrus.Logger
+	Fields      = logrus.Fields
+	Level       = logrus.Level
+)
 
-func GetLogger() *logrus.Logger {
-	return logger
+type LoggerOpt func(*Logger)
+
+func New(opts ...LoggerOpt) *Logger {
+	l := logrus.New()
+	for _, o := range opts {
+		o(l)
+	}
+	return l
+}
+
+func SetLogger(l *Logger) *Logger {
+	std = l
+	return std
+}
+
+func GetLogger() *Logger {
+	return std
+}
+
+// WithEnv will configure the logger using environment variables.
+func WithEnv() LoggerOpt {
+	lvl, err := parseLevel(os.Getenv("LOG_LEVEL"))
+	if err != nil {
+		std.Fatalf("Error: %v", err)
+	}
+	var format Format
+	switch f := strings.ToLower(os.Getenv("LOG_FORMAT")); f {
+	case "json", "":
+		format = JSONFormat
+	case "text":
+		format = TextFormat
+	default:
+		std.Fatalf("Error: invalid logging format %q", f)
+	}
+	return func(l *Logger) {
+		WithLevel(lvl)(l)
+		WithFormat(format)(l)
+	}
+}
+
+const (
+	PanicLevel Level = logrus.PanicLevel
+	FatalLevel Level = logrus.FatalLevel
+	ErrorLevel Level = logrus.ErrorLevel
+	WarnLevel  Level = logrus.WarnLevel
+	InfoLevel  Level = logrus.InfoLevel
+	DebugLevel Level = logrus.DebugLevel
+	TraceLevel Level = logrus.TraceLevel
+)
+
+func WithLevel(level Level) LoggerOpt { return func(l *Logger) { l.SetLevel(level) } }
+
+type Format int
+
+const (
+	JSONFormat Format = iota
+	TextFormat
+)
+
+var (
+	TextFormatter = logrus.TextFormatter{}
+	JSONFormatter = logrus.JSONFormatter{TimestampFormat: time.RFC3339}
+)
+
+func WithFormat(format Format) LoggerOpt {
+	return func(l *Logger) {
+		switch format {
+		case JSONFormat:
+			l.SetFormatter(&JSONFormatter)
+		case TextFormat:
+			l.SetFormatter(&TextFormatter)
+		}
+	}
+}
+
+func parseLevel(l string) (Level, error) {
+	switch strings.ToLower(l) {
+	case "":
+		return InfoLevel, nil
+	case "panic":
+		return PanicLevel, nil
+	case "fatal":
+		return FatalLevel, nil
+	case "error":
+		return ErrorLevel, nil
+	case "warn":
+		return WarnLevel, nil
+	case "info":
+		return InfoLevel, nil
+	case "debug":
+		return DebugLevel, nil
+	case "trace":
+		return TraceLevel, nil
+	default:
+		return TraceLevel, fmt.Errorf("invalid logging format %q", l)
+	}
 }
 
 func GetOutput(envkey string) io.Writer {
@@ -33,7 +132,7 @@ func GetOutput(envkey string) io.Writer {
 	}
 	file, err := os.Open(out)
 	if err != nil {
-		logger.Warnf("failed to open log file: %v", err)
+		std.Warnf("failed to open log file: %v", err)
 		return os.Stdout
 	}
 	// TODO do log file rotation
@@ -55,6 +154,34 @@ func FromContext(ctx context.Context) logrus.FieldLogger {
 func StashedInContext(ctx context.Context, logger logrus.FieldLogger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }
+
+func logrusCopy(l *logrus.Logger) *logrus.Logger {
+	hooks := make(logrus.LevelHooks)
+	for level, list := range l.Hooks {
+		hooks[level] = make([]logrus.Hook, len(list))
+		copy(hooks[level], list)
+	}
+	return &logrus.Logger{
+		Out:          l.Out,
+		Hooks:        l.Hooks,
+		Formatter:    l.Formatter,
+		ReportCaller: l.ReportCaller,
+		Level:        l.Level,
+		ExitFunc:     l.ExitFunc,
+	}
+}
+
+type fieldsHook struct {
+	fields Fields
+}
+
+func (h *fieldsHook) Levels() []logrus.Level { return logrus.AllLevels }
+
+func (h *fieldsHook) Fire(e *logrus.Entry) error {
+	return nil
+}
+
+var _ logrus.Hook = (*fieldsHook)(nil)
 
 // PrintLogger defines an interface for logging through printing.
 type PrintLogger interface {

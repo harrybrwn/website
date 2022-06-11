@@ -1,8 +1,11 @@
 ARG LOKI_VERSION
 FROM grafana/loki:${LOKI_VERSION}
 USER root
+VOLUME ["/var/loki"]
 RUN apk update && \
-	apk add curl
-USER loki
-COPY config/logging/loki.yml /mnt/local-config.yaml
-CMD ["-config.file=/mnt/local-config.yaml"]
+	apk add curl && \
+	mkdir -p /loki /var/loki /tmp/loki/rules /tmp/loki/chunks && \
+	chown loki /loki /var/loki /tmp/loki/rules
+# USER loki
+COPY config/logging/loki.yml /loki/loki.yaml
+CMD ["-config.file=/loki/loki.yaml", "-config.expand-env=true"]
