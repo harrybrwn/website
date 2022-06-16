@@ -140,6 +140,7 @@ services:
         max_attempts: 5
         delay: 10s
     env_file:
+      - config/env/prod/db.env
       - config/env/swarm_data.env
   prometheus:
     deploy:

@@ -17,3 +17,4 @@ nginx-passwd.env
 !swarm_data.env
 !loki.env
 !minio.env
+!db-backup.env

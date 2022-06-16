@@ -40,8 +40,11 @@ scrape_configs:
       - targets: ["s3:9000"]
 
   - job_name: docker-registry
-    static_configs:
-      - targets: ["registry:5001"]
+    dns_sd_configs:
+      - names:
+        - 'tasks.registry'
+        type: 'A'
+        port: 5001
 
   - job_name: nginx-metrics-exporter
     static_configs:
@@ -50,3 +53,10 @@ scrape_configs:
   - job_name: backups
     static_configs:
       - targets: ["backups:8082"]
+
+  - job_name: loki
+    static_configs:
+      - targets: ["loki:3100"]
+  - job_name: grafana
+    static_configs:
+      - targets: ["grafana:3000"]

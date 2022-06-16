@@ -36,6 +36,11 @@ services:
       dockerfile: config/docker/Dockerfile.loki
       args:
         - LOKI_VERSION=2.5.0
+    command:
+      - "-config.file=/loki/loki.yaml"
+      - "-config.expand-env=true"
+      - "-log.format=${LOG_FORMAT:-json}"
+      - "-log.level=${LOG_LEVEL:-warn}"
     ports:
       - "3100:3100"
       - "9096:9096" # grpc
@@ -50,6 +55,11 @@ services:
       - loki:/var/loki
     networks:
       - backend
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.logs.loki.{{.ID}}'
+        fluentd-async: "true"
 
   grafana:
     image: ${REGISTRY}/harrybrwn/grafana:latest
@@ -78,12 +88,24 @@ services:
       dockerfile: config/docker/Dockerfile.prometheus
       args:
         - PROMETHEUS_VERSION=v2.35.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--log.level=${LOG_LEVEL:-info}"
+      - "--log.format=${LOG_FORMAT:-json}"
     networks:
       - backend
     ports:
       - 9090:9090
     volumes:
       - prometheus:/prometheus
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.logs.prometheus.{{.ID}}'
+        fluentd-async: "true"
 
   nginx-metrics-exporter:
     image: nginx/nginx-prometheus-exporter:0.10.0
@@ -92,6 +114,9 @@ services:
       - "-nginx.scrape-uri=http://prometheus:1d414708232df0e2cad6a277135b210b8bd8e41ccc31a9a6d0e935fa595b62b3@nginx/stub_status"
     networks:
       - backend
+
+  # TODO https://github.com/oliver006/redis_exporter
+  # redis-exporter:
 
   nginx:
     logging:

@@ -24,6 +24,17 @@ services:
           - linux/amd64
           - linux/arm/v7
 
+  backups:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/backups:latest
+          - ${REGISTRY}/harrybrwn/backups:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/backups:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
   grafana:
     build:
       x-bake:
