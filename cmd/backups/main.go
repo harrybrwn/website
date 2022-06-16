@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/web"
 )
 
 var logger = log.New(
@@ -55,7 +56,7 @@ func main() {
 		w.WriteHeader(200)
 		err := writeJSON(w, config)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			web.WriteError(w, err)
 			return
 		}
 	})
@@ -63,9 +64,7 @@ func main() {
 		w.Header().Add("Content-Type", "application/json")
 		backup, err := BackupPostgres(r.Context(), info.db, s3, config.Bucket)
 		if err != nil {
-			logger.WithError(err).Warn("failed to run the backup")
-			w.WriteHeader(500)
-			writeJSON(w, map[string]any{"status": "failure"})
+			web.WriteError(w, web.WrapError(err, "failed backup"))
 			return
 		}
 		w.WriteHeader(200)

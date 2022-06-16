@@ -10,7 +10,15 @@ services:
         # - BASE_IMAGE_VERSION=14.2-alpine3.15
         - BASE_IMAGE_VERSION=13.6-alpine
     environment:
-      - POSTGRES_DATABASES=harrybrwn_api,harrybrwn_hooks,grafana
+      # <username>:<password>
+      POSTGRES_USERS: "
+        grafana:testbed02
+        db-backups:testbed03"
+      # <database>:<owner>
+      POSTGRES_DATABASES: "
+        harrybrwn_api:harrybrwn
+        harrybrwn_hooks:harrybrwn
+        grafana:grafana"
     networks:
       - backend
     ports:
@@ -30,7 +38,7 @@ services:
     networks:
       - backend
     ports:
-      - "${REDIS_PORT:-6379}:${REDIS_PORT:-6379}"
+      - "${REDIS_PORT:-6379}:6379"
     env_file:
       - config/env/redis.env
     volumes:
@@ -77,7 +85,6 @@ services:
         com.harrybrwn.api.commit: ${GIT_COMMIT:-dev}
         com.harrybrwn.api.branch: ${GIT_BRANCH:-dev}
         com.harrybrwn.api.source_hash: ${SOURCE_HASH:-0000}
-    # entrypoint: ["wait.sh", "fluentbit:24224", "db:5432", "redis:6379", "--", "/app/harrybrwn"]
     command: --port 8081
     env_file:
       - config/env/api.env
@@ -153,6 +160,7 @@ services:
     networks:
       - backend
 
+  # TODO look at distributed config <https://docs.min.io/docs/deploy-minio-on-docker-compose.html>
   s3:
     image: ${REGISTRY}/harrybrwn/s3:latest
     build:

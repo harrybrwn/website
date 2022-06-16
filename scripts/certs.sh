@@ -163,6 +163,7 @@ server_cert \
 	-alt '*.git.hryb.local'      \
 	-alt '*.registry.hryb.local' \
 	-alt '*.pkg.hryb.local'
+server_cert -cn 'hrry.local' -alt '*.hrry.local'
 
 ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
 

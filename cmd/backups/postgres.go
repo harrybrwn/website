@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/prometheus/client_golang/prometheus"
 	"harrybrown.com/pkg/log"
 )
 
@@ -70,6 +71,9 @@ type BackupInfo struct {
 }
 
 func BackupPostgres(ctx context.Context, db *DBInfo, store *s3.S3, bucket string) (*BackupInfo, error) {
+	timer := prometheus.NewTimer(prometheus.ObserverFunc(pgDumpDuration.Set))
+	defer timer.ObserveDuration()
+
 	cmd := BackupCommand(db)
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -171,4 +175,13 @@ func BackupCommand(db *DBInfo) *exec.Cmd {
 	cmd := exec.Command(pgDumpCommandPath, opts...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", db.PW))
 	return cmd
+}
+
+var pgDumpDuration = prometheus.NewGauge(prometheus.GaugeOpts{
+	Name: "backups_pgdump_upload_duration",
+	Help: "The time it takes to run the pg_dump command and upload the result to s3.",
+})
+
+func init() {
+	prometheus.MustRegister(pgDumpDuration)
 }

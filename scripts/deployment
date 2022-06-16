@@ -29,6 +29,7 @@ CONTEXT=harrybrwn
 NETWORK=harrybrwn-net
 COMPOSE_FILES=("docker-compose.yml")
 DEV=false
+PRD=false
 LOGGING=true
 DRY=false
 STACK="harrybrwn"
@@ -85,6 +86,10 @@ while [ $# -gt 0 ]; do
 		 	DEV=true
 			shift
 			;;
+    --prod)
+      PRD=true
+      shift
+      ;;
 		--no-logging)
 			LOGGING=false
 			shift
@@ -104,6 +109,13 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+if ! $DEV && ! $PRD; then
+  echo "Error: must use --dev or --prod" 1>&2
+  exit 1
+elif $DEV && $PRD; then
+  echo "Error: cannot use both --dev and --prod" 1>&2
+  exit 1
+fi
 
 COMPOSE_ARGS=()
 for f in "${COMPOSE_FILES[@]}"; do

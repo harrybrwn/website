@@ -137,14 +137,13 @@ func main() {
 	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"}, mailer)
 
 	jwtConf := app.NewTokenConfig()
-	guard := auth.Guard(jwtConf)
+	guard := auth.GuardMiddleware(jwtConf)
 	e.Pre(app.RequestLogRecorder(logger))
 
 	e.Any("/", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harrybrwn.com/harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	e.GET("/remora", app.Page(remoraStaticPage, "harrybrwn.com/remora/index.html"))
-	e.GET("/games", app.Page(gamesStaticPage, "harrybrwn.com/games/index.html"), guard)
 	e.GET("/admin", app.Page(adminStaticPage, "harrybrwn.com/admin/index.html"), guard, auth.AdminOnly())
 	// e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
 	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
