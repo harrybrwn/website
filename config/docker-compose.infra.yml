@@ -29,16 +29,21 @@ services:
         delay: 5s
         max_attempts: 5
         window: 120s
+    networks:
+      - registry
 
 secrets:
   registry-server-cert:
-    file: ${HOME}/.config/docker/certs/dell-amd/server-cert.pem
+    file: ${HOME}/.config/docker/certs/hp-laptop/server-cert.pem
   registry-server-key:
-    file: ${HOME}/.config/docker/certs/dell-amd/server-key.pem
+    file: ${HOME}/.config/docker/certs/hp-laptop/server-key.pem
   registry-htpasswd-file:
-    # file: ./registry/htpasswd
-    file: ./config/registry/htpasswd
+    file: ./registry/htpasswd
+    # file: ./config/registry/htpasswd
 
 volumes:
   registry:
     external: true
+
+networks:
+  registry:
