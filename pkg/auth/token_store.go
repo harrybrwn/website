@@ -9,11 +9,12 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"harrybrown.com/pkg/log"
 )
 
 var (
 	ErrTokenNotFound = errors.New("token not found")
-	logger           = logrus.New()
+	logger           = log.GetLogger()
 )
 
 type TokenStore interface {

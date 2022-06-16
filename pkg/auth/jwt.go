@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -14,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"harrybrown.com/pkg/web"
 )
 
 const (
@@ -67,7 +69,7 @@ type TokenConfig interface {
 	GetToken(*http.Request) (string, error)
 }
 
-func Guard(conf TokenConfig) echo.MiddlewareFunc {
+func GuardMiddleware(conf TokenConfig) echo.MiddlewareFunc {
 	keyfunc := func(*jwt.Token) (interface{}, error) {
 		return conf.Public(), nil
 	}
@@ -92,6 +94,34 @@ func Guard(conf TokenConfig) echo.MiddlewareFunc {
 			c.Set(ClaimsContextKey, &claims)
 			return next(c)
 		}
+	}
+}
+
+func Guard(conf TokenConfig) func(h http.Handler) http.Handler {
+	keyFunc := func(*jwt.Token) (interface{}, error) {
+		return conf.Public(), nil
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			auth, err := conf.GetToken(r)
+			if err != nil {
+				web.WriteError(w, web.StatusError(http.StatusUnauthorized, err))
+				return
+			}
+			var claims Claims
+			token, err := jwt.ParseWithClaims(auth, &claims, keyFunc)
+			if err != nil {
+				web.WriteError(w, web.StatusError(http.StatusUnauthorized, err, "invalid token"))
+				return
+			}
+			err = isValid(token, &claims)
+			if err != nil {
+				web.WriteError(w, web.WrapError(err))
+				return
+			}
+			ctx := context.WithValue(r.Context(), ClaimsContextKey, &claims)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 

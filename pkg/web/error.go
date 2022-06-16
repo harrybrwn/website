@@ -1,12 +1,14 @@
 package web
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"runtime"
 
+	"github.com/labstack/echo/v4"
 	"harrybrown.com/pkg/codes"
 	"harrybrown.com/pkg/log"
 )
@@ -14,31 +16,193 @@ import (
 type ErrorCode int
 
 type Error struct {
-	// HTTP Status
-	Status int `json:"-"`
-	// Internal error code
-	Code codes.Code `json:"code"`
+	// Application specific error code
+	Code codes.Code `json:"code,omitempty"`
 	// Error message
-	Message interface{} `json:"message"`
+	Message any `json:"message"`
+	// HTTP Status code
+	Status int `json:"-"`
 	// Internal error and should not be known to caller
 	Internal error `json:"-"`
 }
 
 func (e *Error) Error() string {
 	if e.Internal != nil {
-		return fmt.Sprintf("code=%d, status=%d, message=%v, internal=%v", e.Code, e.Status, e.Message, e.Internal)
+		return fmt.Sprintf("code=%d status=%d message=%v internal=%v", e.Code, e.Status, e.Message, e.Internal)
 	}
-	return fmt.Sprintf("code=%d, status=%d, message=%v", e.Code, e.Status, e.Message)
+	return fmt.Sprintf("code=%d status=%d message=%v", e.Code, e.Status, e.Message)
 }
 
-func (e *Error) Is(err error) bool { return errors.Is(e, err) }
+func (e *Error) Is(err error) bool {
+	if e == err {
+		return true
+	}
+	switch er := err.(type) {
+	case nil:
+		return false
+	case *Error:
+		return (e.Status == er.Status && errors.Is(e.Internal, er.Internal)) ||
+			(e.Status == er.Status && e.Message == er.Message)
+	}
+	return errors.Is(e, err)
+}
 
-func WrapError(status int, err error, message ...interface{}) error {
+func StatusError(status int, err error, message ...interface{}) error {
 	e := &Error{Status: status, Internal: err}
-	if len(message) > 0 {
+	l := len(message)
+	if l >= 1 {
 		e.Message = message[0]
+		// TODO for l > 1 do a strings.Join for interfaces to capture all messages
 	}
 	return e
+}
+
+// WrapError will wrap an error in a web.Error and optionally set the message.
+func WrapError(err error, message ...any) *Error {
+	e := Error{Internal: err, Message: nil}
+	l := len(message)
+	if l > 0 {
+		e.Message = message[0]
+	}
+	switch er := err.(type) {
+	case nil:
+		return nil
+	case codes.Code:
+		e.Code = er
+		e.Status = codes.ToHTTPStatus(er)
+	case *Error:
+		if e.Message == nil {
+			e.Message = er.Message
+		} else {
+			e.Message = fmt.Sprintf("%v, %v", er.Message, er.Message)
+		}
+		e.Code = er.Code
+		e.Status = er.Status
+	default:
+		e.Status = http.StatusInternalServerError
+	}
+	return &e
+}
+
+func WriteError(w http.ResponseWriter, err error) {
+	fields := log.Fields{"error": err.Error()}
+	if _, file, line, ok := runtime.Caller(1); ok {
+		fields["file"] = file
+		fields["line"] = line
+	}
+	logger := logger.WithFields(fields)
+
+	switch e := err.(type) {
+	case nil:
+		logger.Warn("attempted to write an nil error to http response")
+		return
+	case codes.Code:
+		w.WriteHeader(int(e))
+		_, err := w.Write([]byte(e.Error()))
+		if err != nil {
+			logger.WithFields(log.Fields{
+				"error_response": e,
+			}).Error("failed to write error_response")
+		}
+		statusLog(int(e), logger.WithFields(log.Fields{
+			"status": int(e),
+		}), "sending error response")
+	case *Error:
+		err := writeErrorAsJSON(logger, w, e)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			logger.WithFields(log.Fields{
+				"error_response": e,
+			}).Error("failed to write error_response")
+			return
+		}
+	case *echo.HTTPError:
+		message := echo.Map{"message": e.Message}
+		raw, err := json.Marshal(message)
+		if err != nil {
+			logger.WithFields(log.Fields{
+				"error_response": e,
+			}).Error("failed to write error_response")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(e.Code)
+		w.Write(raw)
+		statusLog(e.Code, logger.WithFields(log.Fields{
+			"message":  e.Message,
+			"status":   e.Code,
+			"internal": e.Internal,
+		}), "sending error response")
+	case *json.MarshalerError:
+		status := http.StatusInternalServerError
+		w.WriteHeader(status)
+		statusLog(status, logger.WithFields(log.Fields{
+			"status": status,
+		}), "failed to marshal json")
+	default:
+		status := http.StatusInternalServerError
+		w.WriteHeader(status)
+		statusLog(status, logger.WithFields(log.Fields{
+			"status": status,
+		}), "sending error response")
+	}
+}
+
+// ErrorStatusCode will infer the http status code given an error.
+func ErrorStatusCode(err error) int {
+	switch e := err.(type) {
+	case nil:
+		return http.StatusOK
+	case codes.Code:
+		return int(e)
+	case *Error:
+		if e.Status == 0 {
+			return codes.ToHTTPStatus(e.Code)
+		}
+		return e.Status
+	case *echo.HTTPError:
+		return e.Code
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func writeErrorAsJSON(logger log.FieldLogger, w http.ResponseWriter, e *Error) error {
+	raw, err := json.Marshal(e)
+	if err != nil {
+		return err
+	}
+	status := e.Status
+	if status == 0 {
+		status = codes.ToHTTPStatus(e.Code)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_, err = w.Write(raw)
+	if err != nil {
+		return err
+	}
+	statusLog(status, logger.WithFields(log.Fields{
+		"message":  e.Message,
+		"code":     int(e.Code),
+		"status":   e.Status,
+		"internal": e.Internal,
+	}), "sending error response")
+	return nil
+}
+
+func statusLog(status int, l log.FieldLogger, msg string) {
+	if status < 400 {
+		// OK and Redirects
+		l.Info(msg)
+	} else if status < 500 {
+		// 4xx errors
+		l.Warn(msg)
+	} else if status >= 500 {
+		// 5xx errors
+		l.Error(msg)
+	}
 }
 
 // ErrorHandler is an error type for internal website errors.

@@ -19,6 +19,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+func init() { logger.SetOutput(io.Discard) }
+
 func TestTokenConfigs(t *testing.T) {
 	is := is.New(t)
 	for _, conf := range []TokenConfig{
@@ -46,6 +48,7 @@ func TestTokenConfigs(t *testing.T) {
 func TestGuard(t *testing.T) {
 	type table struct {
 		errs   []error
+		status int
 		cfg    TokenConfig
 		claims Claims
 	}
@@ -53,8 +56,9 @@ func TestGuard(t *testing.T) {
 	for i, tt := range []table{
 		{
 			// Negative expires_at
-			errs: []error{echo.ErrUnauthorized},
-			cfg:  GenEdDSATokenConfig(),
+			errs:   []error{echo.ErrUnauthorized},
+			status: http.StatusUnauthorized,
+			cfg:    GenEdDSATokenConfig(),
 			claims: Claims{
 				ID:    1,
 				UUID:  uuid.New(),
@@ -68,8 +72,9 @@ func TestGuard(t *testing.T) {
 			},
 		},
 		{
-			errs: []error{ErrNoAudience},
-			cfg:  GenerateECDSATokenConfig(),
+			errs:   []error{ErrNoAudience},
+			status: http.StatusBadRequest,
+			cfg:    GenerateECDSATokenConfig(),
 			claims: Claims{
 				ID: 90,
 				RegisteredClaims: jwt.RegisteredClaims{
@@ -80,8 +85,9 @@ func TestGuard(t *testing.T) {
 			},
 		},
 		{
-			errs: []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
-			cfg:  GenEdDSATokenConfig(),
+			errs:   []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
+			status: http.StatusBadRequest,
+			cfg:    GenEdDSATokenConfig(),
 			claims: Claims{
 				ID: 12,
 				RegisteredClaims: jwt.RegisteredClaims{
@@ -93,8 +99,9 @@ func TestGuard(t *testing.T) {
 			},
 		},
 		{
-			errs: []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
-			cfg:  GenEdDSATokenConfig(),
+			errs:   []error{ErrBadIssuerOrAud, echo.ErrBadRequest},
+			status: http.StatusBadRequest,
+			cfg:    GenEdDSATokenConfig(),
 			claims: Claims{
 				ID: 12,
 				RegisteredClaims: jwt.RegisteredClaims{
@@ -106,8 +113,9 @@ func TestGuard(t *testing.T) {
 			},
 		},
 		{
-			errs: []error{},
-			cfg:  GenEdDSATokenConfig(),
+			errs:   []error{},
+			status: 200,
+			cfg:    GenEdDSATokenConfig(),
 			claims: Claims{
 				ID:    3,
 				UUID:  uuid.New(),
@@ -121,8 +129,9 @@ func TestGuard(t *testing.T) {
 			},
 		},
 		{
-			errs: []error{errFailingTokenConfig, echo.ErrUnauthorized},
-			cfg:  &failingTokenConfig{GenEdDSATokenConfig()},
+			errs:   []error{errFailingTokenConfig, echo.ErrUnauthorized},
+			status: http.StatusUnauthorized,
+			cfg:    &failingTokenConfig{GenEdDSATokenConfig()},
 			claims: Claims{
 				ID:    3,
 				UUID:  uuid.New(),
@@ -136,7 +145,7 @@ func TestGuard(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(fmt.Sprintf("%s_%d", t.Name(), i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s_%d_GuardMiddleware", t.Name(), i), func(t *testing.T) {
 			is := is.New(t)
 			e := echo.New()
 			rec := httptest.NewRecorder()
@@ -159,11 +168,14 @@ func TestGuard(t *testing.T) {
 				return nil
 			}
 			is.True(GetClaims(c) == nil)
-			err = Guard(tt.cfg)(fn)(c)
+			err = GuardMiddleware(tt.cfg)(fn)(c)
 			if len(tt.errs) == 0 {
 				is.NoErr(err)
 			} else {
 				for _, er := range tt.errs {
+					if httpErr, ok := er.(*echo.HTTPError); ok {
+						is.Equal(tt.status, httpErr.Code)
+					}
 					if !errors.Is(err, er) {
 						t.Errorf("expected \"%v\", got \"%v\"", er, err)
 					}
@@ -174,7 +186,36 @@ func TestGuard(t *testing.T) {
 			is.True(resp.Expires.After(time.Now()))
 			is.True(resp.RefreshToken != "")
 		})
+
+		t.Run(fmt.Sprintf("%s_%d_Guard", t.Name(), i), func(t *testing.T) {
+			is := is.New(t)
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest("GET", "/protected", nil)
+			tok, err := newTokenResp(tt.cfg, &tt.claims)
+			is.NoErr(err)
+			req.Header.Set("Authorization", fmt.Sprintf("%s %s", tok.TokenType, tok.Token))
+			fn := func(w http.ResponseWriter, r *http.Request) {
+				claims := GetClaims(&requestContext{r})
+				if claims == nil {
+					er := errors.New("no claims in context")
+					t.Error(er)
+					return
+				}
+				is.Equal(claims.ID, tt.claims.ID)
+				is.Equal(claims.UUID, tt.claims.UUID)
+				is.Equal(claims.Roles, tt.claims.Roles)
+			}
+			Guard(tt.cfg)(http.HandlerFunc(fn)).ServeHTTP(rec, req)
+		})
 	}
+}
+
+type requestContext struct {
+	*http.Request
+}
+
+func (rc *requestContext) Get(key string) interface{} {
+	return rc.Context().Value(key)
 }
 
 func TestValidateRefreshToken(t *testing.T) {
