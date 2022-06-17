@@ -1,8 +1,6 @@
 version: 0.1
 log:
   formatter: json
-  fields:
-    service: registry
 
 storage:
   delete:
@@ -25,6 +23,8 @@ http:
   addr: :5000
   headers:
     X-Content-Type-Options: [nosniff]
+  http2:
+    disabled: false
   debug:
     addr: :5001
     prometheus:

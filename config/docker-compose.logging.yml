@@ -29,6 +29,7 @@ services:
     environment:
       - ENV=dev
 
+  # TODO configure read/write replicas for scalability <https://gist.github.com/wardbekker/6abde118f530a725e60acb5adb04508a>
   loki:
     image: ${REGISTRY}/harrybrwn/loki:latest
     build:

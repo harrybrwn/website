@@ -38,10 +38,18 @@ services:
         max_attempts: 5
         window: 120s
     volumes:
+      # harrybrwn.com
       - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn.com/server.crt:ro
       - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn.com/server.key:ro
+      # hryb.dev
       - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/hryb.dev/server.crt:ro
       - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
+      # hrry.me
+      - /etc/letsencrypt/live/hrry.me/fullchain.pem:/etc/hrry.me/server.crt:ro
+      - /etc/letsencrypt/live/hrry.me/privkey.pem:/etc/hrry.me/server.key:ro
+      # hrry.dev
+      - /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/hrry.dev/server.crt:ro
+      - /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/hrry.dev/server.key:ro
     environment:
       - REGISTRY_URL=https://registry.hryb.dev
     env_file:
@@ -69,6 +77,7 @@ services:
     env_file:
       - config/env/sendgrid.env
       - config/env/prod/db.env
+      - config/env/prod/jwt.env
       - config/env/swarm_data.env
       # - config/env/api.prod.env
 
