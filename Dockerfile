@@ -12,7 +12,7 @@ RUN apk update  && \
     mkdir -p /usr/local/sbin/ && \
     ln -s /usr/local/bin/node /usr/local/sbin/node && \
     npm update -g npm
-RUN git clone --depth 1 --branch v1.1.1 \
+RUN git clone --depth 1 --branch v1.1.2 \
     https://github.com/harrybrwn/hextris.git /opt/hextris && \
     rm -rf \
        /opt/hextris/.git       \
@@ -88,6 +88,9 @@ RUN apk update && \
     apk upgrade && \
     apk add ca-certificates && \
     rm -rf /var/cache/apk/*
+COPY files/mmdb/GeoLite2-ASN.mmdb /opt/geoip/GeoLite2-ANS.mmdb
+COPY files/mmdb/GeoLite2-City.mmdb /opt/geoip/GeoLite2-City.mmdb
+COPY files/mmdb/GeoLite2-Country.mmdb /opt/geoip/GeoLite2-Country.mmdb
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
 RUN update-ca-certificates
@@ -98,6 +101,7 @@ COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
+# RUN ln -s modules /usr/lib/nginx/modules
 
 #
 # Build hook server
