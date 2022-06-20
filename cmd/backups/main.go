@@ -50,7 +50,7 @@ func main() {
 	go Start(ctx, s3, info)
 
 	r := chi.NewRouter()
-	r.Use(accessLogs(logger))
+	r.Use(web.AccessLog(logger))
 	r.Put("/config", handleUpdateConfig(config))
 	r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -165,48 +165,6 @@ func writeJSON(w io.Writer, v interface{}) error {
 		return err
 	}
 	return nil
-}
-
-type response struct {
-	http.ResponseWriter
-	status int
-}
-
-func (r *response) WriteHeader(status int) {
-	r.status = status
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func accessLogs(logger *log.Logger) func(h http.Handler) http.Handler {
-	return func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-			resp := response{ResponseWriter: w}
-			h.ServeHTTP(&resp, r)
-			switch r.RequestURI {
-			case "/metrics":
-				return
-			}
-			logger := logger.WithFields(logrus.Fields{
-				"host":        r.Host,
-				"method":      r.Method,
-				"uri":         r.RequestURI,
-				"status":      resp.status,
-				"query":       r.URL.RawQuery,
-				"remote_addr": r.RemoteAddr,
-				"duration":    time.Since(start).String(),
-				// "content-type": r.Header.Get("Content-Type"),
-				// "user-agent":   r.UserAgent(),
-			})
-			if resp.status >= 400 {
-				logger.Error("request")
-			} else if resp.status >= 300 {
-				logger.Warn("request")
-			} else {
-				logger.Info("request")
-			}
-		})
-	}
 }
 
 func getenv(key, defaultValue string) string {
