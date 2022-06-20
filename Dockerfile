@@ -51,6 +51,8 @@ COPY cmd/hooks cmd/hooks
 RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
 COPY cmd/backups cmd/backups
 RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
+COPY cmd/geoip cmd/geoip
+RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 COPY files files/
 COPY internal internal/
 COPY main.go .
@@ -72,11 +74,20 @@ ENTRYPOINT ["/app/harrybrwn"]
 #
 # Database Backup service
 #
-# ARG ALPINE_VERSION = 3.14
 FROM alpine:${ALPINE_VERSION} as backups
 RUN apk update && apk add postgresql-client
 COPY --from=builder /opt/harrybrwn/bin/backups /usr/local/bin/
 ENTRYPOINT ["backups"]
+
+#
+# GeoIP API
+#
+FROM alpine:${ALPINE_VERSION} as geoip
+RUN apk update && mkdir -p /opt/geoip
+COPY files/mmdb/GeoLite2* /opt/geoip/
+COPY --from=builder /opt/harrybrwn/bin/geoip /usr/local/bin/
+ENTRYPOINT ["geoip"]
+CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"]
 
 #
 # Webserver Frontend

@@ -156,6 +156,12 @@ services:
       options:
         tag: 'docker.logs.backups.{{ .ID }}'
         fluentd-async: "true"
+  geoip:
+    logging:
+      driver: fluentd
+      options:
+        tag: 'docker.logs.geoip.{{ .ID }}'
+        fluentd-async: "true"
   registry:
     logging:
       driver: fluentd

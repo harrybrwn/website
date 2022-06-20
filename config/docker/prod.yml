@@ -114,6 +114,21 @@ services:
       - ENV=production
       - LOG_FORMAT=json
 
+  geoip:
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+      placement:
+        constraints:
+          - "node.role==worker"
+    env_file:
+      - config/env/swarm_data.env
+    environment:
+      - ENV=production
+      - LOG_FORMAT=json
+
   fluentbit:
     # hostname: '{{ .Task.Name }}-{{ .Node.Hostname }}'
     hostname: 'fluentbit-{{ .Node.Hostname }}'
@@ -125,6 +140,7 @@ services:
       - config/env/swarm_data.env
     environment:
       - ENV=production
+
   loki:
     env_file:
       - config/env/db.prod.env
@@ -139,6 +155,7 @@ services:
     env_file:
       - config/env/swarm_data.env
       - config/env/prod/loki.env
+
   grafana:
     deploy:
       placement:
@@ -151,6 +168,7 @@ services:
     env_file:
       - config/env/prod/db.env
       - config/env/swarm_data.env
+
   prometheus:
     deploy:
       replicas: 1

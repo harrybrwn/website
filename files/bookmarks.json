@@ -353,7 +353,46 @@
 			"name": "whatthecommit",
 			"description": "Randomly generated commit messages.",
 			"tags": [
-				"silly"
+				"silly",
+				"programming"
+			]
+		},
+		{
+			"url": "https://bgp.potaroo.net/",
+			"name": "BGP Routing Table Analysis",
+			"description": "Analysis and data about routing and BGP. Not only does it have many articils with incredibly in-depth analysis but it links out to tools use to collect data and do the analysis.",
+			"tags": [
+				"computers",
+				"science",
+				"networking"
+			]
+		},
+		{
+			"url": "https://bgp.potaroo.net/cidr/autnums.html",
+			"name": "",
+			"description": "Gigantic list of registered autonomous systems and whois data.",
+			"tags": [
+				"computers",
+				"networking"
+			]
+		},
+		{
+			"url": "https://publicdata.caida.org/datasets",
+			"name": "CAIDA Public Data",
+			"description": "Huge public dataset of routing and AS data.",
+			"tags": [
+				"computers",
+				"networking",
+				"dataset"
+			]
+		},
+		{
+			"url": "https://libgen.is/",
+			"name": "Library Genesis",
+			"description": "Download books for free.",
+			"tags": [
+				"books",
+				"tools"
 			]
 		}
     ]

@@ -4,10 +4,6 @@ services:
   nginx:
     depends_on:
       - fluentbit
-      - api
-      - hooks
-      - registry
-      - s3
   db:
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "harrybrwn"]

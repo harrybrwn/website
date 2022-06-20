@@ -147,6 +147,14 @@ services:
     ports:
       - 8082:8082
 
+  geoip:
+    image: ${REGISTRY}/harrybrwn/geoip:latest
+    build:
+      target: geoip
+      context: .
+    networks:
+      - backend
+
   registry:
     image: ${REGISTRY}/harrybrwn/registry:latest
     build:
