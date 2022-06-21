@@ -204,11 +204,11 @@ services:
     environment:
       - HB_MC_ALIAS_NAME=hryb
       - HB_MC_ALIAS_URL=http://s3:9000
-      # - HB_DEFAULT_BUCKETS=registry.hryb.dev,loki-logs,db-backups
+      - MINIO_SERVER_URL=http://s3:9000
       - MINIO_PROMETHEUS_AUTH_TYPE=public
       - MINIO_PROMETHEUS_URL=http://prometheus:9090
       - MINIO_PROMETHEUS_JOB_ID=minio-cluster
-      - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hrry.dev
+      - MINIO_BROWSER_REDIRECT_URL=http://s3-console.hrry.local
     networks:
       - backend
 

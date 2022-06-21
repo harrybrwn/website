@@ -205,7 +205,18 @@ deploy() {
 	fi
 }
 
+down() {
+	#services="$(dodocker --context "${CONTEXT}" service ls --quiet --filter label=com.docker.stack.namespace=${STACK})"
+	dodocker --context "${CONTEXT}" stack rm "${STACK}"
+	until [ -z "$(dodocker --context ${CONTEXT} stack ps --quiet ${STACK})" ]; do
+		sleep 1
+		echo "waiting for \"${STACK}\" to stop..."
+		dodocker --context "${CONTEXT}" stack ps --quiet "${STACK}"
+	done
+}
+
 infra() {
+	service_mesh_network
 	registry_volume
 	dodocker --context "${CONTEXT}" stack deploy     \
 		--compose-file config/docker-compose.infra.yml \
@@ -218,8 +229,14 @@ for arg in "${ARGS[@]}"; do
 	case $arg in
 		migrate)
 			;;
+		test)
+			break
+			;;
 		up)
 			deploy
+			break
+			;;
+		down)
 			break
 			;;
 		infra)

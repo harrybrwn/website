@@ -212,7 +212,7 @@ services:
       - config/env/prod/minio.env
       - config/env/swarm_data.env
     environment:
-      - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hryb.dev
+      - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hrry.dev
     networks:
       - service-mesh
 
