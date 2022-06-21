@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  registry:
+  docker-registry:
     image: registry:2
     environment:
       - REGISTRY_HTTP_TLS_CERTIFICATE=/run/secrets/registry-server-cert
@@ -31,6 +31,7 @@ services:
         window: 120s
     networks:
       - registry
+      - service-mesh
 
 secrets:
   registry-server-cert:
@@ -47,3 +48,6 @@ volumes:
 
 networks:
   registry:
+  service-mesh:
+    external: true
+    name: service-mesh

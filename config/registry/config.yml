@@ -18,6 +18,13 @@ storage:
     v4auth: true
     chunksize: 33554432 # 32mb => 32 * 1024 * 1024
     rootdirectory: /
+  maintenance:
+    # Clean out old containers periodically.
+    uploadpurging:
+      enabled: true
+      age: 336h # 2 weeks
+      interval: 24h
+      dryrun: false
 
 http:
   addr: :5000

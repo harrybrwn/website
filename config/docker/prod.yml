@@ -25,6 +25,8 @@ services:
         delay: 2s
     env_file:
       - config/env/swarm_data.env
+    networks:
+      - service-mesh
 
   nginx:
     deploy:
@@ -51,9 +53,11 @@ services:
       - /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/hrry.dev/server.crt:ro
       - /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/hrry.dev/server.key:ro
     environment:
-      - REGISTRY_URL=https://registry.hryb.dev
+      - REGISTRY_URL=https://registry.hrry.dev
     env_file:
       - config/env/swarm_data.env
+    networks:
+      - service-mesh
 
   api:
     hostname: '{{.Task.Name}}-{{.Node.Hostname}}'
@@ -209,7 +213,14 @@ services:
       - config/env/swarm_data.env
     environment:
       - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hryb.dev
+    networks:
+      - service-mesh
 
 volumes:
   registry:
     external: true
+
+networks:
+  service-mesh:
+    external: true
+    name: service-mesh

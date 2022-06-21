@@ -159,6 +159,14 @@ registry_volume() {
 	fi
 }
 
+service_mesh_network() {
+	if ! network_exists "service-mesh"; then
+		dodocker --context "${CONTEXT}" network create \
+			--driver "overlay" \
+			"service-mesh"
+	fi
+}
+
 deploy() {
 	if ! $DEV; then
 	  if ! network_exists "${NETWORK}" ; then
@@ -175,6 +183,7 @@ deploy() {
 				--opt com.docker.network.driver.overlay.vxlanid_list=4096 \
 	      "${NETWORK}"
 	  fi
+		service_mesh_network
 	fi
 	registry_volume
 	if $DRY; then

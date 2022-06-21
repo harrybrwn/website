@@ -55,6 +55,8 @@ COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 COPY cmd/vanity-imports cmd/vanity-imports
 RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
+COPY cmd/proxy cmd/proxy
+RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
 COPY files files/
 COPY internal internal/
 COPY main.go .
@@ -100,6 +102,10 @@ CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/Ge
 FROM service as vanity-imports
 COPY --from=builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
 ENTRYPOINT ["vanity-imports"]
+
+FROM service as proxy
+COPY --from=builder /opt/harrybrwn/bin/proxy /usr/local/bin/
+ENTRYPOINT ["proxy"]
 
 #
 # Webserver Frontend

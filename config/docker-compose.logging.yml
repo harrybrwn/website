@@ -75,10 +75,17 @@ services:
       - GF_DATABASE_TYPE=postgres
       - GF_DATABASE_HOST=db:5432
       - GF_DATABASE_NAME=grafana
+      # - GF_SERVER_CERT_FILE=/etc/hrry.dev/server.crt
+      # - GF_SERVER_CERT_KEY=/etc/hrry.dev/server.key
+      - GF_SERVER_PROTOCOL=http # use h2 or https in the future
+      - GF_SERVER_ENFORCE_DOMAIN=false
+      - GF_LOG_CONSOLE_FORMAT=json
     env_file:
       - config/env/db.env
     volumes:
       - grafana:/var/lib/grafana
+      # - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.dev/server.crt:ro
+      # - ./config/pki/certs/hrry.local/server.key:/etc/hrry.dev/server.key:ro
     networks:
       - backend
 
