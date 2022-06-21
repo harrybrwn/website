@@ -32,7 +32,11 @@ var (
 	//go:embed login.html
 	loginHTML []byte
 
-	logger = log.GetLogger()
+	logger = log.SetLogger(log.New(
+		log.WithEnv(),
+		log.WithFormat(log.JSONFormat),
+		log.WithServiceName("hooks"),
+	))
 )
 
 func main() {

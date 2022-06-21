@@ -53,6 +53,8 @@ COPY cmd/backups cmd/backups
 RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
 COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
+COPY cmd/vanity-imports cmd/vanity-imports
+RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 COPY files files/
 COPY internal internal/
 COPY main.go .
@@ -60,12 +62,15 @@ COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build build/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
+FROM alpine:${ALPINE_VERSION} as service
+RUN apk update && apk upgrade
+
 #
 # Main image
 #
-FROM alpine:${ALPINE_VERSION} as api
+FROM service as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
-RUN apk update && apk upgrade && apk add -l tzdata curl
+RUN apk add -l tzdata curl
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
@@ -74,20 +79,27 @@ ENTRYPOINT ["/app/harrybrwn"]
 #
 # Database Backup service
 #
-FROM alpine:${ALPINE_VERSION} as backups
-RUN apk update && apk add postgresql-client
+FROM service as backups
+RUN apk add postgresql-client
 COPY --from=builder /opt/harrybrwn/bin/backups /usr/local/bin/
 ENTRYPOINT ["backups"]
 
 #
 # GeoIP API
 #
-FROM alpine:${ALPINE_VERSION} as geoip
-RUN apk update && mkdir -p /opt/geoip
+FROM service as geoip
+RUN mkdir -p /opt/geoip
 COPY files/mmdb/GeoLite2* /opt/geoip/
 COPY --from=builder /opt/harrybrwn/bin/geoip /usr/local/bin/
 ENTRYPOINT ["geoip"]
 CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"]
+
+#
+# Go package vanity imports
+#
+FROM service as vanity-imports
+COPY --from=builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
+ENTRYPOINT ["vanity-imports"]
 
 #
 # Webserver Frontend

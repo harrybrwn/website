@@ -25,7 +25,11 @@ import (
 	"harrybrown.com/pkg/web"
 )
 
-var logger = log.SetLogger(log.New(log.WithEnv(), log.WithFormat(log.JSONFormat)))
+var logger = log.SetLogger(log.New(
+	log.WithEnv(),
+	log.WithFormat(log.JSONFormat),
+	log.WithServiceName("geoip"),
+))
 
 func main() {
 	var (
@@ -85,13 +89,13 @@ func (gd *GeoData) Info(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		ip = net.ParseIP(ipa)
+		if ip == nil {
+			err := fmt.Errorf("invalid ip address %q", ipa)
+			web.WriteError(w, web.StatusError(http.StatusBadRequest, err, err.Error()))
+			return
+		}
 	}
 
-	if ip == nil {
-		err := fmt.Errorf("invalid ip address %q", ipa)
-		web.WriteError(w, web.StatusError(http.StatusBadRequest, err, err.Error()))
-		return
-	}
 	res, err := gd.City.City(ip)
 	if err != nil {
 		web.WriteError(w, err)

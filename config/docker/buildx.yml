@@ -35,6 +35,28 @@ services:
           - linux/amd64
           - linux/arm/v7
 
+  geoip:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/geoip:latest
+          - ${REGISTRY}/harrybrwn/geoip:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/geoip:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
+  vanity-imports:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/vanity-imports:latest
+          - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
   grafana:
     build:
       x-bake:

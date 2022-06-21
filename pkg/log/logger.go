@@ -61,6 +61,20 @@ func WithEnv() LoggerOpt {
 	}
 }
 
+func WithFields(fields Fields) LoggerOpt {
+	return func(l *Logger) {
+		l.AddHook(&fieldsHook{fields: fields})
+	}
+}
+
+func WithServiceName(name string) LoggerOpt {
+	return func(l *Logger) {
+		l.AddHook(&fieldsHook{fields: Fields{
+			"service": name,
+		}})
+	}
+}
+
 const (
 	PanicLevel Level = logrus.PanicLevel
 	FatalLevel Level = logrus.FatalLevel
@@ -171,6 +185,10 @@ func logrusCopy(l *logrus.Logger) *logrus.Logger {
 	}
 }
 
+func ConstFields(fields Fields) logrus.Hook {
+	return &fieldsHook{fields: fields}
+}
+
 type fieldsHook struct {
 	fields Fields
 }
@@ -178,6 +196,9 @@ type fieldsHook struct {
 func (h *fieldsHook) Levels() []logrus.Level { return logrus.AllLevels }
 
 func (h *fieldsHook) Fire(e *logrus.Entry) error {
+	for k, v := range h.fields {
+		e.Data[k] = v
+	}
 	return nil
 }
 
