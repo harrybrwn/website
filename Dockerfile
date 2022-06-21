@@ -55,8 +55,11 @@ COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 COPY cmd/vanity-imports cmd/vanity-imports
 RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
+<<<<<<< HEAD
 COPY cmd/proxy cmd/proxy
 RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
+=======
+>>>>>>> 347d9a6ec6f7a812be28eb774551b67638605813
 COPY files files/
 COPY internal internal/
 COPY main.go .
@@ -103,10 +106,13 @@ FROM service as vanity-imports
 COPY --from=builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
 ENTRYPOINT ["vanity-imports"]
 
+<<<<<<< HEAD
 FROM service as proxy
 COPY --from=builder /opt/harrybrwn/bin/proxy /usr/local/bin/
 ENTRYPOINT ["proxy"]
 
+=======
+>>>>>>> 347d9a6ec6f7a812be28eb774551b67638605813
 #
 # Webserver Frontend
 #
