@@ -24,6 +24,7 @@ import (
 var logger = log.New(
 	log.WithFormat(log.TextFormat),
 	log.WithLevel(log.DebugLevel),
+	log.WithServiceName("backups"),
 )
 
 func init() { log.SetLogger(logger) }

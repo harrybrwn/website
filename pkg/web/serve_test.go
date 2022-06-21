@@ -2,7 +2,6 @@ package web
 
 import (
 	"embed"
-	_ "embed"
 	"io"
 	"io/fs"
 	"net/http"

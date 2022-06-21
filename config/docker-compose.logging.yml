@@ -122,52 +122,40 @@ services:
   nginx:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.nginx.{{ .ID }}'
+      options: { tag: 'docker.logs.nginx.{{ .ID }}', fluentd-async: "true" }
         # tag: 'docker.logs.{{.Name}}.{{.ImageName}}.{{.ID}}'
-        fluentd-async: "true"
   db:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.postgres.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.postgres.{{ .ID }}', fluentd-async: "true" }
   redis:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.redis.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.redis.{{ .ID }}', fluentd-async: "true" }
   api:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.api.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.api.{{ .ID }}', fluentd-async: "true" }
   hooks:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.hooks.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.hooks.{{ .ID }}', fluentd-async: "true" }
   backups:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.backups.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.backups.{{ .ID }}', fluentd-async: "true" }
   geoip:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.geoip.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.geoip.{{ .ID }}', fluentd-async: "true" }
+  vanity-imports:
+    logging:
+      driver: fluentd
+      options: { tag: 'docker.logs.vanity-imports.{{ .ID }}', fluentd-async: "true" }
   registry:
     logging:
       driver: fluentd
-      options:
-        tag: 'docker.logs.registry.{{ .ID }}'
-        fluentd-async: "true"
+      options: { tag: 'docker.logs.registry.{{ .ID }}', fluentd-async: "true" }
 
 volumes:
   grafana:
