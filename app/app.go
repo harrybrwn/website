@@ -16,7 +16,11 @@ var (
 	logger = log.GetLogger()
 )
 
+// Debug cooresponds with the debug flag
+var Debug = false
+
 func init() {
+	BoolFlag(&Debug, "debug", "turn on debugging options")
 	env, ok := os.LookupEnv("ENV")
 	if !ok {
 		return

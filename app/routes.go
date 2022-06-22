@@ -9,20 +9,14 @@ import (
 	"harrybrown.com/pkg/log"
 )
 
-// Debug cooresponds with the debug flag
-var Debug = false
-
-func init() {
-	BoolFlag(&Debug, "debug", "turn on debugging options")
-}
-
-func HomepageHandler(fs fs.FS) http.Handler {
+func OldHomepageHandler(fs fs.FS) http.Handler {
 	type Data struct {
 		Title string
 		Age   string
 		Quote Quote
 	}
-	t, err := template.ParseFS(fs, "*/pages/home.html", "*/index.html", "*/nav.html")
+	// t, err := template.ParseFS(fs, "*/pages/home.html", "*/index.html", "*/nav.html")
+	t, err := template.ParseFS(fs, "pages/home.html", "*.html")
 	if err != nil {
 		panic(err) // panic on server startup
 	}

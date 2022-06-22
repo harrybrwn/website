@@ -137,6 +137,14 @@ network_exists() {
 	docker --context "${CONTEXT}" network inspect "${1}" > /dev/null 2>&1
 }
 
+volume_exists() {
+	dodocker --context "${CONTEXT}" volume inspect "${1}" > /dev/null 2>&1
+}
+
+secret_exists() {
+	dodocekr --context "${CONTEXT}" secret inspect "${1}" > /dev/null 2>&1
+}
+
 dodocker() {
 	if $DRY; then
 		echo "docker $@"
@@ -206,7 +214,6 @@ deploy() {
 }
 
 down() {
-	#services="$(dodocker --context "${CONTEXT}" service ls --quiet --filter label=com.docker.stack.namespace=${STACK})"
 	dodocker --context "${CONTEXT}" stack rm "${STACK}"
 	until [ -z "$(dodocker --context ${CONTEXT} stack ps --quiet ${STACK})" ]; do
 		sleep 1
@@ -237,6 +244,7 @@ for arg in "${ARGS[@]}"; do
 			break
 			;;
 		down)
+			down
 			break
 			;;
 		infra)

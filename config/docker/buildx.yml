@@ -57,6 +57,17 @@ services:
           - linux/amd64
           - linux/arm/v7
 
+  legacy-site:
+    build:
+      x-bake:
+        tags:
+          - ${REGISTRY}/harrybrwn/legacy-site:latest
+          - ${REGISTRY}/harrybrwn/legacy-site:${GIT_COMMIT}
+          - ${REGISTRY}/harrybrwn/legacy-site:${GIT_BRANCH}
+        platforms:
+          - linux/amd64
+          - linux/arm/v7
+
   grafana:
     build:
       x-bake:

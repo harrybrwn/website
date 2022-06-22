@@ -46,7 +46,6 @@ ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
-COPY app app/
 COPY cmd/hooks cmd/hooks
 RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
 COPY cmd/backups cmd/backups
@@ -55,6 +54,9 @@ COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 COPY cmd/vanity-imports cmd/vanity-imports
 RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
+COPY app app/
+COPY cmd/legacy-site cmd/legacy-site
+RUN go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
 COPY cmd/proxy cmd/proxy
 RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
 COPY files files/
@@ -65,14 +67,14 @@ COPY --from=frontend /opt/harrybrwn/build build/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
 FROM alpine:${ALPINE_VERSION} as service
-RUN apk update && apk upgrade
+RUN apk update && apk upgrade && apk add -l tzdata
 
 #
 # Main image
 #
 FROM service as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
-RUN apk add -l tzdata curl
+RUN apk add -l curl
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
@@ -102,6 +104,14 @@ CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/Ge
 FROM service as vanity-imports
 COPY --from=builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
 ENTRYPOINT ["vanity-imports"]
+
+#
+# My old website
+#
+FROM service as legacy-site
+COPY --from=frontend /opt/harrybrwn/frontend/templates /opt/harrybrwn/templates
+COPY --from=builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
+ENTRYPOINT ["legacy-site", "-templates", "/opt/harrybrwn/templates"]
 
 #
 # Experimental reverse proxy

@@ -72,13 +72,7 @@ var (
 	//go:embed build/harrybrwn.com/invite_email/index.html
 	inviteEmailStatic []byte
 
-	// go:embed build
-	// frontend embed.FS
-
-	//go:embed frontend/templates
-	templates embed.FS
-
-	logger = log.GetLogger()
+	logger = log.SetLogger(log.New(log.WithEnv(), log.WithServiceName("api")))
 )
 
 func main() {
@@ -117,11 +111,6 @@ func main() {
 	defer db.Close()
 	defer rd.Close()
 
-	templates, err := fs.Sub(templates, "frontend")
-	if err != nil {
-		logger.Fatal(err)
-	}
-
 	userStore := app.NewUserStore(db)
 	var (
 		mailer      invite.Mailer
@@ -146,7 +135,6 @@ func main() {
 	e.GET("/remora", app.Page(remoraStaticPage, "harrybrwn.com/remora/index.html"))
 	e.GET("/admin", app.Page(adminStaticPage, "harrybrwn.com/admin/index.html"), guard, auth.AdminOnly())
 	// e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
-	e.GET("/old", echo.WrapHandler(app.HomepageHandler(templates)), guard)
 
 	e.GET("/static/*", echo.WrapHandler(handleStatic()))
 	e.GET("/pub.asc", WrapHandler(keys))

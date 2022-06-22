@@ -159,6 +159,10 @@ services:
     logging:
       driver: fluentd
       options: { tag: 'docker.logs.vanity-imports.{{ .ID }}', fluentd-async: "true" }
+  legacy-site:
+    logging:
+      driver: fluentd
+      options: { tag: 'docker.logs.legacy-site.{{ .ID }}', fluentd-async: "true" }
   registry:
     logging:
       driver: fluentd
