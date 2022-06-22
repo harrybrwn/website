@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
+	"harrybrown.com/pkg/log"
 )
 
 type S3Config struct {
@@ -16,7 +18,8 @@ type S3Config struct {
 	SecretKey string
 	Endpoint  string
 	Buckets   []*struct {
-		Name string
+		Name   string
+		Policy string `json:"policy,omitempty"`
 	}
 	// Mapping of names to policies to create
 	Policies map[string]*S3Policy `json:"policies" yaml:"policies"`
@@ -35,10 +38,35 @@ type S3Config struct {
 type S3Policy struct {
 	Version   string
 	Statement []*struct {
-		Effect   string
-		Action   []string
-		Resource []string
+		Effect    string
+		Principal struct {
+			AWS     []string `json:",omitempty"`
+			Service string   `json:",omitempty"`
+		} `json:",omitempty"`
+		Action    []string
+		Resource  []string
+		Condition struct {
+			StringEquals struct {
+				S3XAmzAcl []string `json:"s3:x-amx-acl,omitempty"`
+				S3Prefix  []string `json:"s3:prefix,omitempty"`
+			} `json:",omitempty"`
+			IpAddress    IPAddressCondition `json:",omitempty"`
+			NotIpAddress IPAddressCondition `json:",omitempty"`
+			StringLike   struct {
+				AWSReferer []string `json:"aws:Referer,omitempty"`
+			} `json:",omitempty"`
+			Null struct {
+				AWSMultiFactorAuthAge bool `json:"aws:MultiFactorAuthAge,omitempty"`
+			} `json:",omitempty"`
+			NumericGreaterThan struct {
+				AWSMultiFactorAuthAge int `json:"aws:MultiFactorAuthAge,omitempty"`
+			} `json:",omitempty"`
+		} `json:",omitempty"`
 	}
+}
+
+type IPAddressCondition struct {
+	AWSSourceIP string `json:"aws:SourceIp,omitempty"`
 }
 
 func (s3 *S3Config) init() {
@@ -62,13 +90,36 @@ func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, cl
 		err = client.MakeBucket(ctx, b.Name, minio.MakeBucketOptions{})
 		switch e := err.(type) {
 		case nil:
-			continue
+			break
 		case minio.ErrorResponse:
 			if e.Code == "BucketAlreadyOwnedByYou" {
-				continue
+				logger.WithFields(log.Fields{
+					"code":    e.Code,
+					"bucket":  e.BucketName,
+					"message": e.Message,
+					"region":  e.Region,
+					"server":  e.Server,
+					"status":  e.StatusCode,
+				}).Warn("bucket already exists")
+				break
 			}
 		default:
 			return errors.Wrap(err, "failed to create s3 bucket")
+		}
+		if b.Policy == "" {
+			continue
+		}
+		p, ok := s3.Policies[b.Policy]
+		if !ok {
+			return fmt.Errorf("policy %q not defined in configuration", b.Policy)
+		}
+		raw, err := json.Marshal(p)
+		if err != nil {
+			return err
+		}
+		err = client.SetBucketPolicy(ctx, b.Name, string(raw))
+		if err != nil {
+			return errors.Wrap(err, "failed to set bucket policy")
 		}
 	}
 	for name, p := range s3.Policies {

@@ -11,6 +11,12 @@ import (
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
 	"github.com/spf13/cobra"
+	"harrybrown.com/pkg/log"
+)
+
+var logger = log.New(
+	log.WithEnv(),
+	log.WithFormat(log.TextFormat),
 )
 
 func main() {

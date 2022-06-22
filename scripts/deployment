@@ -43,6 +43,7 @@ usage() {
 	echo "  up      call 'docker stack deploy'"
 	echo "  bake    call 'docker buildx bake'"
 	echo "  infra   deploy bootstrapping infrastructure like a container registry"
+  echo "  upload  upload frontend build to s3"
 	echo
 	echo "Flags"
 	echo "  -h, --help                 get help message"
@@ -232,6 +233,11 @@ infra() {
 		infra
 }
 
+upload() {
+  mc cp -r ./build/* hrry/frontend/latest/
+  mc cp -r ./build/* hrry/frontend/git:${GIT_COMMIT}/
+}
+
 for arg in "${ARGS[@]}"; do
 	case $arg in
 		migrate)
@@ -292,6 +298,10 @@ for arg in "${ARGS[@]}"; do
 			bin/provision "${CONFIGS[@]}" "${ARGS[@]:1}"
 			break
 			;;
+    upload)
+      upload
+      break
+      ;;
 		*)
 			dodocker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
 			break

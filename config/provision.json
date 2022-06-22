@@ -9,6 +9,10 @@
       },
       {
         "Name": "db-backups"
+      },
+      {
+        "Name": "frontend",
+        "policy": "static-files"
       }
     ],
     "policies": {
@@ -64,6 +68,47 @@
             "Effect": "Allow",
             "Action": ["s3:PutObject"],
             "Resource": ["arn:aws:s3:::db-backups"]
+          }
+        ]
+      },
+      "static-files": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "AWS": ["*"] },
+            "Action": ["s3:GetBucketLocation", "s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::frontend"]
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": ["*"]
+            },
+            "Action": ["s3:GetObject"],
+            "Resource": [
+              "arn:aws:s3:::frontend/*",
+              "arn:aws:s3:::frontend/latest/*",
+              "arn:aws:s3:::frontend/dev/*",
+              "arn:aws:s3:::frontend/git:*/*"
+            ]
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": ["*"]
+            },
+            "Action": ["s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::frontend"],
+            "Condition": {
+              "StringEquals": {
+                "s3:prefix": [
+                  "latest",
+                  "dev",
+                  "git:*"
+                ]
+              }
+            }
           }
         ]
       }
