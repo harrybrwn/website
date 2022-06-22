@@ -5,7 +5,7 @@
         "Name": "loki-logs"
       },
       {
-        "Name": "registry.hryb.dev"
+        "Name": "docker-registry"
       },
       {
         "Name": "db-backups"
@@ -46,7 +46,7 @@
               "s3:GetBucketLocation",
               "s3:ListBucketMultipartUploads"
             ],
-            "Resource": ["arn:aws:s3:::registry.hryb.dev"]
+            "Resource": ["arn:aws:s3:::docker-registry"]
           },
           {
             "Effect": "Allow",
@@ -57,7 +57,7 @@
               "s3:ListMultipartUploadParts",
               "s3:AbortMultipartUpload"
             ],
-            "Resource": ["arn:aws:s3:::registry.hryb.dev/*"]
+            "Resource": ["arn:aws:s3:::docker-registry/*"]
           }
         ]
       },

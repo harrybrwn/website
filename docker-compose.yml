@@ -51,14 +51,11 @@ services:
       dockerfile: Dockerfile
       target: nginx
       args:
-        - REGISTRY_UI_ROOT=/var/www/registry.hryb.dev
+        - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
     volumes:
       # harrybrwn.com
       - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn.com/server.crt:ro
       - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn.com/server.key:ro
-      # hryb.dev
-      - ./config/pki/certs/hryb.local/server.crt:/etc/hryb.dev/server.crt:ro
-      - ./config/pki/certs/hryb.local/server.key:/etc/hryb.dev/server.key:ro
       # hrry.me
       - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.me/server.crt:ro
       - ./config/pki/certs/hrry.local/server.key:/etc/hrry.me/server.key:ro
@@ -182,7 +179,7 @@ services:
       - REGISTRY_LOG_LEVEL=debug
       - REGISTRY_AUTH=htpasswd
       - REGISTRY_AUTH_HTPASSWD_PATH=/run/secrets/registry-htpasswd-file
-      - REGISTRY_AUTH_HTPASSWD_REALM=registry.hryb.dev
+      - REGISTRY_AUTH_HTPASSWD_REALM=registry.hrry.dev
     env_file:
       - config/env/redis.env
       - config/env/registry.env
@@ -210,7 +207,7 @@ services:
     env_file:
       - config/env/minio.env
     environment:
-      - HB_MC_ALIAS_NAME=hryb
+      - HB_MC_ALIAS_NAME=hrry
       - HB_MC_ALIAS_URL=http://s3:9000
       - MINIO_SERVER_URL=http://s3:9000
       - MINIO_PROMETHEUS_AUTH_TYPE=public
