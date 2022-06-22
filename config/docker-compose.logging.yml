@@ -130,7 +130,6 @@ services:
     logging:
       driver: fluentd
       options: { tag: 'docker.logs.nginx.{{ .ID }}', fluentd-async: "true" }
-        # tag: 'docker.logs.{{.Name}}.{{.ImageName}}.{{.ID}}'
   db:
     logging:
       driver: fluentd

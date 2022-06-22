@@ -234,8 +234,12 @@ infra() {
 }
 
 upload() {
-  mc cp -r ./build/* hrry/frontend/latest/
-  mc cp -r ./build/* hrry/frontend/git:${GIT_COMMIT}/
+	local target="hrry"
+	if $DEV; then
+		target="hrrylocal"
+	fi
+  mc cp -r ./build/* $target/frontend/latest/
+  mc cp -r ./build/* $target/frontend/git:${GIT_COMMIT}/
 }
 
 for arg in "${ARGS[@]}"; do

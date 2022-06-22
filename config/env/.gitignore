@@ -18,3 +18,4 @@ nginx-passwd.env
 !loki.env
 !minio.env
 !db-backup.env
+!jwt.env
