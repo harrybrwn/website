@@ -4,7 +4,9 @@
   "description": "My personal website",
   "private": true,
   "scripts": {
-    "clean": "rm -rf ./build"
+    "clean": "rm -rf ./build",
+    "build": "yarn workspaces run build",
+    "start": "yarn workspace @hrry.me/frontend start"
   },
   "engines": {
     "node": "16.13.x",

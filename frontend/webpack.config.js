@@ -136,7 +136,7 @@ module.exports = function (webpackEnv) {
     new ForkTsCheckerWebpackPlugin(), // Typechecking in a different process
     new MiniCssExtractPlugin({
       filename: builder.isProd
-        ? "static/css/[contenthash:8].css"
+        ? "static/css/[contenthash:16].css"
         : "static/css/[name].[id].css",
     }),
     makeCopyPlugin(builder),
@@ -216,10 +216,14 @@ module.exports = function (webpackEnv) {
           include: [path.resolve(paths.rootDir, paths.source)],
         },
         {
-          // Embed these right into the html
-          test: /\.(gif|svg)$/i,
+          // Embed svg into the html
+          test: /\.(svg)$/i,
           //type: isProd ? "asset/inline" : "asset/resource",
           type: "asset/inline",
+        },
+        {
+          test: /\.(gif)$/i,
+          type: "asset/resource",
         },
         { test: /stars-compressed\.webp/i, type: "asset/inline" },
         {
