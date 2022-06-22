@@ -8,7 +8,7 @@ import {
   refreshExpiration,
   parseClaims,
   clearRefreshToken,
-} from "@harrybrwn.com/api/auth";
+} from "@hrry.me/api/auth";
 import { SECOND } from "~/frontend/constants";
 
 interface LoginManagerOptions {

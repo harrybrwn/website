@@ -150,5 +150,5 @@ done
 
 log "args: $ARGS"
 if [ -n "${ARGS}" ]; then
-  exec "$ARGS"
+  exec ${ARGS}
 fi

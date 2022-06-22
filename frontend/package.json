@@ -25,7 +25,7 @@
     "@babel/plugin-transform-runtime": "^7.17.0",
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-typescript": "^7.16.7",
-    "@harrybrwn.com/api": "^0.0.1",
+    "@hrry.me/api": "^0.0.1",
     "@types/jest": "^27.4.0",
     "@types/node": "^17.0.14",
     "babel-jest": "^27.4.6",
