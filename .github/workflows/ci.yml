@@ -81,7 +81,7 @@ jobs:
         #if: steps.yarn-cache.outputs.cache-hit != 'true'
         run: yarn install
       - name: Build Frontend
-        run: yarn build:ci
+        run: yarn workspaces run build:ci
       - name: Build Backend
         run: |
           go generate ./...
@@ -155,7 +155,7 @@ jobs:
       run: yarn install
 
     - name: Test Frontend
-      run: yarn test:ci
+      run: yarn workspaces run test:ci
     - name: Test Backend
       run: |
         go generate ./...

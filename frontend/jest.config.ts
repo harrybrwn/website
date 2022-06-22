@@ -2,6 +2,9 @@
  * For a detailed explanation regarding each configuration property and type check, visit:
  * https://jestjs.io/docs/configuration
  */
+import { resolve } from "path";
+
+const REPO_ROOT = "../";
 
 export default {
   // All imported modules in your tests should be mocked automatically
@@ -12,7 +15,7 @@ export default {
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "/tmp/jest_rs",
-  cacheDirectory: ".cache/test/jest/cache",
+  cacheDirectory: resolve(REPO_ROOT, ".cache/test/jest/cache"),
 
   // Automatically clear mock calls, instances and results before every test
   clearMocks: true,
@@ -25,7 +28,7 @@ export default {
 
   // The directory where Jest should output its coverage files
   //coverageDirectory: "coverage",
-  coverageDirectory: ".cache/test/jest/coverage",
+  coverageDirectory: resolve(REPO_ROOT, ".cache/test/jest/coverage"),
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
@@ -119,7 +122,7 @@ export default {
   // restoreMocks: false,
 
   // The root directory that Jest should scan for tests and modules within
-  // rootDir: undefined,
+  //rootDir: resolve(REPO_ROOT) + "/",
 
   // A list of paths to directories that Jest should use to search for files in
   // roots: [

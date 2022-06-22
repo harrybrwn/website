@@ -3,11 +3,25 @@
   "version": "0.0.1",
   "main": "index.ts",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/harrybrwn/harrybrwn.com",
-      "directory": "frontend/api"
+    "type": "git",
+    "url": "https://github.com/harrybrwn/harrybrwn.com",
+    "directory": "frontend/api"
+  },
+  "scripts": {
+    "test": "true",
+    "test:ci": "true",
+    "build": "true",
+    "build:ci": "true"
   },
   "author": "Harry Brown",
   "license": "none",
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@babel/core": "^7.16.12",
+    "@types/jest": "^27.4.0",
+    "babel-jest": "^27.4.6",
+    "jest": "^27.4.7",
+    "ts-jest": "^27.1.3",
+    "typescript": "^4.4.2"
+  }
 }

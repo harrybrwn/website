@@ -1,6 +1,6 @@
 # Build
 /bin/
-/node_modules/
+node_modules/
 /build/
 /.build/
 /.cache/
@@ -13,6 +13,7 @@ static/bootstrap-4.3.1-dist
 /public/static/img/2250x3000
 .hugo_build.lock
 __pycache__/
+yarn-error.log
 
 # Config
 .vscode

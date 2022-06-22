@@ -25,11 +25,11 @@ RUN git clone --depth 1 --branch v1.1.2 \
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
+COPY frontend/package.json frontend/.nvmrc frontend/
 COPY frontend/api frontend/api
 RUN yarn install
 COPY ./frontend/ /opt/harrybrwn/frontend/
-COPY public /opt/harrybrwn/public
-RUN yarn build
+RUN yarn workspaces run build
 COPY . .
 
 #

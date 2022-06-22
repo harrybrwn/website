@@ -83,10 +83,7 @@ func VanityImport(vanity *Vanity) func(http.ResponseWriter, *http.Request) {
 const importPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
-<<<<<<< HEAD
 	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
-=======
->>>>>>> 347d9a6ec6f7a812be28eb774551b67638605813
 	<meta name="go-import" content="{{.Domain}}/{{.Package.Name}} {{.Package.VCS}} {{.RepoURL}}/{{.Package.Name}}">
 </head>
 <body>

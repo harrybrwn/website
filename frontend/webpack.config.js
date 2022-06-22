@@ -20,13 +20,15 @@ const tsconfig = hjson.parse(
 // Used for build-time template parameters
 const site = require("./site");
 
+const REPO_ROOT = path.resolve(__dirname, "..");
+
 const paths = {
-  rootDir: path.resolve(__dirname, "../"),
+  rootDir: path.resolve(__dirname),
+  source: "./",
   public: "./public",
-  source: "./frontend",
-  build: path.join(tsconfig.compilerOptions.outDir, "harrybrwn.com"),
-  favicon: "./public/favicon.ico",
-  cache: "./.cache/build",
+  build: path.resolve(REPO_ROOT, "build", "harrybrwn.com"),
+  favicon: "public/favicon.ico",
+  cache: path.resolve(REPO_ROOT, ".cache/build"),
 };
 
 const BABEL_CONFIG = path.resolve(
@@ -99,11 +101,7 @@ const makeCopyPlugin = (builder) => {
       // copy("static/files"),
       {
         from: path.join(builder.paths.rootDir, builder.paths.source, "files"),
-        to: path.join(
-          builder.paths.rootDir,
-          builder.paths.build,
-          "static/files"
-        ),
+        to: path.join(builder.paths.build, "static/files"),
       },
       {
         // Harry's OpenGraph Preview Image
@@ -112,11 +110,7 @@ const makeCopyPlugin = (builder) => {
           builder.paths.source,
           "img/goofy.jpg"
         ),
-        to: path.resolve(
-          builder.paths.rootDir,
-          builder.paths.build,
-          "static/img/goofy.jpg"
-        ),
+        to: path.resolve(builder.paths.build, "static/img/goofy.jpg"),
       },
       { from: path.join(builder.paths.public, "robots.txt") },
       { from: path.join(builder.paths.public, "pub.asc") },
@@ -173,7 +167,13 @@ module.exports = function (webpackEnv) {
     // TODO generate parts of the config with this
   }
 
-  const entryImport = (name) => path.resolve(paths.rootDir, paths.source, name);
+  const entryImport = (name) => {
+    let p = path.resolve(paths.rootDir, paths.source, name);
+    if (!fs.existsSync(p)) {
+      console.error("path", p, "does not exist");
+    }
+    return p;
+  };
   return {
     entry: {
       main: { import: entryImport("main.ts") },
@@ -187,7 +187,7 @@ module.exports = function (webpackEnv) {
     },
 
     devtool: builder.isProd ? undefined : "inline-source-map",
-    resolve: common.resolve(paths.rootDir),
+    resolve: common.resolve(path.resolve(REPO_ROOT)),
     output: common.output(paths, builder.isProd),
     optimization: common.optimization(isProd, isCI),
 
@@ -239,7 +239,7 @@ module.exports = function (webpackEnv) {
 
     cache: {
       type: "filesystem",
-      cacheDirectory: path.resolve(paths.rootDir, paths.cache, "webpack"),
+      cacheDirectory: path.resolve(REPO_ROOT, paths.cache, "webpack"),
       store: "pack",
       buildDependencies: {
         // This makes all dependencies of this file - build dependencies

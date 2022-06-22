@@ -21,7 +21,9 @@ clean:
 coverage: coverage-ts coverage-go
 
 deep-clean: clean
-	$(RM) -r internal/mocks node_modules
+	$(RM) -r internal/mocks .
+		$(shell find . -name 'node_modules' -type d) \
+		$(shell find . -name 'yarn-error.log')
 
 test-go:
 	@mkdir -p .cache/test
@@ -31,7 +33,7 @@ test-go:
 	@#x-www-browser .cache/test/coverage.html
 
 test-ts:
-	yarn test
+	yarn workspaces run test
 
 .PHONY: coverage-go coverage-ts
 coverage-go:
