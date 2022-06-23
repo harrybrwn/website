@@ -36,6 +36,7 @@ COPY . .
 # Golang builder
 #
 FROM golang:1.18-alpine as builder
+RUN apk update && apk add git
 RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
     CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /opt/harrybrwn/
@@ -46,12 +47,6 @@ ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
-COPY cmd/hooks cmd/hooks
-RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
-COPY cmd/backups cmd/backups
-RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
-COPY cmd/geoip cmd/geoip
-RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 COPY cmd/vanity-imports cmd/vanity-imports
 RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 COPY app app/
@@ -66,6 +61,21 @@ COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build build/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
+FROM buider as backups-builder
+COPY cmd/backups cmd/backups
+RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
+
+FROM builder as hooks-builder
+COPY cmd/hooks cmd/hooks
+RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
+
+FROM builder as geoip-builder
+COPY cmd/geoip cmd/geoip
+RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
+
+#
+# Base service
+#
 FROM alpine:${ALPINE_VERSION} as service
 RUN apk update && apk upgrade && apk add -l tzdata
 
@@ -81,11 +91,21 @@ WORKDIR /app
 ENTRYPOINT ["/app/harrybrwn"]
 
 #
+# Build hook server
+#
+FROM alpine:3.14 as hooks
+RUN apk update && apk upgrade && apk add -l tzdata
+COPY scripts/wait.sh /usr/local/bin/wait.sh
+COPY --from=hooks-builder /opt/harrybrwn/bin/hooks /app/hooks
+WORKDIR /app
+ENTRYPOINT ["/app/hooks"]
+
+#
 # Database Backup service
 #
 FROM service as backups
 RUN apk add postgresql-client
-COPY --from=builder /opt/harrybrwn/bin/backups /usr/local/bin/
+COPY --from=backups-builder /opt/harrybrwn/bin/backups /usr/local/bin/
 ENTRYPOINT ["backups"]
 
 #
@@ -94,7 +114,7 @@ ENTRYPOINT ["backups"]
 FROM service as geoip
 RUN mkdir -p /opt/geoip
 COPY files/mmdb/GeoLite2* /opt/geoip/
-COPY --from=builder /opt/harrybrwn/bin/geoip /usr/local/bin/
+COPY --from=geoip-builder /opt/harrybrwn/bin/geoip /usr/local/bin/
 ENTRYPOINT ["geoip"]
 CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"]
 
@@ -143,16 +163,6 @@ COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
-
-#
-# Build hook server
-#
-FROM alpine:3.14 as hooks
-RUN apk update && apk upgrade && apk add -l tzdata
-COPY scripts/wait.sh /usr/local/bin/wait.sh
-COPY --from=builder /opt/harrybrwn/bin/hooks /app/hooks
-WORKDIR /app
-ENTRYPOINT ["/app/hooks"]
 
 #
 # Testing tools

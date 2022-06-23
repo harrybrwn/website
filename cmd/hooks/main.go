@@ -18,12 +18,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/go-github/v43/github"
+	"github.com/grafana/loki/pkg/logproto"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
+	"google.golang.org/grpc"
+	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/session"
+	"harrybrown.com/pkg/web"
 )
 
 var (
@@ -79,7 +83,7 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	r.Use(logs)
+	r.Use(web.AccessLog(logger))
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		if GithubLoggedIn(r) {
@@ -90,10 +94,19 @@ func main() {
 			w.Write(loginHTML)
 		}
 	})
+	conn, err := grpc.Dial("loki:9096", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
+	if err != nil {
+		logger.WithError(err).Fatal("could not dial loki's grpc endpoint")
+	}
+	defer conn.Close()
+	pusher := logproto.NewPusherClient(conn)
+
 	r.Get("/login/github", gh.Login)
 	r.Post("/authorize/github", gh.Authorize)
 	r.Post("/logout/github", gh.SignOut)
 	r.Post("/hooks/github", callback())
+	r.Post("/hooks/minio/logs", minioLoggingHookHandler[*MinioLogEntry](pusher, minioLoggerLabel))
+	r.Post("/hooks/minio/audit", minioLoggingHookHandler[*MinioAuditEntry](pusher, minioAuditLabel))
 
 	addr := fmt.Sprintf(":%d", port)
 	logger.WithFields(logrus.Fields{
@@ -213,32 +226,6 @@ type response struct {
 func (r *response) WriteHeader(status int) {
 	r.status = status
 	r.ResponseWriter.WriteHeader(status)
-}
-
-func logs(h http.Handler) http.Handler {
-	logger := log.GetLogger()
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := response{ResponseWriter: w}
-		h.ServeHTTP(&resp, r)
-		logger := logger.WithFields(logrus.Fields{
-			"uri":          r.RequestURI,
-			"host":         r.Host,
-			"status":       fmt.Sprintf("%d %s", resp.status, http.StatusText(resp.status)),
-			"method":       r.Method,
-			"remote_addr":  r.RemoteAddr,
-			"referer":      r.Referer(),
-			"query":        r.URL.RawQuery,
-			"content-type": r.Header.Get("Content-Type"),
-			"user-agent":   r.UserAgent(),
-		})
-		if resp.status >= 400 {
-			logger.Error("request")
-		} else if resp.status >= 300 {
-			logger.Warn("request")
-		} else {
-			logger.Info("request")
-		}
-	})
 }
 
 func getState() string {

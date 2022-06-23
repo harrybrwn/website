@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
@@ -84,8 +85,33 @@ func (s3 *S3Config) init() {
 	}
 }
 
+const supportedPolicyVersion = "2012-10-17"
+
+func (s3 *S3Config) Validate() error {
+	for name, p := range s3.Policies {
+		if p.Version != supportedPolicyVersion {
+			return fmt.Errorf(
+				"%q is not a supported policy version. Use %q",
+				p.Version, supportedPolicyVersion,
+			)
+		}
+		if p.Statement == nil {
+			return fmt.Errorf("policy %q has no statement", name)
+		}
+		for _, statement := range p.Statement {
+			if statement.Effect == "" {
+				return errors.New("statement has no \"Effect\" field")
+			}
+		}
+	}
+	return nil
+}
+
 func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, client *minio.Client) error {
 	var err error
+	if err = s3.Validate(); err != nil {
+		return err
+	}
 	for _, b := range s3.Buckets {
 		err = client.MakeBucket(ctx, b.Name, minio.MakeBucketOptions{})
 		switch e := err.(type) {
@@ -93,29 +119,31 @@ func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, cl
 			break
 		case minio.ErrorResponse:
 			if e.Code == "BucketAlreadyOwnedByYou" {
-				logger.WithFields(log.Fields{
-					"code":    e.Code,
-					"bucket":  e.BucketName,
-					"message": e.Message,
-					"region":  e.Region,
-					"server":  e.Server,
-					"status":  e.StatusCode,
-				}).Warn("bucket already exists")
+				logger.WithFields(logMinioErrorFields(e)).Warn("bucket already exists")
 				break
 			}
 		default:
 			return errors.Wrap(err, "failed to create s3 bucket")
 		}
+		var raw []byte
 		if b.Policy == "" {
+			// Delete any policies on the bucket
+			raw = []byte{}
+			err = client.SetBucketPolicy(ctx, b.Name, "")
+			if err != nil {
+				return errors.Wrap(err, "failed to set bucket policy")
+			}
 			continue
-		}
-		p, ok := s3.Policies[b.Policy]
-		if !ok {
-			return fmt.Errorf("policy %q not defined in configuration", b.Policy)
-		}
-		raw, err := json.Marshal(p)
-		if err != nil {
-			return err
+		} else {
+			// Get the policy from our config
+			p, ok := s3.Policies[b.Policy]
+			if !ok {
+				return fmt.Errorf("policy %q not defined in configuration", b.Policy)
+			}
+			raw, err = json.Marshal(p)
+			if err != nil {
+				return err
+			}
 		}
 		err = client.SetBucketPolicy(ctx, b.Name, string(raw))
 		if err != nil {
@@ -132,17 +160,19 @@ func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, cl
 		}
 	}
 
+	// Save a list of user's Access Keys so we can use then for creating groups.
 	groupUsers := make(map[string][]string)
+
 	for _, user := range s3.Users {
 		err = admin.AddUser(ctx, user.AccessKey, user.SecretKey)
 		if err != nil {
 			return errors.Wrap(err, "failed to add new user")
 		}
-		for _, policy := range user.Policies {
-			err = admin.SetPolicy(ctx, policy, user.AccessKey, false)
-			if err != nil {
-				return errors.Wrap(err, "failed to set user policy")
-			}
+		// Set multiple policies with comma separated list.
+		// https://github.com/minio/console/blob/ba4103e03f62cb33a12fe6348727c1ecf04ba037/restapi/admin_policies.go#L659
+		err = admin.SetPolicy(ctx, strings.Join(user.Policies, ","), user.AccessKey, false)
+		if err != nil {
+			return errors.Wrap(err, "failed to set user policy")
 		}
 		// Save the user access ids for later when we create the groups.
 		for _, g := range user.Groups {
@@ -176,6 +206,17 @@ func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, cl
 		}
 	}
 	return nil
+}
+
+func logMinioErrorFields(e minio.ErrorResponse) log.Fields {
+	return log.Fields{
+		"code":    e.Code,
+		"bucket":  e.BucketName,
+		"message": e.Message,
+		"region":  e.Region,
+		"server":  e.Server,
+		"status":  e.StatusCode,
+	}
 }
 
 const (

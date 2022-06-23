@@ -21,7 +21,7 @@ sync_dashboard() {
 		echo "Error: failed to fetch dashobard"
 		exit 1
 	fi
-	echo "${data}" | jq -cM > "${conf}/${name}.json"
+	echo "${data}" | jq '.dashboard' -cM > "${conf}/${name}.json"
 }
 
 NGINX_UID=MsjffzSZz

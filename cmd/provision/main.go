@@ -28,9 +28,10 @@ func main() {
 
 func NewRootCmd() *cobra.Command {
 	var (
-		configFiles = []string{"config/provision.json"}
-		envFile     string
-		cli         Cli
+		configFiles   = []string{"config/provision.json"}
+		extraPolicies []string
+		envFile       string
+		cli           Cli
 	)
 	c := &cobra.Command{
 		Use: "provision",
@@ -64,6 +65,7 @@ func NewRootCmd() *cobra.Command {
 	)
 	flg := c.PersistentFlags()
 	flg.StringArrayVarP(&configFiles, "config", "c", configFiles, "specify the config file")
+	flg.StringArrayVar(&extraPolicies, "extra-policy", extraPolicies, "add extra AWS Access policies from a json file")
 	flg.StringVar(&cli.config.S3.AccessKey, "s3-access-key", "", "access key for s3 object storage")
 	flg.StringVar(&cli.config.S3.SecretKey, "s3-secret-key", "", "secret key for s3 object storage")
 	flg.StringVar(&cli.config.S3.Endpoint, "s3-endpoint", os.Getenv("S3_ENDPOINT"), "endpoint for s3 object storage")
