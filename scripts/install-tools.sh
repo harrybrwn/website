@@ -4,29 +4,32 @@ set -e
 
 TOOLS="${@:-mockgen migrate}"
 
-install() {
+i() {
   go install -trimpath -ldflags '-w -s' $@
 }
 
 for tool in $TOOLS; do
   case $tool in
-    mockgen)
-      install github.com/golang/mock/mockgen@latest
+  mockgen)
+    i github.com/golang/mock/mockgen@latest
 	  ;;
+	mc|minio-client)
+		i github.com/minio/mc@latest
+		;;
 	migrate|golang-migrate)
-	  install -tags 'postgres,github,aws_s3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	  i -tags 'postgres,github,aws_s3' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	  ;;
 	stringer)
-	  install golang.org/x/tools/cmd/stringer@latest
+	  i golang.org/x/tools/cmd/stringer@latest
 	  ;;
 	golangci-lint)
-	  install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	  i  github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	  ;;
 	pack)
-	  install github.com/buildpacks/pack/cmd/pack@latest
+	  i  github.com/buildpacks/pack/cmd/pack@latest
 	  ;;
 	flarectl|cloudflarectl)
-	  install github.com/cloudflare/cloudflare-go/cmd/flarectl@latest
+	  i  github.com/cloudflare/cloudflare-go/cmd/flarectl@latest
 	  ;;
 	*)
 	  echo "Error: unknown tool $tool"
