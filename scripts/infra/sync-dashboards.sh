@@ -21,6 +21,7 @@ sync_dashboard() {
 		echo "Error: failed to fetch dashobard"
 		exit 1
 	fi
+  echo "Syncing ${uid} => ${name}.json"
 	echo "${data}" | jq '.dashboard' -cM > "${conf}/${name}.json"
 }
 

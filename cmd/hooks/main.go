@@ -84,6 +84,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
+	r.Use(web.Metrics())
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		if GithubLoggedIn(r) {
@@ -105,8 +106,9 @@ func main() {
 	r.Post("/authorize/github", gh.Authorize)
 	r.Post("/logout/github", gh.SignOut)
 	r.Post("/hooks/github", callback())
-	r.Post("/hooks/minio/logs", minioLoggingHookHandler[*MinioLogEntry](pusher, minioLoggerLabel))
-	r.Post("/hooks/minio/audit", minioLoggingHookHandler[*MinioAuditEntry](pusher, minioAuditLabel))
+	r.Post("/hooks/minio/logs", minioLoggingHookHandler[*MinioLogEntry](pusher))
+	r.Post("/hooks/minio/audit", minioLoggingHookHandler[*MinioAuditEntry](pusher))
+	r.Handle("/metrics", web.MetricsHandler())
 
 	addr := fmt.Sprintf(":%d", port)
 	logger.WithFields(logrus.Fields{

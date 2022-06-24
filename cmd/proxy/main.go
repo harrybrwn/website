@@ -71,7 +71,7 @@ func copy(w io.Writer, r io.Reader) (int, error) {
 		if err != nil {
 			return num, err
 		}
-		n, err = w.Write(buf[:n])
+		_, err = w.Write(buf[:n])
 		if err != nil {
 			return num, err
 		}

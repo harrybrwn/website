@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	caCertFile = "./config/pki/certs/ca.crt"
-	caKeyFile  = "./config/pki/certs/ca.key"
+	//caCertFile = "./config/pki/certs/ca.crt"
+	//caKeyFile = "./config/pki/certs/ca.key"
 
 	KeySize = 2048
 )

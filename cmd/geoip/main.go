@@ -57,9 +57,11 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
+	r.Use(web.Metrics())
 	r.Get("/{ip}", db.Info)
 	r.Get("/", EchoIP)
 	r.Get("/favicon.ico", send404)
+	r.Get("/metrics", web.MetricsHandler().ServeHTTP)
 	addr := ":8084"
 	logger.WithField("address", addr).Info("starting server")
 	http.ListenAndServe(addr, r)

@@ -14,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
@@ -42,7 +41,7 @@ func main() {
 		logger.Fatalf("%+v", err)
 	}
 	s3 := s3.New(awsSession)
-	config := newConfig(time.Hour*24*7, 6, getenv("BACKUPS_BUCKET", "db-backups"))
+	config := newConfig(time.Hour*12, 6, getenv("BACKUPS_BUCKET", "db-backups"))
 	info := &JobInfo{config: config, db: GetDBInfo()}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -52,6 +51,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
+	r.Use(web.Metrics())
 	r.Put("/config", handleUpdateConfig(config))
 	r.Get("/config", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
@@ -71,7 +71,7 @@ func main() {
 		w.WriteHeader(200)
 		writeJSON(w, map[string]any{"status": "success", "file": backup.Filename})
 	})
-	r.Handle("/metrics", promhttp.Handler())
+	r.Handle("/metrics", web.MetricsHandler())
 	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)

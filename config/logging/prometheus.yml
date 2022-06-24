@@ -27,6 +27,38 @@ scrape_configs:
     metrics_path: /api/metrics/prometheus
     static_configs:
       - targets: ["api:8081"]
+  - job_name: backups
+    dns_sd_configs:
+      - names:
+        - 'tasks.backups'
+        type: 'A'
+        port: 8082
+    static_configs:
+      - targets: ["backups:8082"]
+  - job_name: hooks
+    dns_sd_configs:
+      - names:
+        - 'tasks.hooks'
+        type: 'A'
+        port: 8889
+    static_configs:
+      - targets: ["hooks:8889"]
+  - job_name: geoip
+    dns_sd_configs:
+      - names:
+        - 'tasks.geoip'
+        type: 'A'
+        port: 8084
+    static_configs:
+      - targets: ["geoip:8084"]
+  - job_name: vanity-imports
+    dns_sd_configs:
+      - names:
+        - 'tasks.vanity-imports'
+        type: 'A'
+        port: 8085
+    static_configs:
+      - targets: ["vanity-imports:8085"]
 
   - job_name: minio-cluster
     metrics_path: /minio/v2/metrics/cluster
@@ -36,6 +68,7 @@ scrape_configs:
   - job_name: minio-node
     metrics_path: /minio/v2/metrics/node
     scheme: http
+    scrape_interval: 60s
     static_configs:
       - targets: ["s3:9000"]
 
@@ -49,10 +82,6 @@ scrape_configs:
   - job_name: nginx-metrics-exporter
     static_configs:
       - targets: ["nginx-metrics-exporter:9113"]
-
-  - job_name: backups
-    static_configs:
-      - targets: ["backups:8082"]
 
   - job_name: loki
     static_configs:

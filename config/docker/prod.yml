@@ -181,6 +181,8 @@ services:
         condition: on-failure
         max_attempts: 5
         delay: 10s
+    environment:
+      - GF_SERVER_ROOT_URL=https://grafana.hrry.dev
     env_file:
       - config/env/prod/db.env
       - config/env/swarm_data.env

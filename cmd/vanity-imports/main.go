@@ -20,6 +20,7 @@ var (
 		log.WithServiceName("vanity-imports"),
 	))
 	domain = "gopkg.hrry.dev"
+	home   = "https://hrry.me"
 	repo   = "https://github.com/harrybrwn"
 )
 
@@ -34,7 +35,9 @@ func main() {
 	}
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
+	r.Use(web.Metrics())
 	r.Get("/*", VanityImport(&v))
+	r.Handle("/metrics", web.MetricsHandler())
 	addr := ":8085"
 	logger.WithField("address", addr).Info("starting server")
 	http.ListenAndServe(addr, r)
@@ -58,7 +61,7 @@ func VanityImport(vanity *Vanity) func(http.ResponseWriter, *http.Request) {
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("go-get") != "1" {
-			w.Header().Set("Location", "https://hrry.me")
+			w.Header().Set("Location", home)
 			w.WriteHeader(http.StatusFound)
 			return
 		}
@@ -72,6 +75,7 @@ func VanityImport(vanity *Vanity) func(http.ResponseWriter, *http.Request) {
 			w.WriteHeader(404)
 			return
 		}
+		logger.WithField("headers", r.Header).Info("got package request")
 		err = t.Execute(w, &v)
 		if err != nil {
 			logger.WithError(err).Error("failed to execute template")
@@ -88,14 +92,6 @@ const importPage = `<!DOCTYPE html>
 </head>
 <body>
 	go get {{.Domain}}/{{.Package.Name}}
-</body>
-</html>`
-
-const userPage = `<!DOCTYPE html>
-<html lang="en">
-<head>
-</head>
-<body>
 </body>
 </html>`
 

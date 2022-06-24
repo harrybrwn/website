@@ -62,6 +62,9 @@ services:
       # hrry.dev
       - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.dev/server.crt:ro
       - ./config/pki/certs/hrry.local/server.key:/etc/hrry.dev/server.key:ro
+      # hryb.dev
+      - ./config/pki/certs/hryb.local/server.crt:/etc/hryb.dev/server.crt:ro
+      - ./config/pki/certs/hryb.local/server.key:/etc/hryb.dev/server.key:ro
     networks:
       backend:
         aliases:

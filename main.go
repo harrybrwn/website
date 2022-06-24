@@ -27,8 +27,6 @@ import (
 	"harrybrown.com/pkg/invite"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
-
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //go:generate sh scripts/mockgen.sh
@@ -128,6 +126,7 @@ func main() {
 	jwtConf := app.NewTokenConfig()
 	guard := auth.GuardMiddleware(jwtConf)
 	e.Pre(app.RequestLogRecorder(logger))
+	e.Use(echo.WrapMiddleware(web.Metrics()))
 
 	e.Any("/", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
@@ -166,7 +165,7 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/health/ready", app.Ready(db, rd))
 	api.Any("/health/alive", app.Alive)
-	api.GET("/metrics/prometheus", WrapHandler(promhttp.Handler().ServeHTTP))
+	api.GET("/metrics/prometheus", WrapHandler(web.MetricsHandler().ServeHTTP))
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)

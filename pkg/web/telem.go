@@ -2,9 +2,11 @@ package web
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"harrybrown.com/pkg/log"
 )
 
@@ -18,25 +20,66 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 			case "/metrics":
 				return
 			}
-			s := resp.status
-			logger := logger.WithFields(logrus.Fields{
-				"host":        r.Host,
-				"method":      r.Method,
-				"uri":         r.RequestURI,
-				"status":      s,
-				"query":       r.URL.RawQuery,
-				"remote_addr": r.RemoteAddr,
-				"duration":    time.Since(start).String(),
-			})
-			if s < 400 {
-				logger.Info("request handled")
-			} else if s < 500 {
-				logger.Warn("request handled")
-			} else if s >= 500 {
-				logger.Error("request handled")
-			}
+			logAccess(logger, resp.status, start, r)
 		})
 	}
+}
+
+func logAccess(logger log.FieldLogger, status int, start time.Time, r *http.Request) {
+	l := logger.WithFields(log.Fields{
+		"host":        r.Host,
+		"method":      r.Method,
+		"uri":         r.RequestURI,
+		"status":      status,
+		"query":       r.URL.RawQuery,
+		"remote_addr": r.RemoteAddr,
+		"duration":    time.Since(start).String(),
+	})
+	if status < 400 {
+		l.Info("request handled")
+	} else if status < 500 {
+		l.Warn("request handled")
+	} else if status >= 500 {
+		l.Error("request handled")
+	}
+}
+
+func Metrics() func(h http.Handler) http.Handler {
+	requestCnt := prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "http_requests_total",
+			Help: "Number of http requests served.",
+		},
+		[]string{"code", "method", "uri"},
+	)
+	durationHst := prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name: "http_response_time_seconds",
+			Help: "Duration of HTTP requests.",
+		},
+		[]string{"uri"},
+	)
+	prometheus.MustRegister(
+		requestCnt,
+		durationHst,
+	)
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			timer := prometheus.NewTimer(durationHst.WithLabelValues(r.RequestURI))
+			resp := logResponse{ResponseWriter: w}
+			h.ServeHTTP(&resp, r)
+			timer.ObserveDuration()
+			requestCnt.With(prometheus.Labels{
+				"code":   strconv.FormatInt(int64(resp.status), 10),
+				"method": r.Method,
+				"uri":    r.RequestURI,
+			}).Inc()
+		})
+	}
+}
+
+func MetricsHandler() http.Handler {
+	return promhttp.Handler()
 }
 
 type logResponse struct {

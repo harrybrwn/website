@@ -21,9 +21,10 @@ const (
 type MinioEntry interface {
 	GetTime() time.Time
 	GetDeploymentID() string
+	JobLabel() string
 }
 
-func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient, label string) func(w http.ResponseWriter, r *http.Request) {
+func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			buf   bytes.Buffer
@@ -49,9 +50,9 @@ func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient, label s
 			Streams: []logproto.Stream{
 				{
 					Labels: fmt.Sprintf(
-						`{service=%q,job=%q}`,
+						`{service=%q,job=%q,type="logs"}`,
 						minioService,
-						label,
+						entry.JobLabel(),
 					),
 					Entries: []logproto.Entry{
 						{Timestamp: entry.GetTime(), Line: buf.String()},
@@ -89,6 +90,7 @@ type MinioLogEntry struct {
 
 func (le *MinioLogEntry) GetTime() time.Time      { return le.Time }
 func (le *MinioLogEntry) GetDeploymentID() string { return le.DeploymentID }
+func (le *MinioLogEntry) JobLabel() string        { return minioLoggerLabel }
 
 type minioLogAPI struct {
 	Name string        `json:"name,omitempty"`
@@ -139,6 +141,7 @@ type MinioAuditEntry struct {
 
 func (ae *MinioAuditEntry) GetTime() time.Time      { return ae.Time }
 func (ae *MinioAuditEntry) GetDeploymentID() string { return ae.DeploymentID }
+func (ae *MinioAuditEntry) JobLabel() string        { return minioAuditLabel }
 
 type headers map[string]string
 

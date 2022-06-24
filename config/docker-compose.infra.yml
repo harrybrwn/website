@@ -9,12 +9,13 @@ services:
       - REGISTRY_AUTH=htpasswd
       - REGISTRY_AUTH_HTPASSWD_PATH=/run/secrets/registry-htpasswd-file
       - REGISTRY_AUTH_HTPASSWD_REALM=registry.harybrwn.com
+      - REGISTRY_LOG_LEVEL=debug
     volumes:
       - registry:/var/lib/registry
     ports:
       - published: 5000
         target: 5000
-        mode: host
+        # mode: host
     secrets:
       - registry-server-cert
       - registry-server-key

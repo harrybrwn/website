@@ -219,19 +219,6 @@ func logMinioErrorFields(e minio.ErrorResponse) log.Fields {
 	}
 }
 
-const (
-	errBucketExists = iota
-)
-
-type S3Error struct {
-	err  error
-	code int
-}
-
-func (s3err *S3Error) Error() string {
-	return s3err.err.Error()
-}
-
 type S3Admin interface {
 	CreateBucket(ctx context.Context, name string) error
 }

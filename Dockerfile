@@ -61,7 +61,7 @@ COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build build/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
-FROM buider as backups-builder
+FROM builder as backups-builder
 COPY cmd/backups cmd/backups
 RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
 
@@ -150,9 +150,6 @@ RUN apk update && \
     apk upgrade && \
     apk add ca-certificates && \
     rm -rf /var/cache/apk/*
-COPY files/mmdb/GeoLite2-ASN.mmdb /opt/geoip/GeoLite2-ANS.mmdb
-COPY files/mmdb/GeoLite2-City.mmdb /opt/geoip/GeoLite2-City.mmdb
-COPY files/mmdb/GeoLite2-Country.mmdb /opt/geoip/GeoLite2-Country.mmdb
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
 RUN update-ca-certificates
