@@ -2,13 +2,13 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"html/template"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	flag "github.com/spf13/pflag"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
 )
@@ -39,8 +39,9 @@ func main() {
 	r.Get("/*", VanityImport(&v))
 	r.Handle("/metrics", web.MetricsHandler())
 	addr := ":8085"
-	logger.WithField("address", addr).Info("starting server")
-	http.ListenAndServe(addr, r)
+	if err := web.ListenAndServe(addr, r); err != nil {
+		logger.WithError(err).Fatal("listen and serve failed")
+	}
 }
 
 type Vanity struct {

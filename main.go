@@ -125,9 +125,10 @@ func main() {
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.GuardMiddleware(jwtConf)
-	e.Pre(app.RequestLogRecorder(logger))
+	e.Pre(echo.WrapMiddleware(web.AccessLog(logger)))
 	e.Use(echo.WrapMiddleware(web.Metrics()))
 
+	e.GET("/metrics", WrapHandler(web.MetricsHandler().ServeHTTP))
 	e.Any("/", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/~harry", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harrybrwn.com/harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
@@ -165,7 +166,6 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/health/ready", app.Ready(db, rd))
 	api.Any("/health/alive", app.Alive)
-	api.GET("/metrics/prometheus", WrapHandler(web.MetricsHandler().ServeHTTP))
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)
@@ -180,7 +180,15 @@ func main() {
 	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
 	logger.WithFields(logrus.Fields{"time": app.StartTime}).Info("server starting")
-	err = e.Start(net.JoinHostPort("", port))
+	if web.SSLCertificateFileFlag != "" && web.SSLKeyFileFlag != "" {
+		err = e.StartTLS(
+			net.JoinHostPort("", port),
+			web.SSLCertificateFileFlag,
+			web.SSLKeyFileFlag,
+		)
+	} else {
+		err = e.Start(net.JoinHostPort("", port))
+	}
 	if err != nil {
 		logger.Fatal(err)
 	}

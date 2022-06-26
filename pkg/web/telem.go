@@ -17,7 +17,10 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 			resp := logResponse{ResponseWriter: w}
 			h.ServeHTTP(&resp, r)
 			switch r.RequestURI {
-			case "/metrics":
+			case
+				"/metrics",
+				"/api/health/ready",
+				"/api/health/alive":
 				return
 			}
 			logAccess(logger, resp.status, start, r)
@@ -26,6 +29,7 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 }
 
 func logAccess(logger log.FieldLogger, status int, start time.Time, r *http.Request) {
+	d := time.Since(start)
 	l := logger.WithFields(log.Fields{
 		"host":        r.Host,
 		"method":      r.Method,
@@ -33,7 +37,7 @@ func logAccess(logger log.FieldLogger, status int, start time.Time, r *http.Requ
 		"status":      status,
 		"query":       r.URL.RawQuery,
 		"remote_addr": r.RemoteAddr,
-		"duration":    time.Since(start).String(),
+		"duration_ms": d.Milliseconds(),
 	})
 	if status < 400 {
 		l.Info("request handled")

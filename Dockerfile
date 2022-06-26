@@ -50,8 +50,6 @@ COPY pkg pkg/
 COPY cmd/vanity-imports cmd/vanity-imports
 RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 COPY app app/
-COPY cmd/legacy-site cmd/legacy-site
-RUN go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
 COPY cmd/proxy cmd/proxy
 RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
 COPY files files/
@@ -60,6 +58,10 @@ COPY main.go .
 COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build build/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
+
+FROM builder as legacy-site-builder
+COPY cmd/legacy-site cmd/legacy-site
+RUN go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
 
 FROM builder as backups-builder
 COPY cmd/backups cmd/backups
@@ -130,8 +132,8 @@ ENTRYPOINT ["vanity-imports"]
 #
 FROM service as legacy-site
 COPY --from=frontend /opt/harrybrwn/frontend/templates /opt/harrybrwn/templates
-COPY --from=builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
-ENTRYPOINT ["legacy-site", "-templates", "/opt/harrybrwn/templates"]
+COPY --from=legacy-site-builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
+ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
 
 #
 # Experimental reverse proxy

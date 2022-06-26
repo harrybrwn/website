@@ -394,6 +394,14 @@
 				"books",
 				"tools"
 			]
+		},
+		{
+			"url": "http://trebuchet.com/",
+			"name": "The Big Book of Catapult and Trebuchet PLANS!",
+			"description": "Build your own trebuchet!",
+			"tags": [
+				"silly"
+			]
 		}
     ]
 }

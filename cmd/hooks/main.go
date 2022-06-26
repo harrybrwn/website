@@ -8,10 +8,10 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -21,10 +21,10 @@ import (
 	"github.com/grafana/loki/pkg/logproto"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc"
-	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/session"
 	"harrybrown.com/pkg/web"
@@ -44,7 +44,11 @@ var (
 )
 
 func main() {
-	var host string
+	var (
+		host     string
+		port     = 8889
+		lokiAddr = "loki:9096"
+	)
 	if err := godotenv.Load(); err != nil {
 		logger.WithError(err).Warn("could not load .env")
 	}
@@ -52,7 +56,6 @@ func main() {
 		logger.WithError(err).Fatal("invalid configuration")
 	}
 
-	port := 8889
 	flag.IntVar(&port, "port", port, "specify server port")
 	flag.StringVar(&host, "host", os.Getenv("GH_HOOK_CALLBACK_HOST"), "server's domain name, used for creating webhooks")
 	flag.Parse()
@@ -88,14 +91,23 @@ func main() {
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		if GithubLoggedIn(r) {
-			w.WriteHeader(200)
 			w.Write(index)
 		} else {
-			w.WriteHeader(200)
 			w.Write(loginHTML)
 		}
 	})
-	conn, err := grpc.Dial("loki:9096", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
+
+	conn, err := grpc.Dial(
+		lokiAddr,
+		grpc.WithInsecure(),
+		grpc.WithUserAgent(fmt.Sprintf(
+			"hooks (%s; %s; %s) grpc-go/%s",
+			runtime.Version(),
+			runtime.GOOS,
+			runtime.GOARCH,
+			grpc.Version,
+		)),
+	)
 	if err != nil {
 		logger.WithError(err).Fatal("could not dial loki's grpc endpoint")
 	}
@@ -111,11 +123,9 @@ func main() {
 	r.Handle("/metrics", web.MetricsHandler())
 
 	addr := fmt.Sprintf(":%d", port)
-	logger.WithFields(logrus.Fields{
-		"address": addr,
-		"time":    time.Now(),
-	}).Info("starting server")
-	http.ListenAndServe(addr, r)
+	if err = web.ListenAndServe(addr, r); err != nil {
+		logger.WithError(err).Fatal("listen and serve failed")
+	}
 }
 
 const callbackSecret = "e5c172c9302d3bec1ae54314d2f1be70301cca1c289afb94adac83066128c31e"

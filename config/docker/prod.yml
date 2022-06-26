@@ -62,7 +62,7 @@ services:
   api:
     hostname: '{{.Task.Name}}-{{.Node.Hostname}}'
     deploy:
-      replicas: 4
+      replicas: 3
       placement:
         max_replicas_per_node: 2
         constraints:

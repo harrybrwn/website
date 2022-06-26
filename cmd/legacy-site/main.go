@@ -1,14 +1,14 @@
 package main
 
 import (
-	"flag"
-	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	flag "github.com/spf13/pflag"
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/web"
 )
 
 var logger = log.SetLogger(log.New(
@@ -27,7 +27,7 @@ func main() {
 	r := chi.NewRouter()
 	g := auth.Guard(jwtConf)
 	r.With(g).Get("/old", app.OldHomepageHandler(templates).ServeHTTP)
-	addr := ":8083"
-	logger.WithField("address", addr).Info("starting server")
-	http.ListenAndServe(addr, r)
+	if err := web.ListenAndServe(":8083", r); err != nil {
+		logger.WithError(err).Fatal("listen and serve failed")
+	}
 }

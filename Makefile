@@ -13,16 +13,16 @@ lint: lint-go
 
 clean:
 	$(RM) -r bin .cache .pytest_cache .cache \
-		$(shell find . -name '.pytest_cache' -type d) \
-		$(shell find . -name '__pycache__' -type d) \
 		test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
 coverage: coverage-ts coverage-go
 
 deep-clean: clean
-	$(RM) -r internal/mocks .
-		$(shell find . -name 'node_modules' -type d) \
+	sudo $(RM) -r internal/mocks \
+		$(shell find . -name 'node_modules' -type d)  \
+		$(shell find . -name '.pytest_cache' -type d) \
+		$(shell find . -name '__pycache__' -type d)   \
 		$(shell find . -name 'yarn-error.log')
 
 test-go:

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oschwald/geoip2-golang"
+	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
@@ -40,7 +40,7 @@ func main() {
 	flag.Parse()
 	uris, err := parseURIs(files)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal(errors.Wrap(err, "failed to parse uri flags"))
 	}
 
 	db, err := FetchDatabases(uris...)
@@ -62,9 +62,10 @@ func main() {
 	r.Get("/", EchoIP)
 	r.Get("/favicon.ico", send404)
 	r.Get("/metrics", web.MetricsHandler().ServeHTTP)
-	addr := ":8084"
-	logger.WithField("address", addr).Info("starting server")
-	http.ListenAndServe(addr, r)
+	err = web.ListenAndServe(":8084", r)
+	if err != nil {
+		logger.WithError(err).Fatal("listen and serve failed")
+	}
 }
 
 type GeoData struct {

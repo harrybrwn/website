@@ -57,6 +57,12 @@ hrrydev_cert() {
 		-d '*.registry.hrry.dev'
 }
 
+hrrylol_cert() {
+	do_certbot \
+		-d 'hrry.lol' \
+		-d '*.hrry.lol'
+}
+
 certs() {
 	echo "Running cerbot for \"$1\""
 	case $1 in
@@ -72,6 +78,9 @@ certs() {
 		hryb.dev)
 			hrybdev_cert
 			;;
+		hrry.lol)
+			hrrylol_cert
+			;;
 		*)
 			echo "Error: can't handle domain \"$1\"" 1>&2
 			exit 1
@@ -82,7 +91,7 @@ certs() {
 echo '$ sudo -v'
 sudo -v
 
-names="harrybrwn.com hryb.dev hrry.me hrry.dev"
+names="harrybrwn.com hryb.dev hrry.me hrry.dev hrry.lol"
 
 for name in $names; do
 	if sudo test ! -d "/etc/letsencrypt/live/${name}"; then

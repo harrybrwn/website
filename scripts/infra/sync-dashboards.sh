@@ -30,9 +30,11 @@ PERF_UID=Tt6NZyXnz
 REGISTRY_UID=X9CPPsj7k
 GEOIP_UID=4Ba84XCnz
 OBS_UID=n-VhV_j7z
+MINIO_UID=TgmJnqnnk
 
 sync_dashboard ${NGINX_UID} "nginx"
 sync_dashboard ${PERF_UID} "performance"
 sync_dashboard ${REGISTRY_UID} "registry"
 sync_dashboard ${GEOIP_UID} "geoip"
 sync_dashboard ${OBS_UID} "observability-meta"
+#sync_dashboard ${MINIO_UID} "minio"

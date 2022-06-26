@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/grafana/loki/pkg/logproto"
+	"harrybrown.com/pkg/log"
 )
 
 const (
@@ -30,6 +31,13 @@ func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient) func(w 
 			buf   bytes.Buffer
 			entry T
 		)
+		logger := logger.WithFields(log.Fields{
+			"request_uri":         r.RequestURI,
+			"content_length":      r.Header.Get("Content-Length"),
+			"user_agent":          r.Header.Get("User-Agent"),
+			"minio_deployment_id": r.Header.Get("X-Minio-Deployment-Id"),
+			"minio_version":       r.Header.Get("X-Minio-Version"),
+		})
 		err := json.NewDecoder(io.TeeReader(r.Body, &buf)).Decode(&entry)
 		if err != nil {
 			logger.WithError(err).Error("could not read hook body")
@@ -42,18 +50,22 @@ func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient) func(w 
 			return
 		}
 		if entry.GetDeploymentID() == "" {
+			logger.Info("empty log line")
 			w.WriteHeader(http.StatusAccepted)
 			return
 		}
 
+		labels := fmt.Sprintf(
+			`{service=%q,job=%q,type="logs"}`,
+			minioService,
+			entry.JobLabel(),
+		)
+		// TODO buffer these requests so they don't cause too many circular
+		// writes to s3.
 		_, err = pusher.Push(r.Context(), &logproto.PushRequest{
 			Streams: []logproto.Stream{
 				{
-					Labels: fmt.Sprintf(
-						`{service=%q,job=%q,type="logs"}`,
-						minioService,
-						entry.JobLabel(),
-					),
+					Labels: labels,
 					Entries: []logproto.Entry{
 						{Timestamp: entry.GetTime(), Line: buf.String()},
 					},
@@ -65,6 +77,7 @@ func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient) func(w 
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		logger.WithField("labels", labels).Info("sent log line to loki")
 		w.WriteHeader(http.StatusAccepted)
 	}
 }
