@@ -101,7 +101,7 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
-      - "--log.level=${LOG_LEVEL:-info}"
+      - "--log.level=${LOG_LEVEL:-debug}"
       - "--log.format=${LOG_FORMAT:-json}"
     networks:
       - backend

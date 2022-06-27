@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <title><%= title %></title>
     <link rel="author" href="/" />
     <link rel="index" href="/" />
@@ -130,7 +131,7 @@
       <h2>My Projects</h2>
       <ul>
         <li>
-          <a href="/projects/remora">Remora</a>: A distributed web crawler and
+          <a href="/projects/remora">remora</a>: A distributed web crawler and
           search engine.
         </li>
         <li>
@@ -185,6 +186,19 @@
               width="88"
               height="31"
               alt="Geo Cities"
+            />
+          </a>
+          <a
+            href="https://geocities.restorativland.org/SiliconValley"
+            ping="/api/ping?link=https://geocities.restorativland.org/SiliconValley"
+            rel="noopener,noreferrer"
+            title="GeoCities Silicon Valley"
+          >
+            <img
+              src="<%= require('./img/88x31/siliconvalley-geocities.gif') %>"
+              width="88"
+              height="31"
+              alt="GeoCities Silicon Valley"
             />
           </a>
           <a
@@ -333,6 +347,25 @@
           <div>Last updated: <%= built.toDateString() %></div>
           <div id="hit-count"></div>
         </section>
+        <div class="webring">
+          <div class="webring-links">
+            <a
+              href="https://hotlinewebring.club/hrry/previous"
+              referrerpolicy="strict-origin-when-cross-origin"
+              class="webring-prev"
+              >←</a
+            >
+            <a href="https://hotlinewebring.club/"
+              ><p class="rainbow-text">hotline webring</p></a
+            >
+            <a
+              href="https://hotlinewebring.club/hrry/next"
+              referrerpolicy="strict-origin-when-cross-origin"
+              class="webring-next"
+              >→</a
+            >
+          </div>
+        </div>
         <center>
           <span
             class="tooltip web-button-tooltip"

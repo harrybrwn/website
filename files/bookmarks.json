@@ -77,7 +77,8 @@
 			"name": "Gurka",
 			"description": "Just a spinning cucumber.",
 			"tags": [
-				"silly"
+				"silly",
+				"games"
 			]
 		},
 		{
@@ -259,7 +260,8 @@
 			"tags": [
 				"art",
 				"history",
-				"web"
+				"web",
+				"90s"
 			]
 		},
 		{
@@ -400,6 +402,44 @@
 			"name": "The Big Book of Catapult and Trebuchet PLANS!",
 			"description": "Build your own trebuchet!",
 			"tags": [
+				"silly"
+			]
+		},
+		{
+			"url": "https://kyledrake.com/",
+			"name": "Kyle Drake",
+			"description": "Personal webpage of Kyle Drake, creator of neocities.org",
+			"tags": [
+				"people",
+				"blog"
+			]
+		},
+		{
+			"url": "https://links.yesterweb.org/",
+			"name": "Yesterlinks",
+			"description": "Yesterweb is a cool webring but they have a links page that has some really cool stuff.",
+			"tags": [
+				"web",
+				"tools",
+				"90s"
+			]
+		},
+		{
+			"url": "https://neonaut.neocities.org/",
+			"name": "neonaut",
+			"description": "A personal webpage with some cool stuff I like.",
+			"tags": [
+				"web",
+				"people",
+				"90s"
+			]
+		},
+		{
+			"url": "http://toastytech.com/evil/",
+			"name": "Internet Explorer is Evil",
+			"description": "The kind of anti-microsoft content that makes me nostalgic for the 90s.",
+			"tags": [
+				"90s",
 				"silly"
 			]
 		}

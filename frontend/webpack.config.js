@@ -251,7 +251,7 @@ module.exports = function (webpackEnv) {
       },
     },
     devServer: {
-      port: 9000,
+      port: 9002,
     },
   };
 };
