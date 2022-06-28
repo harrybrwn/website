@@ -1,14 +1,14 @@
-package main
+package provision
 
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 )
 
 type DBConfig struct {
@@ -21,17 +21,12 @@ type DBConfig struct {
 		Name  string
 		Owner string
 	}
+	Migrations []struct {
+		Database string
+	}
 }
 
-type DBUser struct {
-	Name       string
-	Password   string
-	SuperUser  bool
-	CreateDB   bool
-	CreateRole bool
-}
-
-func (db *DBConfig) init() {
+func (db *DBConfig) Init() {
 	if db.Host == "" {
 		db.Host = os.Getenv("POSTGRES_HOST")
 	}
@@ -49,6 +44,25 @@ func (db *DBConfig) init() {
 	}
 }
 
+func (db *DBConfig) URI() string {
+	u := url.URL{
+		Scheme:   "postgres",
+		Host:     db.Host,
+		User:     url.UserPassword(db.RootUser, db.Password),
+		Path:     "/",
+		RawQuery: "sslmode=disable",
+	}
+	return u.String()
+}
+
+type DBUser struct {
+	Name       string
+	Password   string
+	SuperUser  bool
+	CreateDB   bool
+	CreateRole bool
+}
+
 const (
 	pqDuplicateObject   = "42710"
 	pqDuplicateDatabase = "42P04"
@@ -57,7 +71,7 @@ const (
 func (db *DBConfig) Provision(ctx context.Context) error {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
-	d, err := sql.Open("postgres", db.uri())
+	d, err := sql.Open("postgres", db.URI())
 	if err != nil {
 		return err
 	}
@@ -113,15 +127,4 @@ func (db *DBConfig) Provision(ctx context.Context) error {
 		}
 	}
 	return nil
-}
-
-func (db *DBConfig) uri() string {
-	u := url.URL{
-		Scheme:   "postgres",
-		Host:     db.Host,
-		User:     url.UserPassword(db.RootUser, db.Password),
-		Path:     "/",
-		RawQuery: "sslmode=disable",
-	}
-	return u.String()
 }

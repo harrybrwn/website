@@ -6,12 +6,13 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/imdario/mergo"
 	_ "github.com/lib/pq"
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
 	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/provision"
 )
 
 var logger = log.New(
@@ -36,13 +37,13 @@ func NewRootCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use: "provision",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			cli.config.S3.init()
-			cli.config.DB.init()
+			cli.config.S3.Init()
+			cli.config.DB.Init()
 			return cli.readConfig(configFiles)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			err := cli.config.S3.Provision(ctx, cli.admin, cli.client)
+			err := cli.config.S3.Provision(ctx, logger, cli.admin, cli.client)
 			if err != nil {
 				return err
 			}
@@ -76,67 +77,61 @@ func NewRootCmd() *cobra.Command {
 type Cli struct {
 	client *minio.Client
 	admin  *madmin.AdminClient
-	config Config
-}
-
-type Config struct {
-	S3 S3Config `json:"s3" yaml:"s3"`
-	DB DBConfig `json:"db" yaml:"db"`
+	config provision.Config
 }
 
 func (cli *Cli) readConfig(files []string) error {
-	// dst := reflect.ValueOf(&cli.config)
 	for _, file := range files {
-		if file == "-" {
-		}
 		f, err := os.Open(file)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
-		var config Config
-		err = json.NewDecoder(f).Decode(&config)
+		err = cli.config.ApplyFile(f)
 		if err != nil {
 			return err
 		}
-		// err = merge(dst, reflect.ValueOf(config))
-		// err = mergo.Merge(&cli.config, &config, mergo.WithAppendSlice)
-		err = mergo.Merge(
-			&cli.config,
-			&config,
-			// mergo.WithTransformers(transformerFunc(dbUserTransformer)),
-			mergo.WithAppendSlice,
-		)
-		if err != nil {
-			return err
-		}
-		cli.client, err = s3Client(&cli.config.S3)
-		if err != nil {
-			return err
-		}
-		cli.admin, err = minioAdmin(&cli.config.S3)
-		if err != nil {
-			return err
-		}
+	}
+	var err error
+	cli.client, err = s3Client(&cli.config.S3)
+	if err != nil {
+		return err
+	}
+	cli.admin, err = minioAdmin(&cli.config.S3)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
+func s3Client(cfg *provision.S3Config) (*minio.Client, error) {
+	return minio.New(cfg.Endpoint, &minio.Options{
+		Creds:        credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure:       false,
+		Region:       "us-east-1",
+		BucketLookup: minio.BucketLookupAuto,
+	})
+}
+
+func minioAdmin(cfg *provision.S3Config) (*madmin.AdminClient, error) {
+	return madmin.New(cfg.Endpoint, cfg.AccessKey, cfg.SecretKey, false)
+}
+
 func dbUserTransformer(typ reflect.Type) func(dst, src reflect.Value) error {
 	fn := func(dst, src reflect.Value) error {
-		names := make(map[string][]*DBUser)
+		names := make(map[string][]*provision.DBUser)
 		for i := 0; i < src.Len(); i++ {
 			v := src.Index(i)
 			name := v.FieldByName("Name").String()
 			if u, ok := names[name]; ok {
-				names[name] = append(u, v.Interface().(*DBUser))
+				names[name] = append(u, v.Interface().(*provision.DBUser))
 			} else {
-				names[name] = []*DBUser{v.Interface().(*DBUser)}
+				names[name] = []*provision.DBUser{v.Interface().(*provision.DBUser)}
 			}
 		}
 		return nil
 	}
-	if typ == reflect.TypeOf([]*DBUser{}) {
+	if typ == reflect.TypeOf([]*provision.DBUser{}) {
 		return fn
 	}
 	return nil

@@ -1,4 +1,4 @@
-package main
+package provision
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/pkg/errors"
 	"harrybrown.com/pkg/log"
 )
@@ -70,7 +69,7 @@ type IPAddressCondition struct {
 	AWSSourceIP string `json:"aws:SourceIp,omitempty"`
 }
 
-func (s3 *S3Config) init() {
+func (s3 *S3Config) Init() {
 	if s3.AccessKey == "" {
 		s3.AccessKey = os.Getenv("S3_ACCESS_KEY")
 	}
@@ -107,7 +106,10 @@ func (s3 *S3Config) Validate() error {
 	return nil
 }
 
-func (s3 *S3Config) Provision(ctx context.Context, admin *madmin.AdminClient, client *minio.Client) error {
+func (s3 *S3Config) Provision(
+	ctx context.Context, logger log.FieldLogger,
+	admin *madmin.AdminClient, client *minio.Client,
+) error {
 	var err error
 	if err = s3.Validate(); err != nil {
 		return err
@@ -217,24 +219,4 @@ func logMinioErrorFields(e minio.ErrorResponse) log.Fields {
 		"server":  e.Server,
 		"status":  e.StatusCode,
 	}
-}
-
-type S3Admin interface {
-	CreateBucket(ctx context.Context, name string) error
-}
-
-type minioAdminClient struct {
-}
-
-func s3Client(cfg *S3Config) (*minio.Client, error) {
-	return minio.New(cfg.Endpoint, &minio.Options{
-		Creds:        credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure:       false,
-		Region:       "us-east-1",
-		BucketLookup: minio.BucketLookupAuto,
-	})
-}
-
-func minioAdmin(cfg *S3Config) (*madmin.AdminClient, error) {
-	return madmin.New(cfg.Endpoint, cfg.AccessKey, cfg.SecretKey, false)
 }
