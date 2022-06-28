@@ -2,8 +2,7 @@
 
 set -e
 
-DIR=db/migrations
-DOCKER=false
+DIR=db/migrations/api
 DB=""
 ENV_FILES=()
 
@@ -28,10 +27,6 @@ while [ $# -gt 0 ]; do
     -env)
       ENV_FILES+=("$2")
       shift 2
-      ;;
-    -docker)
-      DOCKER=true
-      shift
       ;;
     --)
       shift
@@ -61,23 +56,12 @@ fi
 
 unset PGSERVICEFILE
 
-run-migrate() {
-  if $DOCKER; then
-    docker container run \
-      --rm               \
-      --network host     \
-      -v "$(pwd)/$DIR:/migrations" -it migrate/migrate:latest
-  else
-    migrate "$@"
-  fi
-}
-
 case $1 in
   create)
     run-migrate create -ext sql -seq -dir "$DIR" $2
     ;;
   *)
-    run-migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
+    migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"
     ;;
 esac
 
