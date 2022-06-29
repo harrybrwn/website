@@ -1,0 +1,11 @@
+notifiers:
+  - name: discord-notifier-1
+    type: discord
+    org_id: 1
+    is_default: true
+    disable_resolve_message: false
+    settings:
+      url: https://discord.com/api/webhooks/<redacted>/<redacted>
+      message: "{{ template \"default.message\" . }} <@&989730245168988170>"
+      use_discord_username: true
+

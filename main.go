@@ -4,7 +4,7 @@
 package main
 
 import (
-	"embed"
+	_ "embed"
 	"html/template"
 	"io/fs"
 	"net"
@@ -32,10 +32,6 @@ import (
 //go:generate sh scripts/mockgen.sh
 
 var (
-	//go:embed build/harrybrwn.com/index.html
-	harryStaticPage []byte
-	//go:embed build/harrybrwn.com/remora/index.html
-	remoraStaticPage []byte
 	//go:embed build/harrybrwn.com/harry_y_tanya/index.html
 	hytStaticPage []byte
 	//go:embed build/harrybrwn.com/404.html
@@ -44,8 +40,6 @@ var (
 	adminStaticPage []byte
 	//go:embed build/harrybrwn.com/games/index.html
 	gamesStaticPage []byte
-	//TODO go:embed build/harrybrwn.com/tanya/index.html
-	//tanyaStaticPage []byte
 	//go:embed build/harrybrwn.com/chatroom/index.html
 	chatroomStaticPage []byte
 	//go:embed build/harrybrwn.com/invite/index.html
@@ -55,18 +49,6 @@ var (
 	bookmarks []byte
 	//go:embed build/harrybrwn.com/pub.asc
 	gpgPubkey []byte
-	//go:embed build/harrybrwn.com/robots.txt
-	robots []byte
-	//go:embed build/harrybrwn.com/favicon.ico
-	favicon []byte
-	//go:embed build/harrybrwn.com/manifest.json
-	manifest []byte
-	//go:embed build/harrybrwn.com/static
-	static embed.FS
-	//go:embed build/harrybrwn.com/sitemap.xml
-	sitemap []byte
-	//go:embed build/harrybrwn.com/sitemap.xml.gz
-	sitemapgz []byte
 	//go:embed build/harrybrwn.com/invite_email/index.html
 	inviteEmailStatic []byte
 
@@ -129,20 +111,9 @@ func main() {
 	e.Use(echo.WrapMiddleware(web.Metrics()))
 
 	e.GET("/metrics", WrapHandler(web.MetricsHandler().ServeHTTP))
-	e.Any("/", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
-	e.GET("/~harry", app.Page(harryStaticPage, "harrybrwn.com/index.html"))
 	e.GET("/tanya/hyt", app.Page(hytStaticPage, "harrybrwn.com/harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
-	e.GET("/remora", app.Page(remoraStaticPage, "harrybrwn.com/remora/index.html"))
 	e.GET("/admin", app.Page(adminStaticPage, "harrybrwn.com/admin/index.html"), guard, auth.AdminOnly())
 	// e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
-
-	e.GET("/static/*", echo.WrapHandler(handleStatic()))
-	e.GET("/pub.asc", WrapHandler(keys))
-	e.GET("/robots.txt", WrapHandler(robotsHandler))
-	e.GET("/sitemap.xml", WrapHandler(sitemapHandler(sitemap, false)))
-	e.GET("/sitemap.xml.gz", WrapHandler(sitemapHandler(sitemapgz, true)))
-	e.GET("/favicon.ico", faviconHandler())
-	e.GET("/manifest.json", json(manifest))
 
 	e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
 	e.POST("/invite/:id", invites.SignUp(userStore))
@@ -248,18 +219,6 @@ func keys(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func faviconHandler() echo.HandlerFunc {
-	length := strconv.FormatInt(int64(len(favicon)), 10)
-	return func(c echo.Context) error {
-		h := c.Response().Header()
-		h.Set("Content-Length", length)
-		h.Set("Accept-Ranges", "bytes")
-		h.Set("Cache-Control", app.StaticCacheControl)
-		staticLastModified(h)
-		return c.Blob(200, "image/x-icon", favicon)
-	}
-}
-
 func json(raw []byte) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		h := c.Response().Header()
@@ -267,17 +226,6 @@ func json(raw []byte) echo.HandlerFunc {
 		h.Set("Cache-Control", app.StaticCacheControl)
 		h.Set("Content-Length", strconv.FormatInt(int64(len(raw)), 10))
 		return c.Blob(200, "application/json", raw)
-	}
-}
-
-func robotsHandler(rw http.ResponseWriter, r *http.Request) {
-	h := rw.Header()
-	staticLastModified(h)
-	h.Set("Cache-Control", app.StaticCacheControl)
-	h.Set("Content-Type", "text/plain")
-	_, err := rw.Write(robots)
-	if err != nil {
-		logger.WithError(err).Error("could not write response body")
 	}
 }
 
@@ -297,18 +245,6 @@ func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Reque
 			logger.WithError(err).Error("could not write response body")
 		}
 	}
-}
-
-func handleStatic() http.Handler {
-	if app.Debug {
-		h := http.StripPrefix("/static/", http.FileServer(http.Dir("build/static")))
-		return h
-	}
-	fs, err := fs.Sub(static, "build")
-	if err != nil {
-		fs = static
-	}
-	return staticCache(http.FileServer(http.FS(fs)))
 }
 
 func ping(rw http.ResponseWriter, r *http.Request) { rw.WriteHeader(200) }

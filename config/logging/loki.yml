@@ -10,6 +10,10 @@ server:
 frontend:
     address: 127.0.0.1
 
+limits_config:
+  max_entries_limit_per_query: 10000 # (default: 5000)
+  max_query_length: 8760h # 1 year (default: 721h)
+
 common:
   path_prefix: /var/loki
   storage:
