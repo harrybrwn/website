@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"reflect"
+	"strings"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
@@ -34,6 +38,13 @@ func NewRootCmd() *cobra.Command {
 		envFile       string
 		cli           Cli
 	)
+	if exists(".env") {
+		godotenv.Load(".env")
+	}
+	files, ok := configFilesFromEnv()
+	if ok {
+		configFiles = files
+	}
 	c := &cobra.Command{
 		Use: "provision",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -55,14 +66,8 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 	c.AddCommand(
-		&cobra.Command{Use: "config", RunE: func(cmd *cobra.Command, args []string) error {
-			b, err := json.MarshalIndent(cli.config, "", "  ")
-			if err != nil {
-				return err
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s\n", b)
-			return nil
-		}},
+		NewMigrateCmd(&cli),
+		NewConfigCmd(&cli),
 	)
 	flg := c.PersistentFlags()
 	flg.StringArrayVarP(&configFiles, "config", "c", configFiles, "specify the config file")
@@ -80,19 +85,28 @@ type Cli struct {
 	config provision.Config
 }
 
-func (cli *Cli) readConfig(files []string) error {
+func (cli *Cli) readConfig(files []string) (err error) {
 	for _, file := range files {
-		f, err := os.Open(file)
-		if err != nil {
-			return err
+		var rc io.ReadCloser
+		if file == "-" {
+			var buf bytes.Buffer
+			_, err = io.Copy(&buf, os.Stdin)
+			if err != nil {
+				return err
+			}
+			rc = io.NopCloser(&buf)
+		} else {
+			rc, err = os.Open(file)
+			if err != nil {
+				return err
+			}
 		}
-		defer f.Close()
-		err = cli.config.ApplyFile(f)
+		defer rc.Close()
+		err = cli.config.ApplyFile(rc)
 		if err != nil {
 			return err
 		}
 	}
-	var err error
 	cli.client, err = s3Client(&cli.config.S3)
 	if err != nil {
 		return err
@@ -102,6 +116,22 @@ func (cli *Cli) readConfig(files []string) error {
 		return err
 	}
 	return nil
+}
+
+func NewConfigCmd(cli *Cli) *cobra.Command {
+	c := cobra.Command{
+		Use:   "config",
+		Short: "Configuration management.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			b, err := json.MarshalIndent(cli.config, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\n", b)
+			return nil
+		},
+	}
+	return &c
 }
 
 func s3Client(cfg *provision.S3Config) (*minio.Client, error) {
@@ -115,6 +145,18 @@ func s3Client(cfg *provision.S3Config) (*minio.Client, error) {
 
 func minioAdmin(cfg *provision.S3Config) (*madmin.AdminClient, error) {
 	return madmin.New(cfg.Endpoint, cfg.AccessKey, cfg.SecretKey, false)
+}
+
+func configFilesFromEnv() ([]string, bool) {
+	filesListEnv := os.Getenv("PROVISION_FILE")
+	if filesListEnv == "" {
+		return nil, false
+	}
+	configFiles := []string{}
+	for _, f := range strings.Split(filesListEnv, ":") {
+		configFiles = append(configFiles, f)
+	}
+	return configFiles, true
 }
 
 func dbUserTransformer(typ reflect.Type) func(dst, src reflect.Value) error {
@@ -141,4 +183,9 @@ type transformerFunc func(typ reflect.Type) func(dst, src reflect.Value) error
 
 func (tf transformerFunc) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
 	return tf(typ)
+}
+
+func exists(file string) bool {
+	_, err := os.Stat(file)
+	return !os.IsNotExist(err)
 }

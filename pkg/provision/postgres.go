@@ -3,12 +3,14 @@ package provision
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/lib/pq"
+	"github.com/pkg/errors"
 )
 
 type DBConfig struct {
@@ -21,9 +23,12 @@ type DBConfig struct {
 		Name  string
 		Owner string
 	}
-	Migrations []struct {
-		Database string
-	}
+	Migrations map[string]Migration `json:"migrations"`
+}
+
+type Migration struct {
+	Database string `json:"database"`
+	Source   string `json:"source"`
 }
 
 func (db *DBConfig) Init() {
@@ -32,6 +37,9 @@ func (db *DBConfig) Init() {
 	}
 	if db.Port == "" {
 		db.Port = os.Getenv("POSTGRES_PORT")
+	}
+	if db.Host == "" {
+		db.Host = "localhost"
 	}
 	if db.Port == "" {
 		db.Port = "5432"
@@ -44,15 +52,15 @@ func (db *DBConfig) Init() {
 	}
 }
 
-func (db *DBConfig) URI() string {
-	u := url.URL{
+func (db *DBConfig) URI(path ...string) *url.URL {
+	paths := append([]string{"/"}, path...)
+	return &url.URL{
 		Scheme:   "postgres",
-		Host:     db.Host,
+		Host:     net.JoinHostPort(db.Host, db.Port),
 		User:     url.UserPassword(db.RootUser, db.Password),
-		Path:     "/",
+		Path:     filepath.Join(paths...),
 		RawQuery: "sslmode=disable",
 	}
-	return u.String()
 }
 
 type DBUser struct {
@@ -71,7 +79,7 @@ const (
 func (db *DBConfig) Provision(ctx context.Context) error {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
-	d, err := sql.Open("postgres", db.URI())
+	d, err := sql.Open("postgres", db.URI().String())
 	if err != nil {
 		return err
 	}

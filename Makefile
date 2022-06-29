@@ -49,13 +49,13 @@ lint-go:
 lint-sh:
 	shellcheck -x $(shell find ./scripts/ -name '*.sh' -type f)
 
-TOOLS=user-gen pwhash key-gen
+bin/provision:
+	go build -trimpath -ldflags "-s -w" -o $@ ./cmd/provision
 
 tools:
-	@mkdir -p ./bin
-	@for tool in $(TOOLS); do \
-		go build -trimpath -ldflags "-s -w" -o ./bin/$$tool ./cmd/$$tool; \
-	done
+	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
+
+.PHONY: tools bin/prevision
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \

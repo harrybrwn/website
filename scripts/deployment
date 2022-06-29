@@ -23,6 +23,9 @@ fi
 if [ -n "${COMPOSE_FILE:-}" ]; then
   unset COMPOSE_FILE
 fi
+if [ -n "${PROVISION_FILE}" ]; then
+  unset PROVISION_FILE
+fi
 
 # Flags
 CONTEXT=harrybrwn

@@ -107,11 +107,13 @@ func (s3 *S3Config) Validate() error {
 }
 
 func (s3 *S3Config) Provision(
-	ctx context.Context, logger log.FieldLogger,
-	admin *madmin.AdminClient, client *minio.Client,
+	ctx context.Context,
+	logger log.FieldLogger,
+	admin *madmin.AdminClient,
+	client *minio.Client,
 ) error {
-	var err error
-	if err = s3.Validate(); err != nil {
+	err := s3.Validate()
+	if err != nil {
 		return err
 	}
 	for _, b := range s3.Buckets {
@@ -164,7 +166,6 @@ func (s3 *S3Config) Provision(
 
 	// Save a list of user's Access Keys so we can use then for creating groups.
 	groupUsers := make(map[string][]string)
-
 	for _, user := range s3.Users {
 		err = admin.AddUser(ctx, user.AccessKey, user.SecretKey)
 		if err != nil {

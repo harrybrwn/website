@@ -143,12 +143,19 @@
     "groups": []
   },
   "db": {
+    "port": "5432",
     "Users": [],
     "Databases": [
       {
         "Name": "grafana",
         "Owner": "grafana"
       }
-    ]
+    ],
+    "migrations": {
+      "api": {
+        "database": "harrybrwn_api",
+        "source": "file://./db/migrations/api"
+      }
+    }
   }
 }
