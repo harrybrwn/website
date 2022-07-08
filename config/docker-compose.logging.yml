@@ -166,6 +166,10 @@ services:
     logging:
       driver: fluentd
       options: { tag: 'docker.logs.registry.{{ .ID }}', fluentd-async: "true" }
+  filestash:
+    logging:
+      driver: fluentd
+      options: { tag: 'docker.logs.filestash.{{ .ID }}', fluentd-async: "true" }
 
 volumes:
   grafana:

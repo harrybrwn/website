@@ -42,6 +42,7 @@ services:
     env_file:
       - config/env/redis.env
     volumes:
+      # Only use this if the cache stays on one machine
       - cache-data:/data
 
   nginx:
@@ -224,10 +225,20 @@ services:
     networks:
       - backend
 
+  filestash:
+    image: machines/filestash
+    ports:
+      - "8334:8334"
+    networks:
+      - backend
+    volumes:
+      - filestash:/app/data/state
+
 volumes:
   database:
   cache-data:
   s3:
+  filestash:
 
 networks:
   backend:

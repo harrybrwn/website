@@ -38,17 +38,20 @@ func (db *DBConfig) Init() {
 	if db.Port == "" {
 		db.Port = os.Getenv("POSTGRES_PORT")
 	}
-	if db.Host == "" {
-		db.Host = "localhost"
-	}
-	if db.Port == "" {
-		db.Port = "5432"
-	}
 	if db.RootUser == "" {
 		db.RootUser = os.Getenv("POSTGRES_USER")
 	}
 	if db.Password == "" {
 		db.Password = os.Getenv("POSTGRES_PASSWORD")
+	}
+}
+
+func (db *DBConfig) Defaults() {
+	if db.Host == "" {
+		db.Host = "localhost"
+	}
+	if db.Port == "" {
+		db.Port = "5432"
 	}
 }
 

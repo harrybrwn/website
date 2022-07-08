@@ -19,6 +19,10 @@ services:
   redis:
     deploy:
       replicas: 1
+      placement:
+        constraints:
+          - "node.role==worker"
+          - "node.labels.logs==true"
       restart_policy:
         condition: on-failure
         max_attempts: 3
@@ -229,6 +233,18 @@ services:
       - MINIO_BROWSER_REDIRECT_URL=https://s3-console.hrry.dev
     networks:
       - service-mesh
+
+  filestash:
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.labels.s3 == true]
+      restart_policy:
+        condition: on-failure
+        max_attempts: 8
+    env_file:
+      - config/env/swarm_data.env
+      #- config/env/prod/filestash.env
 
 volumes:
   registry:

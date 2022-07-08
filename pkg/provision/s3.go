@@ -46,16 +46,14 @@ type S3Policy struct {
 		Action    []string
 		Resource  []string
 		Condition struct {
-			StringEquals struct {
-				S3XAmzAcl []string `json:"s3:x-amx-acl,omitempty"`
-				S3Prefix  []string `json:"s3:prefix,omitempty"`
-			} `json:",omitempty"`
-			IpAddress    IPAddressCondition `json:",omitempty"`
-			NotIpAddress IPAddressCondition `json:",omitempty"`
+			StringEquals StringEqualsPolicyCondition `json:",omitempty"`
+			IpAddress    IPAddressPolicyCondition    `json:",omitempty"`
+			NotIpAddress IPAddressPolicyCondition    `json:",omitempty"`
 			StringLike   struct {
 				AWSReferer []string `json:"aws:Referer,omitempty"`
 			} `json:",omitempty"`
-			Null struct {
+			StringNotLike map[string]any `json:",omitempty"`
+			Null          struct {
 				AWSMultiFactorAuthAge bool `json:"aws:MultiFactorAuthAge,omitempty"`
 			} `json:",omitempty"`
 			NumericGreaterThan struct {
@@ -65,8 +63,13 @@ type S3Policy struct {
 	}
 }
 
-type IPAddressCondition struct {
+type IPAddressPolicyCondition struct {
 	AWSSourceIP string `json:"aws:SourceIp,omitempty"`
+}
+
+type StringEqualsPolicyCondition struct {
+	S3AmzAcl []string `json:"s3:x-amx-acl,omitempty"`
+	S3Prefix []string `json:"s3:prefix,omitempty"`
 }
 
 func (s3 *S3Config) Init() {

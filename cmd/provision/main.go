@@ -50,7 +50,12 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cli.config.S3.Init()
 			cli.config.DB.Init()
-			return cli.readConfig(configFiles)
+			err := cli.readConfig(configFiles)
+			if err != nil {
+				return err
+			}
+			cli.config.DB.Defaults()
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

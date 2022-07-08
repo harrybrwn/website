@@ -18,6 +18,16 @@
         "AccessKey": "backups",
         "SecretKey": "minio-testbed001-backups",
         "Policies": ["backups"]
+      },
+      {
+        "AccessKey": "github-actions",
+        "SecretKey": "minio-testbed001",
+        "Policies": ["geoip-readonly", "frontend-uploader"]
+      },
+      {
+        "AccessKey": "files",
+        "SecretKey": "minio-testbed001",
+        "Policies": ["file-access-user"]
       }
     ]
   },
