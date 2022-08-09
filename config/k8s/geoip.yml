@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geoip
+spec:
+  selector:
+    matchLabels:
+      app: geoip
+  template:
+    metadata:
+      labels:
+        app: geoip
+    spec:
+      containers:
+      - name: geoip
+        image: 10.0.0.11:5000/harrybrwn/geoip:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: geoip
+spec:
+  selector:
+    app: geoip
+  ports:
+  - port: 8084
+    targetPort: 8084
+

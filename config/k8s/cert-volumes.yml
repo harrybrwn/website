@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-certs-harrybrwn.com
+spec:
+  capacity:
+    storage: "32Mi"
+  storageClassName: standard # kubectl get storageclass
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /host/harrybrwn/config/pki/certs/harrybrwn.com
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-certs-hrry.me
+spec:
+  capacity:
+    storage: "32Mi"
+  storageClassName: standard # kubectl get storageclass
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /host/harrybrwn/config/pki/certs/hrry.local.com
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-certs-hrry.dev
+spec:
+  capacity:
+    storage: "32Mi"
+  storageClassName: standard # kubectl get storageclass
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /host/harrybrwn/config/pki/certs/hrry.local.com
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-certs-hryb.dev
+spec:
+  capacity:
+    storage: "32Mi"
+  storageClassName: standard # kubectl get storageclass
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /host/harrybrwn/config/pki/certs/hryb.local.com
+

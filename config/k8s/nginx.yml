@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: 10.0.0.11:5000/harrybrwn/nginx:latest
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: harrybrwn-keys
+              mountPath: "/etc/harrybrwn.com/server.crt"
+          env:
+            - name: REGISTRY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: cm-nginx
+                  key: registry-url
+            - name: REGISTRY_TITLE
+              value: Harry's Docker Registry
+            - name: CATALOG_ELEMENTS_LIMIT
+              value: '15'
+          imagePullPolicy: IfNotPresent
+      volumes:
+        - name: harrybrwn-keys
+          persistentVolumeClaim:
+            claimName: pvc-nginx
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-nginx
+data:
+  registry_url: https://registry.hrry.local
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nginx
+  labels:
+    app: nginx
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 256Mi
+
