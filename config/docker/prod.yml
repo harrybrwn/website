@@ -93,6 +93,7 @@ services:
     env_file:
       - config/env/sendgrid.env
       - config/env/db.prod.env
+      - config/env/swarm_data.env
     deploy:
       replicas: 1
       restart_policy:
@@ -103,8 +104,6 @@ services:
     environment:
       - ENV=production
       - LOG_FORMAT=json
-    env_file:
-      - config/env/swarm_data.env
 
   backups:
     deploy:
@@ -162,8 +161,6 @@ services:
       - ENV=production
 
   loki:
-    env_file:
-      - config/env/db.prod.env
     deploy:
       replicas: 1
       placement:
@@ -173,8 +170,9 @@ services:
         max_attempts: 5
         delay: 10s
     env_file:
-      - config/env/swarm_data.env
+      - config/env/db.prod.env
       - config/env/prod/loki.env
+      - config/env/swarm_data.env
 
   grafana:
     deploy:
@@ -214,6 +212,7 @@ services:
       placement:
         max_replicas_per_node: 2
     env_file:
+      - config/env/prod/registry.env
       - config/env/prod/minio.env
       - config/env/swarm_data.env
 
