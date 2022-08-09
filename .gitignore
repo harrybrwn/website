@@ -17,7 +17,6 @@ yarn-error.log
 
 # Config
 .vscode
-.env
 *.pgpass
 config/provision.prod.json
 /config/pki/
