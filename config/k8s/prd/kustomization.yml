@@ -1,0 +1,7 @@
+bases:
+  - ../app
+
+patches:
+  - path: nginx-config-patch.yml
+    target:
+      kind: ConfigMap

@@ -1,0 +1,13 @@
+bases:
+  - ../app
+
+secretGenerator:
+  - name: nginx-secrets
+    behavior: replace
+    files:
+      - certs/harrybrwn.com.key
+      - certs/harrybrwn.com.crt
+      - certs/hrry.me.key
+      - certs/hrry.me.crt
+      - certs/hrry.dev.key
+      - certs/hrry.dev.crt

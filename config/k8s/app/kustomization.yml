@@ -1,0 +1,6 @@
+resources:
+  - nginx.yml
+  # - geoip.yml
+  # Cert-Manager configuration
+  # https://www.youtube.com/watch?v=hoLUigg4V18
+  # - https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.yaml

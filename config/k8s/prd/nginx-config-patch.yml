@@ -1,0 +1,3 @@
+kind: ConfigMap
+metadata: { name: cm-nginx }
+data: { registry_url: https://registry.hrry.dev }

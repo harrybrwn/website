@@ -60,4 +60,3 @@ spec:
   persistentVolumeReclaimPolicy: Recycle
   hostPath:
     path: /host/harrybrwn/config/pki/certs/hryb.local.com
-

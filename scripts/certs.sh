@@ -172,3 +172,19 @@ if $INSTALL; then
 	# sudo cp "${CA_CRT}" /usr/local/share/ca-certificates/harrybrwn.crt
 	# sudo update-ca-certificates --fresh
 fi
+
+K8S="config/k8s/dev/certs"
+CERTS="${PKI}/certs"
+rm -rf "${K8S}" && mkdir -p "${K8S}"
+
+cp "${CERTS}/harrybrwn.local/server.crt" "${K8S}/harrybrwn.com.crt"
+cp "${CERTS}/harrybrwn.local/server.key" "${K8S}/harrybrwn.com.key"
+
+cp "${CERTS}/hrry.local/server.crt" "${K8S}/hrry.me.crt"
+cp "${CERTS}/hrry.local/server.key" "${K8S}/hrry.me.key"
+
+cp "${CERTS}/hrry.local/server.crt" "${K8S}/hrry.dev.crt"
+cp "${CERTS}/hrry.local/server.key" "${K8S}/hrry.dev.key"
+
+cp "${CERTS}/hryb.local/server.crt" "${K8S}/hryb.dev.crt"
+cp "${CERTS}/hryb.local/server.key" "${K8S}/hryb.dev.key"

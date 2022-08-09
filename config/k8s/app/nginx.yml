@@ -50,16 +50,29 @@ data:
 
 ---
 apiVersion: v1
+kind: Secret
+metadata:
+  name: nginx-secrets
+type: Opaque
+data:
+  harrybrwn.com.key: ''
+  harrybrwn.com.crt: ''
+  hrry.me.key: ''
+  hrry.me.crt: ''
+  hrry.dev.key: ''
+  hrry.dev.crt: ''
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: pvc-nginx
   labels:
     app: nginx
 spec:
-  storageClassName: standard
+  #storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 256Mi
-
