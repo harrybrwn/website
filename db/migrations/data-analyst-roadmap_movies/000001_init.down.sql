@@ -1,0 +1,17 @@
+DROP TABLE IF EXISTS movie_cast;
+DROP TABLE IF EXISTS movie_company;
+DROP TABLE IF EXISTS movie_crew;
+DROP TABLE IF EXISTS movie_genres;
+DROP TABLE IF EXISTS movie_keywords;
+DROP TABLE IF EXISTS movie_languages;
+DROP TABLE IF EXISTS production_company;
+DROP TABLE IF EXISTS production_country;
+DROP TABLE IF EXISTS movie;
+DROP TABLE IF EXISTS person;
+DROP TABLE IF EXISTS country;
+DROP TABLE IF EXISTS department;
+DROP TABLE IF EXISTS gender;
+DROP TABLE IF EXISTS genre;
+DROP TABLE IF EXISTS keyword;
+DROP TABLE IF EXISTS "language";
+DROP TABLE IF EXISTS language_role;

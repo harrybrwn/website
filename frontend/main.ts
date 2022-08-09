@@ -15,7 +15,6 @@ import LoginManager from "./util/LoginManager";
 import { ThemeManager } from "./components/theme";
 import { Modal } from "./components/modal";
 import { isEmail } from "~/frontend/util/email";
-import "~/frontend/components/InputForm";
 
 function handleLogin(formID: string, callback: (t: Token) => void) {
   let formOrNull = document.getElementById(formID) as HTMLFormElement | null;

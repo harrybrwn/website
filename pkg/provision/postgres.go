@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -46,6 +47,10 @@ func (db *DBConfig) Init() {
 	}
 }
 
+func (db *DBConfig) Validate() error {
+	return validateDBConfig(db)
+}
+
 func (db *DBConfig) Defaults() {
 	if db.Host == "" {
 		db.Host = "localhost"
@@ -72,9 +77,16 @@ type DBUser struct {
 	SuperUser  bool
 	CreateDB   bool
 	CreateRole bool
+	Grants     struct {
+		// Map of database name to grants
+		Database map[string][]string
+		// Map of table name to grants
+		Table map[string][]string
+	}
 }
 
 const (
+	// postgres errors codes
 	pqDuplicateObject   = "42710"
 	pqDuplicateDatabase = "42P04"
 )
@@ -87,6 +99,10 @@ func (db *DBConfig) Provision(ctx context.Context) error {
 		return err
 	}
 	defer d.Close()
+
+	if err = db.Validate(); err != nil {
+		return err
+	}
 
 	for _, user := range db.Users {
 		query := fmt.Sprintf(
@@ -135,6 +151,99 @@ func (db *DBConfig) Provision(ctx context.Context) error {
 			return err
 		default:
 			return err
+		}
+	}
+
+	for _, user := range db.Users {
+		for db, grants := range user.Grants.Database {
+			for _, grant := range grants {
+				query := fmt.Sprintf(
+					`GRANT %s ON DATABASE "%s" TO %s`,
+					grant,
+					db,
+					user.Name,
+				)
+				_, err = d.ExecContext(ctx, query)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		for table, grants := range user.Grants.Table {
+			for _, grant := range grants {
+				query := fmt.Sprintf(
+					`GRANT %s ON TABLE "%s" TO %s`,
+					grant,
+					table,
+					user.Name,
+				)
+				_, err = d.ExecContext(ctx, query)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+var (
+	validTableGrants = map[string]struct{}{
+		"SELECT":     {},
+		"INSERT":     {},
+		"UPDATE":     {},
+		"DELETE":     {},
+		"TRUNCATE":   {},
+		"REFERENCES": {},
+		"TRIGGER":    {},
+		"ALL":        {},
+	}
+	validDatabaseGrants = map[string]struct{}{
+		"CREATE":    {},
+		"CONNECT":   {},
+		"TEMPORARY": {},
+		"TEMP":      {},
+		"ALL":       {},
+	}
+)
+
+func validateDBConfig(cfg *DBConfig) error {
+	var (
+		err error
+	)
+
+	for _, user := range cfg.Users {
+		err = validateDBUser(user)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateDBUser(u *DBUser) error {
+	for db, grants := range u.Grants.Database {
+		if db == "" {
+			return errors.New("empty database name")
+		}
+		for _, g := range grants {
+			g = strings.ToUpper(g)
+			_, ok := validDatabaseGrants[g]
+			if !ok {
+				return fmt.Errorf("grant privilege %q is not valid", g)
+			}
+		}
+	}
+	for table, grants := range u.Grants.Table {
+		if table == "" {
+			return errors.New("empty table name")
+		}
+		for _, g := range grants {
+			g = strings.ToUpper(g)
+			_, ok := validTableGrants[g]
+			if !ok {
+				return fmt.Errorf("grant privilege %q is not valid", g)
+			}
 		}
 	}
 	return nil

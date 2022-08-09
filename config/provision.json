@@ -167,17 +167,34 @@
   },
   "db": {
     "port": "5432",
+    "root_user": "harrybrwn",
     "Users": [],
     "Databases": [
       {
         "Name": "grafana",
         "Owner": "grafana"
+      },
+      {
+        "Name": "hr",
+        "Owner": "harrybrwn"
+      },
+      {
+        "Name": "movies",
+        "Owner": "harrybrwn"
       }
     ],
     "migrations": {
       "api": {
         "database": "harrybrwn_api",
         "source": "file://./db/migrations/api"
+      },
+      "hr": {
+        "database": "hr",
+        "source": "file://./db/migrations/data-analyst-roadmap_hr"
+      },
+      "movies": {
+        "database": "movies",
+        "source": "file://./db/migrations/data-analyst-roadmap_movies"
       }
     }
   }

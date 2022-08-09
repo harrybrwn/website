@@ -34,7 +34,6 @@
   "db": {
     "host": "localhost",
     "port": "5432",
-    "root_user": "harrybrwn",
     "password": "testbed01",
     "Users": [
       {
@@ -44,6 +43,16 @@
       {
         "Name": "db-backups",
         "Password": "testbed01"
+      },
+      {
+        "Name": "tanya",
+        "Password": "testbed03",
+        "Grants": {
+          "Database": {
+            "hr": ["CONNECT"],
+            "movies": ["CONNECT"]
+          }
+        }
       }
     ],
     "Databases": []

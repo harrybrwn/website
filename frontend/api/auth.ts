@@ -40,8 +40,12 @@ export const login = async (user: Login): Promise<Token> => {
   })
     .then(async (resp: Response) => {
       if (!resp.ok) {
-        const message = await resp.json();
-        throw new Error(message.message);
+        try {
+          const message = await resp.json();
+          return Promise.reject(new Error(message.message));
+        } catch (e) {
+          return Promise.reject(new Error(resp.statusText));
+        }
       }
       return resp.json();
     })

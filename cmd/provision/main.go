@@ -27,7 +27,7 @@ var logger = log.New(
 func main() {
 	cmd := NewRootCmd()
 	if err := cmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %+v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	}
 }
 
@@ -73,6 +73,7 @@ func NewRootCmd() *cobra.Command {
 	c.AddCommand(
 		NewMigrateCmd(&cli),
 		NewConfigCmd(&cli),
+		NewValidateCmd(&cli),
 	)
 	flg := c.PersistentFlags()
 	flg.StringArrayVarP(&configFiles, "config", "c", configFiles, "specify the config file")
@@ -133,6 +134,30 @@ func NewConfigCmd(cli *Cli) *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s\n", b)
+			return nil
+		},
+	}
+	return &c
+}
+
+func NewValidateCmd(cli *Cli) *cobra.Command {
+	c := cobra.Command{
+		Use:   "validate",
+		Short: "Validate the config file for mistakes.",
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			defer func() {
+				if err != nil {
+					fmt.Fprintf(cmd.OutOrStdout(), "Validation status: failed\n")
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "Validation status: ok\n")
+				}
+			}()
+			if err = cli.config.DB.Validate(); err != nil {
+				return err
+			}
+			if err = cli.config.S3.Validate(); err != nil {
+				return err
+			}
 			return nil
 		},
 	}

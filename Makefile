@@ -49,13 +49,13 @@ lint-go:
 lint-sh:
 	shellcheck -x $(shell find ./scripts/ -name '*.sh' -type f)
 
-bin/provision:
-	go build -trimpath -ldflags "-s -w" -o $@ ./cmd/provision
-
 tools:
+	@mkdir -p bin
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
+	ln -sf ../scripts/functional.sh bin/functional
+	ln -sf ../scripts/deployment bin/deployment
 
-.PHONY: tools bin/prevision
+.PHONY: tools
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \

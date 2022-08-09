@@ -37,11 +37,27 @@ func NewMigrateCmd(cli *Cli) *cobra.Command {
 func NewMigrateUpCmd(cli *Cli) *cobra.Command {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
+	var all bool
 	c := cobra.Command{
 		Use:   "up <migration>",
 		Short: "Run migrations up",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// TODO add --all flag to loop through migrations
+			if all {
+				for name := range cli.config.DB.Migrations {
+					m, _, err := getMigration(&cli.config.DB, []string{name})
+					if err != nil {
+						return errors.Wrap(err, "failed to create new migration")
+					}
+					err = m.Up()
+					if err == migrate.ErrNoChange {
+						fmt.Fprintf(cmd.OutOrStdout(), "%q: %s\n", name, err)
+						continue
+					} else if err != nil {
+						return fmt.Errorf("%q: %w", name, err)
+					}
+				}
+				return nil
+			}
 			m, n, err := getMigration(&cli.config.DB, args)
 			if err != nil {
 				return errors.Wrap(err, "failed to create new migration")
@@ -57,6 +73,7 @@ func NewMigrateUpCmd(cli *Cli) *cobra.Command {
 			return err
 		},
 	}
+	c.Flags().BoolVarP(&all, "all", "a", all, "run 'up' for all migrations")
 	return &c
 }
 
@@ -64,7 +81,7 @@ func NewMigrateDownCmd(cli *Cli) *cobra.Command {
 	c := cobra.Command{
 		Use:   "down <migration>",
 		Short: "Run migrations down",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			m, n, err := getMigration(&cli.config.DB, args)
 			if err != nil {
 				return errors.Wrap(err, "failed to create new migration")
@@ -92,7 +109,7 @@ func NewMigrateNewCmd(cli *Cli) *cobra.Command {
 	c := cobra.Command{
 		Use:   "new <migration> <name>",
 		Short: "Create a new migration",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return errors.New("not enough args")
 			}
