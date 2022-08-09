@@ -160,7 +160,8 @@ module.exports = function (webpackEnv) {
     builder.html("invite"),
     builder.html("chatroom"),
     builder.html("invite_email", { noChunks: true }),
-    builder.html("bookmarks")
+    builder.html("bookmarks"),
+    builder.html("login")
   );
 
   for (const key in site.pages) {
@@ -184,6 +185,7 @@ module.exports = function (webpackEnv) {
       chatroom: { import: entryImport("pages/chatroom/chatroom.ts") },
       invite: { import: entryImport("pages/invite.ts") },
       bookmarks: { import: entryImport("pages/bookmarks/bookmarks.ts") },
+      login: { import: entryImport("pages/login/login.ts") },
     },
 
     devtool: builder.isProd ? undefined : "inline-source-map",

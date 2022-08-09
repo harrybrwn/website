@@ -41,6 +41,7 @@ func NewMigrateUpCmd(cli *Cli) *cobra.Command {
 		Use:   "up <migration>",
 		Short: "Run migrations up",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// TODO add --all flag to loop through migrations
 			m, n, err := getMigration(&cli.config.DB, args)
 			if err != nil {
 				return errors.Wrap(err, "failed to create new migration")

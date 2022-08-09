@@ -57,6 +57,10 @@ module.exports = {
       title: "Bookmarks",
       ...common,
     },
+    login: {
+      title: "Login",
+      ...common,
+    },
     tanya: {
       title: "Tanya Rivera",
       domain: common.domain,
