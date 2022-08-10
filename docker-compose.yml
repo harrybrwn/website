@@ -55,17 +55,17 @@ services:
         - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
     volumes:
       # harrybrwn.com
-      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn.com/server.crt:ro
-      - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn.com/server.key:ro
+      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn/certs/harrybrwn.com.crt:ro
+      - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn/certs/harrybrwn.com.key:ro
       # hrry.me
-      - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.me/server.crt:ro
-      - ./config/pki/certs/hrry.local/server.key:/etc/hrry.me/server.key:ro
+      - ./config/pki/certs/hrry.local/server.crt:/etc/harrybrwn/certs/hrry.me.crt:ro
+      - ./config/pki/certs/hrry.local/server.key:/etc/harrybrwn/certs/hrry.me.key:ro
       # hrry.dev
-      - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.dev/server.crt:ro
-      - ./config/pki/certs/hrry.local/server.key:/etc/hrry.dev/server.key:ro
+      - ./config/pki/certs/hrry.local/server.crt:/etc/harrybrwn/certs/hrry.dev.crt:ro
+      - ./config/pki/certs/hrry.local/server.key:/etc/harrybrwn/certs/hrry.dev.key:ro
       # hryb.dev
-      #- ./config/pki/certs/hryb.local/server.crt:/etc/hryb.dev/server.crt:ro
-      #- ./config/pki/certs/hryb.local/server.key:/etc/hryb.dev/server.key:ro
+      #- ./config/pki/certs/hryb.local/server.crt:/etc/harrybrwn/hryb.dev.crt:ro
+      #- ./config/pki/certs/hryb.local/server.key:/etc/harrybrwn/hryb.dev.key:ro
     networks:
       backend:
         aliases:

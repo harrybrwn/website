@@ -45,17 +45,17 @@ services:
         window: 120s
     volumes:
       # harrybrwn.com
-      - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn.com/server.crt:ro
-      - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn.com/server.key:ro
+      - /etc/letsencrypt/live/harrybrwn.com/fullchain.pem:/etc/harrybrwn/certs/harrybrwn.com.crt:ro
+      - /etc/letsencrypt/live/harrybrwn.com/privkey.pem:/etc/harrybrwn/certs/harrybrwn.com.key:ro
       # hryb.dev
-      - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/hryb.dev/server.crt:ro
-      - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/hryb.dev/server.key:ro
+      - /etc/letsencrypt/live/hryb.dev/fullchain.pem:/etc/harrybrwn/certs/hryb.dev.crt:ro
+      - /etc/letsencrypt/live/hryb.dev/privkey.pem:/etc/harrybrwn/certs/hryb.dev.key:ro
       # hrry.me
-      - /etc/letsencrypt/live/hrry.me/fullchain.pem:/etc/hrry.me/server.crt:ro
-      - /etc/letsencrypt/live/hrry.me/privkey.pem:/etc/hrry.me/server.key:ro
+      - /etc/letsencrypt/live/hrry.me/fullchain.pem:/etc/harrybrwn/certs/hrry.me.crt:ro
+      - /etc/letsencrypt/live/hrry.me/privkey.pem:/etc/harrybrwn/certs/hrry.me.key:ro
       # hrry.dev
-      - /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/hrry.dev/server.crt:ro
-      - /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/hrry.dev/server.key:ro
+      - /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/harrybrwn/certs/hrry.dev.crt:ro
+      - /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/harrybrwn/certs/hrry.dev.key:ro
     environment:
       - REGISTRY_URL=https://registry.hrry.dev
     env_file:

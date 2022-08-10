@@ -1,6 +1,15 @@
 resources:
+  - environment.yml
   - nginx.yml
-  # - geoip.yml
+  #- registry/registry.yml
+  #- geoip.yml
   # Cert-Manager configuration
   # https://www.youtube.com/watch?v=hoLUigg4V18
-  # - https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+  #- https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+
+# TODO uncomment when registry manifest is added
+#configMapGenerator:
+#  - name: registry-config
+#    behavior: merge
+#    files:
+#      - registry/config.yml

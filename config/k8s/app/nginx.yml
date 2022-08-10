@@ -6,6 +6,7 @@ spec:
   selector:
     matchLabels:
       app: nginx
+  replicas: 1
   template:
     metadata:
       labels:
@@ -20,10 +21,13 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
+              name: nginx-http
             - containerPort: 443
+              name: nginx-https
           volumeMounts:
-            - name: harrybrwn-keys
-              mountPath: "/etc/harrybrwn.com/server.crt"
+            - name: nginx-certs
+              mountPath: /etc/harrybrwn/certs
+              readOnly: true
           env:
             - name: REGISTRY_URL
               valueFrom:
@@ -36,9 +40,16 @@ spec:
               value: '15'
           imagePullPolicy: IfNotPresent
       volumes:
-        - name: harrybrwn-keys
-          persistentVolumeClaim:
-            claimName: pvc-nginx
+        - name: nginx-certs
+          secret:
+            secretName: nginx-secrets
+            items:
+              - { key: harrybrwn.com.crt, path: harrybrwn.com.crt }
+              - { key: harrybrwn.com.key, path: harrybrwn.com.key }
+              - { key: hrry.me.crt,       path: hrry.me.crt  }
+              - { key: hrry.me.key,       path: hrry.me.key  }
+              - { key: hrry.dev.crt,      path: hrry.dev.crt }
+              - { key: hrry.dev.key,      path: hrry.dev.key }
 
 ---
 apiVersion: v1
@@ -46,7 +57,7 @@ kind: ConfigMap
 metadata:
   name: cm-nginx
 data:
-  registry_url: https://registry.hrry.local
+  registry-url: https://registry.hrry.local
 
 ---
 apiVersion: v1
@@ -64,15 +75,21 @@ data:
 
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: pvc-nginx
+  name: nginx-service
   labels:
-    app: nginx
+    run: nginx
 spec:
-  #storageClassName: standard
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 256Mi
+  type: NodePort
+  selector:
+    app: nginx
+  ports:
+  - port: 80
+    targetPort: nginx-http
+    protocol: TCP
+    name: nginx-tcp-80-http
+  - port: 443
+    targetPort: nginx-https
+    protocol: TCP
+    name: nginx-tcp-443-https

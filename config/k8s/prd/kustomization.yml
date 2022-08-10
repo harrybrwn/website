@@ -5,3 +5,13 @@ patches:
   - path: nginx-config-patch.yml
     target:
       kind: ConfigMap
+  - path: env-patch.yml
+    target:
+      kind: ConfigMap
+      name: environment-config
+
+secretGenerator:
+  - name: registry-secrets
+    behavior: replace
+    files:
+      - registry/htpasswd

@@ -98,6 +98,9 @@ functional: functional-setup functional-run functional-stop
 
 .PHONY: functional functional-setup functional-run functional-run functional-build
 
+build-k8s:
+	scripts/infra/build-minikube.sh
+
 bake:
 	scripts/deployment bake
 

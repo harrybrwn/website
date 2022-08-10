@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+spec:
+  selector:
+    matchLabels:
+      app: web-api
+  template:
+    metadata:
+      labels:
+        app: web-api
+    spec:
+      containers:
+        - name: web-api
+          image: 10.0.0.11:5000/harrybrwn/api:latest
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8081
+          env:
+            - name: ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: environment-config
+                  key: env
+            - { name: LOG_OUTPUT,    value: json }
+            - { name: REDIS_HOST,    value: redis }
+            - { name: POSTGRES_HOST, value: db }
+            - { name: POSTGRES_PORT, value: '5432' }
+            - { name: POSTGRES_DB,   value: harrybrwn_api }
+            - name: POSTGRES_USER
+              value: harrybrwn
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: web-api-secrets, key: postgres-password } }
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: web-api-secrets, key: redis-password } }
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: web-api-secrets
+type: Opaque
+data:
+  jwt-seed: NTA1ZjBlZDRhNDM4ZjczNDU0YThkOGRmYzU3NDEzMjdmZmE3MzIwM2JlMzRmNWE1OGRiMzY3NTkxMTI0MjgyYgo=
+  postgres-password: dGVzdGJlZDAxCg==
+  redis-password: Y29uZmlndXJlLXRoZS12YW1waXJlLWNsb25lcwo=
