@@ -234,6 +234,12 @@ services:
     volumes:
       - filestash:/app/data/state
 
+  # TODO
+  # https://github.com/toeverything/AFFiNE
+  # https://www.appflowy.io/
+  # https://www.getoutline.com/
+  # https://blog.gurucomputing.com.au/doing-more-with-docker/deploying-outline-wiki/
+
 volumes:
   database:
   cache-data:

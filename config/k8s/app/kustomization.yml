@@ -1,6 +1,10 @@
 resources:
   - environment.yml
   - nginx.yml
+  #- redis/pv.yml
+  - redis/cluster.yml
+  - redis/sentinel.yml
+
   #- registry/registry.yml
   #- geoip.yml
   # Cert-Manager configuration

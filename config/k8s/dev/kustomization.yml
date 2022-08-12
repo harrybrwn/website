@@ -11,7 +11,8 @@ secretGenerator:
       - certs/hrry.me.crt
       - certs/hrry.dev.key
       - certs/hrry.dev.crt
-  - name: registry-secrets
-    behavior: replace
-    files:
-      - registry/htpasswd
+  # TODO uncomment when adding the container registry
+  #- name: registry-secrets
+  #  behavior: replace
+  #  files:
+  #    - registry/htpasswd

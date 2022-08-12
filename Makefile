@@ -101,6 +101,11 @@ functional: functional-setup functional-run functional-stop
 build-k8s:
 	scripts/infra/build-minikube.sh
 
+load-k8s-images:
+	scripts/infra/minikube-load.sh
+expose-k8s:
+	scripts/expose-k8s.sh
+
 bake:
 	scripts/deployment bake
 

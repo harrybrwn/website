@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: sentinel
+  ports:
+    - port: 5000
+      targetPort: sentinel
+      name: sentinel-5000
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sentinel
+spec:
+  serviceName: sentinel
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sentinel
+  template:
+    metadata:
+      labels:
+        app: sentinel
+    spec:
+      initContainers:
+        - name: sentinel-init
+          image: redis:6.2.6-alpine
+          command: [ "sh", "-c" ]
+          args:
+            - |
+              nodes=redis-0.redis,redis-1.redis,redis-2.redis
+              for i in ${nodes//,/ }
+              do
+                  echo "finding master at $i"
+                  MASTER=$(redis-cli --no-auth-warning --raw -h $i -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
+                  if [ "$MASTER" == "" ]; then
+                      echo "no master found"
+                      MASTER=
+                  else
+                      echo "found $MASTER"
+                      break
+                  fi
+              done
+              echo "sentinel monitor rdbmaster $MASTER 6379 2" >> /tmp/master
+              echo "port 5000
+              sentinel resolve-hostnames yes
+              sentinel announce-hostnames yes
+              $(cat /tmp/master)
+              sentinel down-after-milliseconds rdbmaster 5000
+              sentinel failover-timeout rdbmaster 60000
+              sentinel parallel-syncs rdbmaster 1
+              sentinel auth-pass rdbmaster $REDIS_PASSWORD
+              " > /etc/redis/sentinel.conf
+          env:
+            - name: REDIS_PASSWORD
+              value: testbed01
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis/
+      containers:
+        - name: sentinel
+          image: redis:6.2.6-alpine
+          command: ["redis-sentinel"]
+          args: ["/etc/redis/sentinel.conf"]
+          ports:
+            - containerPort: 5000
+              name: sentinel
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis/
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: redis-config
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        #storageClassName: local-storage
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 50Mi
