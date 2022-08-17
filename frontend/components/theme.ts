@@ -28,9 +28,9 @@ export class ThemeManager {
   theme: Theme;
   themeToggle: HTMLInputElement;
 
-  constructor() {
+  constructor(toggleId?: string) {
     this.theme = loadTheme("theme");
-    let toggle = getToggle();
+    let toggle = getToggle(toggleId);
     if (toggle == null) {
       // throw new Error("could not get theme toggle button");
       console.error("could not get theme toggle button");
@@ -68,7 +68,7 @@ export class ThemeManager {
 }
 
 export const applyTheme = () => {
-  let man = new ThemeManager();
+  let man = new ThemeManager(DEFAULT_TOGGLE_ID);
   man.onChange((ev: Event) => {
     man.toggle();
   });

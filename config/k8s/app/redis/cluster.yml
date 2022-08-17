@@ -5,7 +5,7 @@ metadata:
   labels:
     run: redis
 spec:
-  type: ClusterIP
+  #type: ClusterIP
   clusterIP: None
   selector:
     app: redis
@@ -55,6 +55,8 @@ spec:
                 echo "master found : $MASTER, updating redis.conf"
                 echo "slaveof $MASTER 6379" >> /etc/redis/redis.conf
               fi
+              echo "replica-announce-ip ${HOSTNAME}.redis" >> /etc/redis/redis.conf
+              echo "replica-announce-port 6379" >> /etc/redis/redis.conf
           volumeMounts:
             - name: redis-config
               mountPath: /etc/redis/

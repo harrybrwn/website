@@ -3,13 +3,14 @@ kind: Service
 metadata:
   name: sentinel
 spec:
-  type: ClusterIP
+  #type: ClusterIP
   clusterIP: None
   selector:
     app: sentinel
   ports:
     - port: 5000
       targetPort: sentinel
+      protocol: TCP
       name: sentinel-5000
 
 ---
@@ -35,24 +36,30 @@ spec:
           args:
             - |
               nodes=redis-0.redis,redis-1.redis,redis-2.redis
-              for i in ${nodes//,/ }
-              do
-                  echo "finding master at $i"
-                  MASTER=$(redis-cli --no-auth-warning --raw -h $i -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
-                  if [ "$MASTER" == "" ]; then
-                      echo "no master found"
-                      MASTER=
-                  else
-                      echo "found $MASTER"
-                      break
-                  fi
+              for i in $(seq 30); do
+                for n in ${nodes//,/ }
+                do
+                    echo "finding master at $n"
+                    MASTER=$(redis-cli --no-auth-warning --raw -h $n -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
+                    if [ "$MASTER" == "" ]; then
+                        echo "no master found"
+                        MASTER=
+                    else
+                        echo "found $MASTER"
+                        break
+                    fi
+                done
+                if [ -n "$MASTER" ]; then
+                  break
+                fi
+                sleep 2
               done
               echo "sentinel monitor rdbmaster $MASTER 6379 2" >> /tmp/master
               echo "port 5000
               sentinel resolve-hostnames yes
               sentinel announce-hostnames yes
               $(cat /tmp/master)
-              sentinel down-after-milliseconds rdbmaster 5000
+              sentinel down-after-milliseconds rdbmaster 6000
               sentinel failover-timeout rdbmaster 60000
               sentinel parallel-syncs rdbmaster 1
               sentinel auth-pass rdbmaster $REDIS_PASSWORD

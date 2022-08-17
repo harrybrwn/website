@@ -1,8 +1,10 @@
 import "~/frontend/styles/font.css";
 import { isEmail } from "~/frontend/util/email";
 import { Token, Login, login } from "@hrry.me/api/auth";
+import { applyTheme } from "~/frontend/components/theme";
 
 const main = () => {
+  applyTheme();
   let form = document.getElementById("login-form") as HTMLFormElement;
   if (form == null) {
     throw new Error("could not find login form");
