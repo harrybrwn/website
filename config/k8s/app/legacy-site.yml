@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: legacy-site
+spec:
+  selector:
+    matchLabels:
+      app: legacy-site
+  template:
+    metadata:
+      labels:
+        app: legacy-site
+    spec:
+      containers:
+      - name: legacy-site
+        image: 10.0.0.11:5000/harrybrwn/legacy-site:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8083
+        imagePullPolicy: IfNotPresent

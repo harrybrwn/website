@@ -1,9 +1,18 @@
 resources:
   - environment.yml
+  - jwt-secrets.yml
   - nginx.yml
-  #- redis/pv.yml
+  - filestash.yml
+  - db.yml
+  - hooks.yml
+  - s3.yml
+  - redis/secret.yml
   - redis/cluster.yml
   - redis/sentinel.yml
+  - web-api.yml
+  - geoip.yml
+  - vanity-imports.yml
+  - legacy-site.yml
 
   #- registry/registry.yml
   #- geoip.yml

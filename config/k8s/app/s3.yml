@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: s3
+spec:
+  selector:
+    app: s3
+  ports:
+  - port: 9000
+    targetPort: s3-api
+    name: s3-api-9000
+  - port: 9001
+    targetPort: web-api
+    name: minio-console-web-api
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: s3
+spec:
+  selector:
+    matchLabels:
+      app: s3
+  serviceName: s3
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: s3
+    spec:
+      containers:
+      - name: s3
+        image: 10.0.0.11:5000/harrybrwn/s3:latest
+        command:
+          - minio
+          - server
+          - --console-address
+          - :9001
+          - /data
+        ports:
+          - containerPort: 9000
+            name: s3-api
+          - containerPort: 9001
+            name: web-api
+        envFrom:
+          - configMapRef: { name: minio-env-config }
+          - secretRef: { name: minio-env-secrets }
+        volumeMounts:
+          - name: data
+            mountPath: /data
+        imagePullPolicy: IfNotPresent
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 3Gi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-env-config
+data:
+  HB_MC_ALIAS_NAME: hrry
+  HB_MC_ALIAS_URL: http://s3:9000
+  MINIO_SERVER_URL: http://s3:9000
+  # MINIO_PROMETHEUS_AUTH_TYPE: public
+  # MINIO_PROMETHEUS_URL: http://prometheus:9090
+  # MINIO_PROMETHEUS_JOB_ID: minio-cluster
+  MINIO_BROWSER_REDIRECT_URL: http://s3-console.hrry.local
+  MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY: on
+  MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY: http://hooks:8889/hooks/minio/logs
+  MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY: on
+  MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY: http://hooks:8889/hooks/minio/audit
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-env-secrets
+type: Opaque
+data:
+  MINIO_ROOT_USER: cm9vdA==                     # root
+  MINIO_ROOT_PASSWORD: bWluaW8tdGVzdGJlZDAwMQ== # minio-testbed001

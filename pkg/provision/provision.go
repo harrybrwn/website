@@ -18,5 +18,5 @@ func (c *Config) ApplyFile(f io.Reader) error {
 	if err != nil {
 		return err
 	}
-	return mergo.Merge(c, &config, mergo.WithAppendSlice)
+	return mergo.Merge(c, &config, mergo.WithAppendSlice, mergo.WithOverride)
 }

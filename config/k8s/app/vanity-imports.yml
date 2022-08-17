@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vanity-imports
+spec:
+  selector:
+    matchLabels:
+      app: vanity-imports
+  template:
+    metadata:
+      labels:
+        app: vanity-imports
+    spec:
+      containers:
+      - name: vanity-imports
+        image: 10.0.0.11:5000/harrybrwn/vanity-imports:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8085
+        imagePullPolicy: IfNotPresent

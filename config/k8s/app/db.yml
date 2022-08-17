@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: db
+  ports:
+  - port: 5432
+    targetPort: postgres
+    name: postgres-tcp-5432
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+spec:
+  selector:
+    matchLabels:
+      app: db
+  serviceName: db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - name: db
+        image: 10.0.0.11:5000/harrybrwn/postgres:latest
+        ports:
+          - containerPort: 5432
+            name: postgres
+        volumeMounts:
+          - name: data
+            mountPath: /var/lib/postgresql/data/
+        envFrom:
+          - secretRef: { name: db-env-secrets }
+        imagePullPolicy: IfNotPresent
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-env-secrets
+type: Opaque
+data:
+  POSTGRES_USER: aGFycnlicndu     # harrybrwn
+  POSTGRES_PASSWORD: dGVzdGJlZDAx # testbed01
+  # grafana:testbed02 db-backups:testbed03
+  POSTGRES_USERS: Z3JhZmFuYTp0ZXN0YmVkMDIgZGItYmFja3Vwczp0ZXN0YmVkMDM=
+  # harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
+  POSTGRES_DATABASES: aGFycnlicnduX2FwaTpoYXJyeWJyd24gaGFycnlicnduX2hvb2tzOmhhcnJ5YnJ3biBncmFmYW5hOmdyYWZhbmE=

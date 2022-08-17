@@ -75,6 +75,10 @@ FROM builder as geoip-builder
 COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 
+FROM builder as provision-builder
+COPY cmd/provision cmd/provision
+RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
+
 #
 # Base service
 #
@@ -194,3 +198,10 @@ RUN update-ca-certificates
 # Grab some go tools from our go builder.
 COPY --from=builder /go/bin/migrate /usr/local/bin/
 WORKDIR /opt/harrybrwn
+
+#
+# Provision Tool
+#
+FROM alpine:latest
+COPY --from=provision-builder /opt/harrybrwn/bin/provision /usr/local/bin/provision
+ENTRYPOINT [ "/usr/local/bin/provision" ]

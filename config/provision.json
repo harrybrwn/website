@@ -195,6 +195,10 @@
       "movies": {
         "database": "movies",
         "source": "file://./db/migrations/data-analyst-roadmap_movies"
+      },
+      "hooks": {
+        "database": "harrybrwn_hooks",
+        "source": "file://./db/migrations/hooks"
       }
     }
   }

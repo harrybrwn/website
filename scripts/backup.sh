@@ -7,6 +7,8 @@ GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 DATE="$(date '+%d-%m-%Y_%H:%M:%S')"
 
+s3_alias=hrry.dev
+
 mc mirror     \
   --exclude "node_modules/*"  \
   --exclude "bin/*"           \
@@ -16,4 +18,4 @@ mc mirror     \
   --exclude ".pytest_cache/*" \
   --overwrite  \
   --preserve --remove    \
-  ./ "hrry.dev/source/github.com/harrybrwn/harrybrwn.com/${DATE}/${GIT_COMMIT}/"
+  ./ "${s3_alias}/source/github.com/harrybrwn/harrybrwn.com/${DATE}/${GIT_COMMIT}/"

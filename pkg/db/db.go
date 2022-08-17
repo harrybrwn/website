@@ -129,7 +129,7 @@ func postgresConnectString() (string, error) {
 func Connect(logger logrus.FieldLogger) (*database, error) {
 	os.Unsetenv("PGSERVICEFILE")
 	os.Unsetenv("PGSERVICE")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	// url := os.ExpandEnv(os.Getenv("DATABASE_URL"))
 	url, err := postgresConnectString()
@@ -143,7 +143,7 @@ func Connect(logger logrus.FieldLogger) (*database, error) {
 	if err = db.Ping(); err == nil {
 		return &database{DB: db}, nil
 	}
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 2)
 	defer ticker.Stop()
 	for {
 		select {
@@ -200,9 +200,9 @@ func DialRedis(logger logrus.FieldLogger) (*redis.Client, error) {
 	if err = client.Ping(ctx).Err(); err == nil {
 		return client, nil
 	}
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 2)
 	defer ticker.Stop()
 	for {
 		select {

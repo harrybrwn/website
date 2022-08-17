@@ -53,6 +53,15 @@
             "movies": ["CONNECT"]
           }
         }
+      },
+      {
+        "Name": "hooks",
+        "Password": "testbed04",
+        "Grants": {
+          "Database": {
+            "harrybrwn_hooks": ["CONNECT"]
+          }
+        }
       }
     ],
     "Databases": []

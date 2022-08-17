@@ -50,7 +50,18 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom: { secretKeyRef: { name: web-api-secrets, key: postgres-password } }
             - name: REDIS_PASSWORD
-              valueFrom: { secretKeyRef: { name: web-api-secrets, key: redis-password } }
+              valueFrom: { secretKeyRef: { name: redis-secrets, key: password } }
+            - name: JWT_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secrets
+                  key: jwt-seed
+            - name: SENDGRID_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: web-api-secrets
+                  key: sendgrid-api-key
+          imagePullPolicy: IfNotPresent
 
 ---
 apiVersion: v1
@@ -59,6 +70,5 @@ metadata:
   name: web-api-secrets
 type: Opaque
 data:
-  jwt-seed: NTA1ZjBlZDRhNDM4ZjczNDU0YThkOGRmYzU3NDEzMjdmZmE3MzIwM2JlMzRmNWE1OGRiMzY3NTkxMTI0MjgyYgo=
-  postgres-password: dGVzdGJlZDAxCg==
-  redis-password: Y29uZmlndXJlLXRoZS12YW1waXJlLWNsb25lcwo=
+  postgres-password: dGVzdGJlZDAx
+  sendgrid-api-key: ''

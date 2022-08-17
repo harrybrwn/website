@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hooks
+spec:
+  selector:
+    app: hooks
+  ports:
+  - port: 8889
+    targetPort: hooks-http
+    name: hooks-http-8889
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hooks
+spec:
+  selector:
+    matchLabels:
+      app: hooks
+  template:
+    metadata:
+      labels:
+        app: hooks
+    spec:
+      containers:
+      - name: hooks
+        image: 10.0.0.11:5000/harrybrwn/hooks:latest
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        env:
+          - name: POSTGRES_DB
+            value: harrybrwn_hooks
+          - name: POSTGRES_HOST
+            value: db
+          - name: POSTGRES_PORT
+            value: '5432'
+        envFrom:
+          - configMapRef: { name: hooks-env-config }
+          - secretRef: { name: hooks-env-secrets }
+        ports:
+        - containerPort: 8889
+          name: hooks-http
+        imagePullPolicy: IfNotPresent
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hooks-env-config
+data:
+  GH_HOOK_CALLBACK_HOST: hooks.harrybrwn.com
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hooks-env-secrets
+type: Opaque
+data:
+  GITHUB_CLIENT_ID: MTIz
+  GITHUB_CLIENT_SECRET: MTIzNDU=
+  GITHUB_CALLBACK_SECRET: ''
+  POSTGRES_PASSWORD: dGVzdGJlZDA0 # testbed04

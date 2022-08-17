@@ -21,6 +21,7 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 8084
+          name: geoip-http
 ---
 apiVersion: v1
 kind: Service
@@ -31,5 +32,5 @@ spec:
     app: geoip
   ports:
   - port: 8084
-    targetPort: 8084
-
+    targetPort: geoip-http
+    name: geoip-http-8084

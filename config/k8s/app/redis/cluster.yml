@@ -38,6 +38,8 @@ spec:
           args:
             - |
               cp /tmp/redis/redis.conf /etc/redis/redis.conf
+              echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+              echo "requirepass ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
               echo "finding master..."
               MASTER_FDQN=`hostname  -f | sed -e 's/redis-[0-9]\./redis-0./'`
               if [ "$(redis-cli -h sentinel -p 5000 ping)" != "PONG" ]; then
@@ -57,6 +59,12 @@ spec:
               fi
               echo "replica-announce-ip ${HOSTNAME}.redis" >> /etc/redis/redis.conf
               echo "replica-announce-port 6379" >> /etc/redis/redis.conf
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secrets
+                  key: password
           volumeMounts:
             - name: redis-config
               mountPath: /etc/redis/
@@ -99,8 +107,6 @@ metadata:
   name: redis-config
 data:
   redis.conf: |
-    masterauth testbed01
-    requirepass testbed01
     dir /data
 
     dbfilename "dump.rdb"

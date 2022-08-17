@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  provision:
+    image: ${REGISTRY}/harrybrwn/provision:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./config/provision.json:/opt/harrybrwn/config/provision.json:ro
+      - ./config/provision.dev.json:/opt/harrybrwn/config/provision.dev.json:ro
+    working_dir: /opt/harrybrwn
+
