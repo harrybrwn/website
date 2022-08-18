@@ -12,7 +12,7 @@ test: test-ts test-go
 lint: lint-go
 
 clean:
-	$(RM) -r bin .cache .pytest_cache .cache \
+	$(RM) -r .cache .pytest_cache .cache \
 		test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
 
@@ -54,6 +54,15 @@ tools:
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/deployment bin/deployment
+	ln -sf ../scripts/infra/ansible bin/ansible
+	ln -sf ../scripts/infra/ansible bin/ansible-playbook
+	ln -sf ../scripts/infra/ansible bin/ansible-inventory
+	ln -sf ../scripts/infra/ansible bin/ansible-config
+	ln -sf ../scripts/infra/ansible bin/ansible-galaxy
+	ln -sf ../scripts/infra/ansible bin/ansible-vault
+	ln -sf ../scripts/infra/ansible bin/ansible-test
+	ln -sf ../scripts/infra/ansible bin/ansible-pull
+	ln -sf ../scripts/infra/ansible bin/ansible-console
 
 .PHONY: tools
 

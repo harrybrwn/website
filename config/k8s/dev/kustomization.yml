@@ -1,6 +1,9 @@
 bases:
   - ../app
 
+# resources:
+#   - provision-job.yml
+
 secretGenerator:
   - name: nginx-secrets
     behavior: replace

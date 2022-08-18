@@ -28,6 +28,8 @@ spec:
             - name: nginx-certs
               mountPath: /etc/harrybrwn/certs
               readOnly: true
+            - name: stuff
+              mountPath: /stuff
           env:
             - name: REGISTRY_URL
               valueFrom:
@@ -50,6 +52,9 @@ spec:
               - { key: hrry.me.key,       path: hrry.me.key  }
               - { key: hrry.dev.crt,      path: hrry.dev.crt }
               - { key: hrry.dev.key,      path: hrry.dev.key }
+        - name: stuff
+          persistentVolumeClaim:
+            claimName: nginx-pvc
 
 ---
 apiVersion: v1
@@ -93,3 +98,16 @@ spec:
     targetPort: nginx-https
     protocol: TCP
     name: nginx-tcp-443-https
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc
+spec:
+  resources:
+    requests:
+      storage: 32Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

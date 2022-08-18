@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: provision
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: provision
+        image: 10.0.0.11:5000/harrybrwn/provision:latest
+        command: ["sh", "-c"]
+        args:
+          - |
+            for i in $(seq 30); do
+              if nc -z db 5432; then
+                break
+              else
+                echo "waiting for db"
+              fi
+            done
+            for i in $(seq 30); do
+              if nc -z s3 9000; then
+                break
+              else
+                echo "waiting for s3"
+              fi
+            done
+            provision --config=config/provision.json --config=config/provision.dev.json --db-host=db --s3-endpoint=s3:9000 validate
+            provision --config=config/provision.json --config=config/provision.dev.json --db-host=db --s3-endpoint=s3:9000 migrate up --all --help
+      restartPolicy: OnFailure

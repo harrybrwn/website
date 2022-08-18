@@ -92,7 +92,7 @@ services:
   hooks:
     env_file:
       - config/env/sendgrid.env
-      - config/env/db.prod.env
+      - config/env/prod/db.env
       - config/env/swarm_data.env
     deploy:
       replicas: 1
@@ -170,7 +170,7 @@ services:
         max_attempts: 5
         delay: 10s
     env_file:
-      - config/env/db.prod.env
+      - config/env/prod/db.env
       - config/env/prod/loki.env
       - config/env/swarm_data.env
 

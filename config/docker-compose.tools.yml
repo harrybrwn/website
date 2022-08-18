@@ -6,8 +6,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - ./config/provision.json:/opt/harrybrwn/config/provision.json:ro
-      - ./config/provision.dev.json:/opt/harrybrwn/config/provision.dev.json:ro
+      target: provision
     working_dir: /opt/harrybrwn
 
+  ansible:
+    image: ${REGISTRY}/harrybrwn/ansible:latest
+    build:
+      context: .
+      dockerfile: config/ansible/Dockerfile
+      target: ansible
+      x-bake:
+        platforms:
+          - linux/amd64
+    volumes:
+      - ${SSH_AUTH_SOCK}:/ssh-auth-sock
+      # - .:/opt/harrybrwn
+      - ./config:/home/ansible/config
+    working_dir: /home/ansible
+    environment:
+      - SSH_AUTH_SOCK=/ssh-auth-sock
+      - ANSIBLE_CONFIG=/home/ansible/config/ansible/ansible.cfg
+      - ANSIBLE_HOST_KEY_CHECKING=False
+      # - ANSIBLE_DEPRECATION_WARNINGS=False

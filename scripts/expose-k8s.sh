@@ -2,11 +2,12 @@
 
 set -eu
 
-if [ -z "${SUDO_USER}" -o -z "${SUDO_COMMAND}" ]; then
+if [ -z "${SUDO_USER:-}" -o -z "${SUDO_COMMAND:-}" ]; then
   echo "Error: must run script as sudo"
+  exit 1
 fi
 
-export KUBECONFIG="/home/${SUDO_USER}/.kube/config"
+export KUBECONFIG="/home/${SUDO_USER:-}/.kube/config"
 
 pids=()
 

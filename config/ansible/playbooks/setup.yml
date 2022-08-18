@@ -1,0 +1,62 @@
+- hosts: all
+  become_method: sudo
+  tasks:
+    - name: docker installation dependencies
+      become: true
+      apt:
+        package:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+    - name: add docker apt source
+      become: true
+      shell: |
+        if [ -f /etc/apt/keyrings/docker.gpg -a -f /etc/apt/sources.list.d/docker.list ]; then
+          echo "done"
+        else
+          if [ -d /etc/apt/keyrings ]; then
+            rm -f /etc/apt/keyrings/docker.gpg
+          else
+            mkdir -p /etc/apt/keyrings
+          fi
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          echo "changed"
+        fi
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+      register: docker_apt_source
+      changed_when: docker_apt_source.stdout == "changed"
+    - name: apt update and upgrade
+      become: true
+      apt:
+        update_cache: yes
+        upgrade: 'yes'
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+    - name: install docker
+      become: true
+      apt:
+        package:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+    - name: custom libseccomp2 version
+      become: true
+      apt:
+        deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b1_armhf.deb
+      when: |
+        ansible_facts.architecture == "armv7l" and
+        ansible_facts.os_family == "Debian" and
+        ansible_facts.pkg_mgr == "apt"
+    - name: tmux config file
+      template:
+        src: ../templates/.tmux.conf
+        dest: ~/.tmux.conf
+        backup: no
+
+    # - { name: print stuff, debug: { var: ansible_facts } }

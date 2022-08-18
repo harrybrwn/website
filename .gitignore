@@ -1,5 +1,4 @@
 # Build
-/bin/
 node_modules/
 /build/
 /.build/
@@ -23,7 +22,7 @@ config/provision.prod.json
 /config/docker/docker-bake.hcl
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd
-scripts/buildx.sh
+#scripts/buildx.sh
 
 # Testing
 /.testing/

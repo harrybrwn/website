@@ -202,6 +202,9 @@ WORKDIR /opt/harrybrwn
 #
 # Provision Tool
 #
-FROM alpine:latest
+FROM alpine:latest as provision
 COPY --from=provision-builder /opt/harrybrwn/bin/provision /usr/local/bin/provision
+COPY ./config/provision.json /opt/harrybrwn/config/provision.json
+COPY ./config/provision.dev.json /opt/harrybrwn/config/provision.dev.json
+COPY ./config/provision.prod.json /opt/harrybrwn/config/provision.prod.json
 ENTRYPOINT [ "/usr/local/bin/provision" ]

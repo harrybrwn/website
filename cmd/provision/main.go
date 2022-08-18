@@ -82,6 +82,8 @@ func NewRootCmd() *cobra.Command {
 	flg.StringVar(&cli.config.S3.SecretKey, "s3-secret-key", "", "secret key for s3 object storage")
 	flg.StringVar(&cli.config.S3.Endpoint, "s3-endpoint", os.Getenv("S3_ENDPOINT"), "endpoint for s3 object storage")
 	flg.StringVar(&envFile, "env-file", "", "load environment variables from a file")
+	flg.StringVar(&cli.config.DB.Host, "db-host", "", "database host")
+	flg.StringVar(&cli.config.DB.Port, "db-port", "", "database port")
 	return c
 }
 
