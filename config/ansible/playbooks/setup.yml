@@ -53,6 +53,20 @@
         ansible_facts.architecture == "armv7l" and
         ansible_facts.os_family == "Debian" and
         ansible_facts.pkg_mgr == "apt"
+    # Install the nfs server package for all hosts because docker will not run
+    # an nfs server if the nfs kernel module is not loaded onto the host.
+    - name: install nfs server
+      become: true
+      apt:
+        pkg: nfs-kernel-server
+    - name: create nfs mount
+      become: true
+      when: nfs_server
+      file:
+        path: /mnt/nfs/hrry.dev
+        mode: '0755'
+        state: directory
+
     - name: tmux config file
       template:
         src: ../templates/.tmux.conf

@@ -3,6 +3,7 @@ nodes:
     # Use python3 on all hosts
     ansible_python_interpreter: /usr/bin/python3
     swarm_master: false
+    nfs_server: false
   hosts:
     laptop:
       ansible_host: 10.0.0.11
@@ -18,3 +19,4 @@ nodes:
     rpi3:
       ansible_host: 10.0.0.203
       ansible_ssh_user: pi
+      nfs_server: false

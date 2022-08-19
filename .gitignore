@@ -3,13 +3,14 @@ node_modules/
 /build/
 /.build/
 /.cache/
+.tmp/
 *.log
 test-cover
 static/bootstrap-4.3.1-dist
 !scripts/build.js
-/public/static/img/563x750
-/public/static/img/1688x2251
-/public/static/img/2250x3000
+public/static/img/563x750
+public/static/img/1688x2251
+public/static/img/2250x3000
 .hugo_build.lock
 __pycache__/
 yarn-error.log
@@ -22,7 +23,8 @@ config/provision.prod.json
 /config/docker/docker-bake.hcl
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd
-#scripts/buildx.sh
+!bin
+!bin/.gitignore
 
 # Testing
 /.testing/
