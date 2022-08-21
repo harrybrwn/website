@@ -2,8 +2,13 @@ nodes:
   vars:
     # Use python3 on all hosts
     ansible_python_interpreter: /usr/bin/python3
-    swarm_master: false
     nfs_server: false
+    swarm_master: false
+    k8s: false
+    k8s_master: false
+
+    container_registry: 10.0.0.11:5000
+
   hosts:
     laptop:
       ansible_host: 10.0.0.11

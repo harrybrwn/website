@@ -55,15 +55,10 @@ tools:
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/deployment bin/deployment
 	ln -sf ../scripts/infra/ansible bin/ansible
-	ln -sf ../scripts/infra/ansible bin/ansible-playbook
-	ln -sf ../scripts/infra/ansible bin/ansible-inventory
-	ln -sf ../scripts/infra/ansible bin/ansible-config
-	ln -sf ../scripts/infra/ansible bin/ansible-galaxy
-	ln -sf ../scripts/infra/ansible bin/ansible-test
-	ln -sf ../scripts/infra/ansible bin/ansible-pull
-	ln -sf ../scripts/infra/ansible bin/ansible-console
-	ln -sf ../scripts/infra/ansible bin/ansible-connection
-	ln -sf ../scripts/infra/ansible bin/ansible-vault
+	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
+		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
+		ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
+	done
 
 .PHONY: tools
 

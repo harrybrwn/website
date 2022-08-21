@@ -1,11 +1,21 @@
 - hosts: all
+  become: true
   become_method: sudo
+
   vars_files:
     # ansible become password in vault encrypted vars file
-    - vars/keys.yml
+    - ../vars/keys.yml
+
+  pre_tasks: []
+
+  handlers:
+    - name: restart docker
+      systemd:
+        state: restarted
+        name: docker.service
+
   tasks:
     - name: docker installation dependencies
-      become: true
       apt:
         package:
           - ca-certificates
@@ -14,8 +24,8 @@
           - lsb-release
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
     - name: add docker apt source
-      become: true
       shell: |
+        set -eu -o pipefail
         if [ -f /etc/apt/keyrings/docker.gpg -a -f /etc/apt/sources.list.d/docker.list ]; then
           echo "done"
         else
@@ -27,21 +37,17 @@
           curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           chmod a+r /etc/apt/keyrings/docker.gpg
           echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) stable" | \
+            tee /etc/apt/sources.list.d/docker.list > /dev/null
           echo "changed"
         fi
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
       register: docker_apt_source
       changed_when: docker_apt_source.stdout == "changed"
-    - name: apt update and upgrade
-      become: true
-      apt:
-        update_cache: yes
-        #upgrade: 'yes'
-      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
     - name: install docker
-      become: true
       apt:
+        update_cache: true
         package:
           - docker-ce
           - docker-ce-cli
@@ -49,7 +55,6 @@
           - docker-compose-plugin
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
     - name: custom libseccomp2 version
-      become: true
       apt:
         deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b1_armhf.deb
       when: |
@@ -59,21 +64,41 @@
     # Install the nfs server package for all hosts because docker will not run
     # an nfs server if the nfs kernel module is not loaded onto the host.
     - name: install nfs server
-      become: true
       apt:
         pkg: nfs-kernel-server
     - name: create nfs mount
-      become: true
       when: nfs_server
       file:
         path: /mnt/nfs/hrry.dev
         mode: '0755'
         state: directory
 
+    - name: create docker certs dirs
+      file:
+        path: '/etc/docker/{{ item.path }}'
+        owner: root
+        group: root
+        mode: '0755'
+        state: directory
+        recurse: true
+      loop:
+        - {path: certs.d}
+        - {path: 'certs.d/{{ container_registry }}'}
+        - {path: registry}
+    - name: install root ca
+      template:
+        src: ../docker-root-ca.pem
+        dest: '/etc/docker/certs.d/{{ container_registry }}/ca.crt'
+        owner: root
+        group: root
+        mode: '0644'
+        validate: openssl x509 -noout -text -in %s
+        backup: true
+
     - name: tmux config file
       template:
-        src: ../templates/.tmux.conf
+        src: templates/.tmux.conf
         dest: ~/.tmux.conf
-        backup: no
-
-    # - { name: print stuff, debug: { var: ansible_facts } }
+        backup: false
+        mode: '0664'
+      become: false
