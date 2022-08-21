@@ -59,10 +59,11 @@ tools:
 	ln -sf ../scripts/infra/ansible bin/ansible-inventory
 	ln -sf ../scripts/infra/ansible bin/ansible-config
 	ln -sf ../scripts/infra/ansible bin/ansible-galaxy
-	ln -sf ../scripts/infra/ansible bin/ansible-vault
 	ln -sf ../scripts/infra/ansible bin/ansible-test
 	ln -sf ../scripts/infra/ansible bin/ansible-pull
 	ln -sf ../scripts/infra/ansible bin/ansible-console
+	ln -sf ../scripts/infra/ansible bin/ansible-connection
+	ln -sf ../scripts/infra/ansible bin/ansible-vault
 
 .PHONY: tools
 

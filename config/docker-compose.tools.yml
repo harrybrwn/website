@@ -26,6 +26,7 @@ services:
       - SSH_AUTH_SOCK=/ssh-auth-sock
       - ANSIBLE_CONFIG=/home/ansible/config/ansible/ansible.cfg
       - ANSIBLE_HOST_KEY_CHECKING=False
+      - ANSIBLE_VAULT_PASSWORD_FILE=~/config/ansible/vault-password.txt
 
   nfs:
     image: ${REGISTRY}/harrybrwn/nfs-server:latest
