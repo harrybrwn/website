@@ -8,4 +8,10 @@
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
 #
-/srv/nfs/hrry/storage *(rw,sync,fsid=0,no_subtree_check,insecure)
+{% for export in nfs_exports %}
+{% if export.options is iterable and export.options is not string %}
+{{ export.path }} {{ export.host }}({{ ','.join(export.options) }})
+{% else %}
+{{ export.path }} {{ export.host }}({{ export.options }})
+{% endif %}
+{% endfor %}

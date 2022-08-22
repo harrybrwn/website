@@ -4,7 +4,8 @@
 
   vars_files:
     # ansible become password in vault encrypted vars file
-    - ../vars/keys.yml
+    - ../vars/become-password.yml
+    - ../vars/cloudflare-api-credentials.yml
 
   pre_tasks: []
 
@@ -13,39 +14,53 @@
       systemd:
         state: restarted
         name: docker.service
+    - name: reload nfs
+      command: 'exportfs -ra'
 
   tasks:
-    - name: docker installation dependencies
+    - name: Install dependencies.
       apt:
+        update_cache: true
         package:
           - ca-certificates
           - curl
           - gnupg
           - lsb-release
+          # Install the nfs server package for all hosts because docker will not run
+          # an nfs server if the nfs kernel module is not loaded onto the host.
+          - nfs-kernel-server
+          - certbot
+          - tmux
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
-    - name: add docker apt source
+
+    - name: Add docker apt source.
+      args:
+        executable: /bin/bash
       shell: |
         set -eu -o pipefail
-        if [ -f /etc/apt/keyrings/docker.gpg -a -f /etc/apt/sources.list.d/docker.list ]; then
-          echo "done"
+        key=/etc/apt/keyrings/docker.gpg
+        list=/etc/apt/sources.list.d/docker.list
+        url='https://download.docker.com/linux/debian'
+        if [ -f "${key}" -a -f "${list}" ]; then
+          echo ''
         else
           if [ -d /etc/apt/keyrings ]; then
-            rm -f /etc/apt/keyrings/docker.gpg
+            rm -f "${key}"
           else
             mkdir -p /etc/apt/keyrings
           fi
-          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          chmod a+r /etc/apt/keyrings/docker.gpg
+          curl -fsSL "${url}/gpg" | gpg --dearmor -o "${key}"
+          chmod a+r "${key}"
           echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+            "deb [arch=$(dpkg --print-architecture) signed-by=${key}] "${url}" \
             $(lsb_release -cs) stable" | \
-            tee /etc/apt/sources.list.d/docker.list > /dev/null
+            tee "${list}" > /dev/null
           echo "changed"
         fi
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
       register: docker_apt_source
       changed_when: docker_apt_source.stdout == "changed"
-    - name: install docker
+    - name: Install docker.
       apt:
         update_cache: true
         package:
@@ -54,50 +69,88 @@
           - containerd.io
           - docker-compose-plugin
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
-    - name: custom libseccomp2 version
+    - name: Install custom libseccomp2 version.
       apt:
         deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b1_armhf.deb
       when: |
         ansible_facts.architecture == "armv7l" and
         ansible_facts.os_family == "Debian" and
         ansible_facts.pkg_mgr == "apt"
-    # Install the nfs server package for all hosts because docker will not run
-    # an nfs server if the nfs kernel module is not loaded onto the host.
-    - name: install nfs server
-      apt:
-        pkg: nfs-kernel-server
-    - name: create nfs mount
-      when: nfs_server
+
+    - name: Create NFS mount points.
       file:
         path: /mnt/nfs/hrry.dev
         mode: '0755'
         state: directory
-
-    - name: create docker certs dirs
+    - name: Create NFS export directories.
       file:
-        path: '/etc/docker/{{ item.path }}'
+        path: /exports/nfs/hrry.dev
+        mode: '0755'
+        state: directory
+      when: nfs_server
+    - name: Add NFS Exports
+      vars:
+        nfs_exports:
+          - path: /exports/nfs/hrry.dev/certs
+            host: '*'
+            options:
+              - rw
+              - root_squash
+              - no_subtree_check
+              - fsid=0
+      ansible.builtin.template:
+        src: ../templates/exports.j2
+        dest: /etc/exports
+        mode: '0644'
+        backup: false
+      when: nfs_server
+      notify: reload nfs
+
+    - name: Create docker certs dirs.
+      file:
+        path: "{{ item.path }}"
         owner: root
         group: root
         mode: '0755'
         state: directory
-        recurse: true
       loop:
-        - {path: certs.d}
-        - {path: 'certs.d/{{ container_registry }}'}
-        - {path: registry}
-    - name: install root ca
-      template:
-        src: ../docker-root-ca.pem
+        - {path: /etc/docker/certs.d}
+        - {path: '/etc/docker/certs.d/{{ container_registry }}'}
+        - {path: /etc/docker/registry}
+        - {path: /root/.secrets}
+    - name: Install docker root ca.
+      copy:
+        src: ../../docker-root-ca.pem
         dest: '/etc/docker/certs.d/{{ container_registry }}/ca.crt'
         owner: root
         group: root
         mode: '0644'
-        validate: openssl x509 -noout -text -in %s
-        backup: true
+        backup: false
+        validate: openssl x509 -noout -in %s
+      notify: restart docker
 
-    - name: tmux config file
+    - name: Install cloudflare dns plugin for certbot.
+      ansible.builtin.pip:
+        name: certbot-dns-cloudflare==1.27.0
+      when: certbot
+    - name: Uninstall certbot-dns-cloudflare plugin when not needed.
+      pip:
+        name: certbot-dns-cloudflare
+        state: absent
+      when: not certbot
+    - name: add cloudflare api key config file
       template:
-        src: templates/.tmux.conf
+        src: ../templates/harrybrwn-cloudflare.ini.j2
+        dest: /root/.secrets/harrybrwn-cloudflare.ini
+        owner: root
+        group: root
+        mode: '0644'
+        backup: false
+      when: certbot
+
+    - name: Copy tmux config file.
+      template:
+        src: ../templates/.tmux.conf
         dest: ~/.tmux.conf
         backup: false
         mode: '0664'
