@@ -5,6 +5,6 @@ set -eu
 name="$(basename $0)"
 
 docker-compose \
-  --file docker-compose.yml \
+  --project-directory "$(pwd)" \
   --file config/docker-compose.tools.yml run --rm \
   ansible "${name}" "$@"

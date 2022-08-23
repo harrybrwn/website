@@ -30,6 +30,9 @@ docker-compose.*
 /.cache
 /bin/
 **/__pycache__
+files/*.tar.gz
+files/*.tar
+files/*.gz
 
 # Scripts
 /scripts/requests.http

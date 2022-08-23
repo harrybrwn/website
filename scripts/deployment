@@ -273,6 +273,7 @@ for arg in "${ARGS[@]}"; do
 			break
 			;;
 		bake)
+      COMPOSE_ARGS+=(--file config/docker-compose.tools.yml)
 			if $DRY; then
 				echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
 					docker --context default buildx bake \
@@ -280,7 +281,6 @@ for arg in "${ARGS[@]}"; do
 						--file config/docker/buildx.yml \
 						--push
 			else
-        COMPOSE_ARGS+=("config/docker-compose.tools.yml")
 				docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
 					docker --context default buildx bake \
 						--file - \

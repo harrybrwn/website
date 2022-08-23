@@ -34,8 +34,8 @@ services:
       context: config/docker/nfs
       target: nfs-server
     privileged: true
-    networks:
-      - backend
+    # networks:
+    #   - backend
     volumes:
       - ./.tmp/nfs/nfs:/mnt/nfs
       - ./.tmp/nfs/exports:/exports
@@ -47,8 +47,8 @@ services:
       target: nfs-server
     privileged: true
     command: ["--client", "/mnt/nfs:/media"]
-    networks:
-      - backend
+    # networks:
+    #   - backend
     environment:
       - NFS_PORT_2049_TCP_ADDR=nfs
     volumes:

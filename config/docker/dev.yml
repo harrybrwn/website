@@ -79,3 +79,40 @@ services:
       restart_policy:
         condition: on-failure
         max_attempts: 6
+
+volumes:
+  database:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/postgres"
+  cache-data:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/redis"
+  s3:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/s3"
+  filestash:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/filestash"
+  grafana:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/grafana"
+  prometheus:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/prometheus"
+  loki:
+    driver_opts:
+      type: nfs
+      o: addr=localhost,rw,soft,intr
+      device: ":/srv/nfs/storage/hrry.dev/loki"

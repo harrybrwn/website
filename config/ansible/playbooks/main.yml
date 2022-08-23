@@ -7,6 +7,10 @@
     - ../vars/become-password.yml
     - ../vars/cloudflare-api-credentials.yml
 
+  vars:
+    nfs_package_name: nfs-kernel-server
+    nfs_service_name: nfs-kernel-server
+
   pre_tasks: []
 
   handlers:
@@ -16,6 +20,19 @@
         name: docker.service
     - name: reload nfs
       command: 'exportfs -ra'
+    - name: docker group
+      shell: |
+        usermod -aG docker $USER
+        reboot now
+      become: true
+    - name: reboot
+      reboot:
+        msg: "Rebooted by ansible"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
 
   tasks:
     - name: Install dependencies.
@@ -28,7 +45,7 @@
           - lsb-release
           # Install the nfs server package for all hosts because docker will not run
           # an nfs server if the nfs kernel module is not loaded onto the host.
-          - nfs-kernel-server
+          - "{{ nfs_package_name }}"
           - certbot
           - tmux
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
@@ -40,8 +57,9 @@
         set -eu -o pipefail
         key=/etc/apt/keyrings/docker.gpg
         list=/etc/apt/sources.list.d/docker.list
-        url='https://download.docker.com/linux/debian'
-        if [ -f "${key}" -a -f "${list}" ]; then
+        url='https://download.docker.com/linux/{{ ansible_distribution | lower}}'
+        source_line="deb [arch=$(dpkg --print-architecture) signed-by=${key}] ${url} $(lsb_release -cs) stable"
+        if [ -f "${key}" -a -f "${list}" ] && grep "${source_line}" "${list}" 2>&1 > /dev/null; then
           echo ''
         else
           if [ -d /etc/apt/keyrings ]; then
@@ -52,8 +70,7 @@
           curl -fsSL "${url}/gpg" | gpg --dearmor -o "${key}"
           chmod a+r "${key}"
           echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=${key}] "${url}" \
-            $(lsb_release -cs) stable" | \
+            "deb [arch=$(dpkg --print-architecture) signed-by=${key}] ${url} $(lsb_release -cs) stable" | \
             tee "${list}" > /dev/null
           echo "changed"
         fi
@@ -62,13 +79,14 @@
       changed_when: docker_apt_source.stdout == "changed"
     - name: Install docker.
       apt:
-        update_cache: true
+        update_cache: true  # update cache because we just added a repo
         package:
           - docker-ce
           - docker-ce-cli
           - containerd.io
           - docker-compose-plugin
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+      notify: docker group
     - name: Install custom libseccomp2 version.
       apt:
         deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b1_armhf.deb
@@ -82,29 +100,54 @@
         path: /mnt/nfs/hrry.dev
         mode: '0755'
         state: directory
-    - name: Create NFS export directories.
-      file:
-        path: /exports/nfs/hrry.dev
-        mode: '0755'
-        state: directory
-      when: nfs_server
-    - name: Add NFS Exports
-      vars:
-        nfs_exports:
-          - path: /exports/nfs/hrry.dev/certs
-            host: '*'
-            options:
-              - rw
-              - root_squash
-              - no_subtree_check
-              - fsid=0
-      ansible.builtin.template:
-        src: ../templates/exports.j2
-        dest: /etc/exports
-        mode: '0644'
-        backup: false
-      when: nfs_server
-      notify: reload nfs
+
+    - name: Provision NFS Server
+      block:
+        - name: Start service.
+          ansible.builtin.systemd:
+            state: started
+            name: "{{ nfs_service_name }}"
+            enabled: true
+          loop:
+            - "{{ nfs_service_name }}"
+            - rpcbind.service
+            - rpcbind.socket
+        - name: Create export directories.
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            mode: '0755'
+            state: directory
+          loop: "{{ nfs_exports }}"
+        - name: Create extra NFS directories in an exported directory.
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            mode: '0755'
+            # TODO default to an ansible_user or ansible_become_user variable
+            group: "{{ item.group | default('root') }}"
+            owner: "{{ item.user | default('root') }}"
+            state: directory
+            recurse: true
+          loop: "{{ nfs_extra_dirs }}"
+          when: nfs_extra_dirs is defined
+          become: true
+        - name: Add NFS exports file.
+          ansible.builtin.template:
+            src: ../templates/exports.j2
+            dest: /etc/exports
+            mode: '0644'
+            backup: false
+          notify: reload nfs
+      when: nfs_server and nfs_exports is defined
+    - name: Remove NFS services.
+      ansible.builtin.systemd:
+        state: stopped
+        enabled: false
+        name: "{{ item }}"
+      loop:
+        - nfs-kernel-server.service
+        - rpcbind.service
+        - rpcbind.socket
+      when: nfs_server is not defined or not nfs_server
 
     - name: Create docker certs dirs.
       file:
@@ -127,25 +170,20 @@
         mode: '0644'
         backup: false
         validate: openssl x509 -noout -in %s
-      notify: restart docker
 
-    - name: Install cloudflare dns plugin for certbot.
-      ansible.builtin.pip:
-        name: certbot-dns-cloudflare==1.27.0
-      when: certbot
-    - name: Uninstall certbot-dns-cloudflare plugin when not needed.
-      pip:
-        name: certbot-dns-cloudflare
-        state: absent
-      when: not certbot
-    - name: add cloudflare api key config file
-      template:
-        src: ../templates/harrybrwn-cloudflare.ini.j2
-        dest: /root/.secrets/harrybrwn-cloudflare.ini
-        owner: root
-        group: root
-        mode: '0644'
-        backup: false
+    - name: Setup certbot.
+      block:
+        - name: Install cloudflare dns plugin for certbot.
+          ansible.builtin.pip:
+            name: certbot-dns-cloudflare==1.27.0
+        - name: add cloudflare api key config file
+          template:
+            src: ../templates/harrybrwn-cloudflare.ini.j2
+            dest: /root/.secrets/harrybrwn-cloudflare.ini
+            owner: root
+            group: root
+            mode: '0644'
+            backup: false
       when: certbot
 
     - name: Copy tmux config file.
@@ -154,4 +192,16 @@
         dest: ~/.tmux.conf
         backup: false
         mode: '0664'
+      become: false
+    - name: Create .vim directory
+      ansible.builtin.file:
+        path: "~/.vim"
+        mode: '0755'
+        state: directory
+      become: false
+    - name: Copy vimrc
+      copy:
+        src: ../files/.vimrc
+        dest: ~/.vim/vimrc
+        mode: '0644'
       become: false
