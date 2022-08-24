@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  # namespace: fluentbit-system
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: fluent-bit
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+    spec:
+      # serviceAccount: fluent-bit
+      # serviceAccountName: fluent-bit
+      # hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet
+      # terminationGracePeriodSeconds: 30
+      containers:
+      - name: fluent-bit
+        image: 10.0.0.11:5000/harrybrwn/fluent-bit:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - name: tcp
+          containerPort: 24224
+          protocol: TCP
+        - name: udp
+          containerPort: 24224
+          protocol: UDP
+        - name: http
+          containerPort: 2020
+          protocol: TCP
+        volumeMounts:
+        - name: var-log
+          mountPath: /var/log
+        - name: var-lib-docker-containers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: machine-id
+          mountPath: /etc/machine-id
+          readOnly: true
+        - { name: config,   mountPath: /fluent-bit/etc }
+        - { name: hostname, mountPath: /etc/hostname, readOnly: true }
+        - { name: proc,     mountPath: /mnt/proc/, readOnly: true }
+        - { name: sys,      mountPath: /mnt/sys/,  readOnly: true }
+      volumes:
+      - name: var-log
+        hostPath:
+          path: /var/log
+      - name: var-lib-docker-containers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: machine-id
+        hostPath:
+          path: /etc/machine-id
+          type: File
+      - name: hostname
+        hostPath:
+          path: /etc/hostname
+          type: File
+      - { name: proc, hostPath: { path: /proc } }
+      - { name: sys, hostPath: { path: /sys } }
+      - name: config
+        configMap:
+          name: fluent-bit
+          optional: false

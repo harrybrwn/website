@@ -1,0 +1,17 @@
+{
+    "general": {
+        "host": "files.hrry.local",
+        "editor": "vim"
+    },
+    "connections": [
+        {
+            "access_key_id": "",
+            "advanced": true,
+            "label": "S3",
+            "path": "/files",
+            "region": "us-east-1",
+            "session_token": null,
+            "type": "s3"
+        }
+    ]
+}

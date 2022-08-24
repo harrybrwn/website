@@ -8,10 +8,10 @@ spec:
   selector:
     app: sentinel
   ports:
-    - port: 5000
+    - port: 26379
       targetPort: sentinel
       protocol: TCP
-      name: sentinel-5000
+      name: sentinel-26379
 
 ---
 apiVersion: apps/v1
@@ -39,15 +39,15 @@ spec:
               for i in $(seq 30); do
                 for n in ${nodes//,/ }
                 do
-                    echo "finding master at $n"
-                    MASTER=$(redis-cli --no-auth-warning --raw -h $n -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
-                    if [ "$MASTER" == "" ]; then
-                        echo "no master found"
-                        MASTER=
-                    else
-                        echo "found $MASTER"
-                        break
-                    fi
+                  echo "finding master at $n"
+                  MASTER=$(redis-cli --no-auth-warning --raw -h $n -a $REDIS_PASSWORD info replication | awk '{print $1}' | grep master_host: | cut -d ":" -f2)
+                  if [ "$MASTER" == "" ]; then
+                    echo "no master found"
+                    MASTER=
+                  else
+                    echo "found $MASTER"
+                    break
+                  fi
                 done
                 if [ -n "$MASTER" ]; then
                   break
@@ -55,7 +55,7 @@ spec:
                 sleep 2
               done
               echo "sentinel monitor rdbmaster $MASTER 6379 2" >> /tmp/master
-              echo "port 5000
+              echo "port 26379
               sentinel resolve-hostnames yes
               sentinel announce-hostnames yes
               $(cat /tmp/master)
@@ -79,7 +79,7 @@ spec:
           command: ["redis-sentinel"]
           args: ["/etc/redis/sentinel.conf"]
           ports:
-            - containerPort: 5000
+            - containerPort: 26379
               name: sentinel
           volumeMounts:
             - name: redis-config

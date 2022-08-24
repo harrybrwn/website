@@ -8,12 +8,22 @@ load() {
   echo "done loading \"${1}\"."
 }
 
+ASYNC=false
+
 images="$(docker-compose --file docker-compose.yml --file config/docker-compose.logging.yml --file config/docker-compose.tools.yml config \
-  | grep -E 'image:.*/harrybrwn.*' \
-  | awk '{ print $2 }')"
+  | grep -E 'image:.*' \
+  | awk '{ print $2 }' \
+  | sort \
+  | uniq)"
 for image in ${images}; do
   image="$(echo "${image}" | sed -Ee 's/(^.*?):(.*$)/\1/')"
-  load "${image}" &
+  if ${ASYNC}; then
+    load "${image}" &
+  else
+    load "${image}"
+  fi
 done
 
-wait
+if ${ASYNC}; then
+  wait
+fi

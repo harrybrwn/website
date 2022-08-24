@@ -13,6 +13,9 @@ resources:
   - geoip.yml
   - vanity-imports.yml
   - legacy-site.yml
+  - grafana.yml
+  - telem/fluent-bit
+  - telem/loki
 
   #- registry/registry.yml
   #- geoip.yml

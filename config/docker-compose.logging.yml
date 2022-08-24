@@ -45,10 +45,6 @@ services:
     ports:
       - "3100:3100"
       - "9096:9096" # grpc
-    environment:
-      - GF_DATABASE_TYPE=postgres
-      - GF_DATABASE_HOST=db:5432
-      - GF_DATABASE_NAME=grafana
     env_file:
       - config/env/db.env
       - config/env/loki.env

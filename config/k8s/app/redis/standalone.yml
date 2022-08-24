@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  labels:
+    run: redis
+spec:
+  #type: ClusterIP
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: redis
+      protocol: TCP
+      name: redis-tcp-6379
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  serviceName: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:6.2.6-alpine
+        command: [sh, -c]
+        args:
+          - |
+            if [ -z "${REDIS_PASSWORD}" ]; then
+              echo "no password. set REDIS_PASSWORD"
+              exit 1
+            fi
+            mkdir -p /etc/redis/
+            echo "requirepass ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+            redis-server /etc/redis/redis.conf
+        ports:
+          - containerPort: 6379
+            name: redis
+        volumeMounts:
+          - name: data
+            mountPath: /data
+        env:
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: redis-secrets
+                key: password
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

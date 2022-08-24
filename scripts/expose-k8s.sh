@@ -17,6 +17,8 @@ kubectl port-forward svc/s3 9000:9000 9001:9001 &
 pids+=($!)
 kubectl port-forward svc/db 5432:5432 &
 pids+=($!)
+kubectl port-forward svc/grafana 3000:3000 &
+pids+=($!)
 
 echo "running ${pids[@]}"
 echo "to stop, press <enter>"

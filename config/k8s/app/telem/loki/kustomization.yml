@@ -1,0 +1,5 @@
+resources:
+  - service.yml
+  - configmap.yml
+  - secret.yml
+  - statefulset.yml

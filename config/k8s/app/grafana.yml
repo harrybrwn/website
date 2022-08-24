@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 3000
+    targetPort: grafana-http
+    name: grafana-http-3000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: 10.0.0.11:5000/harrybrwn/grafana:latest
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+          name: grafana-http
+        env:
+          - name: GF_SERVER_PROTOCOL
+            value: http # use h2 or https in the future
+          - name: GF_SERVER_ENFORCE_DOMAIN
+            value: 'false'
+          - name: GF_LOG_CONSOLE_FORMAT
+            value: json
+          - name: GF_DATABASE_TYPE
+            value: postgres
+          - name: GF_DATABASE_HOST
+            value: db:5432
+          - name: GF_DATABASE_NAME
+            value: grafana
+          - name: GF_DATABASE_USER
+            value: grafana
+          - name: GF_DATABASE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: grafana-secrets
+                key: database-password
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-secrets
+type: Opaque
+data:
+  database-password: dGVzdGJlZDAy # testbed02

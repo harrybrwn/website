@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  serviceName: loki
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      containers:
+      - name: loki
+        image: 10.0.0.11:5000/harrybrwn/loki:latest
+        imagePullPolicy: IfNotPresent
+        args:
+          - "-config.file=/loki/loki.yml"
+          - "-config.expand-env=true"
+          - "-log.format=json"
+          - "-log.level=warn"
+        ports:
+        - containerPort: 3100
+          name: http
+        - containerPort: 9096
+          name: grpc
+        volumeMounts:
+        - name: data
+          mountPath: /var/loki
+        - name: config
+          mountPath: /loki
+        env:
+          - name: S3_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loki
+                key: s3-access-key
+          - name: S3_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loki
+                key: s3-secret-key
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: loki
+                key: redis-password
+          - name: REDIS_SENTINEL_MASTER_NAME
+            value: rdbmaster
+      volumes:
+      - name: config
+        configMap:
+          name: loki
+          optional: false
+
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

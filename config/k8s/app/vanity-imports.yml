@@ -14,10 +14,11 @@ spec:
       containers:
       - name: vanity-imports
         image: 10.0.0.11:5000/harrybrwn/vanity-imports:latest
+        imagePullPolicy: IfNotPresent
         resources:
           limits:
             memory: "128Mi"
             cpu: "500m"
         ports:
         - containerPort: 8085
-        imagePullPolicy: IfNotPresent
+          name: http

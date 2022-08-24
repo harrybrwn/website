@@ -8,7 +8,7 @@ server:
 # Workaround for weird behavior in docker swarm
 # https://github.com/grafana/loki/issues/4699#issuecomment-977843834
 frontend:
-    address: 127.0.0.1
+  address: 127.0.0.1
 
 limits_config:
   max_entries_limit_per_query: 10000 # (default: 5000)
@@ -49,9 +49,9 @@ storage_config:
   filesystem:
     directory: /var/loki/chunks
   boltdb_shipper:
-   active_index_directory: /var/loki/index
-   cache_location: /var/loki/index_cache
-   shared_store: s3
+    active_index_directory: /var/loki/index
+    cache_location: /var/loki/index_cache
+    shared_store: s3
   aws:
     region: us-east-1
     endpoint: http://s3:9000/
@@ -101,4 +101,4 @@ ruler:
 #
 # If you would like to disable reporting, uncomment the following lines:
 analytics:
- reporting_enabled: false
+  reporting_enabled: false
