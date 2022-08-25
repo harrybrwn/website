@@ -20,6 +20,10 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: hrry.me
 spec:
   selector:
     matchLabels:
@@ -96,7 +100,6 @@ spec:
         name: data
       spec:
         accessModes: [ "ReadWriteOnce" ]
-        #storageClassName: local-storage
         storageClassName: standard
         resources:
           requests:
