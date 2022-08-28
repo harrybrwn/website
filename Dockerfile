@@ -83,14 +83,14 @@ RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
 # Base service
 #
 FROM alpine:${ALPINE_VERSION} as service
-RUN apk update && apk upgrade && apk add -l tzdata
+RUN apk update && apk upgrade && apk add -l tzdata curl
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 
 #
 # Main image
 #
 FROM service as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
-RUN apk add -l curl
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
@@ -99,7 +99,7 @@ ENTRYPOINT ["/app/harrybrwn"]
 #
 # Build hook server
 #
-FROM alpine:3.14 as hooks
+FROM service as hooks
 RUN apk update && apk upgrade && apk add -l tzdata
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=hooks-builder /opt/harrybrwn/bin/hooks /app/hooks
@@ -203,8 +203,15 @@ WORKDIR /opt/harrybrwn
 # Provision Tool
 #
 FROM alpine:latest as provision
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=provision-builder /opt/harrybrwn/bin/provision /usr/local/bin/provision
-COPY ./config/provision.json /opt/harrybrwn/config/provision.json
-COPY ./config/provision.dev.json /opt/harrybrwn/config/provision.dev.json
-COPY ./config/provision.prod.json /opt/harrybrwn/config/provision.prod.json
 ENTRYPOINT [ "/usr/local/bin/provision" ]
+
+#
+# debugging tool
+#
+FROM builder as debug
+RUN apk add bash curl bind-tools
+COPY cmd/tools/debug cmd/tools/debug
+RUN go build -o /usr/local/bin/debug ./cmd/tools/debug
+ENTRYPOINT ["bash"]

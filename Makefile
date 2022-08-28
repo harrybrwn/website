@@ -54,6 +54,7 @@ tools:
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/deployment bin/deployment
+	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
 		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \

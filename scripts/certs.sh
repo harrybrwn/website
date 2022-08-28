@@ -13,17 +13,41 @@ declare -r CA_CRT="${PKI}/certs/ca.crt"
 
 export OPENSSL_CONF=./config/openssl.cnf
 
+uninstall_cert() {
+	local cert_name="${1}"
+	if [ -z "${cert_name}" ]; then
+		echo "no cert name to uninstall"
+		return 1
+	fi
+	if ! has_certutil; then
+		echo "Error: 'certutil' command not found"
+		return 1
+	fi
+	if certutil -L -d "${CERTDB}" -n "${cert_name}" > /dev/null 2>&1; then
+		certutil -D -d "${CERTDB}" -n "${cert_name}"
+	else
+		echo "could not find certificate installation \"${cert_name}\""
+	fi
+}
+
 load_cert() {
-	local cert_file="${1}"
+	local cert_name="${1}"
+	if [ -z "${cert_name}" ]; then
+		echo "no cert name to load"
+		return 1
+	fi
+	local cert_file="${2}"
+	if [ ! -f "${cert_file}" ]; then
+		echo "cert file \"${cert_file}\" does not exist"
+		return 1
+	fi
 	if ! has_certutil; then
 		echo "Error: 'certutil' command not found"
 		return 1
 	fi
 
-	if certutil -L -d "$CERTDB" -n "$LOCAL_CERT_NAME" > /dev/null 2>&1; then
-		certutil -D -d "$CERTDB" -n "$LOCAL_CERT_NAME"
-	fi
-	certutil -A -n "$LOCAL_CERT_NAME" \
+	uninstall_cert "${cert_name}"
+	certutil -A -n "${cert_name}" \
 		-t "CT,c,c" \
 		-d "$CERTDB" \
 		-i "${cert_file}"
@@ -76,11 +100,11 @@ server_cert() {
 		echo "Error: no common name given, pass '-cn'"
 		return 1
 	fi
-	csr="${certs}/${CN}/server.csr"
-	crt="${certs}/${CN}/server.crt"
-	key="${certs}/${CN}/server.key"
-	ext="${certs}/${CN}/server.ext"
-	[ ! -d "${certs}/${CN}" ] && mkdir -p "${certs}/${CN}"
+	csr="${certs}/${CN}.csr"
+	crt="${certs}/${CN}.crt"
+	key="${certs}/${CN}.key"
+	ext="${certs}/${CN}.ext"
+	#[ ! -d "${certs}/${CN}" ] && mkdir -p "${certs}/${CN}"
 
 	cat > "${ext}" <<-EOF
 authorityKeyIdentifier=keyid,issuer
@@ -111,6 +135,7 @@ EOF
 		-out "${crt}"      \
 		-extfile "${ext}"  \
 		-days 825 -sha256
+	rm "${csr}" "${ext}" "${PKI}/certs/ca.srl"
 }
 
 # Flags
@@ -147,11 +172,10 @@ rm -rf "${PKI}/certs"
 mkdir -p "${PKI}/certs"
 
 ca_cert "harrybrwn local dev"
-server_cert -cn "harrybrwn.local" -alt "*.harrybrwn.local"
 server_cert \
 	-cn "hryb.local"             \
 	-alt "*.hryb.local"          \
-	-alt '*.api.hryb.loca'       \
+	-alt '*.api.hryb.local'       \
 	-alt '*.rpc.hryb.local'      \
 	-alt '*.grpc.hryb.local'     \
 	-alt '*.s3.hryb.local'       \
@@ -163,12 +187,16 @@ server_cert \
 	-alt '*.git.hryb.local'      \
 	-alt '*.registry.hryb.local' \
 	-alt '*.pkg.hryb.local'
-server_cert -cn 'hrry.local' -alt '*.hrry.local'
+server_cert -cn "harrybrwn.com" -alt "harrybrwn.local" -alt "*.harrybrwn.local"
+server_cert -cn 'hrry.me'  -alt 'hrry.local' -alt '*.hrry.local'
+server_cert -cn 'hrry.dev' -alt 'hrry.local' -alt '*.hrry.local'
 
-ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
+# ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
+
+uninstall_cert "${LOCAL_CERT_NAME}" || true
 
 if $INSTALL; then
-	load_cert "${CA_CRT}"
+	load_cert "${LOCAL_CERT_NAME}" "${CA_CRT}"
 	# sudo cp "${CA_CRT}" /usr/local/share/ca-certificates/harrybrwn.crt
 	# sudo update-ca-certificates --fresh
 fi
@@ -177,14 +205,4 @@ K8S="config/k8s/dev/certs"
 CERTS="${PKI}/certs"
 rm -rf "${K8S}" && mkdir -p "${K8S}"
 
-cp "${CERTS}/harrybrwn.local/server.crt" "${K8S}/harrybrwn.com.crt"
-cp "${CERTS}/harrybrwn.local/server.key" "${K8S}/harrybrwn.com.key"
-
-cp "${CERTS}/hrry.local/server.crt" "${K8S}/hrry.me.crt"
-cp "${CERTS}/hrry.local/server.key" "${K8S}/hrry.me.key"
-
-cp "${CERTS}/hrry.local/server.crt" "${K8S}/hrry.dev.crt"
-cp "${CERTS}/hrry.local/server.key" "${K8S}/hrry.dev.key"
-
-cp "${CERTS}/hryb.local/server.crt" "${K8S}/hryb.dev.crt"
-cp "${CERTS}/hryb.local/server.key" "${K8S}/hryb.dev.key"
+cp ${CERTS}/* "${K8S}"

@@ -442,6 +442,16 @@
 				"90s",
 				"silly"
 			]
+		},
+		{
+			"url": "https://sighack.com/",
+			"name": "sighack",
+			"description": "Articles on algorithms for generative art.",
+			"tags": [
+				"art",
+				"blog",
+				"programming"
+			]
 		}
     ]
 }

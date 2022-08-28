@@ -1,6 +1,7 @@
 ARG GRAFANA_VERSION
 FROM grafana/grafana:${GRAFANA_VERSION}
 USER root
+COPY scripts/wait.sh /usr/local/bin/wait.sh
 #COPY config/logging/grafana/grafana.ini /etc/grafana/grafana.ini
 COPY config/logging/grafana/datasources.yml /etc/grafana/provisioning/datasources/datasource.yml
 COPY config/logging/grafana/dashboards.yml /etc/grafana/provisioning/dashboards/dashboards.yml

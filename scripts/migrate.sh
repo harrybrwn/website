@@ -58,7 +58,7 @@ unset PGSERVICEFILE
 
 case $1 in
   create)
-    run-migrate create -ext sql -seq -dir "$DIR" $2
+    run-migrate create -ext sql -seq -dir "$DIR" "$2"
     ;;
   *)
     migrate -source "file://$DIR" -database "$DATABASE_URL" "$@"

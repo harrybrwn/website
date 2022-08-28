@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluent-bit
-  # namespace: fluentbit-system
   namespace: kube-system
   labels:
     app.kubernetes.io/name: fluent-bit
+    app.kubernetes.io/component: sidecar
+    app.kubernetes.io/part-of: hrry.me
 spec:
   selector:
     matchLabels:
@@ -15,11 +16,6 @@ spec:
       labels:
         app: fluent-bit
     spec:
-      # serviceAccount: fluent-bit
-      # serviceAccountName: fluent-bit
-      # hostNetwork: true
-      # dnsPolicy: ClusterFirstWithHostNet
-      # terminationGracePeriodSeconds: 30
       containers:
       - name: fluent-bit
         image: 10.0.0.11:5000/harrybrwn/fluent-bit:latest

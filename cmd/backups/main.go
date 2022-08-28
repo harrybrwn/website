@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"
@@ -29,6 +31,12 @@ var logger = log.New(
 func init() { log.SetLogger(logger) }
 
 func main() {
+	var (
+		port = 8082
+	)
+	flag.IntVarP(&port, "port", "p", port, "port to run the server on")
+	flag.Parse()
+
 	awsSession, err := session.NewSession(&aws.Config{
 		Endpoint:         aws.String(s3Endpoint()),
 		Region:           aws.String("us-west-0"),
@@ -72,13 +80,9 @@ func main() {
 		writeJSON(w, map[string]any{"status": "success", "file": backup.Filename})
 	})
 	r.Handle("/metrics", web.MetricsHandler())
-	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Type", "application/json")
-		w.WriteHeader(200)
-		writeJSON(w, map[string]any{"status": "up"})
-	})
+	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
 
-	addr := ":8082"
+	addr := fmt.Sprintf(":%d", port)
 	logger.WithField("addr", addr).Info("starting http")
 	http.ListenAndServe(addr, r)
 }

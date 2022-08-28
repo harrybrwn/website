@@ -28,6 +28,16 @@ services:
       - ANSIBLE_HOST_KEY_CHECKING=False
       - ANSIBLE_VAULT_PASSWORD_FILE=~/config/ansible/vault-password.txt
 
+  debug:
+    image: ${REGISTRY}/harrybrwn/debug:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: debug
+      x-bake:
+        platforms:
+          - linux/amd64
+
   nfs:
     image: ${REGISTRY}/harrybrwn/nfs-server:latest
     build:

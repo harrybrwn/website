@@ -7,7 +7,7 @@ spec:
     app: grafana
   ports:
   - port: 3000
-    targetPort: grafana-http
+    targetPort: http
     name: grafana-http-3000
 
 ---
@@ -34,7 +34,7 @@ spec:
             cpu: "500m"
         ports:
         - containerPort: 3000
-          name: grafana-http
+          name: http
         env:
           - name: GF_SERVER_PROTOCOL
             value: http # use h2 or https in the future

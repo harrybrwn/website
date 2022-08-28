@@ -1,0 +1,34 @@
+# https://www.ory.sh/docs/hydra/reference/configuration
+
+serve:
+  cookies:
+    same_site_mode: Lax
+  admin:
+    tls:
+      enabled: false
+  tls:
+    allow_termination_from:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      - "127.0.0.0/8"
+
+urls:
+  self:
+    issuer: "https://auth.hrry.local"
+  login: "https://hrry.local/login"
+  consent: "https://hrry.local/login"
+  error: "https://hrry.local/oidc-error"
+  logout: "https://hrry.local/logout"
+
+oauth:
+  pkce:
+    enforced_for_public_clients: true
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - pairwise
+      - public
+    pairwise:
+     salt: 'pairwise-salt-1234'

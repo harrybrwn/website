@@ -154,7 +154,7 @@ main() {
           exit
         fi
         ;;
-      -*|--*)
+      -*)
         if [ -z "$CMD" ] && ! $COLLECT_ALL; then
           echo "Error: unknown flag \"$1\""
           help

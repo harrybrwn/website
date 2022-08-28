@@ -35,8 +35,10 @@ func main() {
 	var (
 		start = time.Now()
 		files []string
+		port  = 8084
 	)
 	flag.StringArrayVarP(&files, "file", "f", files, "use a mmdb file")
+	flag.IntVarP(&port, "port", "p", port, "port to run the server on")
 	flag.Parse()
 	uris, err := parseURIs(files)
 	if err != nil {
@@ -62,7 +64,8 @@ func main() {
 	r.Get("/", EchoIP)
 	r.Get("/favicon.ico", send404)
 	r.Get("/metrics", web.MetricsHandler().ServeHTTP)
-	err = web.ListenAndServe(":8084", r)
+	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
+	err = web.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
 		logger.WithError(err).Fatal("listen and serve failed")
 	}

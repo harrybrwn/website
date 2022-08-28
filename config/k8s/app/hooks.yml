@@ -7,7 +7,7 @@ spec:
     app: hooks
   ports:
   - port: 8889
-    targetPort: hooks-http
+    targetPort: http
     name: hooks-http-8889
 
 ---
@@ -27,6 +27,7 @@ spec:
       containers:
       - name: hooks
         image: 10.0.0.11:5000/harrybrwn/hooks:latest
+        imagePullPolicy: IfNotPresent
         resources:
           limits:
             memory: "128Mi"
@@ -42,9 +43,8 @@ spec:
           - configMapRef: { name: hooks-env-config }
           - secretRef: { name: hooks-env-secrets }
         ports:
-        - containerPort: 8889
-          name: hooks-http
-        imagePullPolicy: IfNotPresent
+        - name: http
+          containerPort: 8889
 
 ---
 apiVersion: v1

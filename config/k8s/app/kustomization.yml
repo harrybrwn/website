@@ -16,6 +16,7 @@ resources:
   - grafana.yml
   - telem/fluent-bit
   - telem/loki
+  - telem/prometheus
 
   #- registry/registry.yml
   #- geoip.yml

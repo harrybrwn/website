@@ -88,6 +88,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
 	r.Use(web.Metrics())
+	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		if GithubLoggedIn(r) {

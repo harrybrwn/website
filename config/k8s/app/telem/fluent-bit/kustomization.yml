@@ -2,3 +2,14 @@ resources:
   - daemonset.yml
   - configmap.yml
   - rbac.yml
+
+configMapGenerator:
+  - name: fluent-bit
+    namespace: kube-system
+    behavior: replace
+    files:
+      - config/fluent-bit.conf
+      - config/custom-parsers.conf
+      - config/kubernetes.conf
+      - config/systemd.conf
+      - config/node-exporter.conf

@@ -29,6 +29,9 @@ spec:
       containers:
       - name: db
         image: 10.0.0.11:5000/harrybrwn/postgres:latest
+        args:
+          - "-c"
+          - "log_line_prefix=%t [%p] "
         ports:
           - containerPort: 5432
             name: postgres

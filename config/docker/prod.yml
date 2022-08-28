@@ -54,8 +54,8 @@ services:
       - /etc/letsencrypt/live/hrry.me/fullchain.pem:/etc/harrybrwn/certs/hrry.me.crt:ro
       - /etc/letsencrypt/live/hrry.me/privkey.pem:/etc/harrybrwn/certs/hrry.me.key:ro
       # hrry.dev
-      - /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/harrybrwn/certs/hrry.dev.crt:ro
-      - /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/harrybrwn/certs/hrry.dev.key:ro
+      #- /etc/letsencrypt/live/hrry.dev/fullchain.pem:/etc/harrybrwn/certs/hrry.dev.crt:ro
+      #- /etc/letsencrypt/live/hrry.dev/privkey.pem:/etc/harrybrwn/certs/hrry.dev.key:ro
     environment:
       - REGISTRY_URL=https://registry.hrry.dev
     env_file:

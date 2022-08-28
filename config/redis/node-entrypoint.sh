@@ -3,6 +3,7 @@
 set -eu
 
 # Basic redis config
+# shellcheck disable=SC1091
 . /usr/local/share/redis/scripts/redis-env.sh
 
 # sentinel info for cluster node

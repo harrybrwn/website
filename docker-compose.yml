@@ -13,12 +13,14 @@ services:
       # <username>:<password>
       POSTGRES_USERS: "
         grafana:testbed02
-        db-backups:testbed03"
+        db-backups:testbed03
+        hydra:testbed04"
       # <database>:<owner>
       POSTGRES_DATABASES: "
         harrybrwn_api:harrybrwn
         harrybrwn_hooks:harrybrwn
-        grafana:grafana"
+        grafana:grafana
+        hydra:hydra"
     networks:
       - backend
     ports:
@@ -44,6 +46,9 @@ services:
     volumes:
       # Only use this if the cache stays on one machine
       - cache-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "ping"]
+      interval: 1m
 
   nginx:
     image: ${REGISTRY}/harrybrwn/nginx:latest
@@ -55,17 +60,14 @@ services:
         - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
     volumes:
       # harrybrwn.com
-      - ./config/pki/certs/harrybrwn.com/server.crt:/etc/harrybrwn/certs/harrybrwn.com.crt:ro
-      - ./config/pki/certs/harrybrwn.com/server.key:/etc/harrybrwn/certs/harrybrwn.com.key:ro
+      - ./config/pki/certs/harrybrwn.com.crt:/etc/harrybrwn/certs/harrybrwn.com.crt:ro
+      - ./config/pki/certs/harrybrwn.com.key:/etc/harrybrwn/certs/harrybrwn.com.key:ro
       # hrry.me
-      - ./config/pki/certs/hrry.local/server.crt:/etc/harrybrwn/certs/hrry.me.crt:ro
-      - ./config/pki/certs/hrry.local/server.key:/etc/harrybrwn/certs/hrry.me.key:ro
+      - ./config/pki/certs/hrry.me.crt:/etc/harrybrwn/certs/hrry.me.crt:ro
+      - ./config/pki/certs/hrry.me.key:/etc/harrybrwn/certs/hrry.me.key:ro
       # hrry.dev
-      - ./config/pki/certs/hrry.local/server.crt:/etc/harrybrwn/certs/hrry.dev.crt:ro
-      - ./config/pki/certs/hrry.local/server.key:/etc/harrybrwn/certs/hrry.dev.key:ro
-      # hryb.dev
-      #- ./config/pki/certs/hryb.local/server.crt:/etc/harrybrwn/hryb.dev.crt:ro
-      #- ./config/pki/certs/hryb.local/server.key:/etc/harrybrwn/hryb.dev.key:ro
+      - ./config/pki/certs/hrry.dev.crt:/etc/harrybrwn/certs/hrry.dev.crt:ro
+      - ./config/pki/certs/hrry.dev.key:/etc/harrybrwn/certs/hrry.dev.key:ro
     networks:
       backend:
         aliases:
@@ -109,6 +111,12 @@ services:
       - POSTGRES_DB=harrybrwn_api
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:8081/api/health/ready"]
+      timeout: 10s
+      interval: 1m
+      retries: 10
+      start_period: 2m
 
   hooks:
     image: ${REGISTRY}/harrybrwn/hooks:latest
@@ -116,10 +124,9 @@ services:
       context: .
       dockerfile: Dockerfile
       target: hooks
+    command: --port 8889
     networks:
       - backend
-    ports:
-      - 8889:8889
     env_file:
       - config/env/db.env
       - config/env/github.env
@@ -128,6 +135,12 @@ services:
       - POSTGRES_DB=harrybrwn_hooks
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8889/health/ready"]
+      timeout: 10s
+      interval: 1m
+      retries: 10
+      start_period: 2m
 
   backups:
     image: ${REGISTRY}/harrybrwn/backups:latest
@@ -135,6 +148,7 @@ services:
       target: backups
       context: .
       dockerfile: Dockerfile
+    command: --port 8082
     environment:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
@@ -145,40 +159,58 @@ services:
       - config/env/db.env
     networks:
       - backend
-    ports:
-      - 8082:8082
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8082/health/ready"]
+      timeout: 10s
+      interval: 1m
+      retries: 10
+      start_period: 2m
 
   geoip:
     image: ${REGISTRY}/harrybrwn/geoip:latest
     build:
       target: geoip
       context: .
+    command:
+      - "--port=8084"
+      - "--file=file:///opt/geoip/GeoLite2-City.mmdb"
+      - "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8084/health/ready"]
+      timeout: 10s
+      interval: 1m
 
   legacy-site:
     image: ${REGISTRY}/harrybrwn/legacy-site:latest
     build:
       target: legacy-site
       context: .
+    command: --port 8083
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8083/health/ready"]
+      timeout: 10s
+      interval: 1m
 
   vanity-imports:
     image: ${REGISTRY}/harrybrwn/vanity-imports:latest
     build:
       target: vanity-imports
       context: .
+    command: --port 8085
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost:8085/health/ready"]
+      timeout: 10s
+      interval: 1m
 
   registry:
-    image: ${REGISTRY}/harrybrwn/registry:latest
-    build:
-      context: .
-      dockerfile: config/registry/Dockerfile
-      args:
-        - REGISTRY_VERSION=2
+    image: registry:2
+    command: /etc/docker/registry/config.yml
     environment:
       - REGISTRY_LOG_LEVEL=debug
       - REGISTRY_AUTH=htpasswd
@@ -190,8 +222,15 @@ services:
       - config/env/minio.env
     secrets:
       - registry-htpasswd-file
+    configs:
+      - source: registry.yml
+        target: /etc/docker/registry/config.yml
     networks:
       - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "localhost:5000/"]
+      timeout: 10s
+      interval: 1m
 
   # TODO look at distributed config <https://docs.min.io/docs/deploy-minio-on-docker-compose.html>
   s3:
@@ -225,14 +264,39 @@ services:
     networks:
       - backend
 
+  hydra:
+    image: oryd/hydra:v1.11.10
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        wait.sh tcp://db:5432 -- hydra migrate sql -e -y
+        exec hydra serve all --config /hydra.yml
+    env_file:
+      - config/env/hydra.env
+    networks:
+      - backend
+    configs:
+      - source: hydra.yml
+        target: /hydra.yml
+      - source: wait.sh
+        target: /usr/local/bin/wait.sh
+    depends_on:
+      - db
+
   filestash:
     image: machines/filestash
     ports:
-      - "8334:8334"
+      - "8334"
     networks:
       - backend
     volumes:
       - filestash:/app/data/state
+    healthcheck:
+      test: ["CMD", "curl", "-f", "localhost:8334/healthz"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
 
   # TODO
   # https://github.com/toeverything/AFFiNE
@@ -254,3 +318,12 @@ secrets:
     file: ./config/registry/htpasswd
   nginx-prometheus-passwd:
     file: ./config/nginx/metrics.passwd
+
+configs:
+  registry.yml:
+    file: ./config/registry/config.yml
+  hydra.yml:
+    file: ./config/hydra/hydra.yml
+  # This is pretty weird... not best practice
+  wait.sh:
+    file: ./scripts/wait.sh

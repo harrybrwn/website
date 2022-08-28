@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -25,6 +26,8 @@ var (
 )
 
 func main() {
+	port := 8085
+	flag.IntVarP(&port, "port", "p", port, "port to run the server on")
 	flag.StringVar(&domain, "domain", domain, "domain for packages")
 	flag.StringVar(&repo, "repo", repo, "root package repo")
 	flag.Parse()
@@ -38,7 +41,8 @@ func main() {
 	r.Use(web.Metrics())
 	r.Get("/*", VanityImport(&v))
 	r.Handle("/metrics", web.MetricsHandler())
-	addr := ":8085"
+	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
+	addr := fmt.Sprintf(":%d", port)
 	if err := web.ListenAndServe(addr, r); err != nil {
 		logger.WithError(err).Fatal("listen and serve failed")
 	}

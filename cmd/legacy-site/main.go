@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/go-chi/chi/v5"
@@ -18,7 +20,9 @@ var logger = log.SetLogger(log.New(
 
 func main() {
 	templateDir := "frontend/templates"
+	port := 8083
 	flag.StringVar(&templateDir, "templates", templateDir, "directory containing template files")
+	flag.IntVarP(&port, "port", "p", port, "port to run the server on")
 	flag.Parse()
 
 	templates := os.DirFS(templateDir)
@@ -27,7 +31,8 @@ func main() {
 	r := chi.NewRouter()
 	g := auth.Guard(jwtConf)
 	r.With(g).Get("/old", app.OldHomepageHandler(templates).ServeHTTP)
-	if err := web.ListenAndServe(":8083", r); err != nil {
+	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
+	if err := web.ListenAndServe(fmt.Sprintf(":%d", port), r); err != nil {
 		logger.WithError(err).Fatal("listen and serve failed")
 	}
 }

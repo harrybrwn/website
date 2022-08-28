@@ -2,8 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluent-bit
-  # namespace: fluentbit-system
   namespace: kube-system
+  labels:
+    app.kubernetes.io/name: fluent-bit
+    app.kubernetes.io/component: sidecar
+    app.kubernetes.io/part-of: hrry.me
 data:
   fluent-bit.conf: |
     [SERVICE]
@@ -13,11 +16,13 @@ data:
         #Log_Level debug
         #Storage metrics at /api/v1/storage
         #Storage.metrics on
-        Parsers_File /fluent-bit/etc/custom_parsers.conf
+        Parsers_File /fluent-bit/etc/custom-parsers.conf
         Parsers_File /fluent-bit/etc/parsers.conf
-
     @INCLUDE node-exporter.conf
+    @INCLUDE systemd.conf
+    @INCLUDE kubernetes.conf
 
+  kubernetes.conf: |
     [INPUT]
         Name tail
         Path /var/log/containers/*.log
@@ -27,12 +32,6 @@ data:
         Tag             kube.*
         Mem_Buf_Limit   5MB
         Skip_Long_Lines On
-    [INPUT]
-        Name systemd
-        Tag host.*
-        Systemd_Filter _SYSTEMD_UNIT=kubelet.service
-        Systemd_Filter _SYSTEMD_UNIT=docker.service
-        Read_From_Tail On
 
     [FILTER]
         Name        kubernetes
@@ -49,19 +48,52 @@ data:
         Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
 
-    @INCLUDE nginx-filters.conf
+    [FILTER]
+        Name         parser
+        Parser       nginx-error
+        Match        kube.var.log.containers.nginx*
+        Key_Name     log
+        Reserve_Data true
+    [FILTER]
+        Name     geoip2
+        Match    kube.var.log.containers.nginx*
+        Database /opt/GeoLite2-ASN.mmdb
+        Lookup_Key remote_addr
+        Record     as_org remote_addr %{autonomous_system_organization}
+        Record     asn    remote_addr %{autonomous_system_number}
+    [FILTER]
+        Name     geoip2
+        Match    kube.var.log.containers.nginx*
+        Database /opt/GeoLite2-City.mmdb
+        Lookup_Key            remote_addr
+        Record city           remote_addr %{city.names.en}
+        Record country_code   remote_addr %{country.iso_code}
+        Record continent_code remote_addr %{continent.code}
+        Record latitude       remote_addr %{location.latitude}
+        Record longitude      remote_addr %{location.longitude}
+        Record loc_radius     remote_addr %{location.accuracy_radius}
 
     [FILTER]
         Name         parser
         Match        kube.var.log.containers.fluent-bit*
         Parser       fluent-bit
         Key_Name     log
+        # Don't delete the fields that were already there.
         Reserve_Data true
+    [FILTER]
+        Name         parser
+        Match        kube.var.log.containers.db*
+        Parser       postgres
+        Key_Name     log
+        # Don't delete the fields that were already there.
+        Reserve_Data true
+        # Keep the 'log' field
+        Preserve_Key true
 
     [OUTPUT]
         Name        loki
         Match       kube.*
-        labels      job=k8s
+        labels      job=k8s, k8s_host=$kubernetes['host'], k8s_namespace=$kubernetes['namespace_name'], k8s_container_name=$kubernetes['container_name'], k8s_container_image=$kubernetes['container_image']
         host        loki.default.svc.cluster.local
         port        3100
         http_user   admin
@@ -69,7 +101,15 @@ data:
         tls         off
         tls.verify  off
         auto_kubernetes_labels on
-        label_keys             $kubernetes['host'],$kubernetes['container_image']
+        # label_keys             $kubernetes['host'],$kubernetes['container_image']
+
+  systemd.conf: |
+    [INPUT]
+        Name systemd
+        Tag host.*
+        Systemd_Filter _SYSTEMD_UNIT=kubelet.service
+        Systemd_Filter _SYSTEMD_UNIT=docker.service
+        Read_From_Tail On
     [OUTPUT]
         Name        loki
         Match       host.*
@@ -80,9 +120,6 @@ data:
         http_passwd admin
         tls         off
         tls.verify  off
-    #[OUTPUT]
-    #    Name stdout
-    #    Match kube.var.log.containers.*
 
   custom_parsers.conf: |
     [PARSER]
@@ -127,6 +164,12 @@ data:
         Regex       ^\[(?<time>.*?)\][ ]+\[[ ]*(?<level>debug|info|warn|error)\][ ]+\[?(?<source>.*?)?\]?[ ]*(?<message>.*?)[\n]*$
         Time_Key    time
         Time_Format %Y/%m/%d %H:%M:%S
+    [PARSER]
+        Name        postgres
+        Format      regex
+        Regex       ^(?<time>\d{4}-\d{2}-\d{2} \d{1,2}:\d{1,2}:\d{1,2} [A-Z]+?) \[(?<pid>\d+?)\] (?<level>DEBUG[1-5]{0,1}|INFO|NOTICE|WARNING|ERROR|LOG|FATAL|PANIC)?(?<statement>STATEMENT)?:[ ]+(?<message>.*)[\n]*$
+        Time_Key    time
+        Time_Format %Y-%m-%d %H:%M:%S %Z
 
   node-exporter.conf: |
     [INPUT]
@@ -141,31 +184,5 @@ data:
         Host      0.0.0.0
         Port      2021
         add_label hostname ${HOSTNAME}
-
-  nginx-filters.conf: |
-    [FILTER]
-        Name         parser
-        Parser       nginx-error
-        Match        kube.var.log.containers.nginx*
-        Key_Name     log
-        Reserve_Data true
-    [FILTER]
-        Name     geoip2
-        Match    kube.var.log.containers.nginx*
-        Database /opt/GeoLite2-ASN.mmdb
-        Lookup_Key remote_addr
-        Record     as_org remote_addr %{autonomous_system_organization}
-        Record     asn    remote_addr %{autonomous_system_number}
-    [FILTER]
-        Name     geoip2
-        Match    kube.var.log.containers.nginx*
-        Database /opt/GeoLite2-City.mmdb
-        Lookup_Key            remote_addr
-        Record city           remote_addr %{city.names.en}
-        Record country_code   remote_addr %{country.iso_code}
-        Record continent_code remote_addr %{continent.code}
-        Record latitude       remote_addr %{location.latitude}
-        Record longitude      remote_addr %{location.longitude}
-        Record loc_radius     remote_addr %{location.accuracy_radius}
 
   streams.conf: ''

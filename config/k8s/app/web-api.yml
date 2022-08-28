@@ -7,7 +7,7 @@ spec:
     app: web-api
   ports:
     - port: 8081
-      targetPort: web-api
+      targetPort: http
       name: web-api-http
 
 ---
@@ -27,13 +27,16 @@ spec:
       containers:
         - name: web-api
           image: 10.0.0.11:5000/harrybrwn/api:latest
+          imagePullPolicy: IfNotPresent
           resources:
             limits:
               memory: "128Mi"
               cpu: "500m"
+          args:
+            - --port=8081
           ports:
             - containerPort: 8081
-              name: web-api
+              name: http
           env:
             - name: ENV
               valueFrom:
@@ -44,7 +47,7 @@ spec:
             - { name: REDIS_HOST,    value: redis }
             - { name: REDIS_SENTINEL_HOST, value: sentinel }
             - { name: REDIS_SENTINEL_PORT, value: '26379' }
-            - { name: REDIS_SENTINEL_MASTER_NAME,   value: rdbmaster }
+            - { name: REDIS_SENTINEL_MASTER_NAME, value: rdbmaster }
             - { name: POSTGRES_HOST, value: db }
             - { name: POSTGRES_PORT, value: '5432' }
             - { name: POSTGRES_DB,   value: harrybrwn_api }
@@ -64,7 +67,6 @@ spec:
                 secretKeyRef:
                   name: web-api-secrets
                   key: sendgrid-api-key
-          imagePullPolicy: IfNotPresent
 
 ---
 apiVersion: v1

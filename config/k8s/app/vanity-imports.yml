@@ -1,3 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vanity-imports
+spec:
+  selector:
+    app: vanity-imports
+  ports:
+  - port: 8085
+    targetPort: http
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

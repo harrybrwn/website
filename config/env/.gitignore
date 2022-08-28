@@ -19,3 +19,4 @@ nginx-passwd.env
 !minio.env
 !db-backup.env
 !jwt.env
+!hydra.env

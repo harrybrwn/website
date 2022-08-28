@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Basic
 export REDIS_PORT="${REDIS_PORT:-6379}"
 export REDIS_PASSWORD="${REDIS_PASSWORD:-}"

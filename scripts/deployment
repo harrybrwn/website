@@ -55,7 +55,7 @@ usage() {
 	echo "      --dev                  run for development environment (default: $DEV)"
 	echo "      --dry-run              print the docker-compose command but don't run it (default: $DRY)"
 	echo "      --stack <name>         docker stack name (default: \"$STACK\")"
-	echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[@]})"
+	echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[*]})"
 	echo
 }
 
@@ -102,7 +102,7 @@ while [ $# -gt 0 ]; do
       DRY=true
       shift
       ;;
-		-*|--*)
+		-*)
 			echo "Error: unknown flag \"$1\""
 			exit 1
 			;;
@@ -151,7 +151,7 @@ secret_exists() {
 
 dodocker() {
 	if $DRY; then
-		echo "docker $@"
+		echo "docker $*"
 	else
 		docker "$@"
 	fi
@@ -159,7 +159,7 @@ dodocker() {
 
 dodocker-compose() {
 	if $DRY; then
-		echo "docker-compose $@"
+		echo "docker-compose $*"
 	else
 		docker-compose "$@"
 	fi
@@ -207,7 +207,7 @@ deploy() {
 				--compose-file -       \
 				"${STACK}"
 	else
-		docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+		docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
 			docker --context "${CONTEXT}" stack deploy \
 				--resolve-image=always \
 				--with-registry-auth   \
@@ -241,8 +241,8 @@ upload() {
 	if $DEV; then
 		target="hrrylocal"
 	fi
-	mc mirror --remove --preserve ./build $target/frontend/latest/
-	mc mirror --remove --preserve ./build $target/frontend/git:${GIT_COMMIT}/
+	mc mirror --remove --preserve ./build "$target/frontend/latest/"
+	mc mirror --remove --preserve ./build "$target/frontend/git:${GIT_COMMIT}/"
 }
 
 for arg in "${ARGS[@]}"; do
@@ -275,13 +275,13 @@ for arg in "${ARGS[@]}"; do
 		bake)
       COMPOSE_ARGS+=(--file config/docker-compose.tools.yml)
 			if $DRY; then
-				echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
+				echo docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
 					docker --context default buildx bake \
 						--file - \
 						--file config/docker/buildx.yml \
 						--push
 			else
-				docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config | \
+				docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
 					docker --context default buildx bake \
 						--file - \
 						--file config/docker/buildx.yml \
@@ -291,13 +291,13 @@ for arg in "${ARGS[@]}"; do
 			;;
 		provision)
 			go build -trimpath -o bin/provision ./cmd/provision
-			CONFIGS=(--config=config/provision.json)
+			CONFIGS=('--config=config/provision.json')
 			if $DEV; then
 				source ./config/env/minio.env
-				CONFIGS+=(--config=config/provision.dev.json)
+				CONFIGS+=('--config=config/provision.dev.json')
 			else
 				source ./config/env/prod/minio.env
-				CONFIGS+=(--config=config/provision.prod.json)
+				CONFIGS+=('--config=config/provision.prod.json')
 			fi
 			export S3_ENDPOINT
 			export S3_ACCESS_KEY="${MINIO_ROOT_USER}"
@@ -311,7 +311,7 @@ for arg in "${ARGS[@]}"; do
       break
       ;;
 		*)
-			dodocker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+			dodocker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
 			break
 			;;
 	esac

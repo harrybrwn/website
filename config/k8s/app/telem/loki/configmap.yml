@@ -68,7 +68,7 @@ data:
         s3forcepathstyle: true
       index_queries_cache_config:
         redis:
-          endpoint: sentinel-0:26379,sentinel-1:26379,sentinel-2:26379
+          endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
           master_name: ${REDIS_SENTINEL_MASTER_NAME}
           #endpoint: redis:6379
           password: ${REDIS_PASSWORD}
@@ -78,11 +78,13 @@ data:
     #   chunk_cache_config:
     #     redis:
     #       endpoint: redis:6379
+    #       #master_name: ${REDIS_SENTINEL_MASTER_NAME}
     #       password: ${REDIS_PASSWORD}
     #       expiration: 12h
     #   write_dedupe_cache_config:
     #     redis:
     #       endpoint: redis:6379
+    #       #master_name: ${REDIS_SENTINEL_MASTER_NAME}
     #       password: ${REDIS_PASSWORD}
     #       expiration: 12h
 
@@ -91,7 +93,9 @@ data:
       results_cache:
         cache:
           redis:
-            endpoint: redis:6379
+            #endpoint: redis:6379
+            endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
+            master_name: ${REDIS_SENTINEL_MASTER_NAME}
             password: ${REDIS_PASSWORD}
             expiration: 1h
 

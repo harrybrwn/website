@@ -1,19 +1,25 @@
 #!/bin/sh
 
 log() {
-	local t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
-	local level=info
-	echo "{\"time\":\"${t}\",\"level\":\"${level}\",\"message\":\"$@\"}"
+	t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
+	_log_level=info
+	echo "{\"time\":\"${t}\",\"level\":\"${_log_level}\",\"message\":\"$*\"}"
+  unset _log_level
+  unset t
 }
 
 error() {
-	local t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
-	local level=error
-	echo "{\"time\":\"${t}\",\"level\":\"${level}\",\"message\":\"$@\"}" 1>&2
+	t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
+	_log_level=error
+	echo "{\"time\":\"${t}\",\"level\":\"${_log_level}\",\"message\":\"$*\"}" 1>&2
+  unset _log_level
+  unset t
 }
 
 fatal() {
-	local t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
-	local level=fatal
-	echo "{\"time\":\"${t}\",\"level\":\"${level}\",\"message\":\"$@\"}" 1>&2
+	t="$(date '+%Y-%m-%dT%H:%M:%SZ' --utc)"
+	_log_level=fatal
+	echo "{\"time\":\"${t}\",\"level\":\"${_log_level}\",\"message\":\"$*\"}" 1>&2
+  unset _log_level
+  unset t
 }

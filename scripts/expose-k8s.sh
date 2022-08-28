@@ -21,9 +21,16 @@ kubectl port-forward svc/grafana 3000:3000 &
 pids+=($!)
 
 echo "running ${pids[@]}"
-echo "to stop, press <enter>"
-read -r line
-for pid in "${pids[@]}"; do
-  echo "killing ${pid}"
-  kill -9 "${pid}"
-done
+
+stopall() {
+  for pid in "${pids[@]}"; do
+    echo "killing ${pid}"
+    kill -9 "${pid}"
+  done
+}
+trap stopall SIGINT
+wait
+
+# echo "to stop, press <enter>"
+# read -n1 line
+# stopall

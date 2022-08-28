@@ -1,5 +1,15 @@
 version: "3.8"
 
+configs:
+  fluent-bit.conf:
+    file: ./config/logging/fluent-bit/fluent-bit.conf
+  fluent-bit-parsers:
+    file: ./config/logging/fluent-bit/parsers.conf
+  prometheus.yml:
+    file: ./config/logging/prometheus.yml
+  loki.yml:
+    file: ./config/logging/loki.yml
+
 services:
 
   fluentbit:
@@ -28,6 +38,11 @@ services:
       - /sys:/mnt/host/sys:ro
     environment:
       - ENV=dev
+    configs:
+      - source: fluent-bit.conf
+        target: /fluent-bit/etc/fluent-bit.conf
+      - source: fluent-bit-parsers
+        target: /fluent-bit/etc/parsers.conf
 
   # TODO configure read/write replicas for scalability <https://gist.github.com/wardbekker/6abde118f530a725e60acb5adb04508a>
   loki:
@@ -43,8 +58,8 @@ services:
       - "-log.format=${LOG_FORMAT:-json}"
       - "-log.level=${LOG_LEVEL:-warn}"
     ports:
-      - "3100:3100"
-      - "9096:9096" # grpc
+      - "3100"
+      - "9096" # grpc
     env_file:
       - config/env/db.env
       - config/env/loki.env
@@ -65,14 +80,17 @@ services:
       dockerfile: config/docker/Dockerfile.grafana
       args:
         - GRAFANA_VERSION=latest
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        wait.sh db:5432 -- echo
+        exec /run.sh
     ports:
       - "3000:3000"
     environment:
       - GF_DATABASE_TYPE=postgres
       - GF_DATABASE_HOST=db:5432
       - GF_DATABASE_NAME=grafana
-      # - GF_SERVER_CERT_FILE=/etc/hrry.dev/server.crt
-      # - GF_SERVER_CERT_KEY=/etc/hrry.dev/server.key
       - GF_SERVER_PROTOCOL=http # use h2 or https in the future
       - GF_SERVER_ENFORCE_DOMAIN=false
       - GF_LOG_CONSOLE_FORMAT=json
@@ -80,18 +98,11 @@ services:
       - config/env/db.env
     volumes:
       - grafana:/var/lib/grafana
-      # - ./config/pki/certs/hrry.local/server.crt:/etc/hrry.dev/server.crt:ro
-      # - ./config/pki/certs/hrry.local/server.key:/etc/hrry.dev/server.key:ro
     networks:
       - backend
 
   prometheus:
-    image: ${REGISTRY}/harrybrwn/prometheus:latest
-    build:
-      context: .
-      dockerfile: config/docker/Dockerfile.prometheus
-      args:
-        - PROMETHEUS_VERSION=v2.35.0
+    image: prom/prometheus:v2.35.0
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -105,6 +116,9 @@ services:
       - 9090:9090
     volumes:
       - prometheus:/prometheus
+    configs:
+      - source: prometheus.yml
+        target: /etc/prometheus/prometheus.yml
     logging:
       driver: fluentd
       options:

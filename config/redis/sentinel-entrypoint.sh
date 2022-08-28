@@ -2,30 +2,32 @@
 
 set -eu
 
+# shellcheck disable=SC1091
 . /usr/local/share/redis/scripts/lib.sh
 
 find_master_node() {
-	local MASTER=""
-	for node in ${REDIS_SENTINEL_REDIS_HOSTS//,/ }; do
-		local host="$(echo ${node} | cut -d ':' -f1)"
-		local port="$(echo ${node} | cut -d ':' -f1)"
+	_MASTER=""
+  _nodes="$(echo "${REDIS_SEINTINEL_REDIS_HOSTS}" | sed -e 's/,/ /g')"
+	for node in ${_nodes}; do
+		host="$(echo "${node}" | cut -d ':' -f1)"
+		port="$(echo "${node}" | cut -d ':' -f1)"
 		if [ -z "${host}" ]; then
 			error "cannot ping empty redis node hostname"
 			return 1
 		fi
-		if [ -z "${port}" -o "${port}" = "${host}" ]; then
+		if [ -z "${port}" ] || [ "${port}" = "${host}" ]; then
 			port="${REDIS_PORT}"
 		fi
-		MASTER="$(redis-cli --no-auth-warning \
-			--raw -h ${host} -p ${port} -a ${REDIS_PASSWORD} \
+		_MASTER="$(redis-cli --no-auth-warning \
+			--raw -h "${host}" -p "${port}" -a "${REDIS_PASSWORD}" \
 			info replication \
 			| awk '{print $1}' \
 			| grep 'master_host:' \
 			| cut -d ':' -f2)"
-		if [ -z "${MASTER}" ]; then
+		if [ -z "${_MASTER}" ]; then
 			continue
 		else
-			echo "${MASTER}:${port}"
+			echo "${_MASTER}:${port}"
 			return 0
 		fi
 	done
@@ -33,7 +35,9 @@ find_master_node() {
 	return 1
 }
 
+# shellcheck disable=SC1091
 . /usr/local/share/redis/scripts/redis-env.sh
+# shellcheck disable=SC1091
 . /usr/local/share/redis/scripts/sentinel-env.sh
 
 # validate variables
@@ -55,14 +59,12 @@ fi
 
 WAIT=1
 TIMEOUT=30
-TIMEOUT_END=$(($(date +%s) + $TIMEOUT))
+TIMEOUT_END=$(($(date +%s) + TIMEOUT))
 
 MASTER=""
-while [ $(date +%s) -lt ${TIMEOUT_END} ]; do
-	if [ $(date +%s) -ge ${TIMEOUT_END} ]; then
-		break
-	fi
+while [ "$(date +%s)" -lt ${TIMEOUT_END} ]; do
 	MASTER="$(find_master_node)"
+  # shellcheck disable=SC2181
 	if [ $? -ne 0 ]; then
 		sleep ${WAIT}
 		continue
@@ -75,8 +77,8 @@ if [ -z "${MASTER}" ]; then
 	fatal "failed to find master node"
 	exit 1
 fi
-master_host="$(echo ${MASTER} | cut -d ':' -f1)"
-master_port="$(echo ${MASTER} | cut -d ':' -f2)"
+master_host="$(echo "${MASTER}" | cut -d ':' -f1)"
+master_port="$(echo "${MASTER}" | cut -d ':' -f2)"
 if [ "${master_port}" = "${master_host}" ]; then
 	master_port="${REDIS_PORT}"
 fi

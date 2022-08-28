@@ -2,6 +2,11 @@ version: "3.8"
 
 services:
   nginx:
+    healthcheck:
+      test: ["CMD", "curl", "-fI", "localhost/health/ready"]
+      interval: 1m
+      timeout: 10s
+      retries: 5
     depends_on:
       - fluentbit
   db:
@@ -21,21 +26,11 @@ services:
     depends_on:
       - fluentbit
   api:
-    healthcheck:
-      test: ["CMD", "curl", "-f", "localhost:8081/api/health/ready"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
     depends_on:
       - fluentbit
       - db
       - redis
   backups:
-    healthcheck:
-      test: ["CMD", "curl", "-fI", "localhost:8082/health/ready"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
     depends_on:
       - fluentbit
       - db
@@ -65,16 +60,22 @@ services:
       timeout: 2s
       retries: 8
   grafana:
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "--spider", "localhost:3000/api/health"]
+      timeout: 10s
+      interval: 1m
+      retries: 10
+      start_period: 2m
     depends_on:
       - fluentbit
       - loki
       - prometheus
       - db
   prometheus:
-    # healthcheck:
-    #   test: wget -q -O- localhost:9090/-/ready|grep -E '^Prometheus is ready.$'
-    #   interval: 10s
-    #   retries: 5
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "--spider", "localhost:9090/-/ready"]
+      interval: 10s
+      retries: 5
     depends_on:
       - fluentbit
   loki:
