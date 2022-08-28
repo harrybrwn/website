@@ -219,6 +219,10 @@ jobs:
 
       - name: Generate test certs
         run: scripts/certs.sh --no-install
+      - name: Testing env file
+        run: |
+          echo "GITHUB_CLIENT_ID=abcdefg" > ./config/env/github.env
+          echo "GITHUB_CLIENT_SECRET=abcdefg" >> ./config/env/github.env
 
       - name: Set up QEMU
         id: qemu
