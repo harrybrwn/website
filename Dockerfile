@@ -30,7 +30,7 @@ COPY frontend/api frontend/api
 RUN yarn install
 COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN yarn workspaces run build
-COPY . .
+COPY ./cmd/hooks/*.html ./cmd/hooks/
 
 #
 # Golang builder
@@ -47,8 +47,6 @@ ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
-COPY cmd/vanity-imports cmd/vanity-imports
-RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 COPY app app/
 COPY cmd/proxy cmd/proxy
 RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
@@ -74,6 +72,10 @@ RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
 FROM builder as geoip-builder
 COPY cmd/geoip cmd/geoip
 RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
+
+FROM builder as vanity-imports-builder
+COPY cmd/vanity-imports cmd/vanity-imports
+RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 
 FROM builder as provision-builder
 COPY cmd/provision cmd/provision
@@ -128,7 +130,7 @@ CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/Ge
 # Go package vanity imports
 #
 FROM service as vanity-imports
-COPY --from=builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
+COPY --from=vanity-imports-builder /opt/harrybrwn/bin/vanity-imports /usr/local/bin/
 ENTRYPOINT ["vanity-imports"]
 
 #

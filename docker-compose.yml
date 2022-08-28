@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   db:
-    image: ${REGISTRY}/harrybrwn/postgres:latest
+    image: ${REGISTRY}/harrybrwn/postgres:${VERSION:-latest}
     build:
       context: config/docker/postgres
       dockerfile: Dockerfile
@@ -31,7 +31,7 @@ services:
       - config/env/db.env
 
   redis:
-    image: ${REGISTRY}/harrybrwn/redis:latest
+    image: ${REGISTRY}/harrybrwn/redis:${VERSION:-latest}
     build:
       context: .
       dockerfile: config/redis/Dockerfile
@@ -51,7 +51,7 @@ services:
       interval: 1m
 
   nginx:
-    image: ${REGISTRY}/harrybrwn/nginx:latest
+    image: ${REGISTRY}/harrybrwn/nginx:${VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -86,7 +86,7 @@ services:
       - CATALOG_ELEMENTS_LIMIT=15
 
   api:
-    image: ${REGISTRY}/harrybrwn/api:latest
+    image: ${REGISTRY}/harrybrwn/api:${VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -119,7 +119,7 @@ services:
       start_period: 2m
 
   hooks:
-    image: ${REGISTRY}/harrybrwn/hooks:latest
+    image: ${REGISTRY}/harrybrwn/hooks:${VERSION:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -143,7 +143,7 @@ services:
       start_period: 2m
 
   backups:
-    image: ${REGISTRY}/harrybrwn/backups:latest
+    image: ${REGISTRY}/harrybrwn/backups:${VERSION:-latest}
     build:
       target: backups
       context: .
@@ -167,7 +167,7 @@ services:
       start_period: 2m
 
   geoip:
-    image: ${REGISTRY}/harrybrwn/geoip:latest
+    image: ${REGISTRY}/harrybrwn/geoip:${VERSION:-latest}
     build:
       target: geoip
       context: .
@@ -183,7 +183,7 @@ services:
       interval: 1m
 
   legacy-site:
-    image: ${REGISTRY}/harrybrwn/legacy-site:latest
+    image: ${REGISTRY}/harrybrwn/legacy-site:${VERSION:-latest}
     build:
       target: legacy-site
       context: .
@@ -196,7 +196,7 @@ services:
       interval: 1m
 
   vanity-imports:
-    image: ${REGISTRY}/harrybrwn/vanity-imports:latest
+    image: ${REGISTRY}/harrybrwn/vanity-imports:${VERSION:-latest}
     build:
       target: vanity-imports
       context: .
@@ -234,7 +234,7 @@ services:
 
   # TODO look at distributed config <https://docs.min.io/docs/deploy-minio-on-docker-compose.html>
   s3:
-    image: ${REGISTRY}/harrybrwn/s3:latest
+    image: ${REGISTRY}/harrybrwn/s3:${VERSION:-latest}
     build:
       context: ./config
       dockerfile: docker/minio/Dockerfile
@@ -265,7 +265,7 @@ services:
       - backend
 
   hydra:
-    image: oryd/hydra:v1.11.10
+    image: oryd/hydra:v1.11.8
     entrypoint: ["sh", "-c"]
     command:
       - |
@@ -280,6 +280,9 @@ services:
         target: /hydra.yml
       - source: wait.sh
         target: /usr/local/bin/wait.sh
+    environment:
+      - HYDRA_URL=http://hydra:4444
+      - HYDRA_ADMIN_URL=http://hydra:4445
     depends_on:
       - db
 

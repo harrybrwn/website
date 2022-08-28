@@ -210,7 +210,7 @@ jobs:
             ./files/mmdb
       - name: Download GeoLite2
         if: steps.geo-lite2-dl.outputs.cache-hit != 'true'
-        run:
+        run: |
           mkdir -p ./files/mmdb
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-ASN.mmdb ./files/mmdb/
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-City.mmdb ./files/mmdb/

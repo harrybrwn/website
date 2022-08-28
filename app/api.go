@@ -17,6 +17,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
+	hydra "github.com/ory/hydra-client-go"
 	"github.com/pkg/errors"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -55,17 +56,23 @@ func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 }
 
 type TokenService struct {
-	Tokens auth.TokenStore
-	Users  UserStore
-	Config auth.TokenConfig
+	Tokens     auth.TokenStore
+	Users      UserStore
+	Config     auth.TokenConfig
+	HydraAdmin hydra.AdminApi
 }
 
 func (ts *TokenService) Token(c echo.Context) error {
 	var (
 		err  error
-		body Login
-		req  = c.Request()
-		ctx  = req.Context()
+		body struct {
+			Login
+			LoginChallenge string `json:"login_challenge"`
+			Remember       bool   `json:"remember"`
+		}
+		// body Login
+		req = c.Request()
+		ctx = req.Context()
 	)
 	switch err = c.Bind(&body); err {
 	case nil:
@@ -85,11 +92,19 @@ func (ts *TokenService) Token(c echo.Context) error {
 		return err
 	}
 	logger.Info("getting token")
-	u, err := ts.Users.Login(ctx, &body)
+	u, err := ts.Users.Login(ctx, &body.Login)
 	if err != nil {
 		return echo.ErrNotFound.SetInternal(errors.Wrap(err, "failed to login"))
 	}
 
+	if len(body.LoginChallenge) > 0 {
+		_, _, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
+			LoginChallenge(body.LoginChallenge).
+			Execute()
+		if err != nil {
+			return echo.ErrInternalServerError
+		}
+	}
 	claims := u.NewClaims()
 	// Generate both a new access token and refresh token.
 	resp, err := auth.NewTokenResponse(ts.Config, claims)

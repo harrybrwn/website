@@ -3,20 +3,27 @@ import { isEmail } from "~/frontend/util/email";
 import { Token, Login, login } from "@hrry.me/api/auth";
 import { applyTheme } from "~/frontend/components/theme";
 
+console.log("hello");
 const main = () => {
-  applyTheme();
+  try {
+    applyTheme();
+  } catch (err) {}
   let form = document.getElementById("login-form") as HTMLFormElement;
   if (form == null) {
     throw new Error("could not find login form");
   }
+  const params = new URLSearchParams(window.location.search);
+
   form.addEventListener("submit", (ev: SubmitEvent) => {
     ev.preventDefault();
     let d = new FormData(ev.target as HTMLFormElement);
     let ident = d.get("identifier") as string;
-    let req: Login = {
+    let req = {
       password: d.get("password") as string,
       email: "",
       username: "",
+      login_challenge: params.get("login_challenge"),
+      consent_challenge: params.get("consent_challenge"),
     };
     if (isEmail(ident)) {
       req.email = ident;

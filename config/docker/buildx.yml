@@ -7,6 +7,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/api:latest
+          - ${REGISTRY}/harrybrwn/api:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/api:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/api:${GIT_BRANCH}
         platforms:
@@ -18,6 +19,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/hooks:latest
+          - ${REGISTRY}/harrybrwn/hooks:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/hooks:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/hooks:${GIT_BRANCH}
         platforms:
@@ -29,6 +31,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/backups:latest
+          - ${REGISTRY}/harrybrwn/backups:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/backups:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/backups:${GIT_BRANCH}
         platforms:
@@ -40,6 +43,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/geoip:latest
+          - ${REGISTRY}/harrybrwn/geoip:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/geoip:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/geoip:${GIT_BRANCH}
         platforms:
@@ -51,6 +55,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/vanity-imports:latest
+          - ${REGISTRY}/harrybrwn/vanity-imports:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_BRANCH}
         platforms:
@@ -62,6 +67,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/legacy-site:latest
+          - ${REGISTRY}/harrybrwn/legacy-site:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/legacy-site:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/legacy-site:${GIT_BRANCH}
         platforms:
@@ -73,6 +79,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/grafana:latest
+          - ${REGISTRY}/harrybrwn/grafana:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/grafana:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/grafana:${GIT_BRANCH}
         platforms:
@@ -84,6 +91,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/fluent-bit:latest
+          - ${REGISTRY}/harrybrwn/fluent-bit:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/fluent-bit:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/fluent-bit:${GIT_BRANCH}
         platforms:
@@ -95,6 +103,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/loki:latest
+          - ${REGISTRY}/harrybrwn/loki:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/loki:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/loki:${GIT_BRANCH}
         platforms:
@@ -106,6 +115,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/registry:latest
+          - ${REGISTRY}/harrybrwn/registry:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/registry:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/registry:${GIT_BRANCH}
         platforms:
@@ -117,6 +127,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/s3:latest
+          - ${REGISTRY}/harrybrwn/s3:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/s3:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/s3:${GIT_BRANCH}
         platforms:
@@ -127,6 +138,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/redis:latest
+          - ${REGISTRY}/harrybrwn/redis:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/redis:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/redis:${GIT_BRANCH}
         platforms:
@@ -138,6 +150,7 @@ services:
       x-bake:
         tags:
           - ${REGISTRY}/harrybrwn/prometheus:latest
+          - ${REGISTRY}/harrybrwn/prometheus:${VERSION:-latest}
           - ${REGISTRY}/harrybrwn/prometheus:${GIT_COMMIT}
           - ${REGISTRY}/harrybrwn/prometheus:${GIT_BRANCH}
         platforms:

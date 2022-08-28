@@ -17,6 +17,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
+	hydra "github.com/ory/hydra-client-go"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -122,6 +123,14 @@ func main() {
 		Config: jwtConf,
 		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
 		Users:  userStore,
+		HydraAdmin: hydra.NewAPIClient(&hydra.Configuration{
+			DefaultHeader: make(map[string]string),
+			UserAgent:     "hrry/api",
+			Debug:         false,
+			Servers: hydra.ServerConfigurations{
+				{URL: "http://hydra:4445"},
+			},
+		}).AdminApi,
 	}
 	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)

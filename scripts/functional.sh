@@ -76,7 +76,7 @@ readonly SERVICES=("db" "redis" "nginx" "api" "hooks" "legacy-site" "geoip" "van
 #############
 
 compose() {
-  docker-compose -f docker-compose.yml -f config/docker-compose.test.yml "$@"
+  docker compose -f docker-compose.yml -f config/docker-compose.test.yml "$@"
 }
 
 running() {

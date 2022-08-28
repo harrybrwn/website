@@ -13,7 +13,7 @@ configs:
 services:
 
   fluentbit:
-    image: ${REGISTRY}/harrybrwn/fluent-bit:latest
+    image: ${REGISTRY}/harrybrwn/fluent-bit:${VERSION:-latest}
     build:
       context: .
       dockerfile: config/docker/Dockerfile.fluentbit
@@ -46,7 +46,7 @@ services:
 
   # TODO configure read/write replicas for scalability <https://gist.github.com/wardbekker/6abde118f530a725e60acb5adb04508a>
   loki:
-    image: ${REGISTRY}/harrybrwn/loki:latest
+    image: ${REGISTRY}/harrybrwn/loki:${VERSION:-latest}
     build:
       context: .
       dockerfile: config/docker/Dockerfile.loki
@@ -74,7 +74,7 @@ services:
         fluentd-async: "true"
 
   grafana:
-    image: ${REGISTRY}/harrybrwn/grafana:latest
+    image: ${REGISTRY}/harrybrwn/grafana:${VERSION:-latest}
     build:
       context: .
       dockerfile: config/docker/Dockerfile.grafana

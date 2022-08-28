@@ -113,7 +113,7 @@ expose-k8s:
 	scripts/expose-k8s.sh
 
 bake:
-	scripts/deployment bake
+	scripts/deployment --prod bake
 
 deploy:
 	scripts/deployment --stack harrybrwn up
@@ -129,3 +129,14 @@ deploy-infra:
 		infra
 
 .PHONY: bake deploy deploy-dev
+
+oidc-client:
+	docker compose run                             \
+		--entrypoint hydra                         \
+		--rm hydra clients create                  \
+			--id testid                            \
+			--callbacks 'https://hrry.local/login' \
+			--grant-types code,id_token            \
+			--scope openid,offline                 \
+			--token-endpoint-auth-method none
+

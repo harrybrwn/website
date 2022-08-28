@@ -3,21 +3,27 @@
 serve:
   cookies:
     same_site_mode: Lax
-  admin:
-    tls:
-      enabled: false
   tls:
     allow_termination_from:
       - "10.0.0.0/8"
       - "172.16.0.0/12"
       - "192.168.0.0/16"
       - "127.0.0.0/8"
+  admin:
+    tls:
+      enabled: false
+  public:
+    cors:
+      allowed_origins:
+        - https://auth.hrry.local
+        - https://oidc.hrry.local
 
 urls:
   self:
     issuer: "https://auth.hrry.local"
+    public: "https://auth.hrry.local"
   login: "https://hrry.local/login"
-  consent: "https://hrry.local/login"
+  consent: "https://hrry.local/consent"
   error: "https://hrry.local/oidc-error"
   logout: "https://hrry.local/logout"
 
