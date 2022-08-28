@@ -172,7 +172,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - uses: actions/setup-go@v2
         with:
@@ -298,9 +298,50 @@ jobs:
 
   docker:
     name: Build Docker Images
-    needs: [lint, built, test, functional]
+    needs: [lint, build, test, functional]
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Code
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
+      - name: Set up QEMU
+        id: qemu
+        uses: docker/setup-qemu-action@v1
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v1
+        id: buildx
+        with:
+          # `docker build` becomes an alias for `docker buildx build`
+          install: true
+      - name: Install minio client
+        run: |
+          wget -O /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
+          chmod +x /usr/local/bin/mc
+          mc alias set s3-hrry-dev https://s3.hrry.dev ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }} --api "s3v4"
+      - name: Cache GeoLite2
+        id: geo-lite2-dl
+        with:
+          key: geoip-dl-${{ hashFiles('files/mmdb/*') }}
+          restore-keys: |
+            geoip-dl-
+          path: |
+            ./files/mmdb
+      - name: Download GeoLite2
+        if: steps.geo-lite2-dl.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ./files/mmdb
+          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-ASN.mmdb ./files/mmdb/
+          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-City.mmdb ./files/mmdb/
+          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-Country.mmdb ./files/mmdb/
+      - name: Build Images
+        run: |
+          docker compose \
+            --file docker-compose.yml \
+            --file config/docker-compose.logging.yml \
+            --file config/docker-compose.tools.yml config 2>/dev/null \
+            | docker buildx bake \
+              --file - \
+              --file config/docker/buildx.yml \
+              --set=*.output=type=docker
+          docker image ls

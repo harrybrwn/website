@@ -20,7 +20,6 @@ yarn-error.log
 *.pgpass
 config/provision.prod.json
 /config/pki/
-/config/docker/docker-bake.hcl
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd
 !bin

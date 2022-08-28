@@ -6,6 +6,7 @@ BUILDCACHE=.cache/build
 build:
 	sh scripts/build.sh
 	docker-compose build
+	docker buildx bake -f config/docker/docker-bake.hcl --set='*.platform=linux/amd64' --load
 
 test: test-ts test-go
 
