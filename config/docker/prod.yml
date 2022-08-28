@@ -28,6 +28,7 @@ services:
         max_attempts: 3
         delay: 2s
     env_file:
+      - config/env/prod/redis.env
       - config/env/swarm_data.env
     networks:
       - service-mesh
@@ -83,6 +84,7 @@ services:
       - ENV=production
       - LOG_FORMAT=json
     env_file:
+      - config/env/prod/redis.env
       - config/env/sendgrid.env
       - config/env/prod/db.env
       - config/env/prod/jwt.env
@@ -217,6 +219,7 @@ services:
     env_file:
       - config/env/prod/registry.env
       - config/env/prod/minio.env
+      - config/env/prod/redis.env
       - config/env/swarm_data.env
 
   s3:

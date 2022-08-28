@@ -20,3 +20,4 @@ nginx-passwd.env
 !db-backup.env
 !jwt.env
 !hydra.env
+!redis.env
