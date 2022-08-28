@@ -166,10 +166,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     env:
-      POSTGRES_PASSWORD: testing_db_pw
-      POSTGRES_USER: ci
-      POSTGRES_DB: ci_db
-      REDIS_PASSWORD: testing_cache_pw
+      # POSTGRES_PASSWORD: testing_db_pw
+      # POSTGRES_USER: ci
+      # POSTGRES_DB: ci_db
+      # REDIS_PASSWORD: testing_cache_pw
       SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
       JWT_SEED: ${{ secrets.JWT_SEED }}
     steps:
@@ -215,7 +215,6 @@ jobs:
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-ASN.mmdb ./files/mmdb/
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-City.mmdb ./files/mmdb/
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-Country.mmdb ./files/mmdb/
-          ls -la ./files/mmdb/
 
       - name: Generate test certs
         run: scripts/certs.sh --no-install
