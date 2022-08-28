@@ -337,6 +337,11 @@ jobs:
           mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-Country.mmdb ./files/mmdb/
       - name: Build Images
         run: |
+          GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0")"
+          GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+          GIT_COMMIT="$(git rev-parse HEAD)"
+          SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
+          export GIT_COMMIT GIT_BRANCH GIT_TAG SOURCE_HASH
           docker compose \
             --file docker-compose.yml \
             --file config/docker-compose.logging.yml \
