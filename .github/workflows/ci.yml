@@ -320,6 +320,7 @@ jobs:
           chmod +x /usr/local/bin/mc
           mc alias set s3-hrry-dev https://s3.hrry.dev ${{ secrets.S3_ACCESS_KEY }} ${{ secrets.S3_SECRET_KEY }} --api "s3v4"
       - name: Cache GeoLite2
+        uses: actions/cache@v2
         id: geo-lite2-dl
         with:
           key: geoip-dl-${{ hashFiles('files/mmdb/*') }}
