@@ -60,6 +60,9 @@ data:
   POSTGRES_USER: aGFycnlicndu     # harrybrwn
   POSTGRES_PASSWORD: dGVzdGJlZDAx # testbed01
   # grafana:testbed02 db-backups:testbed03
-  POSTGRES_USERS: Z3JhZmFuYTp0ZXN0YmVkMDIgZGItYmFja3Vwczp0ZXN0YmVkMDM=
+  #POSTGRES_USERS: Z3JhZmFuYTp0ZXN0YmVkMDIgZGItYmFja3Vwczp0ZXN0YmVkMDM=
   # harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
-  POSTGRES_DATABASES: aGFycnlicnduX2FwaTpoYXJyeWJyd24gaGFycnlicnduX2hvb2tzOmhhcnJ5YnJ3biBncmFmYW5hOmdyYWZhbmE=
+  #POSTGRES_DATABASES: aGFycnlicnduX2FwaTpoYXJyeWJyd24gaGFycnlicnduX2hvb2tzOmhhcnJ5YnJ3biBncmFmYW5hOmdyYWZhbmE=
+stringData:
+  POSTGRES_USERS: grafana:testbed02 db-backups:testbed03 hydra:testbed04
+  POSTGRES_DATABASES: harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana

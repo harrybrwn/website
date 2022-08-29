@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hydra
+spec:
+  selector:
+    matchLabels:
+      app: hydra
+  template:
+    metadata:
+      labels:
+        app: hydra
+    spec:
+      initContainers:
+        - name: migrate
+          image: oryd/hydra:v1.11.8
+          imagePullPolicy: IfNotPresent
+          command: ["hydra"]
+          args: ["migrate", "sql", "-e", "-y"]
+          env:
+            - name: DSN
+              value: postgres://hydra:testbed04@db:5432/hydra
+      containers:
+        - name: hydra
+          image: oryd/hydra:v1.11.8
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DSN
+              value: postgres://hydra:testbed04@db:5432/hydra
+            - name: SECRETS_SYSTEM
+              value: hydra-secret-1234
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+          - name: public
+            containerPort: 4444
+          - name: admin
+            containerPort: 4445
+      volumes:
+        - name: config
+          configMap:
+            name: hydra
+            optional: false
