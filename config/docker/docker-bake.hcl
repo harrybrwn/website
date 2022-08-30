@@ -53,7 +53,7 @@ group "logging" {
 group "databases" {
     targets = [
         "redis",
-        "db",
+        "postgres",
         "s3",
     ]
 }
@@ -78,60 +78,64 @@ function "labels" {
     }
 }
 
-target "nginx" {
+target "base-service" {
+    labels = labels()
     platforms = platforms
+}
+
+target "nginx" {
+    target = "nginx"
     tags = tags("nginx")
+    inherits = ["base-service"]
+    platforms = ["linux/amd64"]
 }
 
 target "api" {
     target = "api"
-    context = "."
-    dockerfile = "Dockerfile"
-    args = {
-        ALPINE_VERSION = "3.14"
-    }
-    labels = labels()
     tags = tags("api")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "hooks" {
-    labels = labels()
+    target = "hooks"
     tags = tags("hooks")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "backups" {
-    labels = labels()
+    target = "backups"
     tags = tags("backups")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "geoip" {
-    labels = labels()
+    target = "geoip"
     tags = tags("geoip")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "legacy-site" {
-    labels = labels()
+    target = "legacy-site"
     tags = tags("legacy-site")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "vanity-imports" {
-    labels = labels()
+    target = "vanity-imports"
     tags = tags("vanity-imports")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
-target "db" {
+target "postgres" {
+    context = "config/docker/postgres"
     args = {
         BASE_IMAGE_VERSION = "13.6-alpine"
     }
-    labels = labels()
-    tags = tags("postgres")
-    platforms = platforms
+    tags = concat(
+        tags("postgres"),
+        formatlist("${REGISTRY}/harrybrwn/postgres:13.6-alpine"),
+    )
+    inherits = ["base-service"]
 }
 
 target "fluentbit" {
@@ -139,9 +143,8 @@ target "fluentbit" {
     args = {
         FLUENTBIT_VERSION = "1.9.3"
     }
-    labels = labels()
     tags = tags("fluent-bit")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "grafana" {
@@ -149,9 +152,8 @@ target "grafana" {
     args = {
         GRAFANA_VERSION = "latest"
     }
-    labels = labels()
     tags = tags("grafana")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "loki" {
@@ -159,9 +161,8 @@ target "loki" {
     args = {
         LOKI_VERSION = "2.5.0"
     }
-    labels = labels()
     tags = tags("loki")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "redis" {
@@ -169,12 +170,11 @@ target "redis" {
     args = {
         REDIS_VERSION = "6.2.6-alpine"
     }
-    labels = labels()
     tags = concat(
         tags("redis"),
         formatlist("${REGISTRY}/harrybrwn/redis:6.2.6-alpine")
     )
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "s3" {
@@ -196,9 +196,9 @@ target "s3" {
 #
 
 target "provision" {
-    labels = labels()
+    target = "provision"
     tags = tags("provision")
-    platforms = platforms
+    inherits = ["base-service"]
 }
 
 target "ansible" {
@@ -206,4 +206,14 @@ target "ansible" {
     labels = labels()
     tags = tags("ansible")
     platforms = ["linux/amd64"]
+}
+
+target "service" {
+    target = "service"
+    output = ["type=cacheonly"]
+}
+
+target "wait" {
+    target = "wait"
+    output = ["./.tmp/wait"]
 }

@@ -348,6 +348,5 @@ jobs:
             --file config/docker-compose.tools.yml config 2>/dev/null \
             | docker buildx bake \
               --file - \
-              --file config/docker/buildx.yml \
-              --set=*.output=type=docker
+              --file config/docker/buildx.yml
           docker image ls

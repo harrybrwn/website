@@ -37,15 +37,6 @@ help() {
   echo '  $ wait.sh udp://localhost:5432 --wait 10 -- echo up...'
 }
 
-waitfor() {
-  case $1 in
-    http://*|https://*)
-      ;;
-    *:*)
-      ;;
-  esac
-}
-
 while [ $# -gt 0 ]; do
   case $1 in
     http://*|https://*|tcp://*|udp://*|*:*)

@@ -33,6 +33,12 @@ RUN yarn workspaces run build
 COPY ./cmd/hooks/*.html ./cmd/hooks/
 
 #
+# Wait script
+#
+FROM scratch as wait
+COPY ./scripts/wait.sh /bin/wait.sh
+
+#
 # Golang builder
 #
 FROM golang:1.18-alpine as builder
@@ -48,8 +54,6 @@ ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
 COPY app app/
-COPY cmd/proxy cmd/proxy
-RUN go build -ldflags "${LINK}" -o bin/proxy ./cmd/proxy
 COPY files files/
 COPY internal internal/
 COPY main.go .
@@ -86,7 +90,7 @@ RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
 #
 FROM alpine:${ALPINE_VERSION} as service
 RUN apk update && apk upgrade && apk add -l tzdata curl
-COPY scripts/wait.sh /usr/local/bin/wait.sh
+COPY --from=wait /bin/wait.sh /usr/local/bin/wait.sh
 
 #
 # Main image
@@ -140,13 +144,6 @@ FROM service as legacy-site
 COPY --from=frontend /opt/harrybrwn/frontend/templates /opt/harrybrwn/templates
 COPY --from=legacy-site-builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
 ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
-
-#
-# Experimental reverse proxy
-#
-FROM service as proxy
-COPY --from=builder /opt/harrybrwn/bin/proxy /usr/local/bin/
-ENTRYPOINT ["proxy"]
 
 #
 # Webserver Frontend

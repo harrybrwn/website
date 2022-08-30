@@ -14,10 +14,16 @@ public/static/img/2250x3000
 .hugo_build.lock
 __pycache__/
 yarn-error.log
+.terraform/
 
 # Config
 .vscode
 *.pgpass
+terraform.tfvars
+*.auto.tfvars
+*.tfstate
+*.tfstate.lock.info
+*.tfstate.backup
 config/provision.prod.json
 /config/pki/
 /config/docker/buildkit-config.toml

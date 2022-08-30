@@ -22,6 +22,7 @@ require (
 	github.com/lib/pq v1.10.3
 	github.com/minio/madmin-go v1.3.16
 	github.com/minio/minio-go/v7 v7.0.27
+	github.com/ory/hydra-client-go v1.11.8
 	github.com/oschwald/geoip2-golang v1.7.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.2
@@ -64,7 +65,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/ory/hydra-client-go v1.11.8 // indirect
 	github.com/oschwald/maxminddb-golang v1.9.0 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
