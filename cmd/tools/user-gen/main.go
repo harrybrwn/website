@@ -4,24 +4,34 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/term"
 
 	"harrybrown.com/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
+	"harrybrown.com/pkg/log"
 )
+
+func init() {
+	os.Unsetenv("PGSERVICEFILE")
+	os.Unsetenv("PGSERVICE")
+}
 
 func main() {
 	if err := run(); err != nil {
@@ -54,6 +64,11 @@ func run() error {
 	if err := godotenv.Load(env); err != nil {
 		return err
 	}
+	db, err := database()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 
 	roles := make([]auth.Role, 0)
 	for _, r := range strings.Split(rolesflag, ",") {
@@ -103,11 +118,6 @@ func run() error {
 		user.Roles = append(user.Roles, auth.Role(r))
 	}
 
-	db, err := db.Connect(logrus.New())
-	if err != nil {
-		return err
-	}
-	defer db.Close()
 	store := app.NewUserStore(db)
 	u, err := store.Create(ctx, string(pw), &user)
 	if err != nil {
@@ -150,4 +160,39 @@ func readPassword(out io.Writer, yes bool) ([]byte, error) {
 		}
 	}
 	return pw, nil
+}
+
+func database() (db.DB, error) {
+	host := getenv("POSTGRES_HOST", "localhost")
+	port := getenv("POSTGRES_PORT", "5432")
+	u := url.URL{
+		Scheme: "postgres",
+		Host:   net.JoinHostPort(host, port),
+		User: url.UserPassword(
+			getenv("POSTGRES_USER", "harrybrwn"),
+			getenv("POSTGRES_PASSWORD", ""),
+		),
+		Path:     filepath.Join("/", getenv("POSTGRES_DB", "harrybrwn_api")),
+		RawQuery: "sslmode=disable",
+	}
+	logger := log.GetLogger()
+	if app.Debug {
+		logger.Info(u)
+	}
+	pool, err := sql.Open("postgres", u.String())
+	if err != nil {
+		return nil, err
+	}
+	if err = pool.Ping(); err != nil {
+		return nil, errors.Wrap(err, "failed to connect to database")
+	}
+	return db.New(pool, db.WithLogger(logger)), nil
+}
+
+func getenv(key, defaultValue string) string {
+	val := os.Getenv(key)
+	if len(val) == 0 {
+		return defaultValue
+	}
+	return val
 }

@@ -17,6 +17,11 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"harrybrown.com/pkg/log"
+)
+
+var (
+	ErrDBTimeout = errors.New("database ping timeout")
 )
 
 type DB interface {
@@ -52,10 +57,92 @@ func ScanOne(r Rows, dest ...interface{}) (err error) {
 	return r.Close()
 }
 
-type database struct{ *sql.DB }
+type dbOptions struct {
+	logger log.FieldLogger
+	// TODO auto logging database
+	autoLogging bool
+	// TODO create an auto tracing database
+	tracing bool
+}
+
+type Option func(*dbOptions)
+
+func WithLogger(l log.FieldLogger) Option { return func(d *dbOptions) { d.logger = l } }
+
+func New(pool *sql.DB, opts ...Option) *database {
+	options := dbOptions{}
+	for _, o := range opts {
+		o(&options)
+	}
+	if options.logger == nil {
+		options.logger = log.GetLogger()
+	}
+	d := &database{
+		DB:     pool,
+		logger: options.logger,
+	}
+	return d
+}
+
+type database struct {
+	*sql.DB
+	logger log.FieldLogger
+}
 
 func (db *database) QueryContext(ctx context.Context, query string, v ...interface{}) (Rows, error) {
 	return db.DB.QueryContext(ctx, query, v...)
+}
+
+type waitOpts struct {
+	interval time.Duration
+	timeout  time.Duration
+}
+
+type WaitOpt func(*waitOpts)
+
+func WithInterval(d time.Duration) WaitOpt {
+	return func(wo *waitOpts) { wo.interval = d }
+}
+
+func WithTimeout(d time.Duration) WaitOpt {
+	return func(wo *waitOpts) { wo.timeout = d }
+}
+
+// WaitFor will block until the database is up and can be connected to.
+func (db *database) WaitFor(ctx context.Context, opts ...WaitOpt) (err error) {
+	wo := waitOpts{
+		interval: time.Second * 2,
+	}
+	for _, o := range opts {
+		o(&wo)
+	}
+
+	var cancel context.CancelFunc = func() {}
+	if wo.timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, wo.timeout)
+	}
+	defer cancel()
+
+	// Don't wait to send the first ping.
+	if err = db.DB.PingContext(ctx); err == nil {
+		return nil
+	}
+
+	ticker := time.NewTicker(wo.interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			err = db.Ping()
+			if err == nil {
+				db.logger.Info("database connected")
+				return nil
+			}
+			db.logger.WithError(err).Warn("failed to ping database, retrying...")
+		case <-ctx.Done():
+			return errors.Wrap(ErrDBTimeout, "could not reach database")
+		}
+	}
 }
 
 type PaginationOpts struct {
@@ -136,28 +223,20 @@ func Connect(logger logrus.FieldLogger) (*database, error) {
 	if err != nil {
 		return nil, errors.WithStack(errors.Wrap(err, "invalid database url"))
 	}
-	db, err := sql.Open("postgres", url)
+	pool, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
-	if err = db.Ping(); err == nil {
-		return &database{DB: db}, nil
+	db := New(pool, WithLogger(logger))
+	err = db.WaitFor(
+		ctx,
+		WithInterval(time.Second),
+		WithTimeout(time.Minute),
+	)
+	if err != nil {
+		return nil, err
 	}
-	ticker := time.NewTicker(time.Second * 2)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			err = db.Ping()
-			if err == nil {
-				logger.Info("database connected")
-				return &database{DB: db}, nil
-			}
-			logger.WithError(err).Warn("failed to ping database, retrying...")
-		case <-ctx.Done():
-			return nil, errors.New("database ping timeout")
-		}
-	}
+	return db, nil
 }
 
 func lookupAnyOf(keys ...string) (string, bool) {

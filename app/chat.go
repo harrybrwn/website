@@ -60,7 +60,7 @@ func ChatRoomConnect(store chat.Store, rdb redis.UniversalClient) func(c echo.Co
 
 		// TODO check that ID is an existing room and that the requester has access to it.
 		var (
-			ctx  = log.StashedInContext(c.Request().Context(), logger)
+			ctx  = log.StashInContext(c.Request().Context(), logger)
 			room = chat.OpenRoom(store, rdb, params.ID, params.User)
 		)
 		err := room.Exists(ctx)

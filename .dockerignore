@@ -30,6 +30,7 @@ docker-compose.*
 /.cache
 /bin/
 **/__pycache__
+terraform/.terraform/
 files/*.tar.gz
 files/*.tar
 files/*.gz

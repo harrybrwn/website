@@ -1,5 +1,10 @@
 # https://www.ory.sh/docs/hydra/reference/configuration
 
+log:
+  format: json
+  level: debug
+  leak_sensitive_values: true
+
 serve:
   cookies:
     same_site_mode: Lax
@@ -14,18 +19,22 @@ serve:
       enabled: false
   public:
     cors:
+      enabled: true
       allowed_origins:
-        - https://auth.hrry.local
-        - https://oidc.hrry.local
+        - https://hrry.local
+        - https://*.hrry.local
+      allowed_headers:
+        - Authorization
+        - Content-Type
 
 urls:
   self:
     issuer: "https://auth.hrry.local"
     public: "https://auth.hrry.local"
-  login: "https://hrry.local/login"
-  consent: "https://hrry.local/consent"
-  error: "https://hrry.local/oidc-error"
-  logout: "https://hrry.local/logout"
+  login:    "https://hrry.local/login/"
+  consent:  "https://hrry.local/login/"
+  error:    "https://hrry.local/oidc-error"
+  logout:   "https://hrry.local/logout"
 
 oauth:
   pkce:

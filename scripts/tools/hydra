@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+docker compose --ansi never run \
+  --entrypoint hydra  \
+  --interactive=false \
+  --use-aliases       \
+  --no-TTY            \
+  --no-deps           \
+  --rm hydra "${@:-}"

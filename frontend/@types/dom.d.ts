@@ -49,3 +49,6 @@ declare module "*.html" {
   const value: any;
   export default value;
 }
+
+declare var OIDC_URL: string;
+declare var OIDC_CLIENT_ID: string;

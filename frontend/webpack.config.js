@@ -1,5 +1,6 @@
 "use strict";
 
+const { DefinePlugin } = require("webpack");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HTMLInlineCSSWebpackPlugin =
@@ -132,7 +133,19 @@ module.exports = function (webpackEnv) {
   });
   const embedCSS = false;
 
+  const constants = {
+    //OIDC_URL: isProd ? "https://auth.hrry.dev" : "https://auth.hrry.local",
+    //OIDC_CLIENT_ID: isProd ? "" : "testid",
+    OIDC_URL: "https://auth.hrry.local",
+    OIDC_CLIENT_ID: "testid",
+  };
+
   let plugins = [
+    new DefinePlugin(
+      Object.fromEntries(
+        Object.entries(constants).map((e) => [e[0], JSON.stringify(e[1])])
+      )
+    ),
     new ForkTsCheckerWebpackPlugin(), // Typechecking in a different process
     new MiniCssExtractPlugin({
       filename: builder.isProd

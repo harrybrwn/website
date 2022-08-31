@@ -15,7 +15,15 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			resp := logResponse{ResponseWriter: w}
-			h.ServeHTTP(&resp, r)
+			l := logger.WithFields(log.Fields{
+				"host":        r.Host,
+				"method":      r.Method,
+				"uri":         r.RequestURI,
+				"remote_addr": r.RemoteAddr,
+				"query":       r.URL.RawQuery,
+			})
+			ctx := log.StashInContext(r.Context(), l)
+			h.ServeHTTP(&resp, r.WithContext(ctx))
 			switch r.RequestURI {
 			case
 				"/metrics",
@@ -23,7 +31,7 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 				"/api/health/alive":
 				return
 			}
-			logAccess(logger, resp.status, start, r)
+			logAccess(l, resp.status, start, r)
 		})
 	}
 }
@@ -31,12 +39,7 @@ func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
 func logAccess(logger log.FieldLogger, status int, start time.Time, r *http.Request) {
 	d := time.Since(start)
 	l := logger.WithFields(log.Fields{
-		"host":        r.Host,
-		"method":      r.Method,
-		"uri":         r.RequestURI,
 		"status":      status,
-		"query":       r.URL.RawQuery,
-		"remote_addr": r.RemoteAddr,
 		"duration_ms": d.Milliseconds(),
 	})
 	if status < 400 {

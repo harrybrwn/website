@@ -4,7 +4,7 @@ services:
   nginx:
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost/health/ready"]
-      interval: 1m
+      interval: 2m
       timeout: 10s
       retries: 5
     depends_on:

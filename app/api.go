@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
+	"harrybrown.com/pkg/log"
 )
 
 const (
@@ -62,6 +63,115 @@ type TokenService struct {
 	HydraAdmin hydra.AdminApi
 }
 
+func (ts *TokenService) Login(c echo.Context) error {
+	var (
+		err  error
+		body struct {
+			Login
+			LoginChallenge string `json:"login_challenge"`
+			Remember       bool   `json:"remember"`
+		}
+		req    = c.Request()
+		ctx    = req.Context()
+		logger = log.FromContext(ctx)
+	)
+	logger.Info("starting login request")
+	switch err = c.Bind(&body); err {
+	case nil:
+		break
+	case echo.ErrUnsupportedMediaType:
+		logger.WithField("content-type", req.Header.Get("Content-Type")).Error("unsupported content type")
+		return err
+	default:
+		err = errors.Wrap(err, "failed to bind user data")
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+
+	if len(body.LoginChallenge) == 0 {
+		logger.Warn("did not get login challenge")
+		return echo.ErrBadRequest.SetInternal(errors.New("no login challenge"))
+	}
+	// Login flow
+	u, err := ts.Users.Login(ctx, &body.Login)
+	if err != nil {
+		return echo.ErrUnauthorized.SetInternal(errors.Wrap(err, "failed to login"))
+	}
+	logger = logger.WithFields(logrus.Fields{
+		"username": u.Username,
+		"email":    u.Email,
+		"user_id":  u.UUID,
+	})
+	logger.Info("handling login_challenge")
+	r, hydraResp, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
+		LoginChallenge(body.LoginChallenge).
+		AcceptLoginRequest(hydra.AcceptLoginRequest{
+			Subject:  u.Email,
+			Remember: hydra.PtrBool(true),
+		}).
+		Execute()
+	if err != nil {
+		logger.WithError(err).Error("failed to accept login request")
+		return &echo.HTTPError{
+			Code:     hydraResp.StatusCode,
+			Message:  http.StatusText(hydraResp.StatusCode),
+			Internal: err,
+		}
+	}
+	logger.Infof("redirecting to %s", r.RedirectTo)
+
+	claims := u.NewClaims()
+	// Generate both a new access token and refresh token.
+	resp, err := auth.NewTokenResponse(ts.Config, claims)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(
+			errors.Wrap(err, "could not create token response"))
+	}
+	err = ts.Tokens.Set(ctx, u.ID, resp.RefreshToken)
+	if err != nil {
+		return echo.ErrInternalServerError.SetInternal(err)
+	}
+	c.Set(auth.ClaimsContextKey, claims)
+	ts.setTokenCookie(c.Response(), resp, claims)
+	return c.JSON(200, map[string]any{
+		"redirect_to": r.RedirectTo,
+	})
+}
+
+func ConsentHandler(admin hydra.AdminApi) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var (
+			body struct {
+				Challenge string `json:"consent_challenge"`
+			}
+			ctx    = c.Request().Context()
+			logger = log.FromContext(ctx)
+		)
+		err := c.Bind(&body)
+		if err != nil {
+			return err
+		}
+		claims := auth.GetClaims(c)
+		if claims == nil {
+			return echo.ErrUnauthorized
+		}
+		if body.Challenge == "" {
+			return echo.ErrBadRequest
+		}
+		r, _, err := admin.AcceptConsentRequest(ctx).
+			ConsentChallenge(body.Challenge).
+			AcceptConsentRequest(hydra.AcceptConsentRequest{
+				GrantScope: []string{"openid", "offline"},
+				Remember:   hydra.PtrBool(true),
+			}).
+			Execute()
+		if err != nil {
+			logger.Error("failed to accept consent request")
+			return echo.ErrInternalServerError
+		}
+		return c.JSON(200, map[string]any{"redirect_to": r.RedirectTo})
+	}
+}
+
 func (ts *TokenService) Token(c echo.Context) error {
 	var (
 		err  error
@@ -70,9 +180,9 @@ func (ts *TokenService) Token(c echo.Context) error {
 			LoginChallenge string `json:"login_challenge"`
 			Remember       bool   `json:"remember"`
 		}
-		// body Login
-		req = c.Request()
-		ctx = req.Context()
+		req    = c.Request()
+		ctx    = req.Context()
+		logger = log.FromContext(ctx)
 	)
 	switch err = c.Bind(&body); err {
 	case nil:
@@ -83,7 +193,7 @@ func (ts *TokenService) Token(c echo.Context) error {
 		err = errors.Wrap(err, "failed to bind user data")
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
-	logger := logger.WithFields(logrus.Fields{
+	logger = logger.WithFields(logrus.Fields{
 		"username": body.Username,
 		"email":    body.Email,
 	})
@@ -104,6 +214,7 @@ func (ts *TokenService) Token(c echo.Context) error {
 		if err != nil {
 			return echo.ErrInternalServerError
 		}
+		// return c.Redirect(http.StatusFound, )
 	}
 	claims := u.NewClaims()
 	// Generate both a new access token and refresh token.
@@ -132,6 +243,7 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 		err      error
 		req      = c.Request()
 		ctx      = req.Context()
+		logger   = log.FromContext(ctx)
 		tokenReq RefreshTokenReq
 	)
 	err = c.Bind(&tokenReq)

@@ -4,7 +4,13 @@ set -eu
 
 name="$(basename $0)"
 
-docker-compose \
+docker compose \
   --project-directory "$(pwd)" \
-  --file config/docker-compose.tools.yml run --rm \
-  ansible "${name}" "$@"
+  --file config/docker-compose.tools.yml \
+  --ansi never                           \
+  run \
+    --interactive=false \
+    --no-TTY            \
+    --no-deps           \
+    --rm                \
+    ansible "${name}" "$@"

@@ -58,7 +58,7 @@ COPY files files/
 COPY internal internal/
 COPY main.go .
 COPY frontend/templates frontend/templates/
-COPY --from=frontend /opt/harrybrwn/build build/
+COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
 FROM builder as legacy-site-builder

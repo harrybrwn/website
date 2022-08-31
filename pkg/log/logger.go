@@ -157,15 +157,18 @@ type contextKey string
 
 var loggerKey = contextKey("_logger")
 
-func FromContext(ctx context.Context) logrus.FieldLogger {
+func FromContext(ctx context.Context) FieldLogger {
 	res := ctx.Value(loggerKey)
 	if res == nil {
-		return logrus.StandardLogger()
+		return GetLogger()
 	}
 	return res.(logrus.FieldLogger)
 }
 
-func StashedInContext(ctx context.Context, logger logrus.FieldLogger) context.Context {
+func StashInContext(ctx context.Context, logger FieldLogger) context.Context {
+	if l := FromContext(ctx); l != nil {
+		logger.Warn("log.StashInContext: context already has a logger")
+	}
 	return context.WithValue(ctx, loggerKey, logger)
 }
 

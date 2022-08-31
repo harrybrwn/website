@@ -68,7 +68,11 @@ services:
     # https://medium.com/application-security/openid-connect-tester-for-developers-63427324faea
     image: registry.gitlab.com/guenoledc-perso/idp-oidc-tester:latest
     ports:
-      - 8001:80
+      - 8888:8888
+    network_mode: host
     environment:
-      - PORT=80
-      - EXTERNAL_OWN_URL=http://localhost:8001
+      - PORT=8888
+      - EXTERNAL_OWN_URL=http://localhost:8888
+      - REDIS_URL=redis://:testbed01@redis:6379
+    # networks:
+    #   - backend

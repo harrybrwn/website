@@ -136,6 +136,8 @@ func main() {
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
+	api.POST("/login", tokenSrv.Login, auth.ImplicitUser(jwtConf))
+	api.POST("/consent", app.ConsentHandler(tokenSrv.HydraAdmin), guard)
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })

@@ -53,8 +53,10 @@ lint-sh:
 tools:
 	@mkdir -p bin
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
+	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/deployment bin/deployment
+	ln -sf ../scripts/tools/hydra bin/hydra
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
@@ -132,12 +134,10 @@ deploy-infra:
 .PHONY: bake deploy deploy-dev
 
 oidc-client:
-	docker compose run                             \
-		--entrypoint hydra                         \
-		--rm hydra clients create                  \
-			--id testid                            \
-			--callbacks 'https://hrry.local/login' \
-			--grant-types code,id_token            \
-			--scope openid,offline                 \
-			--token-endpoint-auth-method none
-
+	scripts/tools/hydra clients create                 \
+		--id testid                                    \
+		--callbacks 'https://hrry.local/login'         \
+		--response-types code,id_token                 \
+		--grant-types authorization_code,refresh_token \
+		--scope openid,offline                         \
+		--token-endpoint-auth-method none
