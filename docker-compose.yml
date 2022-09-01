@@ -1,5 +1,21 @@
 version: "3.8"
 
+# TODO
+# - [ ] https://github.com/AppFlowy-IO/appflowy
+# - [ ] https://www.appflowy.io/
+# - [ ] https://github.com/toeverything/AFFiNE
+# - [ ] https://cinwell.com/notea/
+# - [ ] [github alternative](https://gitea.io/en-us/)
+# - [ ] [manage github notifications](https://octobox.io/)
+# - [ ] https://github.com/zadam/trilium
+# - [ ] https://github.com/cloudron-io/meemo
+# - [x] https://www.getoutline.com/
+# - [x] https://blog.gurucomputing.com.au/doing-more-with-docker/deploying-outline-wiki/
+# - [ ] Logseq
+#   - https://github.com/bmpi-dev/logseq.xyz
+#   - https://github.com/logseq/logseq/issues/12
+#   - https://docs.logseq.com/#/page/Contents
+
 services:
   db:
     image: ${REGISTRY}/harrybrwn/postgres:${VERSION:-latest}
@@ -305,13 +321,6 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
-
-  # TODO
-  # - [ ] https://github.com/toeverything/AFFiNE
-  # - [ ] https://www.appflowy.io/
-  # - [x] https://www.getoutline.com/
-  # - [x] https://blog.gurucomputing.com.au/doing-more-with-docker/deploying-outline-wiki/
-  # - [ ] https://cinwell.com/notea/
 
 volumes:
   database:
