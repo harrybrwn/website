@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentinel
+data:
+  sentinel-master-name: rdbmaster
+  redis-host-list: redis-0.redis,redis-1.redis,redis-2.redis
+  #sentinel-host-list: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
+  port: '26379'

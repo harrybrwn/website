@@ -32,13 +32,6 @@ spec:
           limits:
             memory: "128Mi"
             cpu: "500m"
-        env:
-          - name: POSTGRES_DB
-            value: harrybrwn_hooks
-          - name: POSTGRES_HOST
-            value: db
-          - name: POSTGRES_PORT
-            value: '5432'
         envFrom:
           - configMapRef: { name: hooks-env-config }
           - secretRef: { name: hooks-env-secrets }
@@ -53,6 +46,10 @@ metadata:
   name: hooks-env-config
 data:
   GH_HOOK_CALLBACK_HOST: hooks.harrybrwn.com
+  POSTGRES_DB: harrybrwn_hooks
+  POSTGRES_USER: harrybrwn
+  POSTGRES_HOST: db
+  POSTGRES_PORT: '5432'
 
 ---
 apiVersion: v1

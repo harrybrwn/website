@@ -57,7 +57,7 @@ spec:
                 fi
               else
                 echo "sentinel found, finding master"
-                MASTER="$(redis-cli -h sentinel -p ${SENTINEL_PORT} sentinel get-master-addr-by-name rdbmaster | grep -E '(^redis-\d{1,})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})')"
+                MASTER="$(redis-cli -h sentinel -p ${SENTINEL_PORT} sentinel get-master-addr-by-name ${REDIS_SENTINEL_MASTER_NAME} | grep -E '(^redis-\d{1,})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})')"
                 echo "master found : $MASTER, updating redis.conf"
                 echo "slaveof $MASTER 6379" >> /etc/redis/redis.conf
               fi
@@ -69,6 +69,11 @@ spec:
                 secretKeyRef:
                   name: redis-secrets
                   key: password
+            - name: REDIS_SENTINEL_MASTER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel
+                  key: sentinel-master-name
             - name: SENTINEL_PORT
               value: '26379'
           volumeMounts:

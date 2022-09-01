@@ -1,21 +1,97 @@
 bases:
   - ../app
+  - ../helm
 
-# resources:
-#   - provision-job.yml
+resources:
+  - certificates.yml
 
+
+commonLabels:
+  hrry.me/environment: dev
+
+# Patch the certificate volumes to use the ones issued by cert-manager.
+patchesStrategicMerge:
+  - nginx-patch.yml
+
+# NOTES:
+# generator behavior can be 'create', 'replace', 'merge'
 secretGenerator:
-  - name: nginx-secrets
+  - name: hrry-root-ca
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    files:
+      - tls.crt=certs/ca.crt
+      - tls.key=certs/ca.key
+  - name: jwt-secrets
+    behavior: merge
+    literals:
+      - jwt-seed=505f0ed4a438f73454a8d8dfc5741327ffa73203be34f5a58db367591124282b
+  - name: db-env-secrets
+    behavior: replace
+    literals:
+      - POSTGRES_USER=harrybrwn
+      - POSTGRES_PASSWORD=testbed01
+      - POSTGRES_USERS=grafana:testbed02 db-backups:testbed03 hydra:testbed04
+      - POSTGRES_DATABASES=harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
+  - name: redis-secrets
+    behavior: replace
+    literals:
+      - password=testbed01
+  - name: minio-env-secrets
+    behavior: merge
+    literals:
+      - MINIO_ROOT_USER=root
+      - MINIO_ROOT_PASSWORD=minio-testbed001
+  - name: grafana
+    behavior: merge
+    literals:
+      - GF_DATABASE_PASSWORD=testbed02
+  - name: loki
+    behavior: merge
+    literals:
+      - s3-access-key=loki
+      - s3-secret-key=minio-testbed001-loki
+  - name: web-api-secrets
+    behavior: merge
+    literals:
+      - postgres-password=testbed01
+      - sendgrid-api-key=
+  - name: hooks-env-secrets
+    behavior: replace
+    literals:
+      - GITHUB_CLIENT_ID=123
+      - GITHUB_CLIENT_SECRET=12345
+      - GITHUB_CALLBACK_SECRET=abcde
+      - POSTGRES_PASSWORD=testbed04
+
+
+configMapGenerator:
+  - name: nginx
+    behavior: replace
+    literals:
+      - registry-url=https://registry.hrry.local
+  - name: minio-env-config
+    behavior: merge
+    literals:
+      - MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY=on
+      - MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/logs
+      - MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY=on
+      - MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/audit
+  - name: hooks-env-config
+    behavior: merge
+    literals:
+      - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=harrybrwn
+  - name: grafana
+    behavior: merge
+    options:
+      labels:
+        dev.hrry.environment: dev
+    envs:
+      - grafana.env
+  - name: loki
     behavior: replace
     files:
-      - certs/harrybrwn.com.key
-      - certs/harrybrwn.com.crt
-      - certs/hrry.me.key
-      - certs/hrry.me.crt
-      - certs/hrry.dev.key
-      - certs/hrry.dev.crt
-  # TODO uncomment when adding the container registry
-  #- name: registry-secrets
-  #  behavior: replace
-  #  files:
-  #    - registry/htpasswd
+      - loki.yml

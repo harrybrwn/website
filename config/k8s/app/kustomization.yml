@@ -9,11 +9,12 @@ resources:
   - redis/secret.yml
   - redis/cluster.yml
   - redis/sentinel.yml
+  - redis/configmap.yml
   - web-api.yml
   - geoip.yml
   - vanity-imports.yml
   - legacy-site.yml
-  - grafana.yml
+  - grafana
   - fluent-bit
   - loki
   - prometheus

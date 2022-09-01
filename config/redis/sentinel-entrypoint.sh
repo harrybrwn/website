@@ -7,7 +7,7 @@ set -eu
 
 find_master_node() {
 	_MASTER=""
-  _nodes="$(echo "${REDIS_SEINTINEL_REDIS_HOSTS}" | sed -e 's/,/ /g')"
+  _nodes="$(echo "${REDIS_SENTINEL_REDIS_HOSTS}" | sed -e 's/,/ /g')"
 	for node in ${_nodes}; do
 		host="$(echo "${node}" | cut -d ':' -f1)"
 		port="$(echo "${node}" | cut -d ':' -f1)"

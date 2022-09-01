@@ -48,7 +48,7 @@ NOTES*
 TODO*
 
 # Tools
-*.sh
+test.sh
 scripts/deploy.sh
 !scripts/**/*.sh
 !db/postgres/*.sh

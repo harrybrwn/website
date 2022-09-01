@@ -4,13 +4,18 @@
 
 This is the repo for my personal website.
 
+# Prerequisites
+
+- [Docker](https://docs.docker.com/engine/install/)
+- Docker's [compose plugin](https://docs.docker.com/compose/install/compose-plugin/)
+- [Go](https://go.dev/doc/install) 1.18 or newer
+- [node 16.13.x](https://nodejs.org/en/download/) and [yarn 1.22.x](https://classic.yarnpkg.com/lang/en/docs/install/)
+- kubectl, helm, minikube
+
 ## Build
 
 ```
-yarn install
-yarn build
-go generate
-go build -o bin/harrybrwn.com
+docker compose build
 ```
 
 ### Run locally
@@ -19,8 +24,7 @@ Once the binary is built, you can start the database and run the server in debug
 mode.
 
 ```
-docker-compose up -d db redis
-bin/harrybrwn.com -env
+docker compose up
 ```
 
 If you have the heroku cli, you can start the serer with `haroku local web`.

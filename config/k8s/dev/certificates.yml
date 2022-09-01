@@ -1,0 +1,97 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ca-issuer
+spec:
+  ca:
+    secretName: hrry-root-ca
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hrry-me-tls
+spec:
+  secretName: hrry-me-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+    group: cert-manager.io # this is the default
+
+  subject:
+    organizations:
+      - HarryBrown
+
+  commonName: hrry.local
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - "hrry.local"
+    - "*.hrry.local"
+  ipAddresses:
+    - 127.0.0.1
+
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hrry-dev-tls
+spec:
+  secretName: hrry-dev-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+    group: cert-manager.io # this is the default
+
+  subject:
+    organizations:
+      - HarryBrown
+
+  commonName: hrry.local
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - "hrry.local"
+    - "*.hrry.local"
+  ipAddresses:
+    - 127.0.0.1
+
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harrybrwn-com-tls
+spec:
+  secretName: harrybrwn-com-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+    group: cert-manager.io # this is the default
+
+  subject:
+    organizations:
+      - HarryBrown
+
+  commonName: harrybrwn.local
+  isCA: false
+  usages:
+    - server auth
+    - client auth
+  dnsNames:
+    - "harrybrwn.local"
+    - "*.harrybrwn.local"
+  ipAddresses:
+    - 127.0.0.1
+
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d

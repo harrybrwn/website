@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana
+data:
+  GF_SERVER_PROTOCOL: http
+  GF_SERVER_ENFORCE_DOMAIN: 'false'
+  GF_LOG_FORMAT: json
+  GF_DATABASE_TYPE: ''
+  GF_DATABASE_HOST: database:5432
+  GF_DATABASE_NAME: grafana
+  GF_DATABASE_USER: grafana

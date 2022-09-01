@@ -44,9 +44,15 @@ spec:
               name: sentinel
           env:
             - name: REDIS_SENTINEL_MASTER_NAME
-              value: rdbmaster
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel
+                  key: sentinel-master-name
             - name: REDIS_SENTINEL_REDIS_HOSTS
-              value: redis-0.redis,redis-1.redis,redis-2.redis
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel
+                  key: redis-host-list
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -50,10 +50,13 @@ spec:
           - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: loki
-                key: redis-password
+                name: redis-secrets
+                key: password
           - name: REDIS_SENTINEL_MASTER_NAME
-            value: rdbmaster
+            valueFrom:
+              configMapKeyRef:
+                name: sentinel
+                key: sentinel-master-name
       volumes:
       - name: config
         configMap:

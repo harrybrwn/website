@@ -9,7 +9,7 @@ load() {
 }
 
 ASYNC=true
-N=4
+N=3
 
 images="$(docker-compose --file docker-compose.yml --file config/docker-compose.logging.yml --file config/docker-compose.tools.yml config \
   | grep -E 'image:.*' \
