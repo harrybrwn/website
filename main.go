@@ -97,8 +97,7 @@ func main() {
 		mailer      invite.Mailer
 		emailClient *sendgrid.Client
 	)
-	if apikey, ok := os.LookupEnv("SENDGRID_API_KEY"); ok && len(apikey) > 0 {
-		emailClient = sendgrid.NewSendClient(apikey)
+	if emailClient := app.SendgridClient(); emailClient != nil {
 		mailer = newInviteMailer(emailClient)
 		logger.Info("found sendgrid api key")
 	} else {
@@ -120,24 +119,17 @@ func main() {
 	e.POST("/invite/:id", invites.SignUp(userStore))
 
 	tokenSrv := app.TokenService{
-		Config: jwtConf,
-		Tokens: auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
-		Users:  userStore,
-		HydraAdmin: hydra.NewAPIClient(&hydra.Configuration{
-			DefaultHeader: make(map[string]string),
-			UserAgent:     "hrry/api",
-			Debug:         false,
-			Servers: hydra.ServerConfigurations{
-				{URL: "http://hydra:4445"},
-			},
-		}).AdminApi,
+		Config:     jwtConf,
+		Tokens:     auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
+		Users:      userStore,
+		HydraAdmin: hydra.NewAPIClient(app.HydraAdminConfig()).AdminApi,
 	}
 	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)
 	api.POST("/refresh", tokenSrv.Refresh)
 	api.POST("/revoke", tokenSrv.Revoke, guard)
 	api.POST("/login", tokenSrv.Login, auth.ImplicitUser(jwtConf))
-	api.POST("/consent", app.ConsentHandler(tokenSrv.HydraAdmin), guard)
+	api.POST("/consent", app.ConsentHandler(tokenSrv.HydraAdmin, userStore), guard)
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
