@@ -75,6 +75,7 @@ func (ts *TokenService) Login(c echo.Context) error {
 		ctx    = req.Context()
 		logger = log.FromContext(ctx)
 	)
+
 	logger.Info("starting login request")
 	switch err = c.Bind(&body); err {
 	case nil:
@@ -91,8 +92,17 @@ func (ts *TokenService) Login(c echo.Context) error {
 		logger.Warn("did not get login challenge")
 		return echo.ErrBadRequest.SetInternal(errors.New("no login challenge"))
 	}
+
 	// Login flow
-	u, err := ts.Users.Login(ctx, &body.Login)
+	var (
+		u      *User
+		claims = auth.GetClaims(c)
+	)
+	if claims == nil {
+		u, err = ts.Users.Login(ctx, &body.Login)
+	} else {
+		u, err = ts.Users.Get(ctx, claims.UUID)
+	}
 	if err != nil {
 		return echo.ErrUnauthorized.SetInternal(errors.Wrap(err, "failed to login"))
 	}
@@ -107,6 +117,12 @@ func (ts *TokenService) Login(c echo.Context) error {
 		AcceptLoginRequest(hydra.AcceptLoginRequest{
 			Subject:  u.Email,
 			Remember: hydra.PtrBool(true),
+			Context: map[string]any{
+				"email":    u.Email,
+				"uuid":     u.UUID.String(),
+				"username": u.Username,
+				"roles":    u.Roles,
+			},
 		}).
 		Execute()
 	if err != nil {
@@ -119,7 +135,9 @@ func (ts *TokenService) Login(c echo.Context) error {
 	}
 	logger.Infof("redirecting to %s", r.RedirectTo)
 
-	claims := u.NewClaims()
+	if claims == nil {
+		claims = u.NewClaims()
+	}
 	// Generate both a new access token and refresh token.
 	resp, err := auth.NewTokenResponse(ts.Config, claims)
 	if err != nil {
@@ -137,11 +155,11 @@ func (ts *TokenService) Login(c echo.Context) error {
 	})
 }
 
-func ConsentHandler(admin hydra.AdminApi) echo.HandlerFunc {
+func ConsentHandler(admin hydra.AdminApi, users UserStore) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var (
 			body struct {
-				Challenge string `json:"consent_challenge"`
+				Challenge string `json:"consent_challenge" query:"consent_challenge"`
 			}
 			ctx    = c.Request().Context()
 			logger = log.FromContext(ctx)
@@ -154,14 +172,44 @@ func ConsentHandler(admin hydra.AdminApi) echo.HandlerFunc {
 		if claims == nil {
 			return echo.ErrUnauthorized
 		}
+		logger = logger.WithFields(log.Fields{
+			"id":      claims.ID,
+			"uuid":    claims.UUID,
+			"subject": claims.Subject,
+		})
 		if body.Challenge == "" {
 			return echo.ErrBadRequest
 		}
+		u, err := users.Get(ctx, claims.UUID)
+		if err != nil {
+			return echo.ErrUnauthorized.SetInternal(err)
+		}
+		cr, hydraRes, err := admin.GetConsentRequest(ctx).ConsentChallenge(body.Challenge).Execute()
+		if err != nil {
+			logger.WithError(err).Error("failed to fetch consent request")
+			return &echo.HTTPError{Code: hydraRes.StatusCode, Internal: err}
+		}
+		logger.WithFields(log.Fields{
+			"skip":             *cr.Skip,
+			"client.name":      cr.Client.ClientName,
+			"client.client_id": cr.Client.ClientId,
+		}).Info("accepting consent request")
 		r, _, err := admin.AcceptConsentRequest(ctx).
 			ConsentChallenge(body.Challenge).
 			AcceptConsentRequest(hydra.AcceptConsentRequest{
-				GrantScope: []string{"openid", "offline"},
-				Remember:   hydra.PtrBool(true),
+				GrantAccessTokenAudience: cr.RequestedAccessTokenAudience,
+				GrantScope:               cr.RequestedScope,
+				Remember:                 hydra.PtrBool(true),
+				Session: &hydra.ConsentRequestSession{
+					AccessToken: nil,
+					IdToken: map[string]any{
+						"email":   u.Email,
+						"uuid":    u.UUID.String(),
+						"roles":   u.Roles,
+						"name":    u.Username,
+						"picture": "https://hrry.me/favicon.ico", // needed by some services
+					},
+				},
 			}).
 			Execute()
 		if err != nil {
