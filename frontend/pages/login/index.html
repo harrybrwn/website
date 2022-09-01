@@ -23,26 +23,98 @@
       .error {
         color: crimson;
       }
+      #loading-box {
+        /* Enabled when we don't need a username/password. */
+        visibility: hidden;
+        display: flex;
+      }
+      /* These are awesome <https://loading.io/css/> */
+      .lds-ellipsis {
+        display: inline-block;
+        position: relative;
+        width: 80px;
+        height: 80px;
+      }
+      .lds-ellipsis div {
+        position: absolute;
+        top: 33px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+      }
+      .light-theme .lds-ellipsis div {
+        background: var(--theme-light-fg);
+      }
+      .dark-theme .lds-ellipsis div {
+        background: var(--theme-dark-fg);
+      }
+      .lds-ellipsis div:nth-child(1) {
+        left: 8px;
+        animation: lds-ellipsis1 0.6s infinite;
+      }
+      .lds-ellipsis div:nth-child(2) {
+        left: 8px;
+        animation: lds-ellipsis2 0.6s infinite;
+      }
+      .lds-ellipsis div:nth-child(3) {
+        left: 32px;
+        animation: lds-ellipsis2 0.6s infinite;
+      }
+      .lds-ellipsis div:nth-child(4) {
+        left: 56px;
+        animation: lds-ellipsis3 0.6s infinite;
+      }
+      @keyframes lds-ellipsis1 {
+        0% {
+          transform: scale(0);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes lds-ellipsis3 {
+        0% {
+          transform: scale(1);
+        }
+        100% {
+          transform: scale(0);
+        }
+      }
+      @keyframes lds-ellipsis2 {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(24px, 0);
+        }
+      }
     </style>
   </head>
   <body>
     <main class="center">
       <div class="container">
-        <h1>Login</h1>
-        <form
-          id="login-form"
-          method="POST"
-          action="/"
-          enctype="application/json"
-        >
-          <input
-            type="text"
-            name="identifier"
-            placeholder="Username or Email"
-          />
-          <input type="password" name="password" placeholder="Password" />
-          <input type="submit" />
-        </form>
+        <div id="creds-box">
+          <h1>Login</h1>
+          <form
+            id="login-form"
+            method="POST"
+            action="/"
+            enctype="application/json"
+          >
+            <input
+              type="text"
+              name="identifier"
+              placeholder="Username or Email"
+            />
+            <input type="password" name="password" placeholder="Password" />
+            <input type="submit" />
+          </form>
+        </div>
+        <div id="loading-box">
+          <h1>Logging In</h1>
+          <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+        </div>
       </div>
     </main>
     <!-- <button id="with-oidc">Login with OIDC</button> -->

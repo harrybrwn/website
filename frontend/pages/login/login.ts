@@ -1,17 +1,9 @@
 import "~/frontend/styles/font.css";
 import { isEmail } from "~/frontend/util/email";
 import { applyTheme } from "~/frontend/components/theme";
-
-interface RedirectTarget {
-  redirect_to: string;
-}
-
-interface LoginRequest {
-  password: string;
-  email: string;
-  username: string;
-  login_challenge?: string | null;
-}
+import { new_pkce, load_pkce, delete_pkce, save_pkce } from "./pkce";
+import { OAuth2Token, RedirectTarget, login, consent } from "./oidc";
+import { getCookie } from "~/frontend/util/cookies";
 
 const main = () => {
   try {
@@ -21,10 +13,18 @@ const main = () => {
   if (form == null) {
     throw new Error("could not find login form");
   }
+  const loading = document.getElementById("loading-box");
+  if (loading === null) {
+    let e = new Error("failed to grab loading screen");
+    handleError(e);
+    throw e;
+  }
+  const credsBox = document.getElementById("creds-box");
+  if (!credsBox) {
+    throw new Error("could not get credentials box");
+  }
   const oidcbtn = document.getElementById("with-oidc");
-  if (oidcbtn == null) {
-    console.warn('could not find "login with oidc" button');
-  } else {
+  if (oidcbtn !== null) {
     oidcbtn.addEventListener("click", async (ev: MouseEvent) => {
       let pkce = await new_pkce();
       delete_pkce();
@@ -45,6 +45,15 @@ const main = () => {
   const code = params.get("code");
   const consent_challenge = params.get("consent_challenge");
   const login_challenge = params.get("login_challenge");
+  const forceLogin = params.get("force_login");
+  let authToken = getCookie("_token");
+
+  // If we are already logged in and going through the oidc flow then we should
+  // hide the username/password form and display the loading panel.
+  if (authToken !== null && (login_challenge || consent_challenge)) {
+    loading.style.visibility = "visible";
+    credsBox.style.visibility = "hidden";
+  }
 
   if (oidcbtn && (login_challenge || consent_challenge || code)) {
     oidcbtn.style.visibility = "hidden";
@@ -61,8 +70,41 @@ const main = () => {
       });
     return;
   } else if (code) {
-    code_flow(code, form);
+    // if is mainly just here for testing...
+    oidcToken(code)
+      .then(async (token) => {
+        let node = document.createElement("p");
+        node.innerText = JSON.stringify(token, null, 4);
+        document.body.appendChild(node);
+        //window.location.pathname = "/";
+        let res = await fetch(new URL("/userinfo", OIDC_URL).toString(), {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token.access_token}`,
+          },
+        });
+        let info = await res.json();
+        console.log("userinfo:", info);
+      })
+      .catch((e) => handleError(e, form));
     return;
+  }
+
+  // Auto login if auth cookie is found.
+  if (!forceLogin && authToken !== null && login_challenge) {
+    login({ login_challenge: login_challenge })
+      .then(async (blob: RedirectTarget) => {
+        if (!blob.redirect_to) {
+          throw new Error("to redirect target");
+        }
+        await sleep(1000);
+        window.location.href = blob.redirect_to;
+      })
+      .catch((err: Error) => {
+        handleError(err, form);
+        form.reset();
+      });
   }
 
   form.addEventListener("submit", (ev: SubmitEvent) => {
@@ -107,38 +149,10 @@ const handleError = (err: Error, parent?: HTMLElement) => {
   }
 };
 
-const login = async (req: LoginRequest): Promise<RedirectTarget> => {
-  return fetch("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(req),
-  }).then(async (res: Response) => {
-    if (!res.ok) {
-      try {
-        const message = await res.json();
-        return Promise.reject(new Error(message.message));
-      } catch (e) {
-        return Promise.reject(new Error(res.statusText));
-      }
-    }
-    return res.json();
-  });
-};
-
-const consent = async (challenge: string): Promise<RedirectTarget> => {
-  return fetch("/api/consent", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ consent_challenge: challenge }),
-  }).then((res: Response) => res.json());
-};
-
-const code_flow = (code: string, form: HTMLFormElement) => {
+const oidcToken = (code: string) => {
   let pkce = load_pkce();
   if (pkce == null) {
-    let e = new Error("failed to load pkce state");
-    handleError(e, form);
-    throw e;
+    return Promise.reject(new Error("failed to load pkce state"));
   }
   let u = new URL("/oauth2/token", OIDC_URL);
   let req = {
@@ -147,91 +161,36 @@ const code_flow = (code: string, form: HTMLFormElement) => {
     client_id: OIDC_CLIENT_ID,
     code_verifier: pkce.verifier,
   };
-  fetch(u.toString(), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams(req),
-  })
-    .then(async (res: Response) => {
-      if (!res.ok) {
-        try {
-          const message = await res.json();
-          console.error(message);
-          return Promise.reject(new Error(message.error_description));
-        } catch (e) {
-          return Promise.reject(new Error(res.statusText));
+  return (
+    fetch(u.toString(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(req),
+    })
+      // parse the token and handle errors
+      .then(async (res: Response) => {
+        if (!res.ok) {
+          try {
+            const message = await res.json();
+            return Promise.reject(new Error(message.error_description));
+          } catch (e) {
+            return Promise.reject(new Error(res.statusText));
+          }
         }
-      }
-      return res.json();
-    })
-    .then((blob) => {
-      let raw = JSON.stringify(blob);
-      let node = document.createElement("p");
-      node.innerText = raw;
-      document.body.appendChild(node);
-      localStorage.setItem("oidc_token", raw);
-      delete_pkce();
-      window.location.pathname = "/";
-    })
-    .catch(handleError);
+        return res.json();
+      })
+      // Save token to localStorage and return it
+      .then((token: OAuth2Token) => {
+        let raw = JSON.stringify(token);
+        localStorage.setItem("oidc_token", raw);
+        delete_pkce();
+        return token;
+      })
+  );
 };
 
-interface Pkce {
-  verifier: string;
-  challenge: string;
-  state: string;
-}
-
-const new_pkce = async (): Promise<Pkce> => {
-  const verifierBuf = crypto.getRandomValues(new Uint8Array(96));
-  const verifier = b64(verifierBuf); // this will have a length of 128
-
-  const ascii = new Uint8Array(verifier.length);
-  for (let i = 0; i < verifier.length; i++) ascii[i] = verifier.charCodeAt(i);
-
-  const hash = await crypto.subtle.digest("SHA-256", ascii);
-  return {
-    verifier: verifier,
-    challenge: b64(new Uint8Array(hash)),
-    state: b64(crypto.getRandomValues(new Uint8Array(16))),
-  };
-};
-
-const save_pkce = (pkce: Pkce) => {
-  localStorage.setItem("oidc_verifier", pkce.verifier);
-  localStorage.setItem("oidc_challenge", pkce.challenge);
-  localStorage.setItem("oidc_state", pkce.state);
-};
-
-const delete_pkce = () => {
-  localStorage.removeItem("oidc_verifier");
-  localStorage.removeItem("oidc_challenge");
-  localStorage.removeItem("oidc_state");
-};
-
-const load_pkce = (): Pkce | null => {
-  let v = localStorage.getItem("oidc_verifier");
-  let c = localStorage.getItem("oidc_challenge");
-  let s = localStorage.getItem("oidc_state");
-  if (v == null || c == null || s == null) {
-    console.warn("failed to load oidc state:", v, c, s);
-    return null;
-  }
-  return {
-    verifier: v,
-    challenge: c,
-    state: s,
-  };
-};
-
-const b64 = (buf: Uint8Array) => {
-  // https://tools.ietf.org/html/rfc4648#section-5
-  return btoa(String.fromCharCode.apply(null, Array.from(buf)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-};
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 main();
