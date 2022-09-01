@@ -14,9 +14,9 @@ resources:
   - vanity-imports.yml
   - legacy-site.yml
   - grafana.yml
-  - telem/fluent-bit
-  - telem/loki
-  - telem/prometheus
+  - fluent-bit
+  - loki
+  - prometheus
 
   #- registry/registry.yml
   #- geoip.yml
