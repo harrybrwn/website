@@ -45,6 +45,7 @@ type S3Policy struct {
 		} `json:",omitempty"`
 		Action    []string
 		Resource  []string
+		SID       string `json:"Sid,omitempty"`
 		Condition struct {
 			StringEquals StringEqualsPolicyCondition `json:",omitempty"`
 			IpAddress    IPAddressPolicyCondition    `json:",omitempty"`

@@ -166,7 +166,7 @@ func FromContext(ctx context.Context) FieldLogger {
 }
 
 func StashInContext(ctx context.Context, logger FieldLogger) context.Context {
-	if l := FromContext(ctx); l != nil {
+	if l := ctx.Value(loggerKey); l != nil {
 		logger.Warn("log.StashInContext: context already has a logger")
 	}
 	return context.WithValue(ctx, loggerKey, logger)
