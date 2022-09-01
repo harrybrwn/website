@@ -1,7 +1,8 @@
 # https://www.ory.sh/docs/hydra/reference/configuration
+version: v1.11.7
 
 log:
-  format: json
+  # format: json
   level: debug
   leak_sensitive_values: true
 
@@ -9,17 +10,16 @@ serve:
   cookies:
     same_site_mode: Lax
   tls:
+    enabled: false
     allow_termination_from:
       - "10.0.0.0/8"
       - "172.16.0.0/12"
       - "192.168.0.0/16"
       - "127.0.0.0/8"
-  admin:
-    tls:
-      enabled: false
   public:
     cors:
       enabled: true
+      allow_credentials: true
       allowed_origins:
         - https://hrry.local
         - https://*.hrry.local
@@ -36,9 +36,25 @@ urls:
   error:    "https://hrry.local/oidc-error"
   logout:   "https://hrry.local/logout"
 
+webfinger:
+  oidc_discovery:
+    supported_claims:
+      - email
+      - uuid
+      - username
+      - roles
+
 oauth:
   pkce:
     enforced_for_public_clients: true
+
+oauth2:
+  allowed_top_level_claims:
+    - email
+    - uuid
+    - username
+    - roles
+  #refresh_token_hook: https://my-example.app/token-refresh-hook
 
 oidc:
   subject_identifiers:
@@ -47,3 +63,9 @@ oidc:
       - public
     pairwise:
      salt: 'pairwise-salt-1234'
+  dynamic_client_registration:
+    enabled: false
+
+sqa:
+  # Disable anonymized telemetry
+  opt_out: true

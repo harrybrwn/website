@@ -19,6 +19,10 @@
       },
       {
         "Name": "files"
+      },
+      {
+        "Name": "outline-wiki-data",
+        "policy": "outline-bucket-access"
       }
     ],
     "policies": {
@@ -161,6 +165,51 @@
             "Resource": ["arn:aws:s3:::files/*"]
           }
         ]
+      },
+      "outline": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "s3:ListBucket",
+              "s3:GetBucketLocation",
+              "s3:ListBucketMultipartUploads"
+            ],
+            "Resource": ["arn:aws:s3:::outline-wiki-data"]
+          },
+          {
+            "Sid": "",
+            "Effect": "Allow",
+            "Action": [
+              "s3:DeleteObject",
+              "s3:PutObject",
+              "s3:GetObject"
+            ],
+            "Resource": ["arn:aws:s3:::outline-wiki-data/*"]
+          }
+        ]
+      },
+      "outline-bucket-access": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": { "AWS": ["*"] },
+            "Action": ["s3:GetBucketLocation", "s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::outline-wiki-data"]
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": ["*"]
+            },
+            "Action": ["s3:GetObject", "s3:PutObject"],
+            "Resource": [
+              "arn:aws:s3:::outline-wiki-data/*"
+            ]
+          }
+        ]
       }
     },
     "groups": []
@@ -181,6 +230,14 @@
       {
         "Name": "movies",
         "Owner": "harrybrwn"
+      },
+      {
+        "Name": "hydra",
+        "Owner": "hydra"
+      },
+      {
+        "Name": "outline",
+        "Owner": "outline"
       }
     ],
     "migrations": {

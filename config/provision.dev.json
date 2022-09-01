@@ -28,6 +28,11 @@
         "AccessKey": "files",
         "SecretKey": "minio-testbed001",
         "Policies": ["file-access-user"]
+      },
+      {
+        "AccessKey": "outline",
+        "SecretKey": "minio-testbed001",
+        "Policies": ["outline"]
       }
     ]
   },
@@ -42,24 +47,42 @@
       },
       {
         "Name": "db-backups",
-        "Password": "testbed01"
+        "Password": "testbed03"
       },
       {
-        "Name": "tanya",
-        "Password": "testbed03",
+        "Name": "hooks",
+        "Password": "testbed006",
         "Grants": {
           "Database": {
-            "hr": ["CONNECT"],
-            "movies": ["CONNECT"]
+            "harrybrwn_hooks": ["CONNECT"]
           }
         }
       },
       {
-        "Name": "hooks",
+        "Name": "hydra",
         "Password": "testbed04",
         "Grants": {
           "Database": {
-            "harrybrwn_hooks": ["CONNECT"]
+            "hydra": ["CONNECT"]
+          }
+        }
+      },
+      {
+        "Name": "outline",
+        "Password": "testbed05",
+        "Grants": {
+          "Database": {
+            "outline": ["CONNECT"]
+          }
+        }
+      },
+      {
+        "Name": "tanya",
+        "Password": "testbed001",
+        "Grants": {
+          "Database": {
+            "hr": ["CONNECT"],
+            "movies": ["CONNECT"]
           }
         }
       }

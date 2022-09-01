@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+
+  api:
+    entrypoint: sh -c
+    command:
+      - |
+        mkdir -p /usr/local/share/ca-certificates/
+        cp /run/secrets/harrybrwn.crt /usr/local/share/ca-certificates/
+        update-ca-certificates
+        exec /app/harrybrwn --port 8081
+    environment:
+      - HYDRA_ADMIN_URL=https://hydra:4445
+    secrets:
+      - harrybrwn.crt
+
+  hydra:
+    entrypoint: ["sh", "-c"]
+    user: root
+    command:
+      - |
+        mkdir -p /usr/local/share/ca-certificates/
+        cp /run/secrets/harrybrwn.crt /usr/local/share/ca-certificates/
+        update-ca-certificates
+        wait.sh tcp://db:5432 -- hydra migrate sql -e -y
+        exec hydra serve all --config /hydra.yml
+    environment:
+      - SERVE_TLS_ENABLED=true
+      - SERVE_TLS_ALLOW_TERMINATION_FROM=[]
+      - SERVE_TLS_CERT_PATH=/run/secrets/hydra.crt
+      - SERVE_TLS_KEY_PATH=/run/secrets/hydra.key
+      - HYDRA_URL=https://hydra:4444
+      - HYDRA_ADMIN_URL=https://hydra:4445
+    secrets:
+      - harrybrwn.crt
+      - hydra.crt
+      - hydra.key
+
+  outline:
+    image: ${REGISTRY}/harrybrwn/outline:${VERSION:-latest}
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.outline
+    user: root
+    entrypoint: sh -c
+    command:
+      - |
+        wait.sh tcp://db:5432 -- yarn sequelize:migrate --env=production-ssl-disabled
+        exec yarn start --env=production-ssl-disabled
+    environment:
+      - NODE_EXTRA_CA_CERTS=/run/secrets/harrybrwn.crt
+      - URL=https://wiki.hrry.local
+      - PORT=8443
+      - SECRET_KEY=d97ca89921aa465b94cfe2d97483f477fc5930d1ddeb2b1f54055a6e83c13dcb
+      - UTILS_SECRET=00e2f306f4a2077ce87f45092ab701ec5be61680d243a6bc88da7ef0c4c3f6a0
+      - ENABLE_UPDATES=false # disable telemetry
+      - AWS_S3_UPLOAD_BUCKET_URL=https://s3.hrry.local
+      - AWS_ACCESS_KEY_ID=outline
+      - AWS_SECRET_ACCESS_KEY=testbed001
+      - AWS_S3_UPLOAD_BUCKET_NAME=outline-wiki-data
+      - AWS_S3_UPLOAD_MAX_SIZE=26214400
+      - AWS_S3_FORCE_PATH_STYLE=true
+      - AWS_S3_ACL=private
+      - DATABASE_URL=postgres://outline:testbed05@db:5432/outline
+      - PGSSLMODE=disable
+      - REDIS_URL=redis://:testbed01@redis:6379
+      - REDIS_PASSWORD=testbed01
+      - OIDC_CLIENT_ID=outline0
+      - OIDC_CLIENT_SECRET=b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465
+      - OIDC_AUTH_URI=https://auth.hrry.local/oauth2/auth
+      - OIDC_TOKEN_URI=https://hydra:4444/oauth2/token
+      - OIDC_USERINFO_URI=https://hydra:4444/userinfo
+      - OIDC_USERNAME_CLAIM=name
+      - OIDC_SCOPES=openid offline profile email
+      - OIDC_DISPLAY_NAME=hrry.me
+    networks:
+      - backend
+    secrets:
+      - harrybrwn.crt
+
+secrets:
+  harrybrwn.crt:
+    file: config/pki/certs/ca.crt
+  hydra.crt:
+    file: config/pki/certs/hydra.crt
+  hydra.key:
+    file: config/pki/certs/hydra.key

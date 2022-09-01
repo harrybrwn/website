@@ -1,0 +1,7 @@
+ARG OUTLINE_VERSION=latest
+FROM outlinewiki/outline:${OUTLINE_VERSION}
+USER root
+RUN apk add --update-cache --latest \
+	ca-certificates \
+	curl
+COPY scripts/wait.sh /usr/local/bin/
