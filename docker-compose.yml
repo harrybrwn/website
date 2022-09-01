@@ -111,6 +111,7 @@ services:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=harrybrwn_api
+      - HYDRA_ADMIN_URL=http://hydra:4445
     networks:
       - backend
     healthcheck:
@@ -283,10 +284,10 @@ services:
       - source: wait.sh
         target: /usr/local/bin/wait.sh
     environment:
+      - LOG_FORMAT=json
       - HYDRA_URL=http://hydra:4444
       - HYDRA_ADMIN_URL=http://hydra:4445
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
-      - OAUTH2_INCLUDE_LEGACY_ERROR_FIELDS=true
     depends_on:
       - db
 
@@ -305,25 +306,12 @@ services:
       retries: 5
       start_period: 30s
 
-  outline:
-    image: outlinewiki/outline:latest
-    environment:
-      - DATABASE_URL=postgres://outline:testbed05@db:5432/outline
-      - REDIS_URL=redis://redis:6379/5
-      - URL=https://wiki.hrry.local
-      - AWS_ACCESS_KEY_ID=
-      - AWS_SECRET_ACCESS_KEY=
-      - AWS_S3_UPLOAD_BUCKET_URL=
-      - AWS_S3_UPLOAD_BUCKET_NAME=outline
-      - AWS_S3_UPLOAD_MAX_SIZE=26214400
-      - AWS_S3_FORCE_PATH_STYLE=true
-      - AWS_S3_ACL=private
-
   # TODO
-  # https://github.com/toeverything/AFFiNE
-  # https://www.appflowy.io/
-  # https://www.getoutline.com/
-  # https://blog.gurucomputing.com.au/doing-more-with-docker/deploying-outline-wiki/
+  # - [ ] https://github.com/toeverything/AFFiNE
+  # - [ ] https://www.appflowy.io/
+  # - [x] https://www.getoutline.com/
+  # - [x] https://blog.gurucomputing.com.au/doing-more-with-docker/deploying-outline-wiki/
+  # - [ ] https://cinwell.com/notea/
 
 volumes:
   database:

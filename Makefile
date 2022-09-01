@@ -141,3 +141,14 @@ oidc-client:
 		--grant-types authorization_code,refresh_token \
 		--scope openid,offline                         \
 		--token-endpoint-auth-method none
+
+outline-client:
+	scripts/tools/hydra clients create \
+	 	--name outline \
+		--id outline0  \
+		--secret b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465 \
+		--callbacks 'https://wiki.hrry.local/auth/oidc.callback' \
+		--response-types code,id_token                 \
+		--grant-types authorization_code,refresh_token \
+		--scope openid,offline,profile,email           \
+		--token-endpoint-auth-method client_secret_post

@@ -89,7 +89,7 @@ RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
 # Base service
 #
 FROM alpine:${ALPINE_VERSION} as service
-RUN apk update && apk upgrade && apk add -l tzdata curl
+RUN apk update && apk upgrade && apk add -l tzdata curl ca-certificates
 COPY --from=wait /bin/wait.sh /usr/local/bin/wait.sh
 
 #

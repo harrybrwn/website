@@ -172,24 +172,10 @@ rm -rf "${PKI}/certs"
 mkdir -p "${PKI}/certs"
 
 ca_cert "harrybrwn local dev"
-server_cert \
-	-cn "hryb.local"             \
-	-alt "*.hryb.local"          \
-	-alt '*.api.hryb.local'       \
-	-alt '*.rpc.hryb.local'      \
-	-alt '*.grpc.hryb.local'     \
-	-alt '*.s3.hryb.local'       \
-	-alt '*.db.hryb.local'       \
-	-alt '*.rdb.hryb.local'      \
-	-alt '*.ldap.hryb.local'     \
-	-alt '*.saml.hryb.local'     \
-	-alt '*.radius.hryb.local'   \
-	-alt '*.git.hryb.local'      \
-	-alt '*.registry.hryb.local' \
-	-alt '*.pkg.hryb.local'
 server_cert -cn "harrybrwn.com" -alt "harrybrwn.local" -alt "*.harrybrwn.local"
 server_cert -cn 'hrry.me'  -alt 'hrry.local' -alt '*.hrry.local'
 server_cert -cn 'hrry.dev' -alt 'hrry.local' -alt '*.hrry.local'
+server_cert -cn 'hydra' -alt 'auth.hrry.local'
 
 # ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
 
