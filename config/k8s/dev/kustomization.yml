@@ -4,7 +4,7 @@ bases:
 
 resources:
   - certificates.yml
-
+  #- ingress.yml
 
 commonLabels:
   hrry.me/environment: dev

@@ -53,6 +53,13 @@ spec:
                 configMapKeyRef:
                   name: sentinel
                   key: redis-host-list
+            - name: REDIS_BASE_DOMAIN
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel
+                  key: redis-base-domain
+            - name: REDIS_DNS_FORMAT
+              value: '%s.redis'
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:

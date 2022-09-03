@@ -1,3 +1,4 @@
+---
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
@@ -17,11 +18,9 @@ spec:
     name: ca-issuer
     kind: Issuer
     group: cert-manager.io # this is the default
-
   subject:
     organizations:
       - HarryBrown
-
   commonName: hrry.local
   isCA: false
   usages:
@@ -32,7 +31,6 @@ spec:
     - "*.hrry.local"
   ipAddresses:
     - 127.0.0.1
-
   duration: 2160h # 90d
   renewBefore: 360h # 15d
 
@@ -47,11 +45,9 @@ spec:
     name: ca-issuer
     kind: Issuer
     group: cert-manager.io # this is the default
-
   subject:
     organizations:
       - HarryBrown
-
   commonName: hrry.local
   isCA: false
   usages:
@@ -62,7 +58,6 @@ spec:
     - "*.hrry.local"
   ipAddresses:
     - 127.0.0.1
-
   duration: 2160h # 90d
   renewBefore: 360h # 15d
 
@@ -77,11 +72,9 @@ spec:
     name: ca-issuer
     kind: Issuer
     group: cert-manager.io # this is the default
-
   subject:
     organizations:
       - HarryBrown
-
   commonName: harrybrwn.local
   isCA: false
   usages:
@@ -92,6 +85,5 @@ spec:
     - "*.harrybrwn.local"
   ipAddresses:
     - 127.0.0.1
-
   duration: 2160h # 90d
   renewBefore: 360h # 15d

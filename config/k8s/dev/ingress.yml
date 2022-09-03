@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway
+  labels:
+    name: gateway
+spec:
+  tls:
+  - hosts:
+    - "hrry.local"
+    - "*.hrry.local"
+    secretName: hrry-me-tls
+  rules:
+  - host: hrry.local
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: nginx
+            port:
+              name: nginx-http
+  # - host: grafana.hrry.local

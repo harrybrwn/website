@@ -18,12 +18,20 @@ find_master_node() {
 		if [ -z "${port}" ] || [ "${port}" = "${host}" ]; then
 			port="${REDIS_PORT}"
 		fi
+		if [ -n "${REDIS_DNS_FORMAT:-}" ]; then
+			host="$(printf "${REDIS_DNS_FORMAT:-}" "${host}")"
+		fi
+		# if [ -n "${REDIS_BASE_DOMAIN:-}" ]; then
+		# 	host="${host}.${REDIS_BASE_DOMAIN}"
+		# fi
+		set +e
 		_MASTER="$(redis-cli --no-auth-warning \
 			--raw -h "${host}" -p "${port}" -a "${REDIS_PASSWORD}" \
 			info replication \
 			| awk '{print $1}' \
 			| grep 'master_host:' \
 			| cut -d ':' -f2)"
+		set -e
 		if [ -z "${_MASTER}" ]; then
 			continue
 		else
@@ -63,9 +71,8 @@ TIMEOUT_END=$(($(date +%s) + TIMEOUT))
 
 MASTER=""
 while [ "$(date +%s)" -lt ${TIMEOUT_END} ]; do
-	MASTER="$(find_master_node)"
-  # shellcheck disable=SC2181
-	if [ $? -ne 0 ]; then
+	if ! MASTER="$(find_master_node)"; then
+	 	echo "waiting for redis for ${WAIT}s"
 		sleep ${WAIT}
 		continue
 	else

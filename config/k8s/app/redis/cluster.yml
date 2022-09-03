@@ -46,7 +46,7 @@ spec:
               echo "requirepass ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
               echo "finding master..."
               MASTER_FDQN=`hostname  -f | sed -e 's/redis-[0-9]\./redis-0./'`
-              if [ "$(redis-cli -h sentinel -p ${SENTINEL_PORT} ping)" != "PONG" ]; then
+              if [ "$(redis-cli --pipe-timeout 2 -h sentinel -p ${SENTINEL_PORT} ping)" != "PONG" ]; then
                 echo "master not found, defaulting to redis-0"
 
                 if [ "$(hostname)" == "redis-0" ]; then

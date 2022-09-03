@@ -1,0 +1,64 @@
+version: "3.8"
+
+x-redis-common: &redis-common
+  image: harrybrwn/redis:latest
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      - REDIS_VERSION=6.2.6-alpine
+  env_file:
+    - common.env
+
+services:
+  redis-0:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-0:/data]
+  redis-1:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-1:/data]
+  redis-2:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-2:/data]
+  redis-3:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-3:/data]
+  redis-4:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-4:/data]
+  redis-5:
+    <<: *redis-common
+    entrypoint: node-entrypoint.sh
+    volumes: [redis-5:/data]
+
+  create-cluster:
+    <<: *redis-common
+    entrypoint: create-cluster.sh
+    restart: never
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 0
+
+  # sentinel-0:
+  #   <<: *redis-common
+  #   entrypoint: sentinel-entrypoint.sh
+  # sentinel-1:
+  #   <<: *redis-common
+  #   entrypoint: sentinel-entrypoint.sh
+  # sentinel-2:
+  #   <<: *redis-common
+  #   entrypoint: sentinel-entrypoint.sh
+
+volumes:
+  redis-0:
+  redis-1:
+  redis-2:
+  redis-3:
+  redis-4:
+  redis-5:
