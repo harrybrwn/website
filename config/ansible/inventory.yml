@@ -15,16 +15,16 @@ all:
 
   children:
     ubuntu:
+      vars:
+        ansible_ssh_user: harry
       hosts:
         laptop:
           ansible_host: 10.0.0.11
-          ansible_ssh_user: harry
           #ansible_become_password: ''
           swarm_manager: true
           certbot: true
         lenovo:
           ansible_host: 10.0.0.13
-          ansible_ssh_user: harry
           nfs_server: true
           nfs_exports:
             - path: /exports/nfs/hrry.dev

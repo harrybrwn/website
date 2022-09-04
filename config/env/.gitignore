@@ -21,3 +21,5 @@ nginx-passwd.env
 !jwt.env
 !hydra.env
 !redis.env
+!github.env
+!grafana.env

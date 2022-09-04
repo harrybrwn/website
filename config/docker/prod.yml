@@ -97,6 +97,7 @@ services:
     env_file:
       - config/env/sendgrid.env
       - config/env/prod/db.env
+      - config/env/prod/github.env
       - config/env/swarm_data.env
     deploy:
       replicas: 1
@@ -193,7 +194,7 @@ services:
     environment:
       - GF_SERVER_ROOT_URL=https://grafana.hrry.dev
     env_file:
-      - config/env/prod/db.env
+      - config/env/prod/grafana.env
       - config/env/swarm_data.env
 
   prometheus:

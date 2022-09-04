@@ -2,22 +2,22 @@
 
 set -eu
 
-GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0")"
+GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0.0.0")"
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
 export GIT_COMMIT GIT_BRANCH GIT_TAG SOURCE_HASH
 
 if [ -f "./.env" ]; then
-	if [ -n "${REGISTRY:-}" ]; then
-		_REG="${REGISTRY}"
-	fi
-	source "./.env"
-	if [ -n "${_REG:-}" ]; then
-		REGISTRY="${_REG}"
-		unset _REG
-	fi
-	export REGISTRY
+  if [ -n "${REGISTRY:-}" ]; then
+    _REG="${REGISTRY}"
+  fi
+  source "./.env"
+  if [ -n "${_REG:-}" ]; then
+    REGISTRY="${_REG}"
+    unset _REG
+  fi
+  export REGISTRY
 fi
 
 if [ -n "${COMPOSE_FILE:-}" ]; then
@@ -39,78 +39,81 @@ STACK="harrybrwn"
 ARGS=()
 
 usage() {
-	echo "Usage"
-	echo "  deployment [flags...] [command|compose command]"
-	echo
-	echo "Commands"
-	echo "  up      call 'docker stack deploy'"
-	echo "  bake    call 'docker buildx bake'"
-	echo "  infra   deploy bootstrapping infrastructure like a container registry"
-  echo "  upload  upload frontend build to s3"
-	echo
-	echo "Flags"
-	echo "  -h, --help                 get help message"
-	echo "      --context <name>       name of docker context to use (default: \"$CONTEXT\")"
-	echo "      --network <name>       name of docker swarm network to check for and create (default: \"$NETWORK\")"
-	echo "      --dev                  run for development environment (default: $DEV)"
-	echo "      --dry-run              print the docker-compose command but don't run it (default: $DRY)"
-	echo "      --stack <name>         docker stack name (default: \"$STACK\")"
-	echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[*]})"
-	echo
+  echo "Usage"
+  echo "  deployment [flags...] [command|compose command]"
+  echo
+  echo "Commands"
+  echo "  up         call 'docker stack deploy'"
+  echo "  down       bring down all the deployments"
+  echo "  bake       call 'docker buildx bake'"
+  echo "  infra      deploy bootstrapping infrastructure"
+  echo "  upload     upload frontend build to s3"
+  echo "  provision  provision data sources"
+  echo "  config     display the configuration"
+  echo
+  echo "Flags"
+  echo "  -h, --help                 get help message"
+  echo "      --context <name>       name of docker context to use (default: \"$CONTEXT\")"
+  echo "      --network <name>       name of docker swarm network to check for and create (default: \"$NETWORK\")"
+  echo "      --dev                  run for development environment (default: $DEV)"
+  echo "      --dry-run              print the docker-compose command but don't run it (default: $DRY)"
+  echo "      --stack <name>         docker stack name (default: \"$STACK\")"
+  echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[*]})"
+  echo
 }
 
 has_vol() {
-	if $DRY; then
-		echo "docker --context \"${CONTEXT}\" volume inspect \"$1\" > /dev/null 2>&1"
-	else
-		docker --context "${CONTEXT}" volume inspect "$1" > /dev/null 2>&1
-	fi
-	return $?
+  if $DRY; then
+    echo "docker --context \"${CONTEXT}\" volume inspect \"$1\" > /dev/null 2>&1"
+  else
+    docker --context "${CONTEXT}" volume inspect "$1" > /dev/null 2>&1
+  fi
+  return $?
 }
 
 while [ $# -gt 0 ]; do
-	case $1 in
-		-h|--help)
-			usage
-		 	exit
-			;;
-		--context)
-			CONTEXT="$2"
-			shift 2
-			;;
-		--network)
-			NETWORK="$2"
-			shift 2
-			;;
-		-c|--compose-file)
-		 	COMPOSE_FILES+=("$2")
-			shift 2
-			;;
-		--dev)
-		 	DEV=true
-			shift
-			;;
+  case $1 in
+    -h|--help)
+      usage
+       exit
+      ;;
+    --context)
+      CONTEXT="$2"
+      shift 2
+      ;;
+    --network)
+      NETWORK="$2"
+      shift 2
+      ;;
+    -c|--compose-file)
+       COMPOSE_FILES+=("$2")
+      shift 2
+      ;;
+    --dev)
+       DEV=true
+      shift
+      ;;
     --prod)
       PRD=true
       shift
       ;;
-		--no-logging)
-			LOGGING=false
-			shift
-			;;
+    --no-logging)
+      LOGGING=false
+      shift
+      ;;
     --dry-run)
       DRY=true
       shift
       ;;
-		-*)
-			echo "Error: unknown flag \"$1\""
-			exit 1
-			;;
-		*)
-		 	ARGS+=("$1")
-			shift
-			;;
-	esac
+    -*)
+      echo "Error: unknown flag \"$1\""
+      exit 1
+      ;;
+    *)
+       ARGS+=("$1")
+      shift
+      ;;
+  esac
 done
 
 if ! $DEV && ! $PRD; then
@@ -123,196 +126,199 @@ fi
 
 COMPOSE_ARGS=()
 for f in "${COMPOSE_FILES[@]}"; do
-	COMPOSE_ARGS+=("--file" "$f")
+  COMPOSE_ARGS+=("--file" "$f")
 done
 
 if $LOGGING; then
-	COMPOSE_ARGS+=("--file" "config/docker-compose.logging.yml")
+  COMPOSE_ARGS+=("--file" "config/docker-compose.logging.yml")
 fi
 
 if $DEV; then
-	COMPOSE_ARGS+=("--file" "config/docker/dev.yml")
-	CONTEXT="default"
+  COMPOSE_ARGS+=("--file" "config/docker/dev.yml")
+  CONTEXT="default"
 else
-	COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
+  COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
 
 network_exists() {
-	docker --context "${CONTEXT}" network inspect "${1}" > /dev/null 2>&1
+  docker --context "${CONTEXT}" network inspect "${1}" > /dev/null 2>&1
 }
 
 volume_exists() {
-	dodocker --context "${CONTEXT}" volume inspect "${1}" > /dev/null 2>&1
+  dodocker --context "${CONTEXT}" volume inspect "${1}" > /dev/null 2>&1
 }
 
 secret_exists() {
-	dodocekr --context "${CONTEXT}" secret inspect "${1}" > /dev/null 2>&1
+  dodocekr --context "${CONTEXT}" secret inspect "${1}" > /dev/null 2>&1
 }
 
 dodocker() {
-	if $DRY; then
-		echo "docker $*"
-	else
-		docker "$@"
-	fi
+  if $DRY; then
+    echo "docker $*"
+  else
+    docker "$@"
+  fi
 }
 
 dodocker-compose() {
-	if $DRY; then
-		echo "docker-compose $*"
-	else
-		docker-compose "$@"
-	fi
+  if $DRY; then
+    echo "docker compose $*"
+  else
+    docker compose "$@"
+  fi
 }
 
 registry_volume() {
-	if ! has_vol registry; then
-		dodocker --context "${CONTEXT}" volume create --driver 'local' registry
-	fi
+  if ! has_vol registry; then
+    dodocker --context "${CONTEXT}" volume create --driver 'local' registry
+  fi
 }
 
 service_mesh_network() {
-	if ! network_exists "service-mesh"; then
-		dodocker --context "${CONTEXT}" network create \
-			--driver "overlay" \
-			"service-mesh"
-	fi
+  if ! network_exists "service-mesh"; then
+    dodocker --context "${CONTEXT}" network create \
+      --driver "overlay" \
+      "service-mesh"
+  fi
 }
 
 deploy() {
-	if ! $DEV; then
-	  if ! network_exists "${NETWORK}" ; then
-			# Delete the default ingress network if it exists.
-			if network_exists 'ingress'; then
-				dodocker --context "${CONTEXT}" network rm 'ingress'
-			fi
-			# Create the new ingress network
-	    dodocker --context "${CONTEXT}" network create \
-	      --driver overlay    \
-	      --ingress           \
-	      --scope swarm       \
-				--ipv6              \
-				--opt com.docker.network.driver.overlay.vxlanid_list=4096 \
-	      "${NETWORK}"
-	  fi
-		service_mesh_network
-	fi
-	registry_volume
-	if $DRY; then
-		echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
-			docker --context "${CONTEXT}" stack deploy \
-				--resolve-image=always \
-				--with-registry-auth   \
-				--prune                \
-				--compose-file -       \
-				"${STACK}"
-	else
-		docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
-			docker --context "${CONTEXT}" stack deploy \
-				--resolve-image=always \
-				--with-registry-auth   \
-				--prune                \
-				--compose-file -       \
-				"${STACK}"
-	fi
+  if ! $DEV; then
+    if ! network_exists "${NETWORK}" ; then
+      # Delete the default ingress network if it exists.
+      if network_exists 'ingress'; then
+        dodocker --context "${CONTEXT}" network rm 'ingress'
+      fi
+      # Create the new ingress network
+      dodocker --context "${CONTEXT}" network create \
+        --driver overlay    \
+        --ingress           \
+        --scope swarm       \
+        --ipv6              \
+        --opt com.docker.network.driver.overlay.vxlanid_list=4096 \
+        "${NETWORK}"
+    fi
+    service_mesh_network
+  fi
+  registry_volume
+  if $DRY; then
+    echo docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
+      docker --context "${CONTEXT}" stack --orchestrator swarm deploy \
+        --orchestrator swarm   \
+        --resolve-image=always \
+        --with-registry-auth   \
+        --prune                \
+        --compose-file -       \
+        "${STACK}"
+  else
+    docker-compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
+      docker --context "${CONTEXT}" stack deploy \
+        --orchestrator swarm   \
+        --resolve-image=always \
+        --with-registry-auth   \
+        --prune                \
+        --compose-file -       \
+        "${STACK}"
+  fi
 }
 
 down() {
-	dodocker --context "${CONTEXT}" stack rm "${STACK}"
-	until [ -z "$(dodocker --context ${CONTEXT} stack ps --quiet ${STACK})" ]; do
-		sleep 1
-		echo "waiting for \"${STACK}\" to stop..."
-		dodocker --context "${CONTEXT}" stack ps --quiet "${STACK}"
-	done
+  dodocker --context "${CONTEXT}" stack rm "${STACK}"
+  until [ -z "$(dodocker --context ${CONTEXT} stack ps --quiet ${STACK})" ]; do
+    sleep 1
+    echo "waiting for \"${STACK}\" to stop..."
+    dodocker --context "${CONTEXT}" stack ps --quiet "${STACK}"
+  done
 }
 
 infra() {
-	service_mesh_network
-	registry_volume
-	dodocker --context "${CONTEXT}" stack deploy     \
-		--compose-file config/docker-compose.infra.yml \
-		--with-registry-auth                           \
-		--prune \
-		infra
+  service_mesh_network
+  registry_volume
+  dodocker --context "${CONTEXT}" stack deploy     \
+    --compose-file config/docker-compose.infra.yml \
+    --with-registry-auth                           \
+    --prune \
+    infra
 }
 
 upload() {
-	local target="hrry"
-	if $DEV; then
-		target="hrrylocal"
-	fi
-	mc mirror --remove --preserve ./build "$target/frontend/latest/"
-	mc mirror --remove --preserve ./build "$target/frontend/git:${GIT_COMMIT}/"
+  local target="hrry"
+  if $DEV; then
+    target="hrrylocal"
+  fi
+  mc mirror --remove --preserve ./build "$target/frontend/latest/"
+  mc mirror --remove --preserve ./build "$target/frontend/git:${GIT_COMMIT}/"
 }
 
 for arg in "${ARGS[@]}"; do
-	case $arg in
-		migrate)
-			;;
-		test)
-			break
-			;;
-		up)
-			deploy
-			break
-			;;
-		down)
-			down
-			break
-			;;
-		infra)
-			infra
-			break
-			;;
-		build)
-			echo "Error: use \"bake\""
-			break
-			;;
-		help)
-			usage
-			break
-			;;
-		bake)
+  case $arg in
+    up)
+      deploy
+      break
+      ;;
+    down)
+      down
+      break
+      ;;
+    infra)
+      infra
+      break
+      ;;
+    build)
+      echo "Error: use \"bake\""
+      break
+      ;;
+    help)
+      usage
+      break
+      ;;
+    bake)
       COMPOSE_ARGS+=(--file config/docker-compose.tools.yml)
-			if $DRY; then
-				echo docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
-					docker --context default buildx bake \
-						--file - \
-						--file config/docker/buildx.yml \
-						--push
-			else
-				docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
-					docker --context default buildx bake \
-						--file - \
-						--file config/docker/buildx.yml \
-						--push
-			fi
-			break
-			;;
-		provision)
-			go build -trimpath -o bin/provision ./cmd/provision
-			CONFIGS=('--config=config/provision.json')
-			if $DEV; then
-				source ./config/env/minio.env
-				CONFIGS+=('--config=config/provision.dev.json')
-			else
-				source ./config/env/prod/minio.env
-				CONFIGS+=('--config=config/provision.prod.json')
-			fi
-			export S3_ENDPOINT
-			export S3_ACCESS_KEY="${MINIO_ROOT_USER}"
-			export S3_SECRET_KEY="${MINIO_ROOT_PASSWORD}"
+      if $DRY; then
+        echo docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config \| \
+          docker --context default buildx bake \
+            --file - \
+            --file config/docker/buildx.yml \
+            --push
+      else
+        docker --context default buildx bake --file config/docker/docker-bake.hcl --push
 
-			bin/provision "${CONFIGS[@]}" "${ARGS[@]:1}"
-			break
-			;;
+        # docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
+        #   docker --context default buildx bake \
+        #     --file - \
+        #     --file config/docker/buildx.yml \
+        #     --push
+      fi
+      break
+      ;;
+    provision)
+      go build -trimpath -o bin/provision ./cmd/provision
+      CONFIGS=('--config=config/provision.json')
+      if $DEV; then
+        source ./config/env/minio.env
+        CONFIGS+=('--config=config/provision.dev.json')
+      else
+        source ./config/env/prod/minio.env
+        CONFIGS+=('--config=config/provision.prod.json')
+      fi
+      export S3_ENDPOINT
+      export S3_ACCESS_KEY="${MINIO_ROOT_USER}"
+      export S3_SECRET_KEY="${MINIO_ROOT_PASSWORD}"
+
+      bin/provision "${CONFIGS[@]}" "${ARGS[@]:1}"
+      break
+      ;;
     upload)
       upload
       break
       ;;
-		*)
-			dodocker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
-			break
-			;;
-	esac
+    config)
+      dodocker compose "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+      break
+      ;;
+    *)
+      dodocker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" "${ARGS[@]}"
+      break
+      ;;
+  esac
 done

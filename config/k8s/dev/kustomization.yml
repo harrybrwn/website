@@ -47,6 +47,7 @@ secretGenerator:
     behavior: merge
     literals:
       - GF_DATABASE_PASSWORD=testbed02
+      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=1,password=testbed01
   - name: loki
     behavior: merge
     literals:
@@ -86,9 +87,6 @@ configMapGenerator:
       - POSTGRES_USER=harrybrwn
   - name: grafana
     behavior: merge
-    options:
-      labels:
-        dev.hrry.environment: dev
     envs:
       - grafana.env
   - name: loki

@@ -288,7 +288,7 @@ services:
     entrypoint: ["sh", "-c"]
     command:
       - |
-        wait.sh tcp://db:5432 -- hydra migrate sql -e -y
+        sh /usr/local/bin/wait.sh tcp://db:5432 -- hydra migrate sql -e -y
         exec hydra serve all --config /hydra.yml
     env_file:
       - config/env/hydra.env
@@ -304,8 +304,6 @@ services:
       - HYDRA_URL=http://hydra:4444
       - HYDRA_ADMIN_URL=http://hydra:4445
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
-    depends_on:
-      - db
 
   filestash:
     image: machines/filestash

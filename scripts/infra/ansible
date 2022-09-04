@@ -10,7 +10,6 @@ docker compose \
   --ansi never                           \
   run \
     --interactive=false \
-    --no-TTY            \
     --no-deps           \
     --rm                \
     ansible "${name}" "$@"

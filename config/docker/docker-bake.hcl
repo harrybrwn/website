@@ -63,8 +63,8 @@ function "tags" {
     result = [
         "${REGISTRY}/harrybrwn/${name}:latest",
         "${REGISTRY}/harrybrwn/${name}:${VERSION}",
-        "${REGISTRY}/harrybrwn/${name}:${GIT_COMMIT}",
-        "${REGISTRY}/harrybrwn/${name}:${GIT_BRANCH}",
+        notequal("", GIT_COMMIT) ? "${REGISTRY}/harrybrwn/${name}:${GIT_COMMIT}" : "",
+        notequal("", GIT_BRANCH) ? "${REGISTRY}/harrybrwn/${name}:${GIT_BRANCH}" : "",
     ]
 }
 
@@ -148,7 +148,7 @@ target "fluentbit" {
 }
 
 target "grafana" {
-    dockerfile = "config/docker/Dockerfile.grafana"
+    dockerfile = "config/grafana/Dockerfile"
     args = {
         GRAFANA_VERSION = "latest"
     }
@@ -166,7 +166,8 @@ target "loki" {
 }
 
 target "redis" {
-    dockerfile = "config/redis/Dockerfile"
+    context = "config/redis"
+    dockerfile = "Dockerfile"
     args = {
         REDIS_VERSION = "6.2.6-alpine"
     }

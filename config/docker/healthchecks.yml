@@ -52,6 +52,9 @@ services:
     depends_on:
       - fluentbit
       - hooks
+  hydra:
+    depends_on:
+      - db
 
   # fluentbit:
   #   healthcheck:

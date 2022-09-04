@@ -12,5 +12,4 @@ RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
 RUN apt install -yq ansible ansible-lint yamllint git vim dnsutils
 RUN groupadd ansible
 RUN useradd --shell /usr/bin/bash --home-dir /home/ansible -m -g ansible -G ansible,root ansible
-RUN echo "[defaults]\nhost_key_checking = False" >> /home/ansible/.ansible.cfg
 USER ansible

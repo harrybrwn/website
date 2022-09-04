@@ -217,8 +217,6 @@ jobs:
         run: scripts/certs.sh --no-install
       - name: Testing env files
         run: |
-          echo "GITHUB_CLIENT_ID=abcdefg" > ./config/env/github.env
-          echo "GITHUB_CLIENT_SECRET=abcdefg" >> ./config/env/github.env
           echo "REGISTRY_USER=harrybrwn" > ./config/env/registry.env
           echo "REGISTRY_PASSWORD=testbed01" >> ./config/env/registry.env
           echo "REGISTRY_HTTP_SECRET=00000000000000000000000000000000" >> ./config/env/registry.env

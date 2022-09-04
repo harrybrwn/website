@@ -2,9 +2,9 @@ version: "3.8"
 
 services:
   nginx:
-    volumes:
-      - ./build/harrybrwn.com:/var/www/harrybrwn.com:ro
-      - ./config/nginx:/etc/nginx:ro
+    # volumes:
+    #   - ./build/harrybrwn.com:/var/www/harrybrwn.com:ro
+    #   - ./config/nginx:/etc/nginx:ro
     deploy:
       restart_policy:
         condition: on-failure
@@ -21,7 +21,7 @@ services:
         condition: on-failure
         max_attempts: 5
   api:
-    command: -p 8081 -d
+    command: --port 8081 -d
     volumes:
       - ./build:/app/build:ro
     deploy:
@@ -73,7 +73,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        max_attempts: 6
+        max_attempts: 8
   grafana:
     deploy:
       restart_policy:
@@ -83,36 +83,36 @@ services:
 volumes:
   database:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/postgres"
   cache-data:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/redis"
   s3:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/s3"
   filestash:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/filestash"
   grafana:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/grafana"
   prometheus:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/prometheus"
   loki:
     driver_opts:
-      type: nfs
-      o: addr=localhost,rw,soft,intr
+      type: nfs4
+      o: addr=127.0.0.1,rw,soft,intr
       device: ":/srv/nfs/storage/hrry.dev/loki"

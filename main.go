@@ -30,8 +30,6 @@ import (
 	"harrybrown.com/pkg/web"
 )
 
-//go:generate sh scripts/mockgen.sh
-
 var (
 	//go:embed build/harrybrwn.com/harry_y_tanya/index.html
 	hytStaticPage []byte
@@ -39,10 +37,10 @@ var (
 	notFoundStaticPage []byte
 	//go:embed build/harrybrwn.com/admin/index.html
 	adminStaticPage []byte
-	//go:embed build/harrybrwn.com/games/index.html
-	gamesStaticPage []byte
-	//go:embed build/harrybrwn.com/chatroom/index.html
-	chatroomStaticPage []byte
+	//-go:embed build/harrybrwn.com/games/index.html
+	//gamesStaticPage []byte
+	//-go:embed build/harrybrwn.com/chatroom/index.html
+	//chatroomStaticPage []byte
 	//go:embed build/harrybrwn.com/invite/index.html
 	inviteStaticPage []byte
 
