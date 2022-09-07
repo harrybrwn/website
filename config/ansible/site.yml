@@ -1,0 +1,172 @@
+- hosts: prod
+  become: true
+  become_method: sudo
+
+  vars_files:
+    # ansible become password in vault encrypted vars file
+    - vars/become-password.yml
+    - vars/cloudflare-api-credentials.yml
+    - vars/registry.yml
+
+  vars:
+    registry: '10.0.0.11:5000'
+
+  handlers:
+    - name: reboot
+      reboot:
+        msg: "Rebooted by ansible"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: whoami
+
+  pre_tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: true
+
+  roles:
+  - docker
+
+  tasks:
+    - name: Install dependencies.
+      apt:
+        package:
+          # Install the nfs server package for all hosts because docker will not run
+          # an nfs server if the nfs kernel module is not loaded onto the host.
+          - certbot
+          - tmux
+          - nfs-common
+      when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+
+    - name: Create NFS mount points.
+      file:
+        path: /mnt/nfs/hrry.dev
+        mode: '0755'
+        state: directory
+
+    - name: Create docker certs dirs.
+      file:
+        path: "{{ item.path }}"
+        owner: root
+        group: root
+        mode: '0755'
+        state: directory
+      loop:
+        - {path: /etc/docker/certs.d}
+        - {path: '/etc/docker/certs.d/{{ container_registry }}'}
+        - {path: /etc/docker/registry}
+        - {path: /root/.secrets}
+    - name: Install docker root ca.
+      copy:
+        src: ../docker-root-ca.pem
+        dest: '/etc/docker/certs.d/{{ container_registry }}/ca.crt'
+        owner: root
+        group: root
+        mode: '0644'
+        backup: false
+        validate: openssl x509 -noout -in %s
+
+    - name: Copy tmux config file.
+      ansible.builtin.template:
+        src: templates/.tmux.conf
+        dest: ~/.tmux.conf
+        backup: false
+        mode: '0664'
+      become: false
+    - name: Create .vim directory
+      ansible.builtin.file:
+        path: "~/.vim"
+        mode: '0755'
+        state: directory
+      become: false
+    - name: Copy vimrc
+      ansible.builtin.copy:
+        src: files/.vimrc
+        dest: ~/.vim/vimrc
+        mode: '0644'
+      become: false
+
+- hosts: laptop
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/become-password.yml
+    - vars/cloudflare-api-credentials.yml
+  tasks:
+  - name: Install cloudflare dns plugin for certbot
+    pip:
+      name: certbot-dns-cloudflare==1.27.0
+  - name: add cloudflare api key config file
+    template:
+      src: templates/harrybrwn-cloudflare.ini.j2
+      dest: /root/.secrets/harrybrwn-cloudflare.ini
+      owner: root
+      group: root
+      mode: '0644'
+      backup: false
+
+- hosts: lenovo
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/become-password.yml
+  vars:
+    nfs_package_name: nfs-kernel-server
+    nfs_service_name: nfs-kernel-server
+    nfs_exports:
+      - path: /exports/nfs/hrry.dev
+        host: '*'
+        options: [rw, no_root_squash, no_subtree_check, insecure]
+    nfs_extra_dirs:
+      - path: /exports/nfs/hrry.dev/certs
+      - path: /exports/nfs/hrry.dev/storage/s3
+      - path: /exports/nfs/hrry.dev/storage/grafana
+      - path: /exports/nfs/hrry.dev/storage/prometheus
+        group: nogroup
+        user: nobody
+      - path: /exports/nfs/hrry.dev/storage/loki
+      - path: /exports/nfs/hrry.dev/storage/filestash
+
+  pre_tasks:
+    - name: Install NFS Server
+      apt:
+        package:
+          - nfs-kernel-server
+  roles:
+    - nfs
+
+- hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars/become-password.yml
+    - vars/registry.yml
+  roles:
+    - k3s/prereq
+    - k3s/download
+    - k3s/raspberrypi
+    - role: k3s/registry
+      vars:
+        registry: '10.0.0.11:5000'
+        registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
+        registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
+        registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+- hosts: k3s_master
+  name: install k3s on master node
+  become: true
+  vars_files:
+    - vars/become-password.yml
+  roles:
+    - role: k3s/master
+    - role: k3s/kubeconfig
+      vars:
+        k3s_config_name: hrry-prod
+- hosts: k3s_workers
+  name: install k3s on worker nodes
+  become: true
+  vars_files:
+    - vars/become-password.yml
+  roles:
+    - k3s/worker

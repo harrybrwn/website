@@ -1,0 +1,31 @@
+- name: Install registry issuer cert
+  copy:
+    content: "{{ registry_ca_contents }}"
+    dest: "{{ registry_ca_file_dest }}"
+    owner: root
+    group: root
+    mode: 644
+
+- name: Install registry cert
+  copy:
+    content: "{{ registry_cert_contents }}"
+    dest: "{{ registry_cert_file_dest }}"
+    owner: root
+    group: root
+    mode: 644
+
+- name: Install registry key
+  copy:
+    content: "{{ registry_key_contents }}"
+    dest: "{{ registry_key_file_dest }}"
+    owner: root
+    group: root
+    mode: 600
+
+- name: Copy config file
+  template:
+    src: "registries.yaml.j2"
+    dest: "/etc/rancher/k3s/registries.yaml"
+    owner: root
+    group: root
+    mode: 0644

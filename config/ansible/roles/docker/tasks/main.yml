@@ -1,0 +1,55 @@
+- name: Installation deps
+  apt:
+    package:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+  when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+
+- name: Add docker apt source.
+  args:
+    executable: /bin/bash
+  shell: |
+    set -eu -o pipefail
+    key=/etc/apt/keyrings/docker.gpg
+    list=/etc/apt/sources.list.d/docker.list
+    url='https://download.docker.com/linux/{{ ansible_distribution | lower}}'
+    source_line="deb [arch=$(dpkg --print-architecture) signed-by=${key}] ${url} $(lsb_release -cs) stable"
+    if [ -f "${key}" -a -f "${list}" ] && grep "${source_line}" "${list}" 2>&1 > /dev/null; then
+      echo ''
+    else
+      if [ -d /etc/apt/keyrings ]; then
+        rm -f "${key}"
+      else
+        mkdir -p /etc/apt/keyrings
+      fi
+      curl -fsSL "${url}/gpg" | gpg --dearmor -o "${key}"
+      chmod a+r "${key}"
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=${key}] ${url} $(lsb_release -cs) stable" | \
+        tee "${list}" > /dev/null
+      echo "changed"
+    fi
+  when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+  register: docker_apt_source
+  changed_when: docker_apt_source.stdout == "changed"
+
+- name: Install docker.
+  apt:
+    update_cache: true  # update cache because we just added a repo
+    package:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+  when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
+  notify: docker group
+
+- name: Install custom libseccomp2 version.
+  apt:
+    deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b1_armhf.deb
+  when: |
+    ansible_facts.architecture == "armv7l" and
+    ansible_facts.os_family == "Debian" and
+    ansible_facts.pkg_mgr == "apt"

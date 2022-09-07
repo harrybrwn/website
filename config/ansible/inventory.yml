@@ -4,50 +4,70 @@ all:
     ansible_python_interpreter: /usr/bin/python3
     nfs_server: false
     swarm_manager: false
-    k8s: false
-    k8s_master: false
     container_registry: 10.0.0.11:5000
-    certbot: false
     docker_node_labels:
       lenovo:
         - logs=true
         - s3=true
+    # k3s stuff
+    k3s_version: v1.24.4+k3s1
+    k3s_server_location: /var/lib/rancher/k3s
+    k3s_master_ip: "{{ hostvars[groups['k3s_master'][0]]['ansible_host'] }}"
+    systemd_dir: /etc/systemd/system
+
+  hosts:
+    laptop:
+      ansible_host: 10.0.0.11
+      ansible_ssh_user: harry
+      swarm_manager: true
+    lenovo:
+      ansible_host: 10.0.0.13
+      ansible_ssh_user: harry
+    rpi1:
+      ansible_host: 10.0.0.201
+    rpi2:
+      ansible_host: 10.0.0.202
+    rpi3:
+      ansible_host: 10.0.0.203
+      nfs_server: false
 
   children:
     ubuntu:
-      vars:
-        ansible_ssh_user: harry
       hosts:
         laptop:
-          ansible_host: 10.0.0.11
-          #ansible_become_password: ''
-          swarm_manager: true
-          certbot: true
         lenovo:
-          ansible_host: 10.0.0.13
-          nfs_server: true
-          nfs_exports:
-            - path: /exports/nfs/hrry.dev
-              host: '*'
-              options: [rw, no_root_squash, no_subtree_check, insecure]
-          nfs_extra_dirs:
-            - path: /exports/nfs/hrry.dev/certs
-            - path: /exports/nfs/hrry.dev/storage/s3
-            - path: /exports/nfs/hrry.dev/storage/grafana
-            - path: /exports/nfs/hrry.dev/storage/prometheus
-              group: nogroup
-              user: nobody
-            - path: /exports/nfs/hrry.dev/storage/loki
-            - path: /exports/nfs/hrry.dev/storage/filestash
 
     raspberrypi:
       vars:
         ansible_ssh_user: pi
       hosts:
         rpi1:
-          ansible_host: 10.0.0.201
         rpi2:
-          ansible_host: 10.0.0.202
         rpi3:
-          ansible_host: 10.0.0.203
-          nfs_server: false
+
+    test:
+      hosts:
+        dell-amd:
+          ansible_ssh_user: harry
+          # ansible_host: 169.254.158.18
+          ansible_host: 10.0.0.12
+
+    prod:
+      children:
+        ubuntu:
+        raspberrypi:
+
+    k3s_master:
+      hosts:
+        laptop:
+
+    k3s_workers:
+      hosts:
+        lenovo:
+      children:
+        raspberrypi:
+
+    k3s_cluster:
+      children:
+        k3s_master:
+        k3s_workers:

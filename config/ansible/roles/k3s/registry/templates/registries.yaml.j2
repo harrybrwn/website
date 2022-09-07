@@ -1,0 +1,13 @@
+mirrors:
+  "{{ registry }}":
+    endpoint:
+      - "https:{{ registry }}"
+configs:
+  "{{ registry }}":
+    auth:
+      username: "{{ registry_username }}"
+      password: "{{ registry_password }}"
+    tls:
+      cert_file: "{{ registry_cert_file_dest }}"
+      key_file: "{{ registry_key_file_dest }}"
+      ca_file: "{{ registry_ca_file_dest }}"

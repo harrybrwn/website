@@ -1,0 +1,36 @@
+- name: Grab k3s kubeconfig content
+  slurp:
+    path: ~{{ ansible_user }}/.kube/config
+  register: kubeconfig
+
+- name: Copy the data to local machine
+  copy:
+    content: "{{ kubeconfig.content | b64decode }}"
+    dest: "~/.kube/k3s-{{ k3s_master_ip }}"
+  delegate_to: localhost
+  become: false
+
+- name: Merge in new config
+  block:
+    - name: Replace 'default' for the config name
+      shell: |
+        set -eu
+        sed -i \
+          -e "s/name: default/name: {{ k3s_config_name }}/;"       \
+          -e "s/cluster: default/cluster: {{ k3s_config_name }}/;" \
+          -e "s/user: default/user: {{ k3s_config_name }}/;"       \
+          ~/.kube/k3s-{{ k3s_master_ip }}
+    - name: Merge with the current config
+      shell: |
+        set -eu
+        export KUBECONFIG=~/.kube/config:~/.kube/k3s-{{ k3s_master_ip }}
+        content="$(kubectl config view --flatten --raw)"
+        echo "${content}" > ~/.kube/_tmp_config
+    - name: Replace config with the new merged config
+      shell: |
+        set -eu
+        mv ~/.kube/_tmp_config ~/.kube/config
+    - name: Set to current-context
+      shell: kubectl config use-context {{ k3s_config_name }}
+  delegate_to: localhost
+  become: false

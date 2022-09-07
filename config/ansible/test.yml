@@ -1,0 +1,26 @@
+- name: Test k3s installation
+  hosts: test
+  #hosts: localhost
+  become: true
+  vars_files:
+    - vars/become-password.yml
+    - vars/registry.yml
+
+  vars:
+    k3s_master_ip: "{{ hostvars[groups['test'][0]]['ansible_host'] }}"
+
+  roles:
+    - role: k3s/prereq
+    - role: k3s/download
+    - role: k3s/raspberrypi
+    - role: k3s/registry
+      vars:
+        registry: '10.0.0.11:5000'
+        registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
+        registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
+        registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+    - role: k3s/master
+    - role: k3s/kubeconfig
+      vars:
+        k3s_config_name: hrry-staging
+    # - k3s/stop

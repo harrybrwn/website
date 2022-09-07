@@ -1,0 +1,12 @@
+---
+- name: restart docker
+  systemd:
+    state: restarted
+    name: docker.service
+
+- name: docker group
+  # TODO manage the reboot with ansible
+  shell: |
+    usermod -aG docker $USER
+    reboot now
+  become: true
