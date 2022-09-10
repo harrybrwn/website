@@ -142,8 +142,12 @@ target "fluentbit" {
     dockerfile = "config/docker/Dockerfile.fluentbit"
     args = {
         FLUENTBIT_VERSION = "1.9.3"
+        #FLUENTBIT_VERSION = "1.9.3-debug"
     }
-    tags = tags("fluent-bit")
+    tags = concat(
+        tags("fluent-bit"),
+        formatlist("${REGISTRY}/harrybrwn/fluent-bit:1.9.3"),
+    )
     inherits = ["base-service"]
 }
 
@@ -173,7 +177,8 @@ target "redis" {
     }
     tags = concat(
         tags("redis"),
-        formatlist("${REGISTRY}/harrybrwn/redis:6.2.6-alpine")
+        formatlist("${REGISTRY}/harrybrwn/redis:6.2.6-alpine"),
+        formatlist("${REGISTRY}/harrybrwn/redis:6.2.6"),
     )
     inherits = ["base-service"]
 }

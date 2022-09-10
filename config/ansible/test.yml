@@ -10,6 +10,14 @@
     k3s_master_ip: "{{ hostvars[groups['test'][0]]['ansible_host'] }}"
 
   roles:
+    - role: nfs
+      vars:
+        nfs_package_name: nfs-kernel-server
+        nfs_service_name: nfs-kernel-server
+        nfs_exports:
+          - path: /exports/nfs/hrry.dev/stg
+            host: '*'
+            options: [rw, no_root_squash, no_subtree_check, insecure]
     - role: k3s/prereq
     - role: k3s/download
     - role: k3s/raspberrypi
