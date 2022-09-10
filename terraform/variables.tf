@@ -11,5 +11,8 @@ variable "gateway_ip" {
   type = string
 }
 
-variable "cloudflare_api_key" { default = "" }
-variable "cloudflare_email" { default = "" }
+variable "staging_ip" {
+  description = "Local IP address of staging environment's gateway machine."
+  type = string
+  default = "10.0.0.12"
+}

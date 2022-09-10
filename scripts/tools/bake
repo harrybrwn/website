@@ -8,4 +8,9 @@ GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
+echo "GIT_TAG=$GIT_TAG"
+echo "GIT_BRANCH=$GIT_BRANCH"
+echo "GIT_COMMIT=$GIT_COMMIT"
+echo "SOURCE_HASH=$SOURCE_HASH"
+
 docker buildx bake -f config/docker/docker-bake.hcl --push "$@"

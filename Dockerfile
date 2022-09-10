@@ -201,7 +201,7 @@ WORKDIR /opt/harrybrwn
 #
 # Provision Tool
 #
-FROM alpine:latest as provision
+FROM alpine:${ALPINE_VERSION} as provision
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=provision-builder /opt/harrybrwn/bin/provision /usr/local/bin/provision
 ENTRYPOINT [ "/usr/local/bin/provision" ]

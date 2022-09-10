@@ -27,18 +27,18 @@ services:
         - BASE_IMAGE_VERSION=13.6-alpine
     environment:
       # <username>:<password>
-      POSTGRES_USERS: "
+      POSTGRES_USERS: |-
         grafana:testbed02
         db-backups:testbed03
         hydra:testbed04
-        outline:testbed05"
+        outline:testbed05
       # <database>:<owner>
-      POSTGRES_DATABASES: "
+      POSTGRES_DATABASES: |-
         harrybrwn_api:harrybrwn
         harrybrwn_hooks:harrybrwn
         grafana:grafana
         hydra:hydra
-        outline:outline"
+        outline:outline
     networks:
       backend:
         aliases:
@@ -329,7 +329,7 @@ services:
       - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
 
   filestash:
-    image: machines/filestash
+    image: machines/filestash:d1a2c7a
     ports:
       - "8334"
     networks:

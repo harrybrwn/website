@@ -105,10 +105,10 @@ while [ $# -gt 0 ]; do
       DRY=true
       shift
       ;;
-    -*)
-      echo "Error: unknown flag \"$1\""
-      exit 1
-      ;;
+    # -*)
+    #   echo "Error: unknown flag \"$1\""
+    #   exit 1
+    #   ;;
     *)
        ARGS+=("$1")
       shift

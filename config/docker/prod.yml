@@ -88,7 +88,7 @@ services:
     env_file:
       - config/env/prod/redis.env
       - config/env/sendgrid.env
-      - config/env/prod/db.env
+      - config/env/prod/api.env
       - config/env/prod/jwt.env
       - config/env/swarm_data.env
       # - config/env/api.prod.env

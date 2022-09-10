@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -eu
 
 BUILDKIT_NAME=harrybrwn-builder
 BUILDKIT_CONFIG=./config/buildkit-config.toml
@@ -116,11 +116,22 @@ if ! docker buildx use $BUILDKIT_NAME ; then
 fi
 
 if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
-    container="$(docker buildx inspect "$BUILDKIT_NAME" | awk '/Name:/{print $2}' | grep -Ev "^$BUILDKIT_NAME\$")"
-    docker container cp "${CACERT}" "buildx_buildkit_${container}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
-    if [ -f config/pki/certs/ca.crt ]; then
-      docker container cp config/pki/certs/ca.crt "buildx_buildkit_${container}:/usr/local/share/ca-certificates/harrybrwn-local-rootca.crt"
+    container="$(docker buildx inspect harrybrwn-builder | grep -iE 'name:.*?[0-9]+$' | awk '{ print $2 }')"
+    if [ -z "${container}" ]; then
+      echo "Error: could not find container name"
+      exit 1
     fi
-    docker container exec "buildx_buildkit_${container}" update-ca-certificates --verbose --force
-    docker container restart "buildx_buildkit_${container}"
+
+    container_name="buildx_buildkit_${container}"
+    status="$(docker buildx inspect "$BUILDKIT_NAME"  | grep -i status | awk '{print $2}')"
+    if [ "${status}" = "stopped" ]; then
+      docker container start "${container_name}"
+    fi
+
+    docker container cp "${CACERT}" "${container_name}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
+    if [ -f config/pki/certs/ca.crt ]; then
+      docker container cp config/pki/certs/ca.crt "${container_name}:/usr/local/share/ca-certificates/harrybrwn-local-rootca.crt"
+    fi
+    docker container exec "${container_name}" update-ca-certificates --verbose --force
+    docker container restart "${container_name}"
 fi
