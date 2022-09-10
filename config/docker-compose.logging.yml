@@ -21,12 +21,14 @@ services:
       dockerfile: config/docker/Dockerfile.fluentbit
       args:
         - FLUENTBIT_VERSION=1.9.3
-        # - FLUENTBIT_VERSION=1.9.3-debug
+        - FLUENTBIT_VERSION=1.9.3-debug
     ports:
       - '24224:24224/tcp'
       - '24224:24224/udp'
     networks:
-      - backend
+      backend:
+        aliases:
+          - fluentbit.default.svc.cluster.local
     deploy:
       # We want exactly one per host
       mode: global
@@ -68,7 +70,9 @@ services:
     volumes:
       - loki:/var/loki
     networks:
-      - backend
+      backend:
+        aliases:
+          - loki.default.svc.cluster.local
     logging:
       driver: fluentd
       options:
@@ -98,7 +102,9 @@ services:
     volumes:
       - grafana:/var/lib/grafana
     networks:
-      - backend
+      backend:
+        aliases:
+        - grafana.default.svc.cluster.local
 
   prometheus:
     image: prom/prometheus:v2.35.0
@@ -110,7 +116,10 @@ services:
       - "--log.level=${LOG_LEVEL:-debug}"
       - "--log.format=${LOG_FORMAT:-json}"
     networks:
-      - backend
+      backend:
+        aliases:
+          - prometheus.prometheus.svc.cluster.local
+          - prometheus.default.svc.cluster.local
     ports:
       - 9090:9090
     volumes:
@@ -130,7 +139,9 @@ services:
     command:
       - "-nginx.scrape-uri=http://prometheus:1d414708232df0e2cad6a277135b210b8bd8e41ccc31a9a6d0e935fa595b62b3@nginx/stub_status"
     networks:
-      - backend
+      backend:
+        aliases:
+          - nginx-metrics-exporter.default.svc.cluster.local
 
   # TODO https://github.com/oliver006/redis_exporter
   # redis-exporter:

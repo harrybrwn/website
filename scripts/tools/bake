@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -eu
+
+GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0.0.0")"
+GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+GIT_COMMIT="$(git rev-parse HEAD)"
+SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
+export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
+
+docker buildx bake -f config/docker/docker-bake.hcl --push "$@"

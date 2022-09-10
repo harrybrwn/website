@@ -1,0 +1,74 @@
+[ca]
+default_ca = CA_default
+
+
+[CA_default]
+dir             = ./ca
+certs           = ./certs
+crl_dir         = ./crl
+database        = $dir/index.txt
+serial          = $dir/serial
+certificate     = $dir/ca.crt
+private_key     = $dir/ca.key
+crl             = $dir/crl.pem
+x509_extensions = usr_cert
+new_certs_dir   = ./certs
+
+name_opt = ca_default
+cert_opt = ca_default
+default_days = 365
+default_md = default
+preserve = no
+policy = policy_any
+
+
+[policy_any]
+commonName              = supplied
+countryName             = optional
+stateOrProvinceName	    = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+emailAddress            = optional
+
+
+[req]
+default_bits = 2048
+#default_keyfile = ca.key
+distinguished_name = req_distinguished_name
+x509_extensions	= v3_ca
+
+
+[usr_cert]
+basicConstraints = CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid, issuer
+
+
+[v3_req]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+
+[v3_ca]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical,CA:true
+
+
+[req_distinguished_name]
+countryName			= Country Name (2 letter code)
+countryName_default		= US
+countryName_min			= 2
+countryName_max			= 2
+stateOrProvinceName		= State or Province Name (full name)
+stateOrProvinceName_default	= Some-State
+localityName			= Locality Name (eg, city)
+0.organizationName		= Organization Name (eg, company)
+0.organizationName_default	= HarryBrown
+# we can do this but it is not needed normally :-)
+organizationalUnitName		= Personal Site
+commonName			= harrybrwn.com
+commonName_max			= 64
+emailAddress			= Email Address
+emailAddress_max		= 64

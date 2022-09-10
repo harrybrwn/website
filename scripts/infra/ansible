@@ -9,7 +9,7 @@ docker compose \
   --file config/docker-compose.tools.yml \
   --ansi never                           \
   run \
-    --interactive=false \
+    --interactive=true \
     --no-deps           \
     --rm                \
     ansible "${name}" "$@"

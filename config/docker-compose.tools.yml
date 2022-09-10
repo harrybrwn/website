@@ -21,7 +21,10 @@ services:
     volumes:
       - ${SSH_AUTH_SOCK}:/ssh-auth-sock
       - ./config:/home/ansible/config
+      # So I can copy the kubeconfig after setting up a new cluster
+      - ${HOME}/.kube:/home/ansible/.kube
     working_dir: /home/ansible
+    network_mode: host # needs to be able to communicate with link-local addresses
     environment:
       - SSH_AUTH_SOCK=/ssh-auth-sock
       - ANSIBLE_CONFIG=/home/ansible/config/ansible/ansible.cfg

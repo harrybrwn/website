@@ -57,6 +57,7 @@ tools:
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/deployment bin/deployment
 	ln -sf ../scripts/tools/hydra bin/hydra
+	ln -sf ../scripts/tools/bake bin/bake
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \

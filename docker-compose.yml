@@ -40,7 +40,9 @@ services:
         hydra:hydra
         outline:outline"
     networks:
-      - backend
+      backend:
+        aliases:
+          - db.default.svc.cluster.local
     ports:
       - "5432:5432"
     volumes:
@@ -56,7 +58,10 @@ services:
       args:
         - REDIS_VERSION=6.2.6-alpine
     networks:
-      - backend
+      backend:
+        aliases:
+          - redis.redis
+          - redis.default.svc.cluster.local
     ports:
       - "${REDIS_PORT:-6379}:6379"
     env_file:
@@ -129,7 +134,9 @@ services:
       - POSTGRES_DB=harrybrwn_api
       - HYDRA_ADMIN_URL=http://hydra:4445
     networks:
-      - backend
+      backend:
+        aliases:
+          - api.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "curl", "-f", "localhost:8081/api/health/ready"]
       timeout: 10s
@@ -145,7 +152,9 @@ services:
       target: hooks
     command: --port 8889
     networks:
-      - backend
+      backend:
+        aliases:
+          - hooks.default.svc.cluster.local
     env_file:
       - config/env/db.env
       - config/env/github.env
@@ -177,7 +186,9 @@ services:
       - config/env/db-backup.env
       - config/env/db.env
     networks:
-      - backend
+      backend:
+        aliases:
+          - backups.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost:8082/health/ready"]
       timeout: 10s
@@ -195,7 +206,9 @@ services:
       - "--file=file:///opt/geoip/GeoLite2-City.mmdb"
       - "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"
     networks:
-      - backend
+      backend:
+        aliases:
+          - geoip.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost:8084/health/ready"]
       timeout: 10s
@@ -208,7 +221,9 @@ services:
       context: .
     command: --port 8083
     networks:
-      - backend
+      backend:
+        aliases:
+          - legacy-site.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost:8083/health/ready"]
       timeout: 10s
@@ -221,7 +236,9 @@ services:
       context: .
     command: --port 8085
     networks:
-      - backend
+      backend:
+        aliases:
+          - vanity-imports.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost:8085/health/ready"]
       timeout: 10s
@@ -245,7 +262,9 @@ services:
       - source: registry.yml
         target: /etc/docker/registry/config.yml
     networks:
-      - backend
+      backend:
+        aliases:
+          - registry.default.svc.cluster.local
     healthcheck:
       test: ["CMD", "wget", "-qO-", "localhost:5000/"]
       timeout: 10s
@@ -281,7 +300,9 @@ services:
       - MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY=on
       - MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/audit
     networks:
-      - backend
+      backend:
+        aliases:
+          - s3.default.svc.cluster.local
 
   hydra:
     image: oryd/hydra:v1.11.8
@@ -293,7 +314,9 @@ services:
     env_file:
       - config/env/hydra.env
     networks:
-      - backend
+      backend:
+        aliases:
+          - hydra.default.svc.cluster.local
     configs:
       - source: hydra.yml
         target: /hydra.yml
@@ -310,7 +333,9 @@ services:
     ports:
       - "8334"
     networks:
-      - backend
+      backend:
+        aliases:
+          - filestash.default.svc.cluster.local
     volumes:
       - filestash:/app/data/state
     healthcheck:

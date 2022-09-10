@@ -13,27 +13,27 @@ x-redis-common: &redis-common
 services:
   redis-0:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-0:/data]
   redis-1:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-1:/data]
   redis-2:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-2:/data]
   redis-3:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-3:/data]
   redis-4:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-4:/data]
   redis-5:
     <<: *redis-common
-    entrypoint: node-entrypoint.sh
+    entrypoint: cluster-entrypoint.sh
     volumes: [redis-5:/data]
 
   create-cluster:

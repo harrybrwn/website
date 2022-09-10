@@ -19,6 +19,8 @@ kubectl port-forward svc/db 5432:5432 &
 pids+=($!)
 kubectl port-forward svc/grafana 3000:3000 &
 pids+=($!)
+kubectl port-forward svc/redis 6379:6379 &
+pids+=($!)
 
 echo "running ${pids[@]}"
 
