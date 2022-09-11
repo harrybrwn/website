@@ -55,4 +55,4 @@ spec:
             optional: false
         - name: tls
           secret:
-            secretName: hydra-tls
+            secretName: hrry-dev-tls

@@ -16,7 +16,7 @@ spec:
               value: /exports/nfs/hrry.dev/stg
           resources:
             limits:
-              cpu: 75m
+              cpu: 50m
               memory: 64Mi
       volumes:
         - name: nfs-client-root

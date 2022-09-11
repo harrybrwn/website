@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nomad
+spec:
+  selector:
+    app: nomad
+  ports:
+  - port: 4646
+    targetPort: http
+    name: http
+  - port: 4647
+    targetPort: rpc
+    name: rpc
+  - port: 4648
+    targetPort: gossip-tcp
+    name: gossip-tcp
+    protocol: TCP
+  - port: 4648
+    targetPort: gossip-udp
+    name: gossip-udp

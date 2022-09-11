@@ -89,7 +89,12 @@ configMapGenerator:
       - POSTGRES_USER=harrybrwn
   - name: grafana-env
     behavior: merge
-    envs: [grafana.env]
+    literals:
+    - GF_DATABASE_TYPE=postgres
+    - GF_DATABASE_HOST=db:5432
+    - GF_DATABASE_NAME=grafana
+    - GF_DATABASE_USER=grafana
+    - GF_REMOTE_CACHE_TYPE=redis
 
 patches:
   # Make sure all the certificates have the correct issuer

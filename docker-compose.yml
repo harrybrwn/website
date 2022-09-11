@@ -81,6 +81,7 @@ services:
       target: nginx
       args:
         - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
+        - NGINX_VERSION=1.20.2-alpine
     volumes:
       # harrybrwn.com
       - ./config/pki/certs/harrybrwn.com.crt:/etc/harrybrwn/certs/harrybrwn.com.crt:ro

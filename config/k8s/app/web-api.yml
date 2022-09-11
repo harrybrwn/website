@@ -29,6 +29,9 @@ spec:
           image: 10.0.0.11:5000/harrybrwn/api:latest
           imagePullPolicy: IfNotPresent
           resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
             limits:
               memory: "128Mi"
               cpu: "250m"

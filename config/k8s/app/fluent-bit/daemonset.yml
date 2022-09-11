@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluent-bit
-  # namespace: kube-system
   labels:
     app.kubernetes.io/name: fluent-bit
     app.kubernetes.io/component: sidecar
@@ -23,12 +22,15 @@ spec:
       serviceAccountName: fluent-bit
       containers:
       - name: fluent-bit
-        image: 10.0.0.11:5000/harrybrwn/fluent-bit:latest
+        image: 10.0.0.11:5000/harrybrwn/fluent-bit:1.9.3
         imagePullPolicy: IfNotPresent
-        # resources:
-        #   limits:
-        #     memory: "128Mi"
-        #     cpu: "500m"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "250m"
+          requests:
+            memory: "32Mi"
+            cpu: "75m"
         ports:
         - name: tcp
           containerPort: 24224

@@ -40,12 +40,15 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: 10.0.0.11:5000/harrybrwn/nginx:latest
+          image: 10.0.0.11:5000/harrybrwn/nginx:1.20.2
           imagePullPolicy: IfNotPresent
           resources:
             limits:
               memory: "512Mi"
               cpu: "250m"
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
           ports:
             - containerPort: 80
               name: nginx-http

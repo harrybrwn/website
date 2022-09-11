@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: 10.0.0.11:5000/harrybrwn/grafana:latest
+        image: 10.0.0.11:5000/harrybrwn/grafana:9.1.4
         imagePullPolicy: IfNotPresent
         resources:
           requests:

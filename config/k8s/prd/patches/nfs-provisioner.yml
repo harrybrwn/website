@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nfs-client-provisioner
+  name: nfs-client-provisioner
+spec:
+  template:
+    containers:
+    - name: nfs-client-provisioner
+      env:
+        - name: NFS_SERVER
+          value: 10.0.0.13
+        - name: NFS_PATH
+          value: /exports/nfs/hrry.dev/provisioner
+    volumes:
+    - name: nfs-client-root
+      nfs:
+        server: 10.0.0.13
+        path: /exports/nfs/hrry.dev/provisioner

@@ -148,6 +148,7 @@ ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
 #
 # Webserver Frontend
 #
+ARG NGINX_VERSION
 FROM nginx:1.20.2-alpine as nginx
 ARG REGISTRY_UI_ROOT
 ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
@@ -214,3 +215,5 @@ RUN apk add bash curl bind-tools
 COPY cmd/tools/debug cmd/tools/debug
 RUN go build -o /usr/local/bin/debug ./cmd/tools/debug
 ENTRYPOINT ["bash"]
+
+FROM alpine:3.14 as test

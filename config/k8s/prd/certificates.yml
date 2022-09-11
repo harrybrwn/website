@@ -41,14 +41,3 @@ spec:
   dnsNames:
     - "harrybrwn.com"
     - "*.harrybrwn.com"
-
----
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: hydra-tls
-spec:
-  secretName: hydra-tls
-  commonName: auth.hrry.dev
-  issuerRef:
-    name: ca-issuer

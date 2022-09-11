@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: db
-        image: 10.0.0.11:5000/harrybrwn/postgres:latest
+        image: 10.0.0.11:5000/harrybrwn/postgres:13.6-alpine
         # Changes logging prefix for fluent-bit log parsing
         args:
           - "-c"

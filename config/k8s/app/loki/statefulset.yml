@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: loki
-        image: 10.0.0.11:5000/harrybrwn/loki:latest
+        image: 10.0.0.11:5000/harrybrwn/loki:2.5.0
         imagePullPolicy: IfNotPresent
         args:
           - "-config.file=/loki/loki.yml"

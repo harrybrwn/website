@@ -15,6 +15,7 @@ resources:
 patchesStrategicMerge:
   - patches/nfs-pvcs.yml
   - patches/tls-volumes.yml
+  - patches/nfs-provisioner.yml
   - certificates.yml
 
 patches:
@@ -28,36 +29,28 @@ patches:
       - op: replace
         path: /spec/renewBefore
         value: 360h  # 15 days
-  - target:
-      kind: Deployment
-      name: hydra
-    # Use *.stg.hrry.dev for hydra
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/volumes/1/secret/secretName
-        value: hrry-dev-tls
   # My poor staging machine has very few resources and will not schedule my pods
   # if resource limits are present.
-  - target:
-      kind: Deployment
+  # Also web need to pull all images always
+  - target: { kind: Deployment }
     patch: |-
       - op: remove
         path: /spec/template/spec/containers/0/resources/limits
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
-  - target:
-      kind: StatefulSet
+  - target: { kind: StatefulSet }
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
-  - target:
-      kind: DaemonSet
+  - target: { kind: DaemonSet }
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
+      - op: remove
+        path: /spec/template/spec/containers/0/resources/limits
   - target:
       annotationSelector: hrry.me/has-init=true
     patch: |-
