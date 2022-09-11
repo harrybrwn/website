@@ -3,39 +3,73 @@ kind: ConfigMap
 metadata:
   name: hydra
 data:
-  hydra.yml: |
+  hydra.yml: |-
+    version: v1.11.8
+    log:
+      format: json
+      level: debug
+      leak_sensitive_values: true
     serve:
       cookies:
         same_site_mode: Lax
       tls:
+        enabled: false
+        cert:
+          path: /etc/hydra/tls/tls.crt
+        key:
+          path: /etc/hydra/tls/tls.key
         allow_termination_from:
           - "10.0.0.0/8"
           - "172.16.0.0/12"
           - "192.168.0.0/16"
           - "127.0.0.0/8"
-      admin:
-        tls:
-          enabled: false
       public:
         cors:
+          enabled: true
+          allow_credentials: true
           allowed_origins:
-            - https://auth.hrry.local
-            - https://oidc.hrry.local
+            - https://hrry.local
+            - https://*.hrry.local
+            - https://hrry.dev
+            - https://*.hrry.dev
+            - https://hrry.me
+            - https://*.hrry.me
+          allowed_headers:
+            - Authorization
+            - Content-Type
     urls:
       self:
         issuer: "https://auth.hrry.local"
         public: "https://auth.hrry.local"
-      login: "https://hrry.local/login"
-      consent: "https://hrry.local/consent"
-      error: "https://hrry.local/oidc-error"
-      logout: "https://hrry.local/logout"
+      login:   "https://hrry.local/login/"
+      consent: "https://hrry.local/login/"
+      error:   "https://hrry.local/oidc-error"
+      logout:  "https://hrry.local/logout"
+    webfinger:
+      oidc_discovery:
+        supported_claims:
+          - email
+          - uuid
+          - username
+          - roles
     oauth:
       pkce:
         enforced_for_public_clients: true
+    oauth2:
+      allowed_top_level_claims:
+        - email
+        - uuid
+        - username
+        - roles
     oidc:
       subject_identifiers:
         supported_types:
           - pairwise
           - public
         pairwise:
-        salt: 'pairwise-salt-1234'
+          salt: 'pairwise-salt-1234'
+      dynamic_client_registration:
+        enabled: false
+    sqa:
+      # Disable anonymized telemetry
+      opt_out: true

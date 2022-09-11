@@ -1,0 +1,7 @@
+resources:
+  - service.yml
+  - secret.yml
+  - standalone.yml
+  # This configmap is really only used for sentinel but it is referenced in
+  # other places for environment variables.
+  - configmap.yml

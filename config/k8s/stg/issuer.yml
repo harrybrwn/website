@@ -1,0 +1,20 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: stg-ca-issuer
+spec:
+  acme:
+    # Use https://acme-v02.api.letsencrypt.org/directory for a production certificate
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: harrybrown98@gmail.com
+
+    privateKeySecretRef:
+      name: letsencrypt-staging
+
+    solvers:
+    - selector: {}
+      dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cf-dns-token
+            key: api-token

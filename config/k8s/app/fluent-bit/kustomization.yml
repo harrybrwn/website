@@ -1,11 +1,13 @@
+namespace: default
+
 resources:
+  #- namespace.yml
   - daemonset.yml
   - configmap.yml
   - rbac.yml
 
 configMapGenerator:
   - name: fluent-bit
-    namespace: kube-system
     behavior: replace
     files:
       - config/fluent-bit.conf

@@ -8,4 +8,4 @@ spec:
   ports:
   - port: 3000
     targetPort: http
-    name: grafana-http-3000
+    name: http

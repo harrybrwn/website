@@ -1,0 +1,112 @@
+---
+# Docs: https://doc.traefik.io/traefik/routing/providers/kubernetes-crd
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: nginx-route-tcp
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: HostSNI(`grafana.hrry.local`)
+    services:
+    - name: grafana
+      port: http
+  - match: HostSNI(`hrry.local`) || HostSNI(`s3.hrry.local`) || HostSNI(`harrybrwn.local`) || HostSNI(`hextris.harrybrwn.local`)
+    services:
+     - name: nginx
+       port: https
+  tls:
+    passthrough: true
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: web-routes-tcp
+spec:
+  entryPoints: [web]
+  routes:
+  - match: HostSNI(`*`)
+    services:
+    - name: nginx
+      port: http # will redirect most things to https
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hrry-dev-routes
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: Host(`ip.hrry.local`) && !Path(`/metrics`)
+    kind: Rule
+    services:
+      - name: geoip
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`files.hrry.local`)
+    kind: Rule
+    services:
+      - name: filestash
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`gopkg.hrry.local`)
+    kind: Rule
+    services:
+      - name: vanity-imports
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`auth.hrry.local`)
+    kind: Rule
+    middlewares:
+      - name: handle-not-found
+    services:
+      - name: hydra
+        kind: Service
+        port: hydra-public
+        scheme: http
+  - match: Host(`s3-console.hrry.local`)
+    kind: Rule
+    services:
+      - name: s3
+        kind: Service
+        port: console
+        scheme: http
+  tls:
+    # Use an existing secret
+    secretName: hrry-dev-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harrybrwn-com-routes
+spec:
+  routes:
+  - match: Host(`hooks.harrybrwn.local`)
+    kind: Rule
+    services:
+      - name: hooks
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    secretName: harrybrwn-com-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: handle-not-found
+spec:
+  errors:
+    status:
+      - 404-405
+    query: /{status}.html
+    service:
+      name: nginx
+      port: http

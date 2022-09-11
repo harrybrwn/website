@@ -29,6 +29,7 @@ spec:
       containers:
       - name: db
         image: 10.0.0.11:5000/harrybrwn/postgres:latest
+        # Changes logging prefix for fluent-bit log parsing
         args:
           - "-c"
           - "log_line_prefix=%t [%p] "

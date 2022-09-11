@@ -1,0 +1,19 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ca-issuer
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: harrybrown98@gmail.com
+
+    privateKeySecretRef:
+      name: letsencrypt-prd
+
+    solvers:
+    - selector: {}
+      dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cf-dns-token
+            key: api-token

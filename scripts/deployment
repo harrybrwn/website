@@ -281,13 +281,13 @@ for arg in "${ARGS[@]}"; do
             --file config/docker/buildx.yml \
             --push
       else
-        docker --context default buildx bake --file config/docker/docker-bake.hcl --push
+        # docker --context default buildx bake --file config/docker/docker-bake.hcl --push
 
-        # docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
-        #   docker --context default buildx bake \
-        #     --file - \
-        #     --file config/docker/buildx.yml \
-        #     --push
+        docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
+          docker --context default buildx bake \
+            --file - \
+            --file config/docker/buildx.yml \
+            --push
       fi
       break
       ;;

@@ -15,8 +15,8 @@ const (
 
 func HydraAdminConfig() *hydra.Configuration {
 	return &hydra.Configuration{
-		DefaultHeader: make(map[string]string),
 		UserAgent:     "hrry.me/api",
+		DefaultHeader: map[string]string{"X-Forwarded-Proto": "https"},
 		Debug:         Debug,
 		Servers: hydra.ServerConfigurations{
 			{URL: getenv(envHydraAdminURL, "http://hydra:4445")},

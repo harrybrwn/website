@@ -1,0 +1,54 @@
+# Base values found in k8s/common/certificates
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hrry-me-tls
+spec:
+  secretName: hrry-me-tls
+  issuerRef:
+    name: ca-issuer
+  commonName: "stg.hrry.me"
+  dnsNames:
+    - "stg.hrry.me"
+    - "*.stg.hrry.me"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hrry-dev-tls
+spec:
+  secretName: hrry-dev-tls
+  issuerRef:
+    name: ca-issuer
+  commonName: "stg.hrry.dev"
+  dnsNames:
+    - "stg.hrry.dev"
+    - "*.stg.hrry.dev"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harrybrwn-com-tls
+spec:
+  secretName: harrybrwn-com-tls
+  issuerRef:
+    name: ca-issuer
+  commonName: "stg.harrybrwn.com"
+  dnsNames:
+    - "stg.harrybrwn.com"
+    - "*.stg.harrybrwn.com"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hydra-tls
+spec:
+  secretName: hydra-tls
+  commonName: auth.stg.hrry.dev
+  issuerRef:
+    name: ca-issuer

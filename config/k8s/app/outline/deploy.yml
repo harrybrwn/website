@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outline
+  annotations:
+    # Used to alter init container with kustomize
+    hrry.me/has-init: 'true'
+spec:
+  selector:
+    matchLabels:
+      app: outline
+  template:
+    metadata:
+      labels:
+        app: outline
+    spec:
+      initContainers:
+      - name: migrate
+        image: 10.0.0.11:5000/harrybrwn/outline:0.66.0
+        imagePullPolicy: IfNotPresent
+        command: [yarn, sequelize:migrate, --env=production-ssl-disabled]
+        env:
+          - { name: PORT, value: '8443' }
+        envFrom:
+        - configMapRef: { name: outline-env }
+        - secretRef: { name: outline-env }
+      containers:
+      - name: outline
+        image: 10.0.0.11:5000/harrybrwn/outline:0.66.0
+        imagePullPolicy: IfNotPresent
+        command: [yarn, start, --env=production-ssl-disabled]
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+        - containerPort: 8443
+          name: http
+        env:
+          - name: PORT
+            value: '8443'
+        envFrom:
+        - configMapRef: { name: outline-env }
+        - secretRef: { name: outline-env }

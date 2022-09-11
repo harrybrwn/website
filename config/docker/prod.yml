@@ -183,6 +183,8 @@ services:
       - config/env/swarm_data.env
 
   grafana:
+    entrypoint: ["/run.sh"]
+    command: []
     deploy:
       placement:
         constraints: [node.labels.logs == true]

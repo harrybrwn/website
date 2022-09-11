@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: hrry.me
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  serviceName: redis
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      initContainers:
+        - name: redis-init
+          image: redis:6.2.6-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              cp /tmp/redis/redis.conf /etc/redis/redis.conf
+              echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+              echo "requirepass ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+              echo "finding master..."
+              MASTER_FDQN=`hostname  -f | sed -e 's/redis-[0-9]\./redis-0./'`
+              if [ "$(redis-cli --pipe-timeout 2 -h sentinel -p ${SENTINEL_PORT} ping)" != "PONG" ]; then
+                echo "master not found, defaulting to redis-0"
+
+                if [ "$(hostname)" == "redis-0" ]; then
+                  echo "this is redis-0, not updating config..."
+                else
+                  echo "updating redis.conf..."
+                  echo "slaveof $MASTER_FDQN 6379" >> /etc/redis/redis.conf
+                fi
+              else
+                echo "sentinel found, finding master"
+                MASTER="$(redis-cli -h sentinel -p ${SENTINEL_PORT} sentinel get-master-addr-by-name ${REDIS_SENTINEL_MASTER_NAME} | grep -E '(^redis-\d{1,})|([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})')"
+                echo "master found : $MASTER, updating redis.conf"
+                echo "slaveof $MASTER 6379" >> /etc/redis/redis.conf
+              fi
+              echo "replica-announce-ip ${HOSTNAME}.redis" >> /etc/redis/redis.conf
+              echo "replica-announce-port 6379" >> /etc/redis/redis.conf
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secrets
+                  key: password
+            - name: REDIS_SENTINEL_MASTER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: sentinel
+                  key: sentinel-master-name
+            - name: SENTINEL_PORT
+              value: '26379'
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis/
+            - name: config
+              mountPath: /tmp/redis/
+      containers:
+        - name: redis
+          image: redis:6.2.6-alpine
+          imagePullPolicy: IfNotPresent
+          command: ["redis-server"]
+          args: ["/etc/redis/redis.conf"]
+          ports:
+            - containerPort: 6379
+              name: redis
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: redis-config
+              mountPath: /etc/redis
+      volumes:
+        - name: redis-config
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: redis-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        #storageClassName: standard
+        resources:
+          requests:
+            storage: 500Mi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  redis.conf: |
+    dir /data
+
+    dbfilename "dump.rdb"
+    appendonly yes
+    appendfilename "appendonly.aof"

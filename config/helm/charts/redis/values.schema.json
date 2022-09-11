@@ -1,0 +1,43 @@
+{
+	"$schema": "http://json-schema.org/schema",
+	"type": "object",
+	"properties": {
+		"enabled": {"type": "boolean"},
+		"image": {
+			"type": "object",
+			"properties": {
+				"repository": {"type": "string", "pattern": "^[a-zA-Z0-9-_\/.:]+$"},
+				"pullPolicy": {"type": "string", "pattern": "^(Always|Never|IfNotPresent)$"},
+				"tag": {"type": "string"}
+			}
+		},
+		"mode": {
+			"type": "string",
+			"pattern": "^(replicated|cluster|standalone)$"
+		},
+		"cluster": {
+			"type": "object",
+			"properties": {
+				"replicas": {
+					"type": "integer"
+				},
+				"createJob": {
+					"type": "object",
+					"properties": {
+						"ttlSecondsAfterFinished": {
+							"type": "integer"
+						}
+					}
+				}
+			}
+		},
+		"standalone": {
+			"type": "object",
+			"properties": {
+				"replicas": {
+					"type": "integer"
+				}
+			}
+		}
+	}
+}

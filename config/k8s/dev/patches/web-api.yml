@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+spec:
+  selector: {matchLabels: {app: web-api}}
+  template:
+    spec:
+      volumes:
+      - name: extra-cert
+        projected:
+          sources:
+          - secret:
+              name: hrry-me-tls
+              items: [{ key: ca.crt, path: harrybrwn.ca.crt }]
+      containers:
+      - name: web-api
+        command: ["sh", "-c"]
+        args:
+          - |
+            update-ca-certificates
+            exec /app/harrybrwn --port 8081
+        volumeMounts:
+        # Installs my own root CA
+        - name: extra-cert
+          mountPath: /usr/local/share/ca-certificates/harrybrwn.ca.crt
+          readOnly: true
+          subPath: harrybrwn.ca.crt

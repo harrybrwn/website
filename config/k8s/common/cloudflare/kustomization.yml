@@ -1,0 +1,7 @@
+secretGenerator:
+  - name: cf-dns-token
+    behavior: create
+    envs:
+      - cloudflare_dns_token.env
+    options:
+      disableNameSuffixHash: true

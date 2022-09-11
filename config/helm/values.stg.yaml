@@ -1,0 +1,5 @@
+prometheus:
+  server:
+    persistentVolume:
+      storageClass: nfs-storage
+      size: 2Gi

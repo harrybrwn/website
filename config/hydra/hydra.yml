@@ -11,6 +11,10 @@ serve:
     same_site_mode: Lax
   tls:
     enabled: false
+    cert:
+      path: /etc/hydra/tls/tls.crt
+    key:
+      path: /etc/hydra/tls/tls.key
     allow_termination_from:
       - "10.0.0.0/8"
       - "172.16.0.0/12"
@@ -31,10 +35,10 @@ urls:
   self:
     issuer: "https://auth.hrry.local"
     public: "https://auth.hrry.local"
-  login:    "https://hrry.local/login/"
-  consent:  "https://hrry.local/login/"
-  error:    "https://hrry.local/oidc-error"
-  logout:   "https://hrry.local/logout"
+  login:   "https://hrry.local/login/"
+  consent: "https://hrry.local/login/"
+  error:   "https://hrry.local/oidc-error"
+  logout:  "https://hrry.local/logout"
 
 webfinger:
   oidc_discovery:
@@ -62,7 +66,7 @@ oidc:
       - pairwise
       - public
     pairwise:
-     salt: 'pairwise-salt-1234'
+      salt: 'pairwise-salt-1234'
   dynamic_client_registration:
     enabled: false
 

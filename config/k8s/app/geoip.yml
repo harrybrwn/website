@@ -8,7 +8,7 @@ spec:
   ports:
   - port: 8084
     targetPort: http
-    name: geoip-http-8084
+    name: http
 
 ---
 apiVersion: apps/v1
@@ -23,6 +23,9 @@ spec:
     metadata:
       labels:
         app: geoip
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8084'
     spec:
       containers:
       - name: geoip
@@ -30,8 +33,9 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           limits:
+            # Loads GeoLite2 database into memory
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "100m"
         ports:
         - name: http
           containerPort: 8084

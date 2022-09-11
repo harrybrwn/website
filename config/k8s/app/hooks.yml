@@ -8,7 +8,7 @@ spec:
   ports:
   - port: 8889
     targetPort: http
-    name: hooks-http-8889
+    name: http
 
 ---
 apiVersion: apps/v1
@@ -23,6 +23,9 @@ spec:
     metadata:
       labels:
         app: hooks
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8889'
     spec:
       containers:
       - name: hooks
@@ -31,7 +34,7 @@ spec:
         resources:
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "100m"
         envFrom:
           - configMapRef: { name: hooks-env-config }
           - secretRef: { name: hooks-env-secrets }

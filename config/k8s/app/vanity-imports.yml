@@ -6,7 +6,8 @@ spec:
   selector:
     app: vanity-imports
   ports:
-  - port: 8085
+  - name: http
+    port: 8085
     targetPort: http
 
 ---
@@ -22,6 +23,9 @@ spec:
     metadata:
       labels:
         app: vanity-imports
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8889'
     spec:
       containers:
       - name: vanity-imports
@@ -30,7 +34,7 @@ spec:
         resources:
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "50m"
         ports:
         - containerPort: 8085
           name: http

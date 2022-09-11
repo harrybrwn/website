@@ -42,6 +42,8 @@ services:
     build:
       context: .
       dockerfile: config/docker/Dockerfile.outline
+      args:
+        - OUTLINE_VERSION=0.66.0
     user: root
     entrypoint: sh -c
     command:
@@ -52,8 +54,8 @@ services:
       - NODE_EXTRA_CA_CERTS=/run/secrets/harrybrwn.crt
       - URL=https://wiki.hrry.local
       - PORT=8443
-      - SECRET_KEY=d97ca89921aa465b94cfe2d97483f477fc5930d1ddeb2b1f54055a6e83c13dcb
-      - UTILS_SECRET=00e2f306f4a2077ce87f45092ab701ec5be61680d243a6bc88da7ef0c4c3f6a0
+      - SECRET_KEY=25032d5e7c095ada30f13c28448e2988b309ad4dccd01590a7b53ca0b2aeff7d
+      - UTILS_SECRET=114d2a3d3ed69e7287a18ab82772ee5da61968ceba828942219e86ec0db8808b
       - ENABLE_UPDATES=false # disable telemetry
       - AWS_S3_UPLOAD_BUCKET_URL=https://s3.hrry.local
       - AWS_ACCESS_KEY_ID=outline

@@ -1,0 +1,7 @@
+secretGenerator:
+  - name: sendgrid
+    behavior: create
+    envs:
+      - sendgrid.env
+    options:
+      disableNameSuffixHash: true

@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hydra
+  annotations:
+    hrry.me/has-init: 'true'
 spec:
   selector:
     matchLabels:
@@ -10,6 +12,10 @@ spec:
     metadata:
       labels:
         app: hydra
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '4445'
+        prometheus.io/path: '/metrics/prometheus'
     spec:
       initContainers:
         - name: migrate
@@ -17,29 +23,36 @@ spec:
           imagePullPolicy: IfNotPresent
           command: ["hydra"]
           args: ["migrate", "sql", "-e", "-y"]
-          env:
-            - name: DSN
-              value: postgres://hydra:testbed04@db:5432/hydra
+          envFrom:
+            - secretRef: { name: hydra-env }
       containers:
         - name: hydra
           image: oryd/hydra:v1.11.8
           imagePullPolicy: IfNotPresent
-          env:
-            - name: DSN
-              value: postgres://hydra:testbed04@db:5432/hydra
-            - name: SECRETS_SYSTEM
-              value: hydra-secret-1234
+          args: ["serve", "all", "--config=/etc/hydra/hydra.yml"]
+          envFrom:
+            - secretRef: { name: hydra-env }
           resources:
             limits:
               memory: "128Mi"
-              cpu: "500m"
+              cpu: "100m"
           ports:
           - name: public
             containerPort: 4444
           - name: admin
             containerPort: 4445
+          volumeMounts:
+          - name: config
+            mountPath: /etc/hydra/
+            readOnly: true
+          - name: tls
+            mountPath: /etc/hydra/tls/
+            readOnly: true
       volumes:
         - name: config
           configMap:
             name: hydra
             optional: false
+        - name: tls
+          secret:
+            secretName: hydra-tls

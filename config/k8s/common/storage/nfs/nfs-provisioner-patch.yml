@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nfs-client-provisioner
   labels:
     app: nfs-client-provisioner
+  name: nfs-client-provisioner
 spec:
   template:
     spec:
@@ -11,11 +11,15 @@ spec:
         - name: nfs-client-provisioner
           env:
             - name: NFS_SERVER
-              value: localhost
+              value: 10.0.0.12
             - name: NFS_PATH
-              value: /srv/nfs/hrry.dev
+              value: /exports/nfs/hrry.dev/stg
+          resources:
+            limits:
+              cpu: 75m
+              memory: 64Mi
       volumes:
         - name: nfs-client-root
           nfs:
-            server: localhost
-            path: /srv/nfs/hrry.dev
+            server: 10.0.0.12
+            path: /exports/nfs/hrry.dev/stg

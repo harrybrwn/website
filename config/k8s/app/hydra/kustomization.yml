@@ -1,0 +1,5 @@
+resources:
+  - secret.yml
+  - deployment.yml
+  - service.yml
+  - configmap.yml

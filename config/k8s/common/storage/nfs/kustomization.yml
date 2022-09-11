@@ -1,0 +1,26 @@
+# Note:
+#
+# For minikube could not schedule this unless i ran this command:
+# $ kubectl patch nodes minikube --patch '{"spec":{"unschedulable": false}}'
+# source: https://stackoverflow.com/questions/62445985/failedscheduling-unknown-default-scheduler-0-1-nodes-are-available-1-nodes
+#
+# For k3d:
+# $ kubectl patch nodes k3d-hrry-server-0 --patch '{"spec":{"unschedulable": false}}'
+
+namespace: nfs-provisioner
+
+bases:
+  - namespace.yml
+  - github.com/kubernetes-sigs/nfs-subdir-external-provisioner/deploy
+
+patchesStrategicMerge:
+  - nfs-provisioner-patch.yml
+
+patches:
+  - target:
+      kind: StorageClass
+      name: nfs-client
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: nfs-storage

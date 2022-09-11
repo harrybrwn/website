@@ -1,0 +1,19 @@
+{{- if and .Values.enabled (eq .Values.mode "cluster") -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "redis.fullname" . }}-create-cluster
+  labels:
+    {{- include "redis.labels" . | nindent 4 }}
+{{ include "redis.namespace" . | indent 2 }}
+spec:
+  ttlSecondsAfterFinished: {{ .Values.cluster.createJob.ttlSecondsAfterFinished }}
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: {{ include "redis.fullname" . }}-create-cluster
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["create-cluster.sh"]
+{{- end -}}

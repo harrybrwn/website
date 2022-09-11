@@ -86,7 +86,7 @@ services:
       # dockerfile: config/docker/Dockerfile.grafana
       dockerfile: config/grafana/Dockerfile
       args:
-        - GRAFANA_VERSION=latest
+        # - GRAFANA_VERSION=latest
         - GRAFANA_VERSION=9.1.4
     entrypoint: ["sh", "-c"]
     command:

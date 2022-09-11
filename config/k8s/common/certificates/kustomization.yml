@@ -1,0 +1,18 @@
+resources:
+  - certificates.yml
+
+patches:
+  # Change all to renew after 90 days (2160 hours)
+  # Change all to renew after 60 days (1440 hours)
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: add
+        path: /spec/duration
+        value: 2160h
+      - op: add
+        path: /spec/renewBefore
+        value: 1440h
+      - op: add
+        path: /spec/subject/organizations/0
+        value: HarryBrown

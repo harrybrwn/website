@@ -1,21 +1,23 @@
 bases:
   - ../app
-  - ../helm
-
-resources:
-  - certificates.yml
-  #- ingress.yml
 
 commonLabels:
-  hrry.me/environment: dev
+  environment: dev
+
+resources:
+  - issuer.yml
+  - certificates.yml
+  - sendgrid-secrets.yml
+  - ingress-routes.yml
 
 # Patch the certificate volumes to use the ones issued by cert-manager.
 patchesStrategicMerge:
-  - nginx-patch.yml
+  - patches/web-api.yml
 
 # NOTES:
 # generator behavior can be 'create', 'replace', 'merge'
 secretGenerator:
+  # CA for self-signed issuer
   - name: hrry-root-ca
     behavior: create
     options:
@@ -39,15 +41,16 @@ secretGenerator:
     literals:
       - password=testbed01
   - name: minio-env-secrets
-    behavior: merge
+    behavior: create
     literals:
       - MINIO_ROOT_USER=root
       - MINIO_ROOT_PASSWORD=minio-testbed001
-  - name: grafana
+  - name: grafana-env
     behavior: merge
     literals:
       - GF_DATABASE_PASSWORD=testbed02
       - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=1,password=testbed01
+      - GF_SECURITY_ADMIN_PASSWORD=testbed01
   - name: loki
     behavior: merge
     literals:
@@ -57,7 +60,6 @@ secretGenerator:
     behavior: merge
     literals:
       - postgres-password=testbed01
-      - sendgrid-api-key=
   - name: hooks-env-secrets
     behavior: replace
     literals:
@@ -85,11 +87,15 @@ configMapGenerator:
       - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
       - POSTGRES_HOST=db
       - POSTGRES_USER=harrybrwn
-  - name: grafana
+  - name: grafana-env
     behavior: merge
-    envs:
-      - grafana.env
-  - name: loki
-    behavior: replace
-    files:
-      - loki.yml
+    envs: [grafana.env]
+
+patches:
+  # Make sure all the certificates have the correct issuer
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: replace
+        path: /spec/issuerRef/name
+        value: ca-issuer

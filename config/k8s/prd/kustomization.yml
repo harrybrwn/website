@@ -1,17 +1,30 @@
 bases:
   - ../app
+  - ../common/cloudflare
+  - ../common/sendgrid
+  - ../common/certificates
 
 patches:
   - path: nginx-config-patch.yml
     target:
       kind: ConfigMap
-  - path: env-patch.yml
-    target:
+      name: nginx
+  - target:
       kind: ConfigMap
       name: environment-config
+    path: env-patch.yml
+  - target:
+      kind: Deployment
+      name: hydra
+    # Use *.hrry.dev for hydra
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes/1/secret/secretName
+        value: hrry-dev-tls
+
 
 secretGenerator:
   - name: registry-secrets
-    behavior: replace
+    behavior: create
     files:
       - registry/htpasswd

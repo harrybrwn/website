@@ -1,0 +1,7 @@
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: hrry
+servers: 1
+agents: 1
+image: docker.io/rancher/k3s:v1.24.4-k3s1

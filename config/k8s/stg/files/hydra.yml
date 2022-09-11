@@ -1,0 +1,68 @@
+version: v1.11.7
+log:
+  format: json
+  level: debug
+  leak_sensitive_values: true
+serve:
+  cookies:
+    same_site_mode: Lax
+  tls:
+    enabled: false
+    cert:
+      path: /etc/hydra/tls/tls.crt
+    key:
+      path: /etc/hydra/tls/tls.key
+    allow_termination_from:
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+      - "192.168.0.0/16"
+      - "127.0.0.0/8"
+      - "::1/128"
+  public:
+    cors:
+      enabled: true
+      allow_credentials: true
+      allowed_origins:
+        - https://stg.hrry.dev
+        - https://*.stg.hrry.dev
+        - https://stg.hrry.me
+        - https://*.stg.hrry.me
+      allowed_headers:
+        - Authorization
+        - Content-Type
+urls:
+  self:
+    issuer: "https://auth.stg.hrry.dev"
+    public: "https://auth.stg.hrry.dev"
+  login:   "https://stg.hrry.me/login/"
+  consent: "https://stg.hrry.me/login/"
+  error:   "https://stg.hrry.me/oidc-error"
+  logout:  "https://stg.hrry.me/logout"
+webfinger:
+  oidc_discovery:
+    supported_claims:
+      - email
+      - uuid
+      - username
+      - roles
+oauth:
+  pkce:
+    enforced_for_public_clients: true
+oauth2:
+  allowed_top_level_claims:
+    - email
+    - uuid
+    - username
+    - roles
+oidc:
+  subject_identifiers:
+    supported_types:
+      - pairwise
+      - public
+    pairwise:
+      salt: 'pairwise-salt-1234'
+  dynamic_client_registration:
+    enabled: false
+sqa:
+  # Disable anonymized telemetry
+  opt_out: true

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: fluent-bit
-  namespace: kube-system
+  # namespace: kube-system
   labels:
     app.kubernetes.io/name: fluent-bit
     app.kubernetes.io/component: sidecar
@@ -15,15 +15,20 @@ spec:
     metadata:
       labels:
         app: fluent-bit
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '2020'
+        prometheus.io/path: '/api/v1/metrics/prometheus'
     spec:
+      serviceAccountName: fluent-bit
       containers:
       - name: fluent-bit
         image: 10.0.0.11:5000/harrybrwn/fluent-bit:latest
         imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            memory: "128Mi"
-            cpu: "500m"
+        # resources:
+        #   limits:
+        #     memory: "128Mi"
+        #     cpu: "500m"
         ports:
         - name: tcp
           containerPort: 24224
@@ -40,11 +45,7 @@ spec:
         - name: var-lib-docker-containers
           mountPath: /var/lib/docker/containers
           readOnly: true
-        - name: machine-id
-          mountPath: /etc/machine-id
-          readOnly: true
         - { name: config,   mountPath: /fluent-bit/etc }
-        - { name: hostname, mountPath: /etc/hostname, readOnly: true }
         - { name: proc,     mountPath: /mnt/proc/, readOnly: true }
         - { name: sys,      mountPath: /mnt/sys/,  readOnly: true }
       volumes:
@@ -54,14 +55,6 @@ spec:
       - name: var-lib-docker-containers
         hostPath:
           path: /var/lib/docker/containers
-      - name: machine-id
-        hostPath:
-          path: /etc/machine-id
-          type: File
-      - name: hostname
-        hostPath:
-          path: /etc/hostname
-          type: File
       - { name: proc, hostPath: { path: /proc } }
       - { name: sys, hostPath: { path: /sys } }
       - name: config

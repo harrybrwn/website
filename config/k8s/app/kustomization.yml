@@ -1,33 +1,23 @@
 resources:
+  # Misc configuration
   - environment.yml
   - jwt-secrets.yml
+  #- tls.yml # This will always be overridden
+  # Services
   - nginx.yml
-  - filestash.yml
   - db.yml
   - hooks.yml
   - s3.yml
-  - redis/secret.yml
-  - redis/cluster.yml
-  - redis/sentinel.yml
-  - redis/configmap.yml
   - web-api.yml
   - geoip.yml
   - vanity-imports.yml
   - legacy-site.yml
+  - filestash.yml
+
+  - redis
+  - hydra
   - grafana
   - fluent-bit
   - loki
   - prometheus
-
-  #- registry/registry.yml
-  #- geoip.yml
-  # Cert-Manager configuration
-  # https://www.youtube.com/watch?v=hoLUigg4V18
-  #- https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.yaml
-
-# TODO uncomment when registry manifest is added
-#configMapGenerator:
-#  - name: registry-config
-#    behavior: merge
-#    files:
-#      - registry/config.yml
+  - outline

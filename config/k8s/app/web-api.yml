@@ -31,7 +31,7 @@ spec:
           resources:
             limits:
               memory: "128Mi"
-              cpu: "500m"
+              cpu: "250m"
           args:
             - --port=8081
           ports:
@@ -65,8 +65,8 @@ spec:
             - name: SENDGRID_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: web-api-secrets
-                  key: sendgrid-api-key
+                  name: sendgrid
+                  key: api-key
 
 ---
 apiVersion: v1
@@ -76,4 +76,3 @@ metadata:
 type: Opaque
 data:
   postgres-password: dGVzdGJlZDAx
-  sendgrid-api-key: ''

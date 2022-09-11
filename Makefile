@@ -50,6 +50,14 @@ lint-go:
 lint-sh:
 	shellcheck -x $(shell find ./scripts/ -name '*.sh' -type f)
 
+lint-k8s:
+	# kubectl kustomize config/k8s/dev | kube-score score -
+	kubeval -d config/k8s/app \
+	  --ignored-path-patterns 'kustomization.yml,registry/config.yml,hydra.yml'
+	kubeval -d config/k8s/stg   \
+	  --ignored-path-patterns \
+	  'kustomization.yml,patches/nfs-pvcs.yml,patches/tls-volumes.yml,registry/config.yml,hydra.yml'
+
 tools:
 	@mkdir -p bin
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
@@ -144,11 +152,26 @@ oidc-client:
 		--token-endpoint-auth-method none
 
 outline-client:
-	scripts/tools/hydra clients create \
-	 	--name outline \
-		--id outline0  \
+	@#scripts/tools/hydra clients create
+	echo hydra clients create  \
+		--fake-tls-termination \
+	 	--name outline         \
+		--id outline0          \
 		--secret b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465 \
-		--callbacks 'https://wiki.hrry.local/auth/oidc.callback' \
+		--callbacks 'https://wiki.stg.hrry.me/auth/oidc.callback' \
+		--response-types code,id_token                 \
+		--grant-types authorization_code,refresh_token \
+		--scope openid,offline,profile,email           \
+		--token-endpoint-auth-method client_secret_post
+
+grafana-client:
+	@#scripts/tools/hydra clients create
+	hydra clients create  \
+		--fake-tls-termination \
+	 	--name grafana         \
+		--id cd5979b60b7c4b73  \
+		--secret 7ae3a681e9b0ab60f7b9012baf178557d6d3826117cbae0ee2955b3cdb8f1c29 \
+		--callbacks 'https://grafana.stg.hrry.dev/login/generic_oauth' \
 		--response-types code,id_token                 \
 		--grant-types authorization_code,refresh_token \
 		--scope openid,offline,profile,email           \

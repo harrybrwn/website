@@ -1,0 +1,142 @@
+# Docs: https://doc.traefik.io/traefik/routing/providers/kubernetes-crd
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: nginx-route-tcp
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: HostSNI(`grafana.stg.hrry.dev`) || HostSNI(`grafana.stg.hrry.me`)
+    services:
+    - name: grafana
+      port: http
+  - match: HostSNI(`stg.hrry.me`) || HostSNI(`s3.stg.hrry.dev`) || HostSNI(`stg.harrybrwn.com`) || HostSNI(`hextris.stg.harrybrwn.com`)
+    services:
+     - name: nginx
+       port: https
+  tls:
+    passthrough: true
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: web-routes-tcp
+spec:
+  entryPoints: [web]
+  routes:
+  - match: HostSNI(`*`)
+    services:
+    - name: nginx
+      port: http # will redirect most things to https
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hrry-dev-routes
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: Host(`ip.stg.hrry.dev`) && !Path(`/metrics`)
+    kind: Rule
+    services:
+      - name: geoip
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`files.stg.hrry.dev`)
+    kind: Rule
+    services:
+      - name: filestash
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`gopkg.stg.hrry.dev`)
+    kind: Rule
+    services:
+      - name: vanity-imports
+        kind: Service
+        port: http
+        scheme: http
+  - match: Host(`auth.stg.hrry.dev`)
+    kind: Rule
+    middlewares:
+      - name: handle-not-found
+      - name: forwarded-proto-https-header
+    services:
+      - name: hydra
+        kind: Service
+        port: hydra-public
+        scheme: http
+  - match: Host(`s3-console.stg.hrry.dev`)
+    kind: Rule
+    services:
+      - name: s3
+        kind: Service
+        port: console
+        scheme: http
+  tls:
+    # Use an existing secret
+    secretName: hrry-dev-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hrry-me-routes
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: Host(`wiki.stg.hrry.me`)
+    kind: Rule
+    services:
+      - name: outline
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    # Use an existing secret
+    secretName: hrry-me-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: harrybrwn-com-routes
+spec:
+  routes:
+  - match: Host(`hooks.stg.harrybrwn.com`)
+    kind: Rule
+    services:
+      - name: hooks
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    secretName: harrybrwn-com-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: handle-not-found
+spec:
+  errors:
+    status:
+      - 404-405
+    query: /{status}.html
+    service:
+      name: nginx
+      port: http
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forwarded-proto-https-header
+spec:
+  headers:
+    customRequestHeaders:
+      X-Fowarded-Proto: "https"

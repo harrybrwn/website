@@ -1,9 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana
+  name: grafana-env
 data:
-  GF_SERVER_PROTOCOL: http
   GF_SERVER_ENFORCE_DOMAIN: 'false'
   GF_LOG_FORMAT: json
   GF_DATABASE_TYPE: ''
@@ -11,3 +10,59 @@ data:
   GF_DATABASE_NAME: grafana
   GF_DATABASE_USER: grafana
   GF_REMOTE_CACHE_TYPE: redis
+  GF_SERVER_PROTOCOL: h2
+  GF_SERVER_CERT_FILE: /usr/share/grafana/tls/tls.crt
+  GF_SERVER_CERT_KEY: /usr/share/grafana/tls/tls.key
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: loki
+        type: loki
+        access: proxy
+        orgId: 1
+        url: http://loki:3100
+        basicAuth: false
+        isDefault: true
+        version: 1
+        editable: true
+        isDefault: true
+      - name: prometheus
+        type: prometheus
+        url: http://prometheus.prometheus.svc.cluster.local:9090
+        access: proxy
+        basicAuth: false
+        isDefault: true
+        orgId: 1
+        version: 1
+        editable: true
+        isDefault: false
+  alerts.yml: |
+    notifiers:
+      - name: discord-notifier-1
+        type: discord
+        org_id: 1
+        is_default: true
+        disable_resolve_message: false
+        settings:
+          url: https://discord.com/api/webhooks/<redacted>/<redacted>
+          message: "{{ template \"default.message\" . }} <@&989730245168988170>"
+          use_discord_username: true
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: ''
+        folderUid: ''
+        type: file
+        disableDeletion: true
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/provisioning/dashboards

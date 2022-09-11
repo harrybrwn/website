@@ -7,7 +7,7 @@ data:
     auth_enabled: false
 
     server:
-      log_level: warn
+      log_level: info
       http_listen_port: 3100
       grpc_listen_port: 9096
 
@@ -68,9 +68,9 @@ data:
         s3forcepathstyle: true
       index_queries_cache_config:
         redis:
-          endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
-          master_name: ${REDIS_SENTINEL_MASTER_NAME}
-          #endpoint: redis:6379
+          #endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
+          #master_name: ${REDIS_SENTINEL_MASTER_NAME}
+          endpoint: redis.default.svc.cluster.local:6379
           password: ${REDIS_PASSWORD}
           expiration: 6h
 
@@ -93,14 +93,14 @@ data:
       results_cache:
         cache:
           redis:
-            #endpoint: redis:6379
-            endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
-            master_name: ${REDIS_SENTINEL_MASTER_NAME}
+            endpoint: redis:6379
+            #endpoint: sentinel-0.sentinel:26379,sentinel-1.sentinel:26379,sentinel-2.sentinel:26379
+            #master_name: ${REDIS_SENTINEL_MASTER_NAME}
             password: ${REDIS_PASSWORD}
             expiration: 1h
 
     ruler:
-      alertmanager_url: http://localhost:9093
+      alertmanager_url: http://alertmanager.prometheus.svc.cluster.local:9093
 
     # By default, Loki will send anonymous, but uniquely-identifiable usage and configuration
     # analytics to Grafana Labs. These statistics are sent to https://stats.grafana.org/
@@ -114,4 +114,3 @@ data:
     # If you would like to disable reporting, uncomment the following lines:
     analytics:
       reporting_enabled: false
-

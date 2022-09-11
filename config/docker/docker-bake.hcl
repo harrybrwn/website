@@ -141,8 +141,8 @@ target "postgres" {
 target "fluentbit" {
     dockerfile = "config/docker/Dockerfile.fluentbit"
     args = {
-        FLUENTBIT_VERSION = "1.9.3"
-        #FLUENTBIT_VERSION = "1.9.3-debug"
+        #FLUENTBIT_VERSION = "1.9.3"
+        FLUENTBIT_VERSION = "1.9.3-debug"
     }
     tags = concat(
         tags("fluent-bit"),
@@ -154,9 +154,12 @@ target "fluentbit" {
 target "grafana" {
     dockerfile = "config/grafana/Dockerfile"
     args = {
-        GRAFANA_VERSION = "latest"
+        GRAFANA_VERSION = "9.1.4"
     }
-    tags = tags("grafana")
+    tags = concat(
+        tags("grafana"),
+        formatlist("${REGISTRY}/harrybrwn/grafana:9.1.4"),
+    )
     inherits = ["base-service"]
 }
 
@@ -195,6 +198,20 @@ target "s3" {
     platforms = [
         "linux/amd64",
     ]
+}
+
+target "outline" {
+    context = "."
+    dockerfile = "config/docker/Dockerfile.outline"
+    args = {
+        OUTLINE_VERSION = "0.66.0"
+    }
+    tags = concat(
+        tags("outline"),
+        formatlist("${REGISTRY}/harrybrwn/outline:0.66.0"),
+    )
+    labels = labels()
+    inherits = ["base-service"]
 }
 
 #

@@ -13,4 +13,4 @@ echo "GIT_BRANCH=$GIT_BRANCH"
 echo "GIT_COMMIT=$GIT_COMMIT"
 echo "SOURCE_HASH=$SOURCE_HASH"
 
-docker buildx bake -f config/docker/docker-bake.hcl --push "$@"
+docker buildx bake -f config/docker/docker-bake.hcl "${@:---pull}"
