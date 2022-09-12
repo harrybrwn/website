@@ -8,9 +8,43 @@ GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
+platform() {
+  _kernel="$(uname -s)"
+  _arch="$(uname -m)"
+  case "$_kernel" in
+    Linux|linux) _kernel="linux";;
+    *) break;;
+  esac
+  case "$_arch" in
+    x86_64) _arch="amd64";;
+    *) break;;
+  esac
+  echo -n "${_kernel}/${_arch}"
+}
+
 echo "GIT_TAG=$GIT_TAG"
 echo "GIT_BRANCH=$GIT_BRANCH"
 echo "GIT_COMMIT=$GIT_COMMIT"
 echo "SOURCE_HASH=$SOURCE_HASH"
 
-docker buildx bake -f config/docker/docker-bake.hcl "${@:---pull}"
+args=""
+is_local=false
+while [ $# -gt 0 ]; do
+  case $1 in
+    --local)
+      is_local=true
+      shift 1
+      ;;
+    *)
+      args="${args} $1"
+      shift 1
+      ;;
+  esac
+done
+
+if ${is_local}; then
+  args="--set *.platform=linux/amd64 --load ${args}"
+fi
+
+set -- ${args}
+docker buildx bake -f config/docker/docker-bake.hcl "$@"

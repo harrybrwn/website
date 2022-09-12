@@ -13,4 +13,6 @@ images="$(docker-compose \
   | sort \
   | uniq)"
 
+echo "loading images..."
+echo "${images}"
 k3d image load --cluster hrry ${images}
