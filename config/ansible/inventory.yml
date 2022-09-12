@@ -51,6 +51,9 @@ all:
           ansible_ssh_user: harry
           # ansible_host: 169.254.158.18
           ansible_host: 10.0.0.12
+        rpi0:
+          ansible_ssh_user: pi
+          ansible_host: 10.0.0.40
 
     prod:
       children:

@@ -1,4 +1,11 @@
 ---
+- name: Check Variables
+  debug:
+    msg: gather_facts is required.
+  failed_when: >
+    (ansible_distribution is not defined or
+     ansible_all_ipv6_addresses is not defined)
+
 - name: Set SELinux to disabled state
   selinux:
     state: disabled

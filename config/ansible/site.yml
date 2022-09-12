@@ -119,6 +119,9 @@
       - path: /exports/nfs/hrry.dev
         host: '*'
         options: [rw, no_root_squash, no_subtree_check, insecure]
+      - path: /exports/nfs/k8s
+        host: '*'
+        options: [rw, no_root_squash, no_subtree_check, insecure]
     nfs_extra_dirs:
       - path: /exports/nfs/hrry.dev/certs
       - path: /exports/nfs/hrry.dev/storage/s3

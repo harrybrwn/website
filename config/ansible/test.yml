@@ -1,34 +1,9 @@
-- name: Test k3s installation
-  hosts: test
-  #hosts: localhost
+- name: Random Tests
+  # hosts: localhost
+  hosts: rpi0
   become: true
   vars_files:
     - vars/become-password.yml
-    - vars/registry.yml
 
-  vars:
-    k3s_master_ip: "{{ hostvars[groups['test'][0]]['ansible_host'] }}"
-
-  roles:
-    - role: nfs
-      vars:
-        nfs_package_name: nfs-kernel-server
-        nfs_service_name: nfs-kernel-server
-        nfs_exports:
-          - path: /exports/nfs/hrry.dev/stg
-            host: '*'
-            options: [rw, no_root_squash, no_subtree_check, insecure]
-    - role: k3s/prereq
-    - role: k3s/download
-    - role: k3s/raspberrypi
-    - role: k3s/registry
-      vars:
-        registry: '10.0.0.11:5000'
-        registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
-        registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
-        registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
-    - role: k3s/master
-    - role: k3s/kubeconfig
-      vars:
-        k3s_config_name: hrry-staging
-    # - k3s/stop
+  tasks:
+    - debug: var=ansible_user

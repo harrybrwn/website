@@ -1,3 +1,12 @@
+- name: Check Variables.
+  debug:
+    msg: Variable check
+  failed_when: >
+    (systemd_dir is not defined or
+     k3s_server_location is not defined or
+     ansible_user is not defined or
+     k3s_master_ip is not defined)
+
 - name: Copy K3s service file
   register: k3s_service
   template:

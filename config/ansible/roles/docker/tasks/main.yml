@@ -1,3 +1,8 @@
+- name: Check Variables.
+  debug:
+    msg: gather_facts is required.
+  failed_when: ansible_facts is not defined
+
 - name: Installation deps
   apt:
     package:
