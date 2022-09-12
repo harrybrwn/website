@@ -1,0 +1,7 @@
+resources:
+  - console/service.yml
+  - console/secret.yml
+  - console/deployment.yml
+  - s3/service.yml
+  - s3/configmap.yml
+  - s3/statefulset.yml

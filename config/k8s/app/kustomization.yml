@@ -7,7 +7,6 @@ resources:
   - nginx.yml
   - db.yml
   - hooks.yml
-  - s3.yml
   - web-api.yml
   - geoip.yml
   - vanity-imports.yml
@@ -15,6 +14,7 @@ resources:
   - filestash.yml
 
   - redis
+  - minio
   - hydra
   - grafana
   - fluent-bit

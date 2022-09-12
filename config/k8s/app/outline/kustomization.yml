@@ -3,3 +3,4 @@ resources:
   - configmap.yml
   - secrets.yml
   - deploy.yml
+  - hpa.yml

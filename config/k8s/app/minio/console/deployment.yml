@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio-console
+spec:
+  selector:
+    matchLabels:
+      app: minio-console
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: minio-console
+    spec:
+      containers:
+      - name: minio-console
+        image: minio/console:v0.20.1
+        imagePullPolicy: IfNotPresent
+        args:
+          - server
+          - --port
+          - '9090'
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "250m"
+        ports:
+        - containerPort: 9090
+          name: http
+        env:
+        - name: CONSOLE_MINIO_SERVER
+          value: http://s3:9000
+        envFrom:
+        - secretRef:
+            name: minio-console-env

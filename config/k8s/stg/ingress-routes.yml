@@ -73,9 +73,9 @@ spec:
   - match: Host(`s3-console.stg.hrry.dev`)
     kind: Rule
     services:
-      - name: s3
+      - name: minio-console
         kind: Service
-        port: console
+        port: http
         scheme: http
   tls:
     # Use an existing secret

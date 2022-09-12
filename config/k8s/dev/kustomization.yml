@@ -67,7 +67,11 @@ secretGenerator:
       - GITHUB_CLIENT_SECRET=12345
       - GITHUB_CALLBACK_SECRET=abcde
       - POSTGRES_PASSWORD=testbed04
-
+  - name: outline-env
+    behavior: merge
+    literals:
+    - SECRET_KEY=4823b18f05753c43c8e26566ab51ec02f639a31bd182419d5c1caa4cb257f2f7
+    - UTILS_SECRET=6909b3a32c304d274910dc51f07f18add342ca2927ccd9a6cc53271220860c41
 
 configMapGenerator:
   - name: nginx
@@ -95,6 +99,11 @@ configMapGenerator:
     - GF_DATABASE_NAME=grafana
     - GF_DATABASE_USER=grafana
     - GF_REMOTE_CACHE_TYPE=redis
+  - name: outline-env
+    behavior: merge
+    literals:
+      - URL=https://wiki.hrry.local
+      - PGSSLMODE=disable
 
 patches:
   # Make sure all the certificates have the correct issuer
@@ -104,3 +113,22 @@ patches:
       - op: replace
         path: /spec/issuerRef/name
         value: ca-issuer
+
+images:
+  - name: 10.0.0.11:5000/harrybrwn/s3
+    newName: 10.0.0.11:5000/harrybrwn/s3
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/fluent-bit
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/loki
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/redis
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/postgres
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/nginx
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/grafana
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/outline
+    newTag: latest

@@ -113,6 +113,10 @@ secretGenerator:
       - DATABASE_URL=postgres://outline:testbed05@db:5432/outline
       - REDIS_URL=redis://:testbed01@redis:6379
       - REDIS_PASSWORD=testbed01
+  - name: hydra-client-migrations
+    behavior: replace
+    files:
+      - files/hydra-clients.txt
 
 configMapGenerator:
   - name: nginx

@@ -19,6 +19,7 @@ spec:
   selector:
     matchLabels:
       app: geoip
+  replicas: 1
   template:
     metadata:
       labels:
@@ -34,8 +35,8 @@ spec:
         resources:
           limits:
             # Loads GeoLite2 database into memory
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "64Mi"
+            cpu: "25m"
         ports:
         - name: http
           containerPort: 8084
