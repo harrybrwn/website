@@ -18,79 +18,44 @@ spec:
         prometheus.io/path: '/metrics/prometheus'
     spec:
       initContainers:
-        - name: migrate
-          image: oryd/hydra:v1.11.8
-          imagePullPolicy: IfNotPresent
-          # command: ["hydra"]
-          # args: ["migrate", "sql", "-e", "-y"]
-          envFrom:
-            - secretRef: { name: hydra-env }
-          command: ["sh", "-c"]
-          args:
-          - |
-            set -eu
-            hydra migrate sql -e -y
-
-            while read -r line; do
-              echo $line
-              if echo "${line}" | grep -E '^[ \t]*#.*$' > /dev/null 2>&1; then
-                continue
-              fi
-              client_id="$(echo $line | awk '{print $1}')"
-              client_secret="$(echo $line | awk '{print $2}')"
-              callback="$(echo $line | awk '{print $3}')"
-              if [ -z "$client_id" ] || [ -z "$client_secret" ] || [ -z "$callback" ]; then
-                echo "Error: one of the columns is empty"
-                exit 1
-              fi
-              if hydra clients get "$client_id" --fake-tls-termination; then
-                continue
-              fi
-              hydra clients create \
-                --fake-tls-termination \
-                --id "$client_id" \
-                --secret "$client_secret" \
-                --callbacks "$callback" \
-                --response-types code,id_token \
-                --grant-types authorization_code,refresh_token \
-                --scope openid,offline,profile,email \
-                --token-endpoint-auth-method client_secret_post
-            done < /etc/hydra/config/hydra-clients.txt
-          volumeMounts:
-          - name: client-migrations
-            mountPath: /etc/hydra/config
-            readOnly: true
+      - name: migrate
+        image: oryd/hydra:v1.11.8
+        imagePullPolicy: IfNotPresent
+        args: ["migrate", "sql", "-e", "-y"]
+        envFrom:
+          - secretRef: { name: hydra-env }
       containers:
-        - name: hydra
-          image: oryd/hydra:v1.11.8
-          imagePullPolicy: IfNotPresent
-          args: ["serve", "all", "--config=/etc/hydra/hydra.yml"]
-          envFrom:
-            - secretRef: { name: hydra-env }
-          resources:
-            limits:
-              memory: "128Mi"
-              cpu: "100m"
-          ports:
-          - name: public
-            containerPort: 4444
-          - name: admin
-            containerPort: 4445
-          volumeMounts:
-          - name: config
-            mountPath: /etc/hydra/
-            readOnly: true
-          - name: tls
-            mountPath: /etc/hydra/tls/
-            readOnly: true
-      volumes:
+      - name: hydra
+        image: oryd/hydra:v1.11.8
+        imagePullPolicy: IfNotPresent
+        args: ["serve", "all", "--config=/etc/hydra/hydra.yml"]
+        envFrom:
+          - secretRef: { name: hydra-env }
+          - configMapRef: { name: hydra-env }
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+          requests:
+            memory: "64Mi"
+            cpu: "75m"
+        ports:
+        - name: public
+          containerPort: 4444
+        - name: admin
+          containerPort: 4445
+        volumeMounts:
         - name: config
-          configMap:
-            name: hydra
-            optional: false
+          mountPath: /etc/hydra/
+          readOnly: true
         - name: tls
-          secret:
-            secretName: hrry-dev-tls
-        - name: client-migrations
-          secret:
-            secretName: hydra-client-migrations
+          mountPath: /etc/hydra/tls/
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: hydra
+          optional: false
+      - name: tls
+        secret:
+          secretName: hrry-dev-tls

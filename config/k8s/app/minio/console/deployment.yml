@@ -27,9 +27,13 @@ spec:
         ports:
         - containerPort: 9090
           name: http
-        env:
-        - name: CONSOLE_MINIO_SERVER
-          value: http://s3:9000
         envFrom:
         - secretRef:
             name: minio-console-env
+        - configMapRef:
+            name: minio-env-config
+        env:
+        - name: CONSOLE_MINIO_SERVER
+          value: http://s3:9000
+        - name: MINIO_SERVER_URL
+          value: http://s3:9000

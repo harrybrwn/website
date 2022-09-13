@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hydra-init
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: clients-init-job
+        image: alpine/curl:3.14
+        imagePullPolicy: IfNotPresent
+        command: ["sh", "-c"]
+        args:
+        - |
+          set -eu
+
+          ts() {
+            date '+%Y-%m-%dT%H:%M:%SZ' --utc
+          }
+
+          TIMEOUT=60
+          END=$(($(date +%s) + TIMEOUT))
+          while true; do
+            if [ "$(date +%s)" -gt ${END} ]; then
+              echo "[$(ts)] ERROR | timed out waiting for hydra to start"
+              exit 1
+            fi
+            if ! nc -w 1 -z hydra 4445; then
+              echo "[$(ts)] INFO | waiting..."
+              sleep 1
+            else
+              echo "[$(ts)] INFO | hydra is up"
+              break
+            fi
+          done
+
+          for file in $(ls /etc/hydra/config/*.json); do
+            echo "[$(ts)] INFO | POST /clients < ${file}"
+            curl -X POST -sSi \
+              "http://hydra.default.svc.cluster.local:4445/clients" \
+              -H "Content-Type: application/json" \
+              -H "X-Forwarded-Proto: https" \
+              -d "@${file}"
+            echo
+          done
+        volumeMounts:
+        - name: client-migrations
+          mountPath: /etc/hydra/config
+          readOnly: true
+      restartPolicy: Never
+      volumes:
+      - name: client-migrations
+        secret:
+          secretName: hydra-client-migrations

@@ -62,7 +62,7 @@ storage_config:
     s3forcepathstyle: true
   index_queries_cache_config:
     redis:
-      endpoint: redis:6379
+      endpoint: redis.default.svc.cluster.local:6379
       password: ${REDIS_PASSWORD}
       expiration: 1h
 
@@ -83,7 +83,7 @@ query_range:
   results_cache:
     cache:
       redis:
-        endpoint: redis:6379
+        endpoint: redis.default.svc.cluster.local:6379
         password: ${REDIS_PASSWORD}
         expiration: 1h
 

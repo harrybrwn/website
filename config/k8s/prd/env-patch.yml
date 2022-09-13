@@ -1,3 +1,0 @@
-kind: ConfigMap
-metadata: { name: environment-config }
-data: { env: prd }

@@ -7,14 +7,20 @@ metadata:
 spec:
   entryPoints: [websecure]
   routes:
-  - match: HostSNI(`grafana.stg.hrry.dev`) || HostSNI(`grafana.stg.hrry.me`)
-    services:
-    - name: grafana
-      port: http
-  - match: HostSNI(`stg.hrry.me`) || HostSNI(`s3.stg.hrry.dev`) || HostSNI(`stg.harrybrwn.com`) || HostSNI(`hextris.stg.harrybrwn.com`)
+  - match: >-
+      HostSNI(`stg.hrry.me`)
+      || HostSNI(`s3.stg.hrry.dev`)
+      || HostSNI(`stg.harrybrwn.com`)
+      || HostSNI(`hextris.stg.harrybrwn.com`)
     services:
      - name: nginx
        port: https
+  - match: >-
+      HostSNI(`grafana.stg.hrry.dev`)
+      || HostSNI(`grafana.stg.hrry.me`)
+    services:
+    - name: grafana
+      port: http
   tls:
     passthrough: true
 
@@ -140,3 +146,4 @@ spec:
   headers:
     customRequestHeaders:
       X-Fowarded-Proto: "https"
+

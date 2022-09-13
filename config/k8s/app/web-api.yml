@@ -46,20 +46,14 @@ spec:
                 configMapKeyRef:
                   name: environment-config
                   key: env
-            - { name: LOG_OUTPUT,    value: json }
-            - { name: REDIS_HOST,    value: redis }
-            - { name: REDIS_SENTINEL_HOST, value: sentinel }
-            - { name: REDIS_SENTINEL_PORT, value: '26379' }
-            - { name: REDIS_SENTINEL_MASTER_NAME, value: rdbmaster }
-            - { name: POSTGRES_HOST, value: db }
-            - { name: POSTGRES_PORT, value: '5432' }
-            - { name: POSTGRES_DB,   value: harrybrwn_api }
-            - name: POSTGRES_USER
-              value: harrybrwn
             - name: POSTGRES_PASSWORD
-              valueFrom: { secretKeyRef: { name: web-api-secrets, key: postgres-password } }
+              valueFrom:
+                secretKeyRef:
+                  name: web-api-env
+                  key: POSTGRES_PASSWORD
             - name: REDIS_PASSWORD
-              valueFrom: { secretKeyRef: { name: redis-secrets, key: password } }
+              valueFrom:
+                secretKeyRef: { name: redis-secrets, key: password }
             - name: JWT_SEED
               valueFrom:
                 secretKeyRef:
@@ -70,12 +64,29 @@ spec:
                 secretKeyRef:
                   name: sendgrid
                   key: api-key
+          envFrom:
+            - configMapRef: { name: web-api-env }
 
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: web-api-secrets
+  name: web-api-env
 type: Opaque
 data:
-  postgres-password: dGVzdGJlZDAx
+  POSTGRES_PASSWORD: dGVzdGJlZDAx
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-api-env
+data:
+  REDIS_HOST: redis
+  POSTGRES_HOST: db
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: harrybrwn_api
+  POSTGRES_USER: harrybrwn
+  # REDIS_SENTINEL_HOST: sentinel
+  # REDIS_SENTINEL_PORT: '26379'
+  # REDIS_SENTINEL_MASTER_NAME: rdbmaster

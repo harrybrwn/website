@@ -1,8 +1,10 @@
 # https://www.ory.sh/docs/hydra/reference/configuration
 version: v1.11.7
 
+# THIS IS A TEST
+
 log:
-  # format: json
+  format: json
   level: debug
   leak_sensitive_values: true
 
@@ -73,3 +75,5 @@ oidc:
 sqa:
   # Disable anonymized telemetry
   opt_out: true
+
+# THIS IS A TEST

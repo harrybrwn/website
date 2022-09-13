@@ -39,6 +39,7 @@ group "services" {
         "geoip",
         "legacy-site",
         "vanity-imports",
+        "outline",
     ]
 }
 

@@ -1,14 +1,26 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: hydra-env
+data: {}
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: hydra
 data:
   hydra.yml: |-
-    version: v1.11.8
+    # https://www.ory.sh/docs/hydra/reference/configuration
+    version: v1.11.7
+
+    # THIS IS A TEST
+
     log:
       format: json
       level: debug
       leak_sensitive_values: true
+
     serve:
       cookies:
         same_site_mode: Lax
@@ -30,13 +42,11 @@ data:
           allowed_origins:
             - https://hrry.local
             - https://*.hrry.local
-            - https://hrry.dev
-            - https://*.hrry.dev
-            - https://hrry.me
-            - https://*.hrry.me
           allowed_headers:
             - Authorization
             - Content-Type
+
+    # TODO should I remove these since they are being overridden?
     urls:
       self:
         issuer: "https://auth.hrry.local"
@@ -45,6 +55,7 @@ data:
       consent: "https://hrry.local/login/"
       error:   "https://hrry.local/oidc-error"
       logout:  "https://hrry.local/logout"
+
     webfinger:
       oidc_discovery:
         supported_claims:
@@ -52,15 +63,19 @@ data:
           - uuid
           - username
           - roles
+
     oauth:
       pkce:
         enforced_for_public_clients: true
+
     oauth2:
       allowed_top_level_claims:
         - email
         - uuid
         - username
         - roles
+      #refresh_token_hook: https://my-example.app/token-refresh-hook
+
     oidc:
       subject_identifiers:
         supported_types:
@@ -70,6 +85,9 @@ data:
           salt: 'pairwise-salt-1234'
       dynamic_client_registration:
         enabled: false
+
     sqa:
       # Disable anonymized telemetry
       opt_out: true
+
+    # THIS IS A TEST

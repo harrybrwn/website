@@ -116,9 +116,11 @@
     nfs_package_name: nfs-kernel-server
     nfs_service_name: nfs-kernel-server
     nfs_exports:
+      # Manual data
       - path: /exports/nfs/hrry.dev
         host: '*'
         options: [rw, no_root_squash, no_subtree_check, insecure]
+      # For automated nfs provisioner
       - path: /exports/nfs/k8s
         host: '*'
         options: [rw, no_root_squash, no_subtree_check, insecure]

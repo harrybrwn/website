@@ -4,27 +4,126 @@ bases:
   - ../common/sendgrid
   - ../common/certificates
 
-patches:
-  - path: nginx-config-patch.yml
-    target:
-      kind: ConfigMap
-      name: nginx
-  - target:
-      kind: ConfigMap
-      name: environment-config
-    path: env-patch.yml
-  - target:
-      kind: Deployment
-      name: hydra
-    # Use *.hrry.dev for hydra
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/volumes/1/secret/secretName
-        value: hrry-dev-tls
+resources:
+  - issuer.yml
+  - ingress-routes.yml
 
+patches:
+  - target: { kind: Deployment }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: StatefulSet }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: DaemonSet }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target:
+      annotationSelector: hrry.me/has-init=true
+    patch: |-
+      - op: add
+        path: /spec/template/spec/initContainers/0/imagePullPolicy
+        value: Always
 
 secretGenerator:
-  - name: registry-secrets
+  - name: jwt-secrets
+    behavior: replace
+    envs: [env/jwt.env]
+  - name: db-env-secrets
+    behavior: replace
+    envs: [env/postgres.env]
+  - name: redis-secrets
+    behavior: replace
+    envs: [env/redis.env]
+  - name: minio-env-secrets
     behavior: create
+    envs: [env/minio-s3.env]
+  - name: minio-console-env
+    behavior: replace
+    envs: [env/minio-console.env]
+  - name: grafana-env
+    behavior: replace
+    envs: [env/grafana.env]
+  - name: loki
+    behavior: replace
+    envs: [env/loki.env]
+  - name: web-api-env
+    behavior: replace
+    envs: [env/api.env]
+  - name: hooks-env-secrets
+    behavior: replace
+    envs:
+      - env/hooks.env
+      - env/github.env
+  - name: hydra-client-migrations
+    behavior: replace
     files:
-      - registry/htpasswd
+      - files/clients/grafana.json
+      - files/clients/outline.json
+
+configMapGenerator:
+  - name: environment-config
+    behavior: replace
+    literals: [env=prd]
+  - name: nginx
+    behavior: replace
+    literals:
+      - registry_url=https://registry.hrry.dev
+  - name: minio-env-config
+    behavior: merge
+    literals:
+      - MINIO_BROWSER_REDIRECT_URL=http://s3-console.hrry.dev
+  - name: grafana-env
+    behavior: merge
+    literals:
+      - GF_SERVER_DOMAIN=grafana.hrry.dev
+      - GF_SERVER_ROOT_URL=https://grafana.hrry.dev
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+      - GF_DATABASE_USER=grafana
+      - GF_REMOTE_CACHE_TYPE=redis
+      - GF_AUTH_GENERIC_OAUTH_NAME=hrry.me
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.hrry.dev/oauth2/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.hrry.dev/oauth2/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.hrry.dev/userinfo
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      # We are using our own certificates for server auth.
+      - GF_AUTH_GENERIC_OAUTH_TLS_SKIP_VERIFY_INSECURE=true
+      - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.hrry.dev hrry.me harrybrwn.com gmail.com
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=email
+  - name: hydra-env
+    behavior: merge
+    literals:
+      - OAUTH2_EXPOSE_INTERNAL_ERRORS=false
+      - URLS_SELF_ISSUER=https://auth.hrry.dev
+      - URLS_SELF_PUBLIC=https://auth.hrry.dev
+      - URLS_LOGIN=https://hrry.me/login/
+      - URLS_CONSENT=https://hrry.me/login/
+      - URLS_ERROR=https://hrry.me/oidc-error
+      - URLS_LOGOUT=https://hrry.me/logout
+  - name: outline-env
+    behavior: merge
+    literals:
+      - URL=https://wiki.hrry.me
+      - OIDC_AUTH_URI=https://auth.hrry.dev/oauth2/auth
+      - OIDC_TOKEN_URI=https://auth.hrry.dev/oauth2/token
+      - OIDC_USERINFO_URI=https://auth.hrry.dev/userinfo
+      - OIDC_DISPLAY_NAME=hrry.me
+      - AWS_S3_UPLOAD_BUCKET_URL=https://s3.hrry.dev
+      - AWS_S3_UPLOAD_MAX_SIZE=26214400
+      - AWS_S3_UPLOAD_BUCKET_NAME=outline-wiki-data
+  - name: hooks-env-config
+    behavior: merge
+    literals:
+      - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=harrybrwn

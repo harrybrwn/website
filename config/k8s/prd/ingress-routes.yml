@@ -1,5 +1,5 @@
----
 # Docs: https://doc.traefik.io/traefik/routing/providers/kubernetes-crd
+---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRouteTCP
 metadata:
@@ -8,14 +8,16 @@ spec:
   entryPoints: [websecure]
   routes:
   - match: >-
-      HostSNI(`hrry.local`)
-      || HostSNI(`s3.hrry.local`)
-      || HostSNI(`harrybrwn.local`)
-      || HostSNI(`hextris.harrybrwn.local`)
+      HostSNI(`hrry.me`)
+      || HostSNI(`s3.hrry.dev`)
+      || HostSNI(`harrybrwn.com`)
+      || HostSNI(`hextris.harrybrwn.com`)
     services:
      - name: nginx
        port: https
-  - match: HostSNI(`grafana.hrry.local`)
+  - match: >-
+      HostSNI(`grafana.hrry.dev`)
+      || HostSNI(`grafana.hrry.me`)
     services:
     - name: grafana
       port: http
@@ -43,37 +45,38 @@ metadata:
 spec:
   entryPoints: [websecure]
   routes:
-  - match: Host(`ip.hrry.local`) && !Path(`/metrics`)
+  - match: Host(`ip.hrry.dev`) && !Path(`/metrics`)
     kind: Rule
     services:
       - name: geoip
         kind: Service
         port: http
         scheme: http
-  - match: Host(`files.hrry.local`)
+  - match: Host(`files.hrry.dev`)
     kind: Rule
     services:
       - name: filestash
         kind: Service
         port: http
         scheme: http
-  - match: Host(`gopkg.hrry.local`)
+  - match: Host(`gopkg.hrry.dev`)
     kind: Rule
     services:
       - name: vanity-imports
         kind: Service
         port: http
         scheme: http
-  - match: Host(`auth.hrry.local`)
+  - match: Host(`auth.hrry.dev`)
     kind: Rule
     middlewares:
       - name: handle-not-found
+      - name: forwarded-proto-https-header
     services:
       - name: hydra
         kind: Service
         port: hydra-public
         scheme: http
-  - match: Host(`s3-console.hrry.local`)
+  - match: Host(`s3-console.hrry.dev`)
     kind: Rule
     services:
       - name: minio-console
@@ -88,10 +91,29 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
+  name: hrry-me-routes
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: Host(`wiki.hrry.me`)
+    kind: Rule
+    services:
+      - name: outline
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    # Use an existing secret
+    secretName: hrry-me-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
   name: harrybrwn-com-routes
 spec:
   routes:
-  - match: Host(`hooks.harrybrwn.local`)
+  - match: Host(`hooks.harrybrwn.com`)
     kind: Rule
     services:
       - name: hooks
@@ -114,3 +136,13 @@ spec:
     service:
       name: nginx
       port: http
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: forwarded-proto-https-header
+spec:
+  headers:
+    customRequestHeaders:
+      X-Fowarded-Proto: "https"

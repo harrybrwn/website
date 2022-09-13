@@ -1,0 +1,20 @@
+{
+    "client_id": "outline0",
+	"client_secret": "b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465",
+    "client_name": "outline",
+    "redirect_uris": [
+		"https://wiki.stg.hrry.me/auth/oidc.callback"
+	],
+    "grant_types": [
+		"authorization_code",
+		"refresh_token"
+	],
+    "response_types": [
+		"code",
+		"id_token"
+	],
+    "scope": "openid offline profile email",
+    "subject_type": "public",
+    "token_endpoint_auth_method": "client_secret_post",
+    "userinfo_signed_response_alg": "none"
+}

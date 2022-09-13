@@ -46,20 +46,20 @@ secretGenerator:
       - MINIO_ROOT_USER=root
       - MINIO_ROOT_PASSWORD=minio-testbed001
   - name: grafana-env
-    behavior: merge
+    behavior: replace
     literals:
       - GF_DATABASE_PASSWORD=testbed02
       - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=1,password=testbed01
       - GF_SECURITY_ADMIN_PASSWORD=testbed01
   - name: loki
-    behavior: merge
+    behavior: replace
     literals:
       - s3-access-key=loki
       - s3-secret-key=minio-testbed001-loki
-  - name: web-api-secrets
-    behavior: merge
+  - name: web-api-env
+    behavior: replace
     literals:
-      - postgres-password=testbed01
+      - POSTGRES_PASSWORD=testbed01
   - name: hooks-env-secrets
     behavior: replace
     literals:
@@ -68,10 +68,15 @@ secretGenerator:
       - GITHUB_CALLBACK_SECRET=abcde
       - POSTGRES_PASSWORD=testbed04
   - name: outline-env
-    behavior: merge
+    behavior: merge # Merge there are useful defaults
     literals:
     - SECRET_KEY=4823b18f05753c43c8e26566ab51ec02f639a31bd182419d5c1caa4cb257f2f7
     - UTILS_SECRET=6909b3a32c304d274910dc51f07f18add342ca2927ccd9a6cc53271220860c41
+  - name: hydra-client-migrations
+    behavior: replace
+    files:
+      - files/clients/grafana.json
+      - files/clients/outline.json
 
 configMapGenerator:
   - name: nginx

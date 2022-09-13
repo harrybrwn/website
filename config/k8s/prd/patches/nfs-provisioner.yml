@@ -12,9 +12,9 @@ spec:
         - name: NFS_SERVER
           value: 10.0.0.13
         - name: NFS_PATH
-          value: /exports/nfs/hrry.dev/provisioner
+          value: /exports/nfs/k8s
     volumes:
     - name: nfs-client-root
       nfs:
         server: 10.0.0.13
-        path: /exports/nfs/hrry.dev/provisioner
+        path: /exports/nfs/k8s

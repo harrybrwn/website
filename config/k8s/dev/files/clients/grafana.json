@@ -1,0 +1,20 @@
+{
+    "client_id": "grafana",
+    "client_secret": "grafana12345",
+    "client_name": "grafana",
+    "redirect_uris": [
+        "https://grafana.hrry.local/login/generic_oauth"
+    ],
+    "grant_types": [
+        "authorization_code",
+        "refresh_token"
+    ],
+    "response_types": [
+        "code",
+        "id_token"
+    ],
+    "scope": "openid offline profile email",
+    "subject_type": "public",
+    "token_endpoint_auth_method": "client_secret_post",
+    "userinfo_signed_response_alg": "none"
+}
