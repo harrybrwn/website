@@ -9,14 +9,20 @@ SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
 platform() {
-  _kernel="$(uname -s)"
+  _kernel="$(uname -s | sed 's/^L/l/')"
   _arch="$(uname -m)"
   case "$_kernel" in
     Linux|linux) _kernel="linux";;
-    *) break;;
+    *)
+      echo "$_kernel not supported"
+      exit 1
+      ;;
   esac
   case "$_arch" in
     x86_64) _arch="amd64";;
+    arm*)
+      _arch="$(echo "$_arch" | sed -E 's/.*?v([0-9]+).*$/arm\/v\1/')"
+      ;;
     *) break;;
   esac
   echo -n "${_kernel}/${_arch}"
@@ -43,7 +49,7 @@ while [ $# -gt 0 ]; do
 done
 
 if ${is_local}; then
-  args="--set *.platform=linux/amd64 --load ${args}"
+  args="--set *.platform=$(platform) --load ${args}"
 fi
 
 set -- ${args}

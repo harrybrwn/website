@@ -9,12 +9,6 @@ import (
 )
 
 var (
-	//go:embed invite.html
-	inviteStaticPage []byte
-	//go:embed invite_email.html
-	inviteEmailStatic []byte
-	//go:embed bookmarks.json
-	bookmarks []byte
 	//go:embed pub.asc
 	gpgPubkey []byte
 
@@ -25,6 +19,8 @@ func main() {
 	var (
 		port = 8081
 	)
+	_ = gpgPubkey
 	flag.IntVarP(&port, "port", "p", port, "server port")
 	flag.Parse()
+	logger.Infof("starting server on [::]:%d", port)
 }

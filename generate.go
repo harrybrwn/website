@@ -9,7 +9,5 @@ package main
 //go:generate sh scripts/mockgen.sh
 
 /// Files needed by the api
-//go:generate cp build/harrybrwn.com/404.html cmd/api/
-//go:generate cp build/harrybrwn.com/invite_email/index.html cmd/api/invite_email.html
-//go:generate cp build/harrybrwn.com/invite/index.html cmd/api/invite.html
-//go:generate cp frontend/public/pub.asc files/bookmarks.json cmd/api/
+//go :generate cp build/harrybrwn.com/invite/index.html cmd/api/invite.html
+//go:generate cp frontend/public/pub.asc cmd/api/

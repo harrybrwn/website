@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	envHydraAdminURL  = "HYDRA_ADMIN_URL"
-	envHydraPublicURL = "HYDRA_PUBLIC_URL"
+	envHydraAdminURL = "HYDRA_ADMIN_URL"
+	//envHydraPublicURL = "HYDRA_PUBLIC_URL"
 	envSendgridAPIKey = "SENDGRID_API_KEY"
 )
 

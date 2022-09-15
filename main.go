@@ -22,6 +22,8 @@ import (
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	"harrybrown.com/app"
+	"harrybrown.com/files"
+	"harrybrown.com/frontend"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/email"
@@ -33,8 +35,6 @@ import (
 var (
 	//go:embed build/harrybrwn.com/harry_y_tanya/index.html
 	hytStaticPage []byte
-	//go:embed build/harrybrwn.com/404.html
-	notFoundStaticPage []byte
 	//go:embed build/harrybrwn.com/admin/index.html
 	adminStaticPage []byte
 	//-go:embed build/harrybrwn.com/games/index.html
@@ -48,8 +48,6 @@ var (
 	bookmarks []byte
 	//go:embed build/harrybrwn.com/pub.asc
 	gpgPubkey []byte
-	//go:embed build/harrybrwn.com/invite_email/index.html
-	inviteEmailStatic []byte
 
 	logger = log.SetLogger(log.New(log.WithEnv(), log.WithServiceName("api")))
 )
@@ -131,7 +129,7 @@ func main() {
 	api.GET("/info", echo.WrapHandler(web.APIHandler(app.HandleInfo)))
 	api.GET("/quotes", func(c echo.Context) error { return c.JSON(200, app.GetQuotes()) })
 	api.GET("/quote", func(c echo.Context) error { return c.JSON(200, app.RandomQuote()) })
-	api.GET("/bookmarks", json(bookmarks))
+	api.GET("/bookmarks", json(files.Bookmarks))
 	api.GET("/hits", app.Hits(db, app.NewHitsCache(rd), logger))
 	api.Any("/ping", WrapHandler(ping))
 	api.GET("/runtime", app.HandleRuntimeInfo(app.StartTime), guard, auth.AdminOnly())
@@ -179,7 +177,7 @@ func NotFoundHandler() echo.HandlerFunc {
 		if strings.HasPrefix(c.Request().RequestURI, "/api") {
 			return echo.ErrNotFound
 		}
-		return c.HTMLBlob(404, notFoundStaticPage)
+		return c.HTMLBlob(404, frontend.NotFoundHTML)
 	}
 }
 
@@ -187,7 +185,7 @@ func newInviteMailer(client *sendgrid.Client) invite.Mailer {
 	m, err := invite.NewMailer(
 		email.Email{Name: "Harry Brown", Address: "admin@harrybrwn.com"},
 		"You're Invited!",
-		template.Must(template.New("email-invite").Parse(string(inviteEmailStatic))),
+		template.Must(template.New("email-invite").Parse(string(frontend.InviteEmailHTML))),
 		client,
 	)
 	if err != nil {

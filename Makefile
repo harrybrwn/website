@@ -20,11 +20,12 @@ clean:
 coverage: coverage-ts coverage-go
 
 deep-clean: clean
-	sudo $(RM) -r internal/mocks \
+	$(RM) -r internal/mocks \
 		$(shell find . -name 'node_modules' -type d)  \
-		$(shell find . -name '.pytest_cache' -type d) \
-		$(shell find . -name '__pycache__' -type d)   \
 		$(shell find . -name 'yarn-error.log')
+	sudo $(RM) -r \
+		$(shell find . -name '.pytest_cache' -type d) \
+		$(shell find . -name '__pycache__' -type d)
 
 test-go:
 	@mkdir -p .cache/test
@@ -52,11 +53,12 @@ lint-sh:
 
 lint-k8s:
 	# kubectl kustomize config/k8s/dev | kube-score score -
-	kubeval -d config/k8s/app \
-	  --ignored-path-patterns 'kustomization.yml,registry/config.yml,hydra.yml'
-	kubeval -d config/k8s/stg   \
-	  --ignored-path-patterns \
-	  'kustomization.yml,patches/nfs-pvcs.yml,patches/tls-volumes.yml,registry/config.yml,hydra.yml'
+	kubeval -d config/k8s \
+	  --ignored-path-patterns 'kustomization.yml,registry/config.yml,prd/patches/,stg/patches/,k3d.yml' \
+	  --ignore-missing-schemas
+	kubectl kustomize config/k8s/dev | kubeval --ignore-missing-schemas
+	kubectl kustomize config/k8s/stg | kubeval --ignore-missing-schemas
+	kubectl kustomize config/k8s/prd | kubeval --ignore-missing-schemas
 
 tools:
 	@mkdir -p bin

@@ -28,6 +28,9 @@ group "default" {
         "databases",
         "services",
         "logging",
+
+        "provision",
+        "ansible",
     ]
 }
 

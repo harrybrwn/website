@@ -53,12 +53,13 @@ usage() {
   echo
   echo "Flags"
   echo "  -h, --help                 get help message"
-  echo "      --context <name>       name of docker context to use (default: \"$CONTEXT\")"
+  echo "      --context <name>       name of docker context to use                        (default: \"$CONTEXT\")"
   echo "      --network <name>       name of docker swarm network to check for and create (default: \"$NETWORK\")"
-  echo "      --dev                  run for development environment (default: $DEV)"
-  echo "      --dry-run              print the docker-compose command but don't run it (default: $DRY)"
-  echo "      --stack <name>         docker stack name (default: \"$STACK\")"
-  echo "  -c, --compose-file <file>  add one or more compose files (default: ${COMPOSE_FILES[*]})"
+  echo "      --dev                  run for development environment                      (default: $DEV)"
+  echo "      --prod                 run for production environment                       (default: $PRD)"
+  echo "      --dry-run              print the docker-compose command but don't run it    (default: $DRY)"
+  echo "      --stack <name>         docker stack name                                    (default: \"$STACK\")"
+  echo "  -c, --compose-file <file>  add one or more compose files                        (default: ${COMPOSE_FILES[*]})"
   echo
 }
 
@@ -139,6 +140,7 @@ if $DEV; then
 else
   COMPOSE_ARGS+=("--file" "config/docker/prod.yml")
 fi
+COMPOSE_ARGS+=("--project-name" "harrybrwn")
 
 network_exists() {
   docker --context "${CONTEXT}" network inspect "${1}" > /dev/null 2>&1
@@ -281,13 +283,13 @@ for arg in "${ARGS[@]}"; do
             --file config/docker/buildx.yml \
             --push
       else
-        # docker --context default buildx bake --file config/docker/docker-bake.hcl --push
+        docker --context default buildx bake --file config/docker/docker-bake.hcl --push
 
-        docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
-          docker --context default buildx bake \
-            --file - \
-            --file config/docker/buildx.yml \
-            --push
+        # docker compose --context "${CONTEXT}" "${COMPOSE_ARGS[@]}" config 2>/dev/null | \
+        #   docker --context default buildx bake \
+        #     --file - \
+        #     --file config/docker/buildx.yml \
+        #     --push
       fi
       break
       ;;

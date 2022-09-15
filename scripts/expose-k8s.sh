@@ -13,7 +13,7 @@ pids=()
 
 kubectl port-forward svc/nginx 443:443 80:80 &
 pids+=($!)
-kubectl port-forward svc/s3 9000:9000 9001:9001 &
+kubectl port-forward svc/s3 9000:9000 &
 pids+=($!)
 kubectl port-forward svc/db 5432:5432 &
 pids+=($!)
