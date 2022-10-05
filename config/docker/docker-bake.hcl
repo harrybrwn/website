@@ -31,6 +31,7 @@ group "default" {
 
         "provision",
         "ansible",
+        "curl",
     ]
 }
 
@@ -97,7 +98,7 @@ target "nginx" {
     }
     tags = tags("nginx", ["1.20.2-alpine", "1.20.2"])
     inherits = ["base-service"]
-    platforms = ["linux/amd64"]
+    platforms = ["linux/amd64", "linux/arm/v7"]
 }
 
 target "api" {
@@ -232,6 +233,20 @@ target "nomad" {
 #
 # Tools
 #
+
+target "curl" {
+    dockerfile = "config/docker/Dockerfile.curl"
+    labels = labels()
+    args = {
+        ALPINE_VERSION = "3.16"
+    }
+    tags = tags("curl", ["3.16"])
+    platforms = [
+        "linux/amd64",
+        "linux/arm/v7",
+        "linux/arm/v6",
+    ]
+}
 
 target "provision" {
     target = "provision"

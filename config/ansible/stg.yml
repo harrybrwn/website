@@ -52,4 +52,4 @@
     - role: k3s/kubeconfig
       vars:
         k3s_config_name: hrry-staging
-    # - k3s/stop
+    # - role: k3s/stop

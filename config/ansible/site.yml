@@ -141,6 +141,18 @@
           - nfs-kernel-server
   roles:
     - nfs
+  tasks:
+  - name: Create backups storage location.
+    file:
+      path: "/opt/hrry.dev/backups"
+      mode: '0755'
+      state: directory
+  - name: Install backups cron job.
+    cron:
+      name: 'data backups'
+      job: rsync -avAR /exports/nfs /opt/hrry.dev/backups/
+      weekday: '0,3,5' # sunday, wednesday, friday
+      hour: '2'        # 2 am
 
 - hosts: k3s_cluster
   become: true
@@ -158,6 +170,7 @@
         registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
         registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+
 - hosts: k3s_master
   name: install k3s on master node
   become: true
@@ -168,6 +181,7 @@
     - role: k3s/kubeconfig
       vars:
         k3s_config_name: hrry-prod
+
 - hosts: k3s_workers
   name: install k3s on worker nodes
   become: true

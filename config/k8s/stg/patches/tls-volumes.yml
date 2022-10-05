@@ -5,6 +5,8 @@ metadata:
 spec:
   template:
     spec:
+      # Install our self signed certificate so that outline can communicate with
+      # hydra. This is not necessary for production.
       containers:
       - name: outline
         volumeMounts:

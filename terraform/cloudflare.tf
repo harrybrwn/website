@@ -37,6 +37,24 @@ resource "cloudflare_record" "homelab_gateway_hrrydev" {
   ttl     = 1
 }
 
+resource "cloudflare_record" "harrybrwn_com_dns_root" {
+  zone_id = data.cloudflare_zones.harrybrwn_com.zones[0].id
+  name    = "@" # root domain only
+  value   = var.gateway_ip
+  type    = "A"
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_record" "hrry_me_dns_root" {
+  zone_id = data.cloudflare_zones.hrry_me.zones[0].id
+  name    = "@" # root domain only
+  value   = var.gateway_ip
+  type    = "A"
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_record" "hrry_dev_dns" {
   for_each = toset([
     "files",

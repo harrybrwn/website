@@ -3,10 +3,21 @@ bases:
   - ../common/cloudflare
   - ../common/sendgrid
   - ../common/certificates
+  - ../common/storage/nfs
+
+commonLabels:
+  environment: prd
 
 resources:
   - issuer.yml
   - ingress-routes.yml
+  - volumes.yml
+
+patchesStrategicMerge:
+  - patches/nfs-pvcs.yml
+  - patches/nfs-provisioner.yml
+  - patches/node-affinities.yml
+  - certificates.yml
 
 patches:
   - target: { kind: Deployment }
@@ -20,6 +31,11 @@ patches:
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
   - target: { kind: DaemonSet }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  - target: { kind: Job }
     patch: |-
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
@@ -61,11 +77,18 @@ secretGenerator:
     envs:
       - env/hooks.env
       - env/github.env
+  - name: hydra-env
+    behavior: replace
+    envs:
+      - env/hydra.env
   - name: hydra-client-migrations
     behavior: replace
     files:
-      - files/clients/grafana.json
-      - files/clients/outline.json
+      - files/oauth2/grafana.json
+      - files/oauth2/outline.json
+  - name: outline-env
+    behavior: replace
+    envs: [env/outline.env]
 
 configMapGenerator:
   - name: environment-config
@@ -74,7 +97,7 @@ configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry_url=https://registry.hrry.dev
+      - registry-url=https://registry.hrry.dev
   - name: minio-env-config
     behavior: merge
     literals:

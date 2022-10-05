@@ -11,10 +11,11 @@ commonLabels:
 resources:
   - issuer.yml
   - ingress-routes.yml
+  - volumes.yml
 
 patchesStrategicMerge:
   - patches/nfs-pvcs.yml
-  - patches/tls-volumes.yml
+  - patches/tls-volumes.yml # only for staging
   - patches/nfs-provisioner.yml
   - certificates.yml
 

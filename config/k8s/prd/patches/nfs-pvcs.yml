@@ -8,11 +8,11 @@ spec:
   - metadata:
       name: data
     spec:
-      accessModes: [ "ReadWriteMany" ]
+      accessModes: [ ReadWriteMany ]
       storageClassName: manual
       resources:
         requests:
-          storage: 2Gi
+          storage: 5Gi
       volumeName: postgres-pv
 
 ---
@@ -26,10 +26,28 @@ spec:
       name: data
     spec:
       accessModes: [ "ReadWriteMany" ]
-      storageClassName: nfs-storage
+      storageClassName: manual
       resources:
         requests:
           storage: 3Gi
+      volumeName: s3-pv
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      storageClassName: manual
+      resources:
+        requests:
+          storage: 5Gi
+      volumeName: loki-pv
 
 ---
 apiVersion: apps/v1
@@ -46,22 +64,6 @@ spec:
       resources:
         requests:
           storage: 1Gi
-
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: loki
-spec:
-  volumeClaimTemplates:
-  - metadata:
-      name: data
-    spec:
-      accessModes: [ "ReadWriteMany" ]
-      storageClassName: nfs-storage
-      resources:
-        requests:
-          storage: 5Gi
 
 ---
 apiVersion: v1

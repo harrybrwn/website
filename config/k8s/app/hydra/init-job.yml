@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
       - name: clients-init-job
-        image: alpine/curl:3.14
+        image: 10.0.0.11:5000/harrybrwn/curl:3.16
         imagePullPolicy: IfNotPresent
         command: ["sh", "-c"]
         args:

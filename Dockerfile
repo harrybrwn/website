@@ -59,6 +59,8 @@ COPY internal internal/
 COPY main.go .
 COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
+COPY --from=frontend /opt/harrybrwn/frontend/embeds.go ./frontend/embeds.go
+COPY --from=frontend /opt/harrybrwn/frontend/pages ./frontend/pages
 RUN go build -ldflags "${LINK}" -o bin/harrybrwn
 
 FROM builder as legacy-site-builder
@@ -157,8 +159,9 @@ RUN apk update && \
     apk add ca-certificates && \
     rm -rf /var/cache/apk/*
 COPY scripts/wait.sh /usr/local/bin/wait.sh
-COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
-RUN update-ca-certificates
+# For some reason update-ca-certificates does not work on arm/v7 so I'm commenting it out for now.
+#COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
+#RUN update-ca-certificates
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
 COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/

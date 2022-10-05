@@ -6,15 +6,16 @@ metadata:
   name: nfs-client-provisioner
 spec:
   template:
-    containers:
-    - name: nfs-client-provisioner
-      env:
-        - name: NFS_SERVER
-          value: 10.0.0.13
-        - name: NFS_PATH
-          value: /exports/nfs/k8s
-    volumes:
-    - name: nfs-client-root
-      nfs:
-        server: 10.0.0.13
-        path: /exports/nfs/k8s
+    spec:
+      containers:
+      - name: nfs-client-provisioner
+        env:
+          - name: NFS_SERVER
+            value: 10.0.0.13
+          - name: NFS_PATH
+            value: /exports/nfs/k8s
+      volumes:
+      - name: nfs-client-root
+        nfs:
+          server: 10.0.0.13
+          path: /exports/nfs/k8s

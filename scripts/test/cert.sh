@@ -9,16 +9,17 @@ declare override=false
 
 ca() {
   local serial=./ca/serial
-  if ! ${override} && [ -f ca/ca.crt ] && [ -f "${serial}" ] && [ -f ca/index.txt ]; then
-    return 0
-  else
-    rm -r ca certs issued
-  fi
+  # if ! ${override} && [ -f ca/ca.crt ] && [ -f "${serial}" ] && [ -f ca/index.txt ]; then
+  #   return 0
+  # else
+  #   rm -r ca certs issued
+  # fi
   mkdir -p ca certs issued
   echo '' > ./ca/index.txt
   if [ ! -f "${serial}" ]; then echo '1000' > ./ca/serial; fi
   openssl req \
-    -new -x509 \
+    -new \
+    -x509 \
     -subj '/CN=test_ca/O=HarryBrown/OU=Personal Site' \
     -extensions v3_ca \
     -out ca/ca.crt \
@@ -56,13 +57,18 @@ main() {
     case $1 in
       --override)
         override=true
-        shift 1
+        ;;
+      --clear)
+        rm -r ca certs issued
+        exit 0
         ;;
     esac
+    shift
   done
 
   ca
   server 'test'
 }
 
+set -x
 main "$@"
