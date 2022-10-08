@@ -65,6 +65,7 @@ resource "cloudflare_record" "hrry_dev_dns" {
     "grafana",
     "s3-console",
     "s3",
+    "auth",
   ])
   name    = each.key
   value   = "_homelab.hrry.dev"
