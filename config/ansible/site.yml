@@ -180,7 +180,7 @@
     - role: k3s/master
     - role: k3s/kubeconfig
       vars:
-        k3s_config_name: hrry-prod
+        k3s_config_name: hrry-prd
 
 - hosts: k3s_workers
   name: install k3s on worker nodes

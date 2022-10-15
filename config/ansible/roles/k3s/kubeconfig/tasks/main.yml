@@ -30,6 +30,7 @@
       shell: |
         set -eu
         mv ~/.kube/_tmp_config ~/.kube/config
+        chmod 0600 ~/.kube/config
     - name: Set to current-context
       shell: kubectl config use-context {{ k3s_config_name }}
   delegate_to: localhost

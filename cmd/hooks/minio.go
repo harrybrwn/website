@@ -56,7 +56,7 @@ func minioLoggingHookHandler[T MinioEntry](pusher logproto.PusherClient) func(w 
 		}
 
 		labels := fmt.Sprintf(
-			`{service=%q,job=%q,type="logs"}`,
+			`{service=%[1]q,app=%[1]q,job=%[2]q,type="logs"}`,
 			minioService,
 			entry.JobLabel(),
 		)

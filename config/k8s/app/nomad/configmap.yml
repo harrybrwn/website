@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nomad-server
+data:
+  server.hcl: |
+    data_dir = "/etc/nomad.d"
+    server {
+      enabled          = true
+      bootstrap_expect = 3
+    }

@@ -6,7 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -20,6 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
+	flag "github.com/spf13/pflag"
 	"golang.org/x/term"
 
 	"harrybrown.com/app"
@@ -46,22 +46,22 @@ func run() error {
 		ctx       = context.Background()
 		out       = os.Stdout
 		in        = bufio.NewScanner(os.Stdin)
-		env       = ".env"
+		env       = []string{".env"}
 		username  string
 		email     string
 		rolesflag string
 		yes       bool
 	)
-	flag.StringVar(&username, "u", username, "username of new user")
-	flag.StringVar(&email, "e", email, "email of new user")
+	flag.StringVarP(&username, "username", "u", username, "username of new user")
+	flag.StringVarP(&email, "email", "e", email, "email of new user")
 	flag.StringVar(&rolesflag, "roles", rolesflag, "roles for new user")
-	flag.StringVar(&env, "env", env, "environment file")
+	flag.StringArrayVar(&env, "env", env, "environment file")
 	flag.BoolVar(&yes, "y", yes, "skip verification prompts")
 	flag.Parse()
 	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	if err := godotenv.Load(env); err != nil {
+	if err := godotenv.Load(env...); err != nil {
 		return err
 	}
 	db, err := database()

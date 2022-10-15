@@ -1,3 +1,5 @@
+# TODO https://www.youtube.com/watch?v=M8nYWBpbwWg
+# https://gist.github.com/wardbekker/6abde118f530a725e60acb5adb04508a
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -5,7 +7,7 @@ metadata:
   labels:
     app.kubernetes.io/name: loki
     app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: hrry.me
+    app.kubernetes.io/part-of: loki
 spec:
   selector:
     matchLabels:
@@ -22,6 +24,7 @@ spec:
         image: 10.0.0.11:5000/harrybrwn/loki:2.5.0
         imagePullPolicy: IfNotPresent
         args:
+          - "-target=all"
           - "-config.file=/loki/loki.yml"
           - "-config.expand-env=true"
           - "-log.format=json"

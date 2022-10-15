@@ -25,6 +25,7 @@ terraform.tfvars
 *.tfstate.lock.info
 *.tfstate.backup
 config/provision.prod.json
+config/user-gen.env
 /config/pki/
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd

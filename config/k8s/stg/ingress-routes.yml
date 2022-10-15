@@ -146,4 +146,3 @@ spec:
   headers:
     customRequestHeaders:
       X-Fowarded-Proto: "https"
-

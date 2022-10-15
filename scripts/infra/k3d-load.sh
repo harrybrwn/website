@@ -23,5 +23,5 @@ images="$(docker buildx bake \
 
 echo "loading images..."
 echo "${images}"
-k3d image load --cluster hrry ${images}
+k3d image load --cluster hrry-dev ${images}
 

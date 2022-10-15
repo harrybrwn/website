@@ -26,11 +26,19 @@ prometheus:
     fullnameOverride: prometheus
     service:
       servicePort: 9090
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "hrry.me/node-size"
+              operator: In
+              values: ["big"] # big, small
     extraArgs:
       log.format: json
     global:
-      scrape_interval: 30s
-      evaluation_interval: 30s
+      scrape_interval: 15s
+      evaluation_interval: 15s
   extraScrapeConfigs: |
     - job_name: nginx-metrics-exporter
       static_configs:

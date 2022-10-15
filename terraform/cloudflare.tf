@@ -55,6 +55,18 @@ resource "cloudflare_record" "hrry_me_dns_root" {
   ttl     = 1
 }
 
+resource "cloudflare_record" "hrry_me_dns" {
+  for_each = toset([
+    "wiki"
+  ])
+  name    = each.key
+  value   = var.gateway_ip
+  type    = "A"
+  proxied = true
+  ttl     = 1
+  zone_id = data.cloudflare_zones.hrry_me.zones[0].id
+}
+
 resource "cloudflare_record" "hrry_dev_dns" {
   for_each = toset([
     "files",
