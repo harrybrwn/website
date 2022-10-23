@@ -270,3 +270,12 @@ target "wait" {
     target = "wait"
     output = ["./.tmp/wait"]
 }
+
+#
+# Special Builds
+#
+
+target "frontend" {
+    target = "raw-frontend"
+    output = ["./build"]
+}

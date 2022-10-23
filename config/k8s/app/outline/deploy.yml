@@ -43,6 +43,16 @@ spec:
         env:
           - name: PORT
             value: '8443'
+          - name: NODE_EXTRA_CA_CERTS
+            value: /opt/hrry.dev/tls/ca.crt
         envFrom:
         - configMapRef: { name: outline-env }
         - secretRef: { name: outline-env }
+        volumeMounts:
+        - name: extra-tls
+          mountPath: /opt/hrry.dev/tls
+          readOnly: true
+      volumes:
+      - name: extra-tls
+        secret:
+          secretName: hrry-dev-tls

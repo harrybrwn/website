@@ -2,7 +2,6 @@ resources:
   # Misc configuration
   - environment.yml
   - jwt-secrets.yml
-  #- tls.yml # This will always be overridden
   # Services
   - nginx.yml
   - hooks.yml

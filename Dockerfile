@@ -5,7 +5,7 @@ ARG ALPINE_VERSION=3.14
 # Frontend Build
 #
 ARG NODE_VERSION=16.13.1-alpine
-FROM node:16.13.1-alpine as frontend
+FROM node:${NODE_VERSION} as frontend
 RUN apk update  && \
     apk upgrade && \
     apk add git && \
@@ -31,6 +31,12 @@ RUN yarn install
 COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN yarn workspaces run build
 COPY ./cmd/hooks/*.html ./cmd/hooks/
+
+#
+# Raw Frontend Output
+#
+FROM scratch as raw-frontend
+COPY --from=frontend /opt/harrybrwn/build /
 
 #
 # Wait script
@@ -86,6 +92,10 @@ RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 FROM builder as provision-builder
 COPY cmd/provision cmd/provision
 RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
+
+FROM builder as registry-auth-builder
+COPY cmd/registry-auth cmd/registry-auth
+RUN go build -ldflags "${LINK}" -o bin/registry-auth ./cmd/registry-auth
 
 #
 # Base service
@@ -148,6 +158,13 @@ COPY --from=legacy-site-builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
 ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
 
 #
+# registry auth service
+#
+FROM service as registry-auth
+COPY --from=registry-auth-builder /opt/harrybrwn/bin/registry-auth /usr/local/bin/
+ENTRYPOINT ["registry-auth"]
+
+#
 # Webserver Frontend
 #
 ARG NGINX_VERSION
@@ -171,12 +188,24 @@ COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
 
 #
+# Registry UI
+#
+ARG NGINX_VERSION
+FROM nginx:1.20.2-alpine as registry-ui
+ARG REGISTRY_UI_ROOT
+ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
+COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
+COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/
+COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
+
+#
 # Testing tools
 #
 FROM python:3.9-slim-buster as python
 VOLUME /opt/harrybrwn
 ENV PATH="/root/.poetry/bin:$PATH"
 ENV POETRY_VIRTUALENVS_CREATE=false
+ENV GET_POETRY_IGNORE_DEPRECATION=1
 # Tell python's 'requests' to use the system certificates
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 WORKDIR /opt/harrybrwn/test
@@ -218,5 +247,3 @@ RUN apk add bash curl bind-tools
 COPY cmd/tools/debug cmd/tools/debug
 RUN go build -o /usr/local/bin/debug ./cmd/tools/debug
 ENTRYPOINT ["bash"]
-
-FROM alpine:3.14 as test

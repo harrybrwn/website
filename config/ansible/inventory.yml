@@ -3,7 +3,6 @@ all:
     # Use python3 on all hosts
     ansible_python_interpreter: /usr/bin/python3
     nfs_server: false
-    swarm_manager: false
     container_registry: 10.0.0.11:5000
     docker_node_labels:
       lenovo:
@@ -19,10 +18,12 @@ all:
     laptop:
       ansible_host: 10.0.0.11
       ansible_ssh_user: harry
-      swarm_manager: true
     lenovo:
       ansible_host: 10.0.0.13
       ansible_ssh_user: harry
+      k3s_config:
+        node-label:
+        - hrry.me/node-size=big
     rpi1:
       ansible_host: 10.0.0.201
     rpi2:
@@ -30,6 +31,18 @@ all:
     rpi3:
       ansible_host: 10.0.0.203
       nfs_server: false
+    rpi0:
+      ansible_host: 10.0.0.40
+      ansible_ssh_user: pi
+    router:
+      ansible_host: router.lan
+      ansible_ssh_user: admin
+      ansible_connection: ansible.netcommon.network_cli
+      ansible_network_os: community.routeros.routeros
+    dell-amd:
+      ansible_ssh_user: harry
+      # ansible_host: 169.254.158.18
+      ansible_host: 10.0.0.12
 
   children:
     ubuntu:
@@ -59,6 +72,10 @@ all:
       children:
         ubuntu:
         raspberrypi:
+
+    stg:
+      hosts:
+        dell-amd:
 
     k3s_master:
       hosts:

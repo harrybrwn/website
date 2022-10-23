@@ -65,7 +65,6 @@ tools:
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 	ln -sf ../scripts/functional.sh bin/functional
-	ln -sf ../scripts/deployment bin/deployment
 	ln -sf ../scripts/tools/hydra bin/hydra
 	ln -sf ../scripts/tools/bake bin/bake
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible

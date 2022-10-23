@@ -72,6 +72,9 @@ secretGenerator:
     literals:
     - SECRET_KEY=4823b18f05753c43c8e26566ab51ec02f639a31bd182419d5c1caa4cb257f2f7
     - UTILS_SECRET=6909b3a32c304d274910dc51f07f18add342ca2927ccd9a6cc53271220860c41
+    # - DATABASE_URL=
+    # - REDIS_URL=redis://:testbed01
+    # - REDIS_PASSWORD=
   - name: hydra-client-migrations
     behavior: replace
     files:
@@ -136,4 +139,6 @@ images:
   - name: 10.0.0.11:5000/harrybrwn/grafana
     newTag: latest
   - name: 10.0.0.11:5000/harrybrwn/outline
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/curl
     newTag: latest

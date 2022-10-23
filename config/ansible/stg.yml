@@ -1,5 +1,5 @@
 - name: K3S Common Prep
-  hosts: dell-amd
+  hosts: stg
   become: true
   vars_files:
     - vars/become-password.yml
@@ -10,6 +10,10 @@
     k3s_server_location: /var/lib/rancher/k3s
     k3s_master_ip: "{{ hostvars[groups['test'][0]]['ansible_host'] }}"
     k3s_master: dell-amd
+    k3s_config:
+      node-label:
+      - hrry.me/env=stg
+      - hrry.me/node-size=big
   pre_tasks:
   - name: Update apt cache
     apt:
@@ -19,6 +23,7 @@
     - role: k3s/prereq
     - role: k3s/download
     - role: k3s/raspberrypi
+    - role: k3s/config
     - role: k3s/registry
       vars:
         registry: '10.0.0.11:5000'
@@ -27,7 +32,7 @@
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
 
 - name: Test k3s installation
-  hosts: dell-amd
+  hosts: stg
   gather_facts: false
   #hosts: localhost
   become: true
@@ -51,5 +56,5 @@
     - role: k3s/master
     - role: k3s/kubeconfig
       vars:
-        k3s_config_name: hrry-staging
+        k3s_config_name: hrry-stg
     # - role: k3s/stop

@@ -5,3 +5,9 @@ metadata:
 servers: 1
 agents: 1
 image: docker.io/rancher/k3s:v1.24.4-k3s1
+options:
+  k3s:
+    nodeLabels:
+    - label: hrry.me/node-size=big
+      nodeFilters:
+        - server:*

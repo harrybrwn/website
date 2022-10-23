@@ -8,11 +8,19 @@ variable "cloudflare_account_id" {
 
 variable "gateway_ip" {
   description = "IP address of the main gateway."
-  type = string
+  type        = string
 }
 
 variable "staging_ip" {
   description = "Local IP address of staging environment's gateway machine."
+  type        = string
+}
+
+variable private_ip {
+  description = "Local IP address of staging environment's gateway machine."
+  type        = string
+}
+
+variable postgres_password {
   type = string
-  default = "10.0.0.12"
 }

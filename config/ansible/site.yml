@@ -154,7 +154,8 @@
       weekday: '0,3,5' # sunday, wednesday, friday
       hour: '2'        # 2 am
 
-- hosts: k3s_cluster
+- name: Setup All k3s Cluster Nodes
+  hosts: k3s_cluster
   become: true
   gather_facts: true
   vars_files:
@@ -170,10 +171,12 @@
         registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
         registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+    - k3s/config
 
-- hosts: k3s_master
-  name: install k3s on master node
+- name: Configure k3s Master Nodes
+  hosts: k3s_master
   become: true
+  gather_facts: false
   vars_files:
     - vars/become-password.yml
   roles:
@@ -182,9 +185,10 @@
       vars:
         k3s_config_name: hrry-prd
 
-- hosts: k3s_workers
-  name: install k3s on worker nodes
+- name: Configure k3s Worker Nodes
+  hosts: k3s_workers
   become: true
+  gather_facts: false
   vars_files:
     - vars/become-password.yml
   roles:

@@ -1,0 +1,6 @@
+---
+- name: reload systemd
+  systemd:
+    name: k3s
+    state: restarted
+    enabled: yes

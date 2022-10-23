@@ -22,6 +22,7 @@
     daemon_reload: yes
     state: restarted
     enabled: yes
+  when: k3s_service.changed
 
 - name: Wait for node-token
   wait_for:

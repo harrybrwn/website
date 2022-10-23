@@ -17,6 +17,7 @@ patchesStrategicMerge:
   - patches/nfs-pvcs.yml
   - patches/tls-volumes.yml # only for staging
   - patches/nfs-provisioner.yml
+  - patches/resource-limits.yml
   - certificates.yml
 
 patches:
@@ -182,6 +183,7 @@ configMapGenerator:
       - AWS_S3_UPLOAD_BUCKET_URL=https://s3.stg.hrry.dev
       - AWS_S3_UPLOAD_MAX_SIZE=26214400
       - AWS_S3_UPLOAD_BUCKET_NAME=outline-wiki-data
+      #- NODE_EXTRA_CA_CERTS
   - name: hooks-env-config
     behavior: merge
     literals:

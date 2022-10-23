@@ -4,8 +4,13 @@ metadata:
   name: nomad-server
 data:
   server.hcl: |
-    data_dir = "/etc/nomad.d"
+    data_dir  = "/opt/nomad/data"
+    bind_addr = "0.0.0.0"
     server {
       enabled          = true
-      bootstrap_expect = 3
+      bootstrap_expect = 1
+    }
+    client {
+      enabled = true
+      servers = ["127.0.0.1"]
     }

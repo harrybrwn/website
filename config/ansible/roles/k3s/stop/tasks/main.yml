@@ -1,9 +1,6 @@
+---
 - name: Disable services
   systemd:
-    name: "{{ item }}"
+    name: k3s
     state: stopped
     enabled: no
-  failed_when: false
-  with_items:
-    - k3s
-    - k3s-node

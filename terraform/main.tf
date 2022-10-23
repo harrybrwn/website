@@ -14,6 +14,10 @@ terraform {
       source = "grafana/grafana"
       version = "~> 1.27.0"
     }
+    postgresql = {
+      source = "cyrilgdn/postgresql"
+      version = "1.17.1"
+    }
   }
 }
 
@@ -23,6 +27,14 @@ provider "aws" {
 }
 
 provider "grafana" {
-  url = "https://grafana.hrry.dev"
+  url  = "https://grafana.hrry.dev"
   auth = ""
+}
+
+provider "postgresql" {
+  host     = var.private_ip
+  port     = 5432
+  database = "harrybrwn"
+  username = "harrybrwn"
+  password = var.postgres_password
 }
