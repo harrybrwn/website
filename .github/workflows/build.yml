@@ -45,5 +45,5 @@ jobs:
           SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
         with:
           files: docker-compose.yml,config/docker/buildx.yml
-          push: true
+          push: false
           load: false
