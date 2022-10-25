@@ -9,7 +9,7 @@ job "ping" {
 
       config {
         command = "/bin/ping"
-        args    = ["-c", "1000", "google.com"]
+        args    = ["-c", "1000", "-i", "5", "google.com"]
       }
     }
   }

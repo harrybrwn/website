@@ -58,6 +58,7 @@ func main() {
 
 	flag.IntVar(&port, "port", port, "specify server port")
 	flag.StringVar(&host, "host", os.Getenv("GH_HOOK_CALLBACK_HOST"), "server's domain name, used for creating webhooks")
+	flag.StringVar(&lokiAddr, "loki-addr", getenv("LOKI_ADDR", lokiAddr), "address to send minio logs to in loki log line format")
 	flag.Parse()
 
 	logger.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339})
@@ -269,4 +270,12 @@ func validateEnv() error {
 		}
 	}
 	return nil
+}
+
+func getenv(name, defaultValue string) string {
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return defaultValue
+	}
+	return v
 }

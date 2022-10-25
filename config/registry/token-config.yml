@@ -1,0 +1,15 @@
+version: 0.1
+
+auth:
+  token:
+    realm: http://localhost:9999
+    service: registry.hrry.dev
+    issuer: auth.hrry.dev
+    rootcertbundle:
+
+http:
+  addr: :5000
+
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
