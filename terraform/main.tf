@@ -7,7 +7,7 @@ terraform {
     # https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 3.0"
+      version = "~> 3.26.0"
     }
     # https://registry.terraform.io/providers/grafana/grafana/latest/docs
     grafana = {

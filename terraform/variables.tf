@@ -21,6 +21,11 @@ variable private_ip {
   type        = string
 }
 
+variable "destination_email" {
+  description = "Email to route custom domain emails to."
+  type = string
+}
+
 variable postgres_password {
   type = string
 }

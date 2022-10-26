@@ -21,6 +21,7 @@ yarn-error.log
 *.pgpass
 terraform.tfvars
 *.auto.tfvars
+!cloudflare.auto.tfvars
 *.tfstate
 *.tfstate.lock.info
 *.tfstate.backup
