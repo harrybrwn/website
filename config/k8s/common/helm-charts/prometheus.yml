@@ -1,0 +1,72 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prometheus
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: prometheus
+  namespace: kube-system
+spec:
+  name: prometheus
+  chart: prometheus
+  version: "15.12.*"
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: prometheus
+  valuesContent: |-
+    prometheus:
+      enabled: true
+      forceNamespace: prometheus
+      kube-state-metrics:
+        namespaceOverride: prometheus
+      alertmanager:
+        enabled: false
+      pushgateway:
+        enabled: false
+      server:
+        enabled: true
+        fullnameOverride: prometheus
+        service:
+          servicePort: 9090
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: "hrry.me/node-size"
+                  operator: In
+                  values: ["big"] # big, small
+        extraArgs:
+          log.format: json
+        global:
+          scrape_interval: 15s
+          evaluation_interval: 15s
+      extraScrapeConfigs: |
+        - job_name: nginx-metrics-exporter
+          static_configs:
+            - targets: ["nginx-metrics-exporter.default.svc.cluster.local:9113"]
+        - job_name: minio-cluster
+          metrics_path: /minio/v2/metrics/cluster
+          scheme: http
+          static_configs:
+            - targets: ["s3.default.svc.cluster.local:9000"]
+        - job_name: minio-node
+          metrics_path: /minio/v2/metrics/node
+          scheme: http
+          scrape_interval: 60s
+          static_configs:
+            - targets: ["s3.default.svc.cluster.local:9000"]
+        - job_name: api
+          dns_sd_configs:
+            - names: ['api.default.svc.cluster.local']
+              type: 'A'
+              port: 8081
+        - job_name: loki
+          static_configs:
+            - targets: ["loki.default.svc.cluster.local:3100"]
+        - job_name: grafana
+          static_configs:
+            - targets: ["grafana.default.svc.cluster.local:3000"]
