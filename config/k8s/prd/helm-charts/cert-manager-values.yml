@@ -1,0 +1,29 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: cert-manager
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    enabled: true
+    namespace: cert-manager
+    installCRDs: true
+    resources:
+      limits:
+        cpu: 50m
+        memory: 64Mi
+    webhook:
+      resources:
+        limits:
+          cpu: 50m
+          memory: 64Mi
+    cainjector:
+      resources:
+        limits:
+          cpu: 50m
+          memory: 64Mi
+    startupapicheck:
+      resources:
+        limits:
+          cpu: 50m
+          memory: 32Mi

@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vault
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: vault
+  namespace: kube-system
+spec:
+  name: vault
+  chart: vault
+  version: "0.22.1"
+  repo: https://helm.releases.hashicorp.com
+  targetNamespace: vault
+  valuesContent: |-
+    server:
+      enabled: true
+      logFormat: json
+      logLevel: info
+      affinity: ""
+      ha:
+        enabled: false
+    ui:
+      enabled: true

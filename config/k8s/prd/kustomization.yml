@@ -4,6 +4,7 @@ bases:
   - ../common/sendgrid
   - ../common/certificates
   - ../common/storage/nfs
+  #- ../common/helm-charts
 
 commonLabels:
   environment: prd
@@ -12,6 +13,7 @@ resources:
   - issuer.yml
   - ingress-routes.yml
   - volumes.yml
+  #- helm-charts/cert-manager-values.yml
 
 patchesStrategicMerge:
   - patches/nfs-pvcs.yml
