@@ -32,6 +32,7 @@ config/user-gen.env
 /config/registry/htpasswd
 !bin
 !bin/.gitignore
+config/vault-cluster-keys*.json
 
 # Testing
 /.testing/

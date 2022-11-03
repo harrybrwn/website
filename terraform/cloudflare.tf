@@ -15,7 +15,7 @@ data "cloudflare_zone" "harrybrwn_com" {
 }
 
 resource "cloudflare_zone" "hryb_dev" {
-  account_id = var.cloudflare_account_id
+  account_id = data.cloudflare_zone.harrybrwn_com.account_id
   zone = "hryb.dev"
 }
 
