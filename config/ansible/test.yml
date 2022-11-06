@@ -1,19 +1,16 @@
 - name: Random Tests
-  # hosts: localhost
-  # hosts: dev
-  # hosts: test
-  # hosts: router
-  hosts: stg
+  hosts: localhost
+  # hosts: stg
   # become: true
   vars_files:
     - vars/become-password.yml
-  become: true
+  become: false
   gather_facts: false
-  tasks:
-    - debug: var=ansible_user
-    - shell: ls -la
-      register: a
-    - debug: var=a.stdout_lines
+  # tasks:
+  #   - debug: var=ansible_user
+  #   - shell: ls -la
+  #     register: a
+  #   - debug: var=a.stdout_lines
 
 # - name: Configure Router
 #   become: false
