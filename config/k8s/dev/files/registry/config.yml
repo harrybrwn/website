@@ -11,8 +11,6 @@ storage:
     blobdescriptor: redis
   s3:
     region: us-east-1
-    regionendpoint: http://s3:9000/
-    bucket: docker-registry
     encrypt: false
     secure: true
     v4auth: true
@@ -30,6 +28,9 @@ http:
   addr: :5000
   headers:
     X-Content-Type-Options: [nosniff]
+    Access-Control-Allow-Credentials: ['true']
+    Access-Control-Allow-Origin: ['https://registry.hrry.local']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE']
   http2:
     disabled: false
   debug:
@@ -47,6 +48,7 @@ health:
 
 redis:
   addr: redis:6379
+  db: 5
   dialtimeout: 10s
   readtimeout: 10s
   writetimeout: 10s

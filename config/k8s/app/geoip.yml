@@ -35,7 +35,7 @@ spec:
         resources:
           limits:
             # Loads GeoLite2 database into memory
-            memory: "128Mi"
+            memory: "256Mi"
             cpu: "25m"
         ports:
         - name: http

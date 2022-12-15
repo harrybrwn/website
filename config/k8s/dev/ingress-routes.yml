@@ -1,5 +1,5 @@
----
 # Docs: https://doc.traefik.io/traefik/routing/providers/kubernetes-crd
+---
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRouteTCP
 metadata:
@@ -9,15 +9,24 @@ spec:
   routes:
   - match: >-
       HostSNI(`hrry.local`)
+      || HostSNI(`hrry.me.local`)
       || HostSNI(`s3.hrry.local`)
       || HostSNI(`harrybrwn.local`)
       || HostSNI(`hextris.harrybrwn.local`)
+      || HostSNI(`registry.hrry.local`)
     services:
      - name: nginx
        port: https
-  - match: HostSNI(`grafana.hrry.local`)
+  - match: HostSNI(`grafana.hrry.local`) || HostSNI(`grafana.hrry.dev.local`)
     services:
     - name: grafana
+      port: http
+  - match: >-
+      HostSNI(`cr.hrry.local`)
+      || HostSNI(`cr.hrry.io.local`)
+      || HostSNI(`registry.hrry.io.local`)
+    services:
+    - name: registry
       port: http
   tls:
     passthrough: true
@@ -43,28 +52,28 @@ metadata:
 spec:
   entryPoints: [websecure]
   routes:
-  - match: Host(`ip.hrry.local`) && !Path(`/metrics`)
+  - match: (Host(`ip.hrry.local`) || Host(`ip.hrry.dev.local`)) && !Path(`/metrics`)
     kind: Rule
     services:
       - name: geoip
         kind: Service
         port: http
         scheme: http
-  - match: Host(`files.hrry.local`)
+  - match: Host(`files.hrry.local`) || Host(`files.hrry.dev.local`)
     kind: Rule
     services:
       - name: filestash
         kind: Service
         port: http
         scheme: http
-  - match: Host(`gopkg.hrry.local`)
+  - match: (Host(`gopkg.hrry.local`) || Host(`gopkg.hrry.dev.local`)) && !Path(`/metrics`)
     kind: Rule
     services:
       - name: vanity-imports
         kind: Service
         port: http
         scheme: http
-  - match: Host(`auth.hrry.local`)
+  - match: Host(`auth.hrry.local`) || Host(`auth.hrry.dev.local`)
     kind: Rule
     middlewares:
       - name: handle-not-found
@@ -73,7 +82,7 @@ spec:
         kind: Service
         port: hydra-public
         scheme: http
-  - match: Host(`s3-console.hrry.local`)
+  - match: Host(`s3-console.hrry.local`) || Host(`s3-console.hrry.dev.local`)
     kind: Rule
     services:
       - name: minio-console

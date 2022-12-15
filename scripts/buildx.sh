@@ -3,13 +3,14 @@
 set -eu
 
 BUILDKIT_NAME=harrybrwn-builder
-BUILDKIT_CONFIG=./config/buildkit-config.toml
+BUILDKIT_CONFIG=./config/docker/buildkit-config.toml
 REGISTY=registry.digitalocean.com/webreef
 # PLATFORMS=linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64,linux/riscv64
 PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v6
 IMAGE=
 PUSH=false
-CACERT="${DOCKER_CONFIG:-$HOME/.docker}/ca.pem"
+#CACERT="${DOCKER_CONFIG:-$HOME/.docker}/ca.pem"
+CACERT="./config/docker-root-ca.pem"
 
 CONTEXT=.
 DOCKERFILE=./Dockerfile

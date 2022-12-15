@@ -140,6 +140,7 @@ EOF
 
 # Flags
 INSTALL=true
+ONLY_INSTALL=false
 
 usage() {
 	echo "Usage"
@@ -161,6 +162,11 @@ while [ $# -gt 0 ]; do
 			INSTALL=false
 			shift
 			;;
+		--only-install)
+			INSTALL=true
+			ONLY_INSTALL=true
+			shift
+			;;
 		*)
 			echo "Error: unknown flag: \"$1\""
 			exit 1
@@ -168,16 +174,18 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-rm -rf "${PKI}/certs"
-mkdir -p "${PKI}/certs"
+if ! ${ONLY_INSTALL}; then
+	rm -rf "${PKI}/certs"
+	mkdir -p "${PKI}/certs"
 
-ca_cert "harrybrwn local dev"
-server_cert -cn "harrybrwn.com" -alt "harrybrwn.local" -alt "*.harrybrwn.local"
-server_cert -cn 'hrry.me'  -alt 'hrry.local' -alt '*.hrry.local'
-server_cert -cn 'hrry.dev' -alt 'hrry.local' -alt '*.hrry.local'
-server_cert -cn 'hydra' -alt 'auth.hrry.local'
+	ca_cert "harrybrwn local dev"
+	server_cert -cn "harrybrwn.com" -alt "harrybrwn.local" -alt "*.harrybrwn.local"
+	server_cert -cn 'hrry.me'  -alt 'hrry.local' -alt '*.hrry.local'
+	server_cert -cn 'hrry.dev' -alt 'hrry.local' -alt '*.hrry.local'
+	server_cert -cn 'hydra' -alt 'auth.hrry.local'
 
-# ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
+	# ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"
+fi
 
 uninstall_cert "${LOCAL_CERT_NAME}" || true
 

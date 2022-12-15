@@ -39,6 +39,8 @@ while [ $# -gt 0 ]; do
   case $1 in
     --local)
       is_local=true
+      GIT_BRANCH=""
+      GIT_COMMIT=""
       shift 1
       ;;
     *)

@@ -1,0 +1,130 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# echo "Using k8s \"$(kubectl config current-context)\""
+
+declare -r SELF_SCRIPT_NAME="$(basename $BASH_SOURCE)"
+declare -r K3D_CLUSTER_CONFIG=config/k8s/k3d.yml
+declare -r HOSTNAMES=(
+	# Bases
+	hrry.local
+	harrybrwn.local
+	# Infra
+	s3.hrry.local
+	auth.hrry.local
+	cr.hrry.local
+	registry.hrry.local
+	# Apps
+	s3-console.hrry.local
+	grafana.hrry.local
+	wiki.hrry.local
+	gopkg.hrry.local
+	files.hrry.local
+	ip.hrry.local
+	hooks.hrry.local
+	# Crazy ones
+	hrry.me.local
+	hrry.dev.local
+	hrry.lol.local
+	s3.hrry.dev.local
+	auth.hrry.dev.local
+	cr.hrry.dev.local
+	cr.hrry.io.local
+	registry.hrry.dev.local
+	s3-console.hrry.dev.local
+	grafana.hrry.dev.local
+	wiki.hrry.me.local
+	gopkg.hrry.dev.local
+	files.hrry.dev.local
+	ip.hrry.dev.local
+)
+
+get-cluster-name() {
+	k3d cluster list -o json | jq -r '.[0].name'
+}
+
+get-ingress-ip() {
+	kubectl --namespace 'kube-system' get services \
+		--no-headers \
+		--field-selector metadata.name=traefik \
+		--output json \
+		| jq -r '.items[0].status.loadBalancer.ingress[0].ip'
+}
+
+etc-hosts() {
+	local ingress_ip="$(get-ingress-ip)"
+	for name in "${HOSTNAMES[@]}"; do
+		if [ -n "$(grep -P "^.*?[\t ]+${name}$" /etc/hosts)" ]; then
+			sudo sed -Ei "s/^(([0-9]{1,3}\.?){4}|localhost)[ \t]+(${name})/${ingress_ip}	${name}/" /etc/hosts
+		else
+		 	echo "adding ${name}"
+			echo "${ingress_ip}	${name}" | sudo tee -a /etc/hosts > /dev/null
+		fi
+	done
+}
+
+get-sudo() {
+	echo "Command requires sudo."
+	echo "$ sudo -v"
+	sudo -v
+}
+
+usage() {
+	if [ "${1:-}" != "short" ]; then
+		echo "A helper tool for setting up a local kubernetes cluster using k3d and"
+		echo "configuring the development environment."
+		echo
+	fi
+	echo "Usage"
+	echo "  ${SELF_SCRIPT_NAME} [...flags]"
+	echo
+	echo "Flags"
+	echo "  -h --help         print help message"
+	echo "     --etc-hosts    automatically configure /etc/hosts with local domains and current running ingress ip"
+	echo "  -b --build        build and load docker images"
+}
+
+if [ $# -eq 0 ]; then
+	echo "Error: no arguments"
+	echo
+	usage short
+	exit 1
+fi
+
+while [ $# -gt 0 ]; do
+	case $1 in
+		-h|--help)
+			usage
+			shift
+			exit 0
+			;;
+		--ip)
+			get-ingress-ip
+			shift
+			exit 0
+			;;
+		-b|--build)
+		 	docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
+			images="$(docker buildx bake \
+				--file config/docker/docker-bake.hcl \
+				--print 2>&1 \
+				| jq -r '.target[] | .tags[]' \
+				| sort \
+				| uniq \
+				| grep -P 'latest$')"
+			name="$(get-cluster-name)"
+			if [ -z "${name}" ]; then
+				echo "Error: could not find k3d cluster"
+				exit 1
+			fi
+			k3d image load --cluster "${name}" ${images}
+			shift
+			;;
+		--etc-hosts)
+		 	get-sudo
+			etc-hosts
+			shift
+			;;
+	esac
+done

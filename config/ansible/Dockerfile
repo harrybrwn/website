@@ -23,7 +23,13 @@ RUN mkdir -p /usr/local/bin && \
     curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
     chmod +x /usr/local/bin/kubectl && \
     groupadd ansible && \
-    useradd --shell /usr/bin/bash --home-dir /home/ansible -m -g ansible -G ansible,root ansible
+    useradd \
+        --shell /usr/bin/bash \
+        --home-dir /home/ansible \
+        -m \
+        -g ansible \
+        -G ansible,root \
+        ansible
 RUN \
 	# Mikrotik RouterOS
     # https://docs.ansible.com/ansible/devel/collections/community/routeros/

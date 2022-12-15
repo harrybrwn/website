@@ -42,6 +42,26 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  name: hrry-io-tls
+spec:
+  secretName: hrry-io-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+    group: cert-manager.io # this is the default
+  subject:
+    organizations: []
+    organizationalUnits: []
+  ipAddresses: []
+  dnsNames: []
+  isCA: false
+  usages:
+    - server auth
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
   name: harrybrwn-com-tls
 spec:
   secretName: harrybrwn-com-tls

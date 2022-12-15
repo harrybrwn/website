@@ -95,6 +95,7 @@ target "nginx" {
     target = "nginx"
     args = {
         NGINX_VERSION = "1.20.2-alpine"
+        REGISTRY_UI_ROOT = "/var/www/registry.hrry.dev"
     }
     tags = tags("nginx", ["1.20.2-alpine", "1.20.2"])
     inherits = ["base-service"]

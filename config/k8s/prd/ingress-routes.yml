@@ -12,14 +12,17 @@ spec:
       || HostSNI(`s3.hrry.dev`)
       || HostSNI(`harrybrwn.com`)
       || HostSNI(`hextris.harrybrwn.com`)
+      || HostSNI(`registry.hrry.dev`)
     services:
      - name: nginx
        port: https
-  - match: >-
-      HostSNI(`grafana.hrry.dev`)
-      || HostSNI(`grafana.hrry.me`)
+  - match: HostSNI(`grafana.hrry.dev`)
     services:
     - name: grafana
+      port: http
+  - match: HostSNI(`cr.hrry.io`)
+    services:
+    - name: registry
       port: http
   tls:
     passthrough: true
@@ -48,41 +51,26 @@ spec:
   - match: Host(`ip.hrry.dev`) && !Path(`/metrics`)
     kind: Rule
     services:
-      - name: geoip
-        kind: Service
-        port: http
-        scheme: http
+    - { name: geoip, kind: Service, port: http, scheme: http }
   - match: Host(`files.hrry.dev`)
     kind: Rule
     services:
-      - name: filestash
-        kind: Service
-        port: http
-        scheme: http
-  - match: Host(`gopkg.hrry.dev`)
+    - { name: filestash, kind: Service, port: http, scheme: http }
+  - match: Host(`gopkg.hrry.dev`) && !Path(`/metrics`)
     kind: Rule
     services:
-      - name: vanity-imports
-        kind: Service
-        port: http
-        scheme: http
+    - { name: vanity-imports, kind: Service, port: http, scheme: http }
   - match: Host(`auth.hrry.dev`)
     kind: Rule
     middlewares:
       - name: handle-not-found
-      - name: forwarded-proto-https-header
+      - name: set-forwarded-proto-https
     services:
-      - name: hydra
-        kind: Service
-        port: hydra-public
-        scheme: http
+    - { name: hydra, kind: Service, port: hydra-public, scheme: http }
   - match: Host(`s3-console.hrry.dev`)
     kind: Rule
     services:
-      - name: minio-console
-        kind: Service
-        port: http
-        scheme: http
+    - { name: minio-console, kind: Service, port: http, scheme: http }
   tls:
     # Use an existing secret
     secretName: hrry-dev-tls
@@ -98,10 +86,7 @@ spec:
   - match: Host(`wiki.hrry.me`)
     kind: Rule
     services:
-      - name: outline
-        kind: Service
-        port: http
-        scheme: http
+      - { name: outline, kind: Service, port: http, scheme: http }
   tls:
     # Use an existing secret
     secretName: hrry-me-tls
@@ -116,10 +101,7 @@ spec:
   - match: Host(`hooks.harrybrwn.com`)
     kind: Rule
     services:
-      - name: hooks
-        kind: Service
-        port: http
-        scheme: http
+      - { name: hooks, kind: Service, port: http, scheme: http }
   tls:
     secretName: harrybrwn-com-tls
 
@@ -141,7 +123,7 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: forwarded-proto-https-header
+  name: set-forwarded-proto-https
 spec:
   headers:
     customRequestHeaders:

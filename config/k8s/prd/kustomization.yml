@@ -4,7 +4,7 @@ bases:
   - ../common/sendgrid
   - ../common/certificates
   - ../common/storage/nfs
-  #- ../common/helm-charts
+  - ../common/helm-charts
 
 commonLabels:
   environment: prd
@@ -13,7 +13,7 @@ resources:
   - issuer.yml
   - ingress-routes.yml
   - volumes.yml
-  #- helm-charts/cert-manager-values.yml
+  - helm-charts/cert-manager-values.yml
 
 patchesStrategicMerge:
   - patches/nfs-pvcs.yml
@@ -91,6 +91,14 @@ secretGenerator:
   - name: outline-env
     behavior: replace
     envs: [env/outline.env]
+  - name: registry-secrets
+    behavior: replace
+    files:
+      - files/registry/htpasswd
+  - name: registry-secrets-env
+    behavior: replace
+    envs:
+      - env/registry.env
 
 configMapGenerator:
   - name: environment-config
@@ -99,7 +107,7 @@ configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry-url=https://registry.hrry.dev
+      - registry-url=https://cr.hrry.io
   - name: minio-env-config
     behavior: merge
     literals:
@@ -151,3 +159,7 @@ configMapGenerator:
       - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
       - POSTGRES_HOST=db
       - POSTGRES_USER=harrybrwn
+  - name: registry-config
+    behavior: replace
+    files:
+      - files/registry/config.yml

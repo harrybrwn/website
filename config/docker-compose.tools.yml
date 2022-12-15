@@ -31,6 +31,14 @@ services:
       - ANSIBLE_HOST_KEY_CHECKING=False
       - ANSIBLE_VAULT_PASSWORD_FILE=~/config/ansible/vault-password.txt
 
+  curl:
+    image: 10.0.0.11:5000/harrybrwn/curl:latest
+    build:
+      context: .
+      dockerfile: config/docker/Dockerfile.curl
+      args:
+        - ALPINE_VERSION=3.16
+
   debug:
     image: ${REGISTRY}/harrybrwn/debug:${VERSION:-latest}
     build:
@@ -47,8 +55,6 @@ services:
       context: config/docker/nfs
       target: nfs-server
     privileged: true
-    # networks:
-    #   - backend
     volumes:
       - ./.tmp/nfs/nfs:/mnt/nfs
       - ./.tmp/nfs/exports:/exports
@@ -60,8 +66,6 @@ services:
       target: nfs-server
     privileged: true
     command: ["--client", "/mnt/nfs:/media"]
-    # networks:
-    #   - backend
     environment:
       - NFS_PORT_2049_TCP_ADDR=nfs
     volumes:
@@ -77,5 +81,3 @@ services:
       - PORT=8888
       - EXTERNAL_OWN_URL=http://localhost:8888
       - REDIS_URL=redis://:testbed01@redis:6379
-    # networks:
-    #   - backend

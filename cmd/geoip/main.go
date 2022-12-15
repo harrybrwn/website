@@ -154,7 +154,7 @@ func (gd *GeoData) Close() error {
 }
 
 func getIP(r *http.Request) (net.IP, error) {
-	h := firstHeader(r.Header, "X-Forwarded-For", "X-Real-IP")
+	h := firstHeader(r.Header, "Cf-Connecting-Ip", "X-Forwarded-For", "X-Real-IP")
 	if len(h) == 0 {
 		var err error
 		h, _, err = net.SplitHostPort(r.RemoteAddr)
@@ -235,6 +235,8 @@ func FetchDatabases(uris ...*url.URL) (*GeoData, error) {
 
 func openURI(uri *url.URL) (io.ReadCloser, error) {
 	switch uri.Scheme {
+	case "":
+		fallthrough // defaults to "file"
 	case "file":
 		p := uri.Path
 		if uri.Host != "" {

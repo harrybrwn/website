@@ -6,11 +6,13 @@ ARG ALPINE_VERSION=3.14
 #
 ARG NODE_VERSION=16.13.1-alpine
 FROM node:${NODE_VERSION} as frontend
-RUN apk update  && \
+RUN --mount=type=cache,id=node-apk,target=/var/cache/apk \
+    apk update  && \
     apk upgrade && \
     apk add git && \
     mkdir -p /usr/local/sbin/ && \
-    ln -s /usr/local/bin/node /usr/local/sbin/node && \
+    ln -s /usr/local/bin/node /usr/local/sbin/node
+RUN --mount=type=cache,id=npm,target=/root/.npm \
     npm update -g npm
 RUN git clone --depth 1 --branch v1.1.2 \
     https://github.com/harrybrwn/hextris.git /opt/hextris && \
@@ -20,16 +22,20 @@ RUN git clone --depth 1 --branch v1.1.2 \
        /opt/hextris/README.md  \
        /opt/hextris/.gitignore \
        /opt/hextris/.github && \
-    git clone --depth 1 --branch main \
+    git clone --depth 1 --branch 2.3.3 \
         https://github.com/Joxit/docker-registry-ui.git /opt/docker-registry-ui
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
 COPY frontend/package.json frontend/.nvmrc frontend/
 COPY frontend/api frontend/api
-RUN yarn install
+RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,id=npm,target=/root/.npm \
+    yarn install
 COPY ./frontend/ /opt/harrybrwn/frontend/
-RUN yarn workspaces run build
+RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,id=npm,target=/root/.npm \
+    yarn workspaces run build
 COPY ./cmd/hooks/*.html ./cmd/hooks/
 
 #
@@ -48,12 +54,16 @@ COPY ./scripts/wait.sh /bin/wait.sh
 # Golang builder
 #
 FROM golang:1.18-alpine as builder
-RUN apk update && apk add git
-RUN CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
+RUN --mount=type=cache,id=golang-apk,target=/var/cache/apk \
+    apk update && apk add git
+RUN --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    CGO_ENABLED=0 go install -ldflags "-w -s" github.com/golang/mock/mockgen@v1.6.0 && \
     CGO_ENABLED=0 go install -tags 'postgres' -ldflags "-w -s" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.15.1
 COPY go.mod go.sum /opt/harrybrwn/
 WORKDIR /opt/harrybrwn/
-RUN go mod download
+RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go mod download
 # build flags
 ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
@@ -67,35 +77,51 @@ COPY frontend/templates frontend/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
 COPY --from=frontend /opt/harrybrwn/frontend/embeds.go ./frontend/embeds.go
 COPY --from=frontend /opt/harrybrwn/frontend/pages ./frontend/pages
-RUN go build -ldflags "${LINK}" -o bin/harrybrwn
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/harrybrwn
 
 FROM builder as legacy-site-builder
 COPY cmd/legacy-site cmd/legacy-site
-RUN go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
+RUN  --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
 
 FROM builder as backups-builder
 COPY cmd/backups cmd/backups
-RUN go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/backups ./cmd/backups
 
 FROM builder as hooks-builder
 COPY cmd/hooks cmd/hooks
-RUN go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
 
 FROM builder as geoip-builder
 COPY cmd/geoip cmd/geoip
-RUN go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/geoip ./cmd/geoip
 
 FROM builder as vanity-imports-builder
 COPY cmd/vanity-imports cmd/vanity-imports
-RUN go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/vanity-imports ./cmd/vanity-imports
 
 FROM builder as provision-builder
 COPY cmd/provision cmd/provision
-RUN go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/provision ./cmd/provision
 
 FROM builder as registry-auth-builder
 COPY cmd/registry-auth cmd/registry-auth
-RUN go build -ldflags "${LINK}" -o bin/registry-auth ./cmd/registry-auth
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/registry-auth ./cmd/registry-auth
 
 #
 # Base service
@@ -171,10 +197,10 @@ ARG NGINX_VERSION
 FROM nginx:1.20.2-alpine as nginx
 ARG REGISTRY_UI_ROOT
 ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
-RUN apk update && \
+RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
+    apk update && \
     apk upgrade && \
-    apk add ca-certificates && \
-    rm -rf /var/cache/apk/*
+    apk add ca-certificates
 COPY scripts/wait.sh /usr/local/bin/wait.sh
 # For some reason update-ca-certificates does not work on arm/v7 so I'm commenting it out for now.
 #COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt

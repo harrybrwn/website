@@ -19,6 +19,8 @@ spec:
   dnsNames:
     - "hrry.local"
     - "*.hrry.local"
+    - "hrry.me.local"
+    - "*.hrry.me.local"
   ipAddresses:
     - "127.0.0.1"
   duration: 2160h # 90d
@@ -45,6 +47,36 @@ spec:
   dnsNames:
     - "hrry.local"
     - "*.hrry.local"
+    - "hrry.dev.local"
+    - "*.hrry.dev.local"
+  ipAddresses:
+    - "127.0.0.1"
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hrry-io-tls
+spec:
+  secretName: hrry-io-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+    group: cert-manager.io # this is the default
+  subject:
+    organizations:
+      - HarryBrown
+  commonName: hrry.local
+  isCA: false
+  usages:
+    - server auth
+  dnsNames:
+    - "hrry.local"
+    - "*.hrry.local"
+    - "hrry.io.local"
+    - "*.hrry.io.local"
   ipAddresses:
     - "127.0.0.1"
   duration: 2160h # 90d
@@ -72,6 +104,6 @@ spec:
     - "harrybrwn.local"
     - "*.harrybrwn.local"
   ipAddresses:
-    - 127.0.0.1
+    - "127.0.0.1"
   duration: 2160h # 90d
   renewBefore: 360h # 15d

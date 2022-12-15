@@ -50,7 +50,7 @@ secretGenerator:
     behavior: replace
     literals:
       - GF_DATABASE_PASSWORD=testbed02
-      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=1,password=testbed01
+      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=4,password=testbed01
       - GF_SECURITY_ADMIN_PASSWORD=testbed01
   - name: loki
     behavior: replace
@@ -81,12 +81,30 @@ secretGenerator:
     files:
       - files/clients/grafana.json
       - files/clients/outline.json
+  - name: registry-secrets
+    behavior: replace
+    files:
+      # contains users:
+      #   harry:fdsafdsa
+      #   harrybrwn:fdsafdsa
+      - files/registry/htpasswd
+  - name: registry-secrets-env
+    behavior: replace
+    literals:
+      - REGISTRY_REDIS_PASSWORD=testbed01
+      - REGISTRY_REDIS_DB=5
+      - REGISTRY_HTTP_SECRET=1111110000001c6b90c320c622890c5a4b3d6ab0ff35da087df17616c931cd75
+      - REGISTRY_STORAGE_S3_REGIONENDPOINT=http://s3:9000/
+      - REGISTRY_STORAGE_S3_BUCKET=docker-registry
+      - REGISTRY_STORAGE_S3_REGION=us-east-1
+      - REGISTRY_STORAGE_S3_ACCESSKEY=registry
+      - REGISTRY_STORAGE_S3_SECRETKEY=minio-testbed001-registry
 
 configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry-url=https://registry.hrry.local
+      - registry-url=https://cr.hrry.io.local
   - name: minio-env-config
     behavior: merge
     literals:
@@ -113,6 +131,10 @@ configMapGenerator:
     literals:
       - URL=https://wiki.hrry.local
       - PGSSLMODE=disable
+  - name: registry-config
+    behavior: replace
+    files:
+      - files/registry/config.yml
 
 patches:
   # Make sure all the certificates have the correct issuer

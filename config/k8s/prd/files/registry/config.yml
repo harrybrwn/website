@@ -1,0 +1,58 @@
+version: 0.1
+log:
+  formatter: json
+
+storage:
+  delete:
+    enabled: true
+  redirect:
+    disable: true
+  cache:
+    blobdescriptor: redis
+  s3:
+    # region: us-east-1
+    encrypt: false
+    secure: true
+    v4auth: true
+    chunksize: 33554432 # 32mb => 32 * 1024 * 1024
+    rootdirectory: /
+  maintenance:
+    # Clean out old containers periodically.
+    uploadpurging:
+      enabled: true
+      age: 336h # 2 weeks
+      interval: 24h
+      dryrun: false
+
+http:
+  addr: :5000
+  headers:
+    X-Content-Type-Options: [nosniff]
+    Access-Control-Allow-Credentials: ['true']
+    Access-Control-Allow-Origin: ['https://registry.hrry.dev']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE']
+  http2:
+    disabled: false
+  debug:
+    addr: :5001
+    prometheus:
+      enabled: true
+      path: /metrics
+
+health:
+  storagedriver:
+    enabled: false # This ends up being pretty noisy
+    # 5 minutes
+    interval: 300s
+    threshold: 3
+
+redis:
+  addr: redis:6379
+  db: 5
+  dialtimeout: 10s
+  readtimeout: 10s
+  writetimeout: 10s
+  pool:
+    maxidle: 32
+    maxactive: 64
+    idletimeout: 300s

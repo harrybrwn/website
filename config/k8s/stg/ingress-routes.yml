@@ -21,6 +21,12 @@ spec:
     services:
     - name: grafana
       port: http
+  - match: >-
+      HostSNI(`cr.stg.hrry.io`)
+      || HostSNI(`cr.stg.hrry.dev`)
+    services:
+    - name: registry
+      port: http
   tls:
     passthrough: true
 

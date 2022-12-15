@@ -67,6 +67,7 @@ tools:
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/tools/hydra bin/hydra
 	ln -sf ../scripts/tools/bake bin/bake
+	ln -sf ../scripts/tools/k8s bin/k8s
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
@@ -142,6 +143,10 @@ deploy-infra:
 		infra
 
 .PHONY: bake deploy deploy-dev
+
+k3d-image-load:
+	docker compose -f docker-compose.yml -f config/docker-compose.tools.yml build
+	scripts/infra/k3d-load.sh
 
 oidc-client:
 	scripts/tools/hydra clients create                 \

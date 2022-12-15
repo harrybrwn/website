@@ -32,6 +32,20 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  name: hrry-io-tls
+spec:
+  secretName: hrry-io-tls
+  issuerRef:
+    name: ca-issuer
+  commonName: "hrry.io"
+  dnsNames:
+    - "hrry.io"
+    - "*.hrry.io"
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
   name: harrybrwn-com-tls
 spec:
   secretName: harrybrwn-com-tls

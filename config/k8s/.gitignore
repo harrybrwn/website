@@ -1,2 +1,3 @@
 htpasswd
 charts/
+!dev/files/registry/htpasswd

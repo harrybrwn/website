@@ -1,0 +1,24 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    rbac:
+      enabled: true
+    ports:
+      websecure:
+        tls:
+          enabled: true
+    podAnnotations:
+      prometheus.io/port: "8082"
+      prometheus.io/scrape: "true"
+    providers:
+      kubernetesIngress:
+        publishedService:
+          enabled: true
+    service:
+      spec:
+        # Use "Local" to forward client ip addresses correctly
+        externalTrafficPolicy: "Cluster"

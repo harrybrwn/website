@@ -4,6 +4,7 @@ bases:
   - ../common/sendgrid
   - ../common/certificates
   - ../common/storage/nfs
+  - ../common/helm-charts
 
 commonLabels:
   environment: stg
@@ -128,6 +129,21 @@ secretGenerator:
     files:
       - files/clients/grafana.json
       - files/clients/outline.json
+  - name: registry-secrets
+    behavior: replace
+    files:
+      - files/registry/htpasswd
+  - name: registry-secrets-env
+    behavior: replace
+    literals:
+      - REGISTRY_REDIS_PASSWORD=testbed01
+      - REGISTRY_REDIS_DB=5
+      - REGISTRY_HTTP_SECRET=staginghttpsecret
+      - REGISTRY_STORAGE_S3_REGIONENDPOINT=http://s3:9000/
+      - REGISTRY_STORAGE_S3_BUCKET=docker-registry
+      - REGISTRY_STORAGE_S3_REGION=us-east-1
+      - REGISTRY_STORAGE_S3_ACCESSKEY=registry
+      - REGISTRY_STORAGE_S3_SECRETKEY=minio-testbed001-registry
 
 configMapGenerator:
   - name: environment-config
@@ -136,7 +152,7 @@ configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry-url=https://registry.stg.hrry.dev
+      - registry-url=https://cr.stg.hrry.io
   - name: minio-env-config
     behavior: merge
     literals:
@@ -190,3 +206,7 @@ configMapGenerator:
       - GH_HOOK_CALLBACK_HOST=hooks.stg.harrybrwn.com
       - POSTGRES_HOST=db
       - POSTGRES_USER=harrybrwn
+  - name: registry-config
+    behavior: replace
+    files:
+      - files/registry/config.yml
