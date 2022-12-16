@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1.3
 ARG ALPINE_VERSION=3.14
+ARG NGINX_VERSION=1.23.3-alpine
+ARG NODE_VERSION=16.13.1-alpine
+ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 
 #
 # Frontend Build
 #
-ARG NODE_VERSION=16.13.1-alpine
 FROM node:${NODE_VERSION} as frontend
 RUN --mount=type=cache,id=node-apk,target=/var/cache/apk \
     apk update  && \
@@ -193,9 +195,7 @@ ENTRYPOINT ["registry-auth"]
 #
 # Webserver Frontend
 #
-ARG NGINX_VERSION
-FROM nginx:1.20.2-alpine as nginx
-ARG REGISTRY_UI_ROOT
+FROM nginx:${NGINX_VERSION} as nginx
 ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
 RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
     apk update && \
@@ -216,9 +216,7 @@ COPY config/nginx/ /etc/nginx/
 #
 # Registry UI
 #
-ARG NGINX_VERSION
-FROM nginx:1.20.2-alpine as registry-ui
-ARG REGISTRY_UI_ROOT
+FROM nginx:${NGINX_VERSION} as registry-ui
 ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
 COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/

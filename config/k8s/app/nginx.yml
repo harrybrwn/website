@@ -40,7 +40,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: 10.0.0.11:5000/harrybrwn/nginx:1.20.2
+          image: 10.0.0.11:5000/harrybrwn/nginx:1.23.3
           imagePullPolicy: IfNotPresent
           resources:
             limits:

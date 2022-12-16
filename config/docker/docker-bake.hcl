@@ -94,10 +94,10 @@ target "base-service" {
 target "nginx" {
     target = "nginx"
     args = {
-        NGINX_VERSION = "1.20.2-alpine"
+        NGINX_VERSION = "1.23.3-alpine"
         REGISTRY_UI_ROOT = "/var/www/registry.hrry.dev"
     }
-    tags = tags("nginx", ["1.20.2-alpine", "1.20.2"])
+    tags = tags("nginx", ["1.23.3-alpine", "1.23.3"])
     inherits = ["base-service"]
     platforms = ["linux/amd64", "linux/arm/v7"]
 }
