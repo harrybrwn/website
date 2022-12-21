@@ -14,25 +14,28 @@ import (
 )
 
 type S3Config struct {
-	AccessKey string
-	SecretKey string
-	Endpoint  string
+	AccessKey string `hcl:"access_key"`
+	SecretKey string `hcl:"secret_key"`
+	Endpoint  string `hcl:"endpoint,optional"`
 	Buckets   []*struct {
-		Name   string
-		Policy string `json:"policy,omitempty"`
-	}
+		Name   string `hcl:"name,label"`
+		Policy string `json:"policy,omitempty" hcl:"policy,optional"`
+	} `hcl:"bucket,block"`
 	// Mapping of names to policies to create
 	Policies map[string]*S3Policy `json:"policies" yaml:"policies"`
 	Groups   []*struct {
-		Name     string
-		Policies []string
-	} `json:"groups" yaml:"groups"`
-	Users []*struct {
-		AccessKey string
-		SecretKey string
-		Policies  []string
-		Groups    []string
-	} `json:"users" yaml:"users"`
+		Name     string   `hcl:"name,label"`
+		Policies []string `hcl:"policies,optional"`
+	} `json:"groups" yaml:"groups" hcl:"group,block"`
+	Users []*S3User `json:"users" yaml:"users" hcl:"user,block"`
+}
+
+type S3User struct {
+	ID        string   `json:"-" hcl:"id,label"`
+	AccessKey string   `hcl:"access_key"`
+	SecretKey string   `hcl:"secret_key"`
+	Policies  []string `hcl:"policies,optional"`
+	Groups    []string `hcl:"groups,optional"`
 }
 
 type S3Policy struct {

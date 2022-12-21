@@ -15,15 +15,15 @@ import (
 )
 
 type DBConfig struct {
-	Host      string `json:"host" yaml:"host"`
-	Port      string `json:"port" yaml:"port"`
-	RootUser  string `json:"root_user" yaml:"root_user"`
-	Password  string `json:"password" yaml:"password"`
-	Users     []*DBUser
+	Host      string    `json:"host" yaml:"host" hcl:"host"`
+	Port      string    `json:"port" yaml:"port" hcl:"port,optional"`
+	RootUser  string    `json:"root_user" yaml:"root_user" hcl:"root_user"`
+	Password  string    `json:"password" yaml:"password" hcl:"password"`
+	Users     []*DBUser `hcl:"user,block"`
 	Databases []*struct {
-		Name  string
-		Owner string
-	}
+		Name  string `hcl:"name,label"`
+		Owner string `hcl:"owner"`
+	} `hcl:"database,block"`
 	Migrations map[string]Migration `json:"migrations"`
 }
 
@@ -72,17 +72,17 @@ func (db *DBConfig) URI(path ...string) *url.URL {
 }
 
 type DBUser struct {
-	Name       string
-	Password   string
-	SuperUser  bool
-	CreateDB   bool
-	CreateRole bool
+	Name       string `hcl:"name,label"`
+	Password   string `hcl:"password"`
+	SuperUser  bool   `hcl:"superuser,optional"`
+	CreateDB   bool   `hcl:"create_db,optional"`
+	CreateRole bool   `hcl:"create_role,optional"`
 	Grants     struct {
 		// Map of database name to grants
-		Database map[string][]string
+		Database map[string][]string `hcl:"database"`
 		// Map of table name to grants
-		Table map[string][]string
-	}
+		Table map[string][]string `hcl:"table"`
+	} `hcl:"grants,block"`
 }
 
 const (

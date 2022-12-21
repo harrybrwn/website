@@ -74,6 +74,25 @@ func NewRootCmd() *cobra.Command {
 		NewMigrateCmd(&cli),
 		NewConfigCmd(&cli),
 		NewValidateCmd(&cli),
+		&cobra.Command{
+			Use: "test",
+			RunE: func(cmd *cobra.Command, args []string) error {
+				rawconfig, err := os.ReadFile("config/provision.hcl")
+				if err != nil {
+					return err
+				}
+				var c provision.Config
+				diags := c.HCLDecode(rawconfig, "config/provision.hcl")
+				if diags.HasErrors() {
+					return diags
+				}
+				// fmt.Printf("%+v\n", c)
+				// for _, b := range c.S3.Buckets {
+				// 	fmt.Printf("%+v\n", b)
+				// }
+				return nil
+			},
+		},
 	)
 	flg := c.PersistentFlags()
 	flg.StringArrayVarP(&configFiles, "config", "c", configFiles, "specify the config file")
