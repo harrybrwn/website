@@ -8,11 +8,24 @@ variable "VERSION" {
 }
 
 variable "GIT_COMMIT" {
-    default = "dev"
+    default = ""
 }
 
 variable "GIT_BRANCH" {
     default = "dev"
+}
+
+variable "ALPINE_VERSION" {
+    default = "3.17.0"
+}
+
+variable "GO_VERSION" {
+    default = "1.18-alpine"
+}
+
+variable "FLUENTBIT_VERSION" {
+    default = "1.9.10"
+    #default = "2.0.6"
 }
 
 variable "platforms" {
@@ -89,6 +102,10 @@ function "labels" {
 target "base-service" {
     labels = labels()
     platforms = platforms
+    args = {
+        ALPINE_VERSION = ALPINE_VERSION
+        GO_VERSION     = GO_VERSION
+    }
 }
 
 target "nginx" {
@@ -150,10 +167,10 @@ target "postgres" {
 target "fluentbit" {
     dockerfile = "config/docker/Dockerfile.fluentbit"
     args = {
-        #FLUENTBIT_VERSION = "1.9.3"
-        FLUENTBIT_VERSION = "1.9.3-debug"
+        FLUENTBIT_VERSION = FLUENTBIT_VERSION
+        #FLUENTBIT_VERSION = "${FLUENTBIT_VERSION}-debug"
     }
-    tags = tags("fluent-bit", ["1.9.3"])
+    tags = tags("fluent-bit", [FLUENTBIT_VERSION])
     inherits = ["base-service"]
 }
 
@@ -215,7 +232,7 @@ target "nomad" {
     dockerfile = "config/nomad/Dockerfile"
     target = "nomad"
     args = {
-        ALPINE_VERSION = "3.14"
+        ALPINE_VERSION = ALPINE_VERSION
         NOMAD_VERSION = "1.3.5"
     }
     platforms = platforms
@@ -239,9 +256,9 @@ target "curl" {
     dockerfile = "config/docker/Dockerfile.curl"
     labels = labels()
     args = {
-        ALPINE_VERSION = "3.16"
+        ALPINE_VERSION = ALPINE_VERSION
     }
-    tags = tags("curl", ["3.16"])
+    tags = tags("curl", [ALPINE_VERSION])
     platforms = [
         "linux/amd64",
         "linux/arm/v7",

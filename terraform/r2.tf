@@ -1,5 +1,5 @@
 locals {
-  r2_domain = "${var.cloudflare_account_id}.r2.cloudflarestorage.com"
+  r2_domain = "${var.cf_account_id}.r2.cloudflarestorage.com"
 }
 
 provider "aws" {
@@ -13,7 +13,7 @@ provider "aws" {
   skip_credentials_validation = true
   skip_region_validation      = true
   skip_requesting_account_id  = true
-  skip_get_ec2_platforms = true
+  skip_get_ec2_platforms      = true
   s3_use_path_style           = true
 }
 

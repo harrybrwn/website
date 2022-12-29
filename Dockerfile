@@ -2,7 +2,8 @@
 ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
-ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
+# ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
+ARG GO_VERSION=1.18-alpine
 
 #
 # Frontend Build
@@ -55,7 +56,7 @@ COPY ./scripts/wait.sh /bin/wait.sh
 #
 # Golang builder
 #
-FROM golang:1.18-alpine as builder
+FROM golang:${GO_VERSION} as builder
 RUN --mount=type=cache,id=golang-apk,target=/var/cache/apk \
     apk update && apk add git
 RUN --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
@@ -195,8 +196,9 @@ ENTRYPOINT ["registry-auth"]
 #
 # Webserver Frontend
 #
+# ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 FROM nginx:${NGINX_VERSION} as nginx
-ENV REGISTRY_UI_ROOT=${REGISTRY_UI_ROOT}
+ENV REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
     apk update && \
     apk upgrade && \
@@ -206,8 +208,8 @@ COPY scripts/wait.sh /usr/local/bin/wait.sh
 #COPY config/docker-root-ca.pem /usr/local/share/ca-certificates/registry.crt
 #RUN update-ca-certificates
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
-COPY --from=frontend /opt/docker-registry-ui/dist ${REGISTRY_UI_ROOT}
-COPY --from=frontend /opt/docker-registry-ui/favicon.ico ${REGISTRY_UI_ROOT}/
+COPY --from=frontend /opt/docker-registry-ui/dist /var/www/registry.hrry.dev/
+COPY --from=frontend /opt/docker-registry-ui/favicon.ico /var/www/registry.hrry.dev/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh

@@ -104,7 +104,7 @@ configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry-url=https://cr.hrry.io.local
+      - registry-url=https://registry.hrry.local
   - name: minio-env-config
     behavior: merge
     literals:

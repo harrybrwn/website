@@ -2,7 +2,7 @@ variable "cloudflare_token" {
   type = string
 }
 
-variable "cloudflare_account_id" {
+variable "cf_account_id" {
   type = string
 }
 

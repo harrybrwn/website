@@ -64,6 +64,13 @@ etc-hosts() {
 	done
 }
 
+k3d-running() {
+  if [ $(k3d cluster ls -o json | jq '.[0].serversRunning') -eq 0 ]; then
+    return 1
+  fi
+  return 0
+}
+
 get-sudo() {
 	echo "Command requires sudo."
 	echo "$ sudo -v"
@@ -92,6 +99,25 @@ if [ $# -eq 0 ]; then
 	exit 1
 fi
 
+cmd-build() {
+	docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
+	images="$(docker buildx bake \
+		--file config/docker/docker-bake.hcl \
+		--print 2>&1 \
+		| jq -r '.target[] | .tags[]' \
+		| sort \
+		| uniq \
+		| grep -P 'latest$')"
+	name="$(get-cluster-name)"
+	if [ -z "${name}" ]; then
+		echo "Error: could not find k3d cluster"
+		exit 1
+	fi
+	k3d image load --cluster "${name}" ${images}
+}
+
+args=()
+
 while [ $# -gt 0 ]; do
 	case $1 in
 		-h|--help)
@@ -105,20 +131,7 @@ while [ $# -gt 0 ]; do
 			exit 0
 			;;
 		-b|--build)
-		 	docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
-			images="$(docker buildx bake \
-				--file config/docker/docker-bake.hcl \
-				--print 2>&1 \
-				| jq -r '.target[] | .tags[]' \
-				| sort \
-				| uniq \
-				| grep -P 'latest$')"
-			name="$(get-cluster-name)"
-			if [ -z "${name}" ]; then
-				echo "Error: could not find k3d cluster"
-				exit 1
-			fi
-			k3d image load --cluster "${name}" ${images}
+			cmd-build
 			shift
 			;;
 		--etc-hosts)
@@ -126,5 +139,38 @@ while [ $# -gt 0 ]; do
 			etc-hosts
 			shift
 			;;
+		*)
+			args+=("$1")
+			shift
+		;;
 	esac
+done
+
+# out="$(k3d-running)"
+# echo $?
+
+for arg in ${args[@]}; do
+  case "${arg}" in
+    up)
+      echo "starting..."
+      ;;
+		load)
+			cmd-build
+			;;
+		ip)
+			get-ingress-ip
+			;;
+    test)
+      #test "$(k3d cluster ls -o json | jq '.[0].serversRunning')" != "0"
+      if k3d-running; then
+        echo yes
+      else
+        echo no
+      fi
+      ;;
+    *)
+      echo "Error: unknown command \"${arg}\""
+      exit 1
+      ;;
+  esac
 done

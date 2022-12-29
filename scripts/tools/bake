@@ -6,6 +6,7 @@ GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0.0.0")"
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
+REG="10.0.0.11:5000"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
 platform() {
@@ -28,6 +29,15 @@ platform() {
   echo -n "${_kernel}/${_arch}"
 }
 
+usage() {
+  echo "bake [flags...] [-- [buildx-args...]]"
+  echo
+  echo "Flags"
+  echo "  -h --help           print help message"
+  echo "  --local             load images locally"
+  echo "  --registry <uri>    change the registry"
+}
+
 echo "GIT_TAG=$GIT_TAG"
 echo "GIT_BRANCH=$GIT_BRANCH"
 echo "GIT_COMMIT=$GIT_COMMIT"
@@ -37,11 +47,26 @@ args=""
 is_local=false
 while [ $# -gt 0 ]; do
   case $1 in
+  	-h|--help)
+      usage
+      echo
+      docker buildx bake --help
+      exit 0
+      ;;
     --local)
       is_local=true
       GIT_BRANCH=""
       GIT_COMMIT=""
       shift 1
+      ;;
+    --registry)
+      REG="$2"
+      shift 2
+      ;;
+    --)
+    	shift
+      args="${args} $@"
+    	break
       ;;
     *)
       args="${args} $1"
@@ -55,4 +80,4 @@ if ${is_local}; then
 fi
 
 set -- ${args}
-docker buildx bake -f config/docker/docker-bake.hcl "$@"
+REGISTRY="$REG" docker buildx bake -f config/docker/docker-bake.hcl "$@"

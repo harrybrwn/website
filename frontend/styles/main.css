@@ -7,6 +7,8 @@ body {
 	margin-left: auto;
 	margin-bottom: 2em;
 	max-width: 750px;
+	padding-left: 1em;
+	padding-right: 1em;
 }
 
 a:visited {
@@ -64,11 +66,6 @@ body.dark-theme .login-panel {
 
 body.light-theme .login-panel {
 	box-shadow: 5px 5px #2c2c2c;
-}
-
-body {
-	padding-left: 1em;
-	padding-right: 1em;
 }
 
 .help-window {

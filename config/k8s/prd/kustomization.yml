@@ -107,7 +107,8 @@ configMapGenerator:
   - name: nginx
     behavior: replace
     literals:
-      - registry-url=https://cr.hrry.io
+      # - registry-url=https://cr.hrry.io
+      - registry-url=https://registry.hrry.dev
   - name: minio-env-config
     behavior: merge
     literals:
@@ -130,6 +131,7 @@ configMapGenerator:
       - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
       - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
       # We are using our own certificates for server auth.
+      #- GF_AUTH_GENERIC_OAUTH_TLS_SKIP_VERIFY_INSECURE=true
       - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.hrry.dev hrry.me harrybrwn.com gmail.com
       - GF_AUTH_GENERIC_OAUTH_SCOPES=email
   - name: hydra-env

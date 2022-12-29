@@ -452,6 +452,12 @@
 				"blog",
 				"programming"
 			]
+		},
+		{
+			"url": "https://muskjet.live/",
+			"name": "Musk Jet",
+			"description": "Track Elon Musk's private jet.",
+			"tags": ["people"]
 		}
     ]
 }
