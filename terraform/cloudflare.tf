@@ -10,7 +10,7 @@ data "cloudflare_zones" "all" {
 }
 
 locals {
-  zones = {for z in data.cloudflare_zones.all.zones: replace(z.name, ".", "_") => z.id}
+  zones = { for z in data.cloudflare_zones.all.zones : replace(z.name, ".", "_") => z.id }
 }
 
 resource "cloudflare_zone" "hryb_dev" {

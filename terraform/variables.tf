@@ -8,12 +8,12 @@ variable "cf_account_id" {
 
 variable "r2_access_key_id" {
   description = "Cloudflare R2 accesss key ID."
-  type = string
+  type        = string
 }
 
 variable "r2_secret_access_key" {
   description = "Cloudflare R2 secret accesss key."
-  type = string
+  type        = string
 }
 
 variable "gateway_ip" {
@@ -26,16 +26,20 @@ variable "staging_ip" {
   type        = string
 }
 
-variable private_ip {
+variable "private_ip" {
   description = "Local IP address of staging environment's gateway machine."
   type        = string
 }
 
 variable "destination_email" {
   description = "Email to route custom domain emails to."
+  type        = string
+}
+
+variable "postgres_password" {
   type = string
 }
 
-variable postgres_password {
+variable "gh_pages_verify_domain_code" {
   type = string
 }

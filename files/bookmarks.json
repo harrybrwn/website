@@ -458,6 +458,16 @@
 			"name": "Musk Jet",
 			"description": "Track Elon Musk's private jet.",
 			"tags": ["people"]
+		},
+		{
+			"url": "https://www.moneymacro.rocks/",
+			"name": "Money & Macro",
+			"description": "Blog that accompanies the youtube channel Money & Macro about macro economics hosted by an economic researcher.",
+			"tags": [
+				"people",
+				"economics",
+				"blog"
+			]
 		}
     ]
 }

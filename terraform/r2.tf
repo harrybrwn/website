@@ -13,11 +13,10 @@ provider "aws" {
   skip_credentials_validation = true
   skip_region_validation      = true
   skip_requesting_account_id  = true
-  skip_get_ec2_platforms      = true
   s3_use_path_style           = true
 }
 
 resource "aws_s3_bucket" "registry-bucket" {
-  provider           = aws.cloudflare
-  bucket             = "container-registry"
+  provider = aws.cloudflare
+  bucket   = "container-registry"
 }

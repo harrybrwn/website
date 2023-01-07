@@ -7,11 +7,15 @@ terraform {
     # https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 3.26.0"
+      version = "~> 3.31.0"
+    }
+    github = {
+      source  = "integrations/github"
+      version = "5.13.0"
     }
     # https://registry.terraform.io/providers/grafana/grafana/latest/docs
     grafana = {
-      source = "grafana/grafana"
+      source  = "grafana/grafana"
       version = "~> 1.27.0"
     }
   }
@@ -21,6 +25,8 @@ provider "aws" {
   profile = "default"
   region  = "us-west-1"
 }
+
+provider "github" {}
 
 provider "grafana" {
   url  = "https://grafana.hrry.dev"

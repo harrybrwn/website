@@ -3,7 +3,7 @@ resource "cloudflare_zone_settings_override" "hrry_me_settings" {
   settings {
     always_online            = "on"
     automatic_https_rewrites = "on"
-    browser_cache_ttl = 24 * 60 * 60 # browser cache in seconds
+    browser_cache_ttl        = 24 * 60 * 60 # browser cache in seconds
     # Ingress does SNI routing. So make origin requests using ssl
     ssl = "strict"
   }

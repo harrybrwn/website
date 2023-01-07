@@ -10,7 +10,7 @@ resource "cloudflare_zone_settings_override" "hrryio_settings" {
   settings {
     always_online            = "off"
     automatic_https_rewrites = "off"
-    max_upload = 100 # megabytes (default 100, any bigger is behind a paywall)
+    max_upload               = 100 # megabytes (default 100, any bigger is behind a paywall)
     minify {
       css  = "off"
       js   = "off"
@@ -46,4 +46,3 @@ resource "cloudflare_record" "hrry_io_github_pages" {
   ttl     = 120
   zone_id = cloudflare_zone.hrry_io.id
 }
-  
