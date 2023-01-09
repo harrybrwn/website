@@ -39,7 +39,6 @@ resource "cloudflare_record" "homelab_gateway" {
 resource "cloudflare_record" "root_dns" {
   for_each = toset([
     local.zones.harrybrwn_com,
-    local.zones.hrry_me,
     cloudflare_zone.hrry_io.id,
   ])
   zone_id = each.key

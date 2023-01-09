@@ -13,6 +13,14 @@ resource "cloudflare_zone_dnssec" "hrry_me_dnssec" {
   zone_id = local.zones.hrry_me
 }
 
+module "github_pages" {
+  source             = "./github-page"
+  github_username    = "harrybrwn"
+  zone_id            = local.zones.hrry_me
+  ttl                = 1 # Auto TTL
+  domain_verify_code = var.gh_pages_domain_verify_codes.hrry_me
+}
+
 resource "cloudflare_record" "hrry_me_dns" {
   for_each = toset([
     "wiki"

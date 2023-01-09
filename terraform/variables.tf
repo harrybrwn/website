@@ -40,6 +40,9 @@ variable "postgres_password" {
   type = string
 }
 
-variable "gh_pages_verify_domain_code" {
-  type = string
+variable "gh_pages_domain_verify_codes" {
+  type = object({
+    h3y_sh  = string
+    hrry_me = string
+  })
 }

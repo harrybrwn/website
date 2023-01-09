@@ -8,11 +8,3 @@ resource "cloudflare_zone" "h3y_sh" {
 resource "cloudflare_zone_dnssec" "h3y_sh_dnssec" {
   zone_id = cloudflare_zone.h3y_sh.id
 }
-
-module "github_page" {
-  source             = "./github-page"
-  github_username    = "harrybrwn"
-  zone_id            = cloudflare_zone.h3y_sh.id
-  ttl                = 60
-  domain_verify_code = var.gh_pages_verify_domain_code
-}
