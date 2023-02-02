@@ -9,7 +9,7 @@ resource "cloudflare_record" "minecraft_server" {
 
 resource "cloudflare_record" "minecraft_server_local" {
   name    = "local.mc"
-  value   = "10.0.0.68"
+  value   = "10.0.0.14"
   type    = "A"
   proxied = false
   ttl     = 120 # seconds

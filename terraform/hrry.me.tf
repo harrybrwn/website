@@ -14,7 +14,7 @@ resource "cloudflare_zone_dnssec" "hrry_me_dnssec" {
 }
 
 module "github_pages" {
-  source             = "./github-page"
+  source             = "./modules/github-page"
   github_username    = "harrybrwn"
   zone_id            = local.zones.hrry_me
   ttl                = 1 # Auto TTL
