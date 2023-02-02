@@ -1,6 +1,7 @@
 package web
 
 import (
+	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,16 +11,21 @@ import (
 	"harrybrown.com/pkg/log"
 )
 
-func AccessLog(logger *log.Logger) func(h http.Handler) http.Handler {
+func AccessLog(logger *log.Logger) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
+			remoteAddr, err := getIP(r)
+			if err != nil {
+				remoteAddr = net.IPv4(0, 0, 0, 0)
+				logger.WithError(err).Warn("failed to parse remote ip address")
+			}
 			resp := logResponse{ResponseWriter: w}
 			l := logger.WithFields(log.Fields{
 				"host":        r.Host,
 				"method":      r.Method,
 				"uri":         r.RequestURI,
-				"remote_addr": r.RemoteAddr,
+				"remote_addr": remoteAddr.String(),
 				"query":       r.URL.RawQuery,
 			})
 			ctx := log.StashInContext(r.Context(), l)
@@ -51,7 +57,7 @@ func logAccess(logger log.FieldLogger, status int, start time.Time, r *http.Requ
 	}
 }
 
-func Metrics() func(h http.Handler) http.Handler {
+func Metrics() func(http.Handler) http.Handler {
 	requestCnt := prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
