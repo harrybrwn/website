@@ -46,3 +46,10 @@ variable "gh_pages_domain_verify_codes" {
     hrry_me = string
   })
 }
+
+variable "sendgrid_verify" {
+  type = map(object({
+    id        = string
+    subdomain = string
+  }))
+}

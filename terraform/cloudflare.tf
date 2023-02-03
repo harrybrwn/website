@@ -72,3 +72,10 @@ resource "cloudflare_email_routing_rule" "harry" {
     value = [var.destination_email]
   }
 }
+
+module "sendgrid" {
+  source             = "./modules/cloudflare-sendgrid"
+  zone_id            = local.zones.hryb_dev
+  em_id              = var.sendgrid_verify["hryb.dev"].id
+  sendgrid_subdomain = var.sendgrid_verify["hryb.dev"].subdomain
+}
