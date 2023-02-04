@@ -1,5 +1,6 @@
 bases:
   - ../app
+  - ../common/sendgrid
   - ../common/helm-charts
 
 commonLabels:
@@ -8,8 +9,8 @@ commonLabels:
 resources:
   - issuer.yml
   - certificates.yml
-  - sendgrid-secrets.yml
   - ingress-routes.yml
+  - ./helm-charts/mastodon.yml
 
 # Patch the certificate volumes to use the ones issued by cert-manager.
 patchesStrategicMerge:
@@ -41,6 +42,7 @@ secretGenerator:
     behavior: replace
     literals:
       - password=testbed01
+      - redis-password=testbed01 # For mastodon
   - name: minio-env-secrets
     behavior: create
     literals:

@@ -5,3 +5,15 @@ secretGenerator:
       - sendgrid.env
     options:
       disableNameSuffixHash: true
+
+  # Needed for mastodon helm chart.
+  - name: mastodon-sendgrid
+    behavior: create
+    literals:
+      #- login=apikey
+      - login=YXBpa2V5
+    envs:
+      # Needs 'password=<api-key>''
+      - mastodon-sendgrid.env
+    options:
+      disableNameSuffixHash: true
