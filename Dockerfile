@@ -2,7 +2,6 @@
 ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
-# ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 ARG GO_VERSION=1.18-alpine
 
 #
@@ -196,7 +195,6 @@ ENTRYPOINT ["registry-auth"]
 #
 # Webserver Frontend
 #
-# ARG REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 FROM nginx:${NGINX_VERSION} as nginx
 ENV REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
@@ -210,7 +208,8 @@ COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
 COPY --from=frontend /opt/docker-registry-ui/dist /var/www/registry.hrry.dev/
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico /var/www/registry.hrry.dev/
-COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
+# COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
+COPY --from=harrybrwn/harrybrwn.github.io / /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/

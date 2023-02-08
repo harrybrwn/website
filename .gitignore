@@ -15,6 +15,7 @@ public/static/img/2250x3000
 __pycache__/
 yarn-error.log
 .terraform/
+terraform/*.tfstate*.backup
 
 # Config
 .vscode

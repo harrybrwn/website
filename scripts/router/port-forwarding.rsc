@@ -3,7 +3,7 @@
 /ip firewall nat
 add action=dst-nat chain=dstnat dst-port=80    in-interface-list=WAN protocol=tcp to-addresses=$destination to-ports=80
 add action=dst-nat chain=dstnat dst-port=443   in-interface-list=WAN protocol=tcp to-addresses=$destination to-ports=443
-add action=dst-nat chain=dstnat dst-port=25565 in-interface-list=WAN protocol=tcp to-address=10.0.0.68 to-port=25565
+add action=dst-nat chain=dstnat dst-port=25565 in-interface-list=WAN protocol=tcp to-address=10.0.0.14 to-port=25565
 
 # Drop all port-forwarded packets that aren't coming from cloudflare.
 :foreach port in={80; 443} do={

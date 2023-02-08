@@ -17,12 +17,14 @@ declare -r HOSTNAMES=(
 	registry.hrry.local
 	# Apps
 	s3-console.hrry.local
+  s3.console.hrry.local
 	grafana.hrry.local
 	wiki.hrry.local
 	gopkg.hrry.local
 	files.hrry.local
 	ip.hrry.local
 	hooks.hrry.local
+  mastodon.hrry.local
 	# Crazy ones
 	hrry.me.local
 	hrry.dev.local
