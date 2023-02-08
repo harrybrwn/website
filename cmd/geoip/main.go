@@ -63,8 +63,8 @@ func main() {
 	r.Get("/{ip}", db.Info)
 	r.Get("/", EchoIP)
 	r.Get("/favicon.ico", send404)
-	r.Get("/metrics", web.MetricsHandler().ServeHTTP)
-	r.Head("/health/ready", func(w http.ResponseWriter, r *http.Request) {})
+	r.With(web.PrivateOnly(logger)).Handle("/metrics", web.MetricsHandler())
+	r.Head("/health/ready", func(http.ResponseWriter, *http.Request) {})
 	err = web.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
 		logger.WithError(err).Fatal("listen and serve failed")
