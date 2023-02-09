@@ -33,6 +33,10 @@
         "AccessKey": "outline",
         "SecretKey": "minio-testbed001",
         "Policies": ["outline"]
+      },
+      {
+        "AccessKey": "mastodon",
+        "SecretKey": "minio-testbed001-mastodon"
       }
     ]
   },
@@ -83,6 +87,15 @@
           "Database": {
             "hr": ["CONNECT"],
             "movies": ["CONNECT"]
+          }
+        }
+      },
+      {
+        "Name": "mastodon",
+        "Password": "testbed06",
+        "Grants": {
+          "Database": {
+            "mastodon": ["CONNECT"]
           }
         }
       }
