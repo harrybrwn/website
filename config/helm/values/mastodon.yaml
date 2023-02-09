@@ -1,0 +1,64 @@
+image:
+  repository: tootsuite/mastodon
+  tag: v4.0.2
+
+mastodon:
+  locale: en
+  local_domain: mastodon.hrry.local
+  web_domain: mastodon.hrry.local
+  createAdmin:
+    enabled: false
+    username: "harry"
+    email: harrybrown98@gmail.com
+  secrets:
+    secret_key_base: dummy-secret_key_base
+    otp_secret: dummy-otp_secret
+    vapid:
+      private_key: dummy-vapid-private_key
+      public_key: dummy-vapid-public_key
+  s3:
+    enabled: true
+    bucket: mastodon
+    endpoint: s3.default.svc.cluster.local:9000
+    hostname: s3.default.svc.cluster.local
+    region: us-east-1
+    access_key: mastodon
+    access_secret: minio-testbed001-mastodon
+  smtp:
+    from_address: "mastodon@harrybrwn.com"
+    reply_to: "no-reply@harrybrwn.com"
+    server: smtp.sendgrid.net
+    port: 587
+    # Reference the login and password using an existing secret.
+    existingSecret: mastodon-sendgrid
+    auth_method: plain
+    openssl_verify_mode: none
+    tls: true
+    enable_starttls: true
+    delivery_method: smtp
+
+ingress:
+  enabled: true
+  hosts:
+    - host: mastodon.hrry.local
+      paths:
+        - path: '/'
+  tls:
+    - secretName: mastodon-tls
+      hosts:
+        - mastodon.hrry.local
+
+postgresql:
+  enabled: false
+  postgresqlHostname: db.default.svc.cluster.local
+  auth:
+    database: mastodon
+    username: mastodon
+    password: testbed06
+redis:
+  enabled: false
+  hostname: redis.default.svc.cluster.local
+  auth:
+    existingSecret: redis-secrets
+elasticsearch:
+  enabled: false

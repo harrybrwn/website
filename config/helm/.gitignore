@@ -1,3 +1,2 @@
 *.tgz
-*.prd.yml
-*.prd.yaml
+dist/

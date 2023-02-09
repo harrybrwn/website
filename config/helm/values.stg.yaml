@@ -1,8 +1,0 @@
-prometheus:
-  server:
-    persistentVolume:
-      storageClass: nfs-storage
-      size: 2Gi
-    resources:
-      limits:
-        cpu: 100m
