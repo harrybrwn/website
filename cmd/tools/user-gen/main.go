@@ -40,24 +40,28 @@ func main() {
 	}
 }
 
+var (
+	out = os.Stdout
+	in  = bufio.NewScanner(os.Stdin)
+	yes bool
+)
+
 func run() error {
 	var (
 		cancel    context.CancelFunc
 		ctx       = context.Background()
-		out       = os.Stdout
-		in        = bufio.NewScanner(os.Stdin)
 		env       = []string{".env"}
 		username  string
 		email     string
 		rolesflag string
-		yes       bool
 	)
 	flag.StringVarP(&username, "username", "u", username, "username of new user")
 	flag.StringVarP(&email, "email", "e", email, "email of new user")
 	flag.StringVar(&rolesflag, "roles", rolesflag, "roles for new user")
 	flag.StringArrayVar(&env, "env", env, "environment file")
-	flag.BoolVar(&yes, "y", yes, "skip verification prompts")
+	flag.BoolVarP(&yes, "yes", "y", yes, "skip verification prompts")
 	flag.Parse()
+
 	ctx, cancel = signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
@@ -101,12 +105,7 @@ func run() error {
 	}
 	if !yes && flag.Arg(0) != "-" {
 		fmt.Fprintf(out, "\nusername: %q\nemail: %q\nroles: %v\n", username, email, roles)
-		fmt.Fprint(out, "Create User (y/N): ")
-		in.Scan()
-		switch strings.ToLower(in.Text()) {
-		case "y", "yes":
-		default:
-			fmt.Fprintln(out)
+		if !ask("Create User?") {
 			return errors.New("cancelled")
 		}
 	}
@@ -119,8 +118,27 @@ func run() error {
 	}
 
 	store := app.NewUserStore(db)
-	u, err := store.Create(ctx, string(pw), &user)
-	if err != nil {
+	var u *app.User
+	existing, err := store.Find(ctx, user.Email)
+	switch err {
+	case sql.ErrNoRows:
+		u, err = store.Create(ctx, string(pw), &user)
+		if err != nil {
+			return err
+		}
+	case nil:
+		if !ask("User exists. Would you like you Update it?") {
+			return errors.New("cancelled")
+		}
+		existing.Roles = user.Roles
+		existing.Username = user.Username
+		existing.Email = user.Email
+		err = store.UpdateWithPassword(ctx, string(pw), existing)
+		if err != nil {
+			return err
+		}
+		u = existing
+	default:
 		return err
 	}
 	b, err := json.MarshalIndent(u, "", "  ")
@@ -129,6 +147,22 @@ func run() error {
 	}
 	fmt.Fprintf(out, "User created:\n%s\n", b)
 	return nil
+}
+
+func ask(question string) bool {
+	fmt.Fprint(out, strings.Trim(question, " \n\t")+" (y/N): ")
+	if yes {
+		fmt.Fprintln(out, "y")
+		return true
+	}
+	in.Scan()
+	switch strings.ToLower(in.Text()) {
+	case "y", "yes":
+		return true
+	default:
+		fmt.Fprintln(out)
+		return false
+	}
 }
 
 func readPassword(out io.Writer, yes bool) ([]byte, error) {

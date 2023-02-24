@@ -201,6 +201,8 @@ func (s *userStore) Update(ctx context.Context, u *User) error {
 	UPDATE "user"
 	SET username = $3,
 		email = $4,
+		totp_secret = $5,
+		roles = $6,
 		updated_at = CURRENT_TIMESTAMP
 	WHERE id = $1 AND uuid = $2
 	RETURNING updated_at`
@@ -210,6 +212,40 @@ func (s *userStore) Update(ctx context.Context, u *User) error {
 		u.UUID,
 		u.Username,
 		u.Email,
+		u.TOTPSecret,
+		pq.Array(u.Roles),
+	)
+	if err != nil {
+		return err
+	}
+	return db.ScanOne(rows, &u.UpdatedAt)
+}
+
+func (s *userStore) UpdateWithPassword(ctx context.Context, password string, u *User) error {
+	var err error
+	u.PWHash, err = HashPassword([]byte(password))
+	if err != nil {
+		return err
+	}
+	const query = `
+	UPDATE "user"
+	SET username = $3,
+		email = $4,
+		pw_hash = $5,
+		totp_secret = $6,
+		roles = $7,
+		updated_at = CURRENT_TIMESTAMP
+	WHERE id = $1 AND uuid = $2
+	RETURNING updated_at`
+	rows, err := s.db.QueryContext(
+		ctx, query,
+		u.ID,
+		u.UUID,
+		u.Username,
+		u.Email,
+		u.PWHash,
+		u.TOTPSecret,
+		pq.Array(u.Roles),
 	)
 	if err != nil {
 		return err
@@ -227,4 +263,9 @@ func (s *userStore) Find(ctx context.Context, identifier interface{}) (*User, er
 		const query = selectQueryHead + `WHERE email = $1 OR username = $1`
 		return s.get(ctx, query, identifier)
 	}
+}
+
+func (s *userStore) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM "user" WHERE uuid = $1`, id)
+	return err
 }

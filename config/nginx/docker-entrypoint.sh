@@ -54,6 +54,6 @@ if [ "$1" = "nginx" -o "$1" = "nginx-debug" ]; then
     fi
 fi
 
-echo resolver $(awk 'BEGIN{ORS=" "} $1=="nameserver" {print $2}' /etc/resolv.conf) ";" >> /etc/nginx/conf.d/00-resolver.conf
+echo resolver $(awk 'BEGIN{ORS=" "} $1=="nameserver" {print $2}' /etc/resolv.conf) ";" > /etc/nginx/conf.d/000-resolver.conf
 
 exec "$@"
