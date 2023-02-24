@@ -4,7 +4,7 @@
  */
 import { resolve } from "path";
 
-const REPO_ROOT = "../";
+const REPO_ROOT = "../../";
 
 export default {
   // All imported modules in your tests should be mocked automatically

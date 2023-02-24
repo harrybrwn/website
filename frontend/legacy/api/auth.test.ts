@@ -9,8 +9,8 @@ import {
   refresh,
   setCookie,
 } from "./auth";
-import MockFetch from "~/frontend/util/MockFetch";
-import { clearCookie } from "~/frontend/util/cookies";
+import MockFetch from "../legacy/util/MockFetch";
+import { clearCookie } from "../legacy/util/cookies";
 
 test("parse jwt claims", () => {
   let token =

@@ -2,7 +2,7 @@ import "./styles.css";
 import "~/frontend/components/toggle.css";
 import { websocketURL } from "~/frontend/util/websocket";
 import { SECOND } from "~/frontend/constants";
-import { Message, Room, MessagesResponse, messages } from "~/frontend/api/chat";
+import { Message, Room, MessagesResponse, messages } from "@hrry.me/api/chat";
 import { ThemeManager } from "~/frontend/components/theme";
 import {
   TOKEN_KEY,

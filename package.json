@@ -20,7 +20,7 @@
   "author": "Harry Brown",
   "license": "UNLICENSED",
   "workspaces": [
-    "./frontend/api",
-    "./frontend"
+    "./frontend/legacy/api",
+    "./frontend/legacy"
   ]
 }

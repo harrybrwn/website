@@ -1,5 +1,5 @@
 import { applyTheme } from "~/frontend/components/theme";
-import { Bookmark, Bookmarks, bookmarks } from "~/frontend/api";
+import { Bookmark, Bookmarks, bookmarks } from "@hrry.me/api";
 
 import "./styles.css";
 import "~/frontend/styles/font.css";

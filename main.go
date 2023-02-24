@@ -23,7 +23,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"harrybrown.com/app"
 	"harrybrown.com/files"
-	"harrybrown.com/frontend"
+	frontend "harrybrown.com/frontend/legacy"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/email"

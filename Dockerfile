@@ -29,8 +29,7 @@ RUN git clone --depth 1 --branch v1.1.2 \
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
-COPY frontend/package.json frontend/.nvmrc frontend/
-COPY frontend/api frontend/api
+COPY frontend/legacy/ frontend/legacy/
 RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,id=npm,target=/root/.npm \
     yarn install
@@ -75,10 +74,10 @@ COPY app app/
 COPY files files/
 COPY internal internal/
 COPY main.go .
-COPY frontend/templates frontend/templates/
+COPY frontend/legacy/templates frontend/legacy/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
-COPY --from=frontend /opt/harrybrwn/frontend/embeds.go ./frontend/embeds.go
-COPY --from=frontend /opt/harrybrwn/frontend/pages ./frontend/pages
+COPY --from=frontend /opt/harrybrwn/frontend/legacy/embeds.go ./frontend/legacy/embeds.go
+COPY --from=frontend /opt/harrybrwn/frontend/legacy/pages ./frontend/legacy/pages
 RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     --mount=type=cache,id=gomod,target=/go/pkg/mod \
     go build -ldflags "${LINK}" -o bin/harrybrwn
@@ -181,7 +180,7 @@ ENTRYPOINT ["vanity-imports"]
 # My old website
 #
 FROM service as legacy-site
-COPY --from=frontend /opt/harrybrwn/frontend/templates /opt/harrybrwn/templates
+COPY --from=frontend /opt/harrybrwn/frontend/legacy/templates /opt/harrybrwn/templates
 COPY --from=legacy-site-builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
 ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
 
@@ -208,8 +207,8 @@ COPY scripts/wait.sh /usr/local/bin/wait.sh
 COPY --from=frontend /opt/hextris /var/www/hextris.harrybrwn.com
 COPY --from=frontend /opt/docker-registry-ui/dist /var/www/registry.hrry.dev/
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico /var/www/registry.hrry.dev/
-COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
-#COPY --from=harrybrwn/harrybrwn.github.io / /var/www/harrybrwn.com
+#COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
+COPY --from=harrybrwn/harrybrwn.github.io / /var/www/harrybrwn.com
 #COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/legacy/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh

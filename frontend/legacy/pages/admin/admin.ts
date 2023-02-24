@@ -8,7 +8,7 @@ import {
   storeToken,
   deleteToken,
   setCookie,
-} from "~/frontend/api/auth";
+} from "@hrry.me/api/auth";
 import { clearCookie } from "~/frontend/util/cookies";
 import { SECOND } from "~/frontend/constants";
 import { millisecondsToStr } from "~/frontend/util/time";

@@ -21,7 +21,8 @@ const tsconfig = hjson.parse(
 // Used for build-time template parameters
 const site = require("./site");
 
-const REPO_ROOT = path.resolve(__dirname, "..");
+const REPO_ROOT = path.resolve(__dirname, "../..");
+console.log("REPO ROOT:", REPO_ROOT);
 
 const paths = {
   rootDir: path.resolve(__dirname),

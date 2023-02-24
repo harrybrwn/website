@@ -7,6 +7,7 @@ const resolve = (rootDir) /** @type import('webpack').ResolveOptions */ => {
   return {
     extensions: [".tsx", ".ts", ".jsx", ".js", ".css", ".svg"],
     alias: {
+      "~/frontend": path.join(rootDir, "frontend", "legacy"),
       "~": rootDir,
     },
   };
