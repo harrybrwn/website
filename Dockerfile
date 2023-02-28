@@ -33,7 +33,7 @@ COPY frontend/legacy/ frontend/legacy/
 RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,id=npm,target=/root/.npm \
     yarn install
-COPY ./frontend/ /opt/harrybrwn/frontend/
+#COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,id=npm,target=/root/.npm \
     yarn workspaces run build
@@ -213,6 +213,7 @@ COPY --from=harrybrwn/harrybrwn.github.io / /var/www/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
+COPY frontend/1k /var/www/1k.hrry.me
 
 #
 # Registry UI

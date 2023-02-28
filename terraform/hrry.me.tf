@@ -23,7 +23,8 @@ module "github_pages" {
 
 resource "cloudflare_record" "hrry_me_dns" {
   for_each = toset([
-    "wiki"
+    "wiki",
+    "1k",
   ])
   name    = each.key
   value   = var.gateway_ip

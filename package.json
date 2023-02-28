@@ -5,12 +5,9 @@
   "private": true,
   "scripts": {
     "clean": "rm -rf ./build",
-    "build": "yarn workspaces run build",
-    "start": "yarn workspace @hrry.me/frontend start"
-  },
-  "engines": {
-    "node": "16.13.x",
-    "yarn": "1.22.x"
+    "build": "yarn workspaces run build && scripts/build/frontend.sh",
+    "start": "yarn workspace @hrry.me/frontend start",
+    "ws": "yarn workspaces info"
   },
   "main": "main.go",
   "repository": {
