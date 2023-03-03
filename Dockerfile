@@ -209,7 +209,6 @@ COPY --from=frontend /opt/docker-registry-ui/dist /var/www/registry.hrry.dev/
 COPY --from=frontend /opt/docker-registry-ui/favicon.ico /var/www/registry.hrry.dev/
 #COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=harrybrwn/harrybrwn.github.io / /var/www/harrybrwn.com
-#COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/legacy/harrybrwn.com
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/

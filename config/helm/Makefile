@@ -12,6 +12,7 @@ clone:
 	@if [ ! -d charts/mastodon ]; then \
 		git clone git@github.com:mastodon/chart.git charts/mastodon; \
 	fi
+	sed -i 's/common\.names/mastodon/g;' charts/mastodon/templates/_helpers.tpl
 
 dist: clone
 	helm package --dependency-update --destination $@ charts/*

@@ -24,6 +24,7 @@ Once the binary is built, you can start the database and run the server in debug
 mode.
 
 ```
+./bootstrap.sh
 docker compose up
 ```
 

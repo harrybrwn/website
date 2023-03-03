@@ -164,7 +164,7 @@ resource "null_resource" "openvpn_adduser" {
     inline = [
       format("%s %s", "sudo chmod a+x", local.update_user_script),
       format("%s %s", "sudo ", local.update_user_script),
-      "sudo cp /root/openvpn.ovpn /home/${var.ssh_user}/"
+      "sudo cp /root/${local.admin_user}.ovpn /home/${var.ssh_user}/"
     ]
   }
 }

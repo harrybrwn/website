@@ -25,6 +25,11 @@ services:
       args:
         # - BASE_IMAGE_VERSION=14.2-alpine3.15
         - BASE_IMAGE_VERSION=13.6-alpine
+      tags:
+        - ${REGISTRY}/harrybrwn/postgres:latest
+        - ${REGISTRY}/harrybrwn/postgres:13.6-alpine
+        - ${REGISTRY}/harrybrwn/postgres:${GIT_BRANCH:-dev}
+        - ${REGISTRY}/harrybrwn/postgres:${GIT_COMMIT:-dev}
     environment:
       # <username>:<password>
       POSTGRES_USERS: |-
@@ -43,6 +48,7 @@ services:
       backend:
         aliases:
           - db.default.svc.cluster.local
+      hrry.me:
     ports:
       - "5432:5432"
     volumes:
@@ -60,11 +66,17 @@ services:
       dockerfile: Dockerfile
       args:
         - REDIS_VERSION=6.2.6-alpine
+      tags:
+        - ${REGISTRY}/harrybrwn/redis:latest
+        - ${REGISTRY}/harrybrwn/redis:6.2.6-alpine
+        - ${REGISTRY}/harrybrwn/redis:${GIT_BRANCH:-dev}
+        - ${REGISTRY}/harrybrwn/redis:${GIT_COMMIT:-dev}
     networks:
       backend:
         aliases:
           - redis.redis
           - redis.default.svc.cluster.local
+      hrry.me:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     env_file:
@@ -84,7 +96,20 @@ services:
       target: nginx
       args:
         - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
-        - NGINX_VERSION=1.20.2-alpine
+        - NGINX_VERSION=1.23.3-alpine
+      tags:
+        - ${REGISTRY}/harrybrwn/nginx:latest
+        - ${REGISTRY}/harrybrwn/nginx:1.23.3-alpine
+        - ${REGISTRY}/harrybrwn/nginx:1.23.3
+        - ${REGISTRY}/harrybrwn/nginx:${GIT_BRANCH:-dev}
+        - ${REGISTRY}/harrybrwn/nginx:${GIT_COMMIT:-dev}
+      labels:
+        - "docker.registry=${REGISTRY}"
+        - "version=${VERSION:-latest}"
+        - "git.commit=${GIT_COMMIT:-}"
+        - "git.branch=${GIT_BRANCH:-}"
+        - "com.hrry.dev.version=${VERSION:-latest}"
+        - "com.hrry.dev.commit=${GIT_COMMIT:-dev}"
     volumes:
       # harrybrwn.com
       - ./config/pki/certs/harrybrwn.com.crt:/etc/harrybrwn/certs/harrybrwn.com.crt:ro
@@ -100,6 +125,7 @@ services:
         aliases:
           # Custom container hostname for other containers, mainly for testing.
           - harrybrwn.local
+      hrry.me:
     ports:
       - target: 80
         published: 80
@@ -124,10 +150,14 @@ services:
       dockerfile: Dockerfile
       target: api
       labels:
-        com.harrybrwn.api.description: "api for harrybrwn.com"
-        com.harrybrwn.api.commit: ${GIT_COMMIT:-dev}
-        com.harrybrwn.api.branch: ${GIT_BRANCH:-dev}
-        com.harrybrwn.api.source_hash: ${SOURCE_HASH:-0000}
+        com.harrybrwn.api.description: 'api for harrybrwn.com'
+        com.harrybrwn.api.commit: "${GIT_COMMIT:-dev}"
+        com.harrybrwn.api.branch: "${GIT_BRANCH:-dev}"
+        com.harrybrwn.api.source_hash: "${SOURCE_HASH:-0000}"
+      tags:
+        - ${REGISTRY}/harrybrwn/api:latest
+        - ${REGISTRY}/harrybrwn/api:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/api:${GIT_BRANCH:-dev}
     command: --port 8081
     env_file:
       - config/env/api.env
@@ -148,6 +178,7 @@ services:
       backend:
         aliases:
           - api.default.svc.cluster.local
+      hrry.me:
     depends_on:
       - db
       - redis
@@ -164,11 +195,16 @@ services:
       context: .
       dockerfile: Dockerfile
       target: hooks
+      tags:
+        - ${REGISTRY}/harrybrwn/hooks:latest
+        - ${REGISTRY}/harrybrwn/hooks:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/hooks:${GIT_BRANCH:-dev}
     command: --port 8889
     networks:
       backend:
         aliases:
           - hooks.default.svc.cluster.local
+      hrry.me:
     env_file:
       - config/env/db.env
       - config/env/github.env
@@ -190,6 +226,10 @@ services:
       target: backups
       context: .
       dockerfile: Dockerfile
+      tags:
+        - ${REGISTRY}/harrybrwn/backups:latest
+        - ${REGISTRY}/harrybrwn/backups:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/backups:${GIT_BRANCH:-dev}
     command: --port 8082
     environment:
       - POSTGRES_HOST=db
@@ -215,6 +255,10 @@ services:
     build:
       target: geoip
       context: .
+      tags:
+        - ${REGISTRY}/harrybrwn/geoip:latest
+        - ${REGISTRY}/harrybrwn/geoip:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/geoip:${GIT_BRANCH:-dev}
     command:
       - "--port=8084"
       - "--file=file:///opt/geoip/GeoLite2-City.mmdb"
@@ -223,6 +267,7 @@ services:
       backend:
         aliases:
           - geoip.default.svc.cluster.local
+      hrry.me:
     healthcheck:
       test: ["CMD", "curl", "-fI", "localhost:8084/health/ready"]
       timeout: 10s
@@ -233,6 +278,10 @@ services:
     build:
       target: legacy-site
       context: .
+      tags:
+        - ${REGISTRY}/harrybrwn/legacy-site:latest
+        - ${REGISTRY}/harrybrwn/legacy-site:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/legacy-site:${GIT_BRANCH:-dev}
     command: --port 8083
     networks:
       backend:
@@ -248,6 +297,10 @@ services:
     build:
       target: vanity-imports
       context: .
+      tags:
+        - ${REGISTRY}/harrybrwn/vanity-imports:latest
+        - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/vanity-imports:${GIT_BRANCH:-dev}
     command: --port 8085
     networks:
       backend:
@@ -320,6 +373,7 @@ services:
       backend:
         aliases:
           - s3.default.svc.cluster.local
+      hrry.me:
     healthcheck:
       test: ["CMD", "curl", "-fI", "http://localhost:9000/minio/health/cluster"]
       interval: 30s
@@ -339,6 +393,7 @@ services:
       backend:
         aliases:
           - hydra.default.svc.cluster.local
+      hrry.me:
     configs:
       - source: hydra.yml
         target: /hydra.yml

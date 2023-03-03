@@ -1,12 +1,16 @@
-#!/bin/sh
+#!/usr/bin/bash
 
-set -eu
+set -euo pipefail
+
+if [ -f .env ]; then
+  source .env
+fi
 
 GIT_TAG="$(git describe --tags --abbrev=0 2>/dev/null || printf "v0.0.0")"
 GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
-REG="10.0.0.11:5000"
+REG="${REGISTRY:-10.0.0.11:5000}"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
 platform() {
@@ -35,7 +39,8 @@ usage() {
   echo "Flags"
   echo "  -h --help           print help message"
   echo "  --local             load images locally"
-  echo "  --registry <uri>    change the registry"
+  echo "  --registry <uri>    change the registry (default \"$REG\")"
+  echo "  --prune             delete all the images and their tags (default: false)"
 }
 
 echo "GIT_TAG=$GIT_TAG"
@@ -43,8 +48,9 @@ echo "GIT_BRANCH=$GIT_BRANCH"
 echo "GIT_COMMIT=$GIT_COMMIT"
 echo "SOURCE_HASH=$SOURCE_HASH"
 
-args=""
+args=()
 is_local=false
+prune=false
 while [ $# -gt 0 ]; do
   case $1 in
   	-h|--help)
@@ -63,21 +69,28 @@ while [ $# -gt 0 ]; do
       REG="$2"
       shift 2
       ;;
+    --prune)
+      prune=true
+      shift 1
+      ;;
     --)
     	shift
-      args="${args} $@"
+      args+=("$@")
     	break
       ;;
     *)
-      args="${args} $1"
+      args+=("$1")
       shift 1
       ;;
   esac
 done
 
 if ${is_local}; then
-  args="--set *.platform=$(platform) --load ${args}"
+  args+=("--set" "*.platform=$(platform)")
+elif ${prune}; then
+  docker image ls | grep "${REG}" #| awk '{print $3}'
+  docker image rm -f $(docker image ls | grep "${REG}" | awk '{print $3}')
+  exit 0
 fi
 
-set -- ${args}
-REGISTRY="$REG" docker buildx bake -f config/docker/docker-bake.hcl "$@"
+REGISTRY="$REG" docker buildx bake -f config/docker/docker-bake.hcl "${args[@]}"

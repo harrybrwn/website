@@ -9,26 +9,16 @@ fi
 
 export KUBECONFIG="/home/${SUDO_USER:-}/.kube/config"
 
-pids=()
-
 kubectl port-forward svc/nginx 443:443 80:80 &
-pids+=($!)
 kubectl port-forward svc/s3 9000:9000 &
-pids+=($!)
 kubectl port-forward svc/db 5432:5432 &
-pids+=($!)
 kubectl port-forward svc/grafana 3000:3000 &
-pids+=($!)
 kubectl port-forward svc/redis 6379:6379 &
-pids+=($!)
 
-echo "running ${pids[@]}"
+echo "running $(jobs -p)"
 
 stopall() {
-  for pid in "${pids[@]}"; do
-    echo "killing ${pid}"
-    kill -9 "${pid}"
-  done
+  kill -9 $(jobs -p)
 }
 trap stopall SIGINT
 wait

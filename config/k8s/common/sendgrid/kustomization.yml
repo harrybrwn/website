@@ -8,6 +8,7 @@ secretGenerator:
 
   # Needed for mastodon helm chart.
   - name: mastodon-sendgrid
+    namespace: mastodon
     behavior: create
     literals:
       #- login=apikey

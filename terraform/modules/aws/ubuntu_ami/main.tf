@@ -23,3 +23,11 @@ data "aws_ami" "ubuntu" {
 output "ami" {
 	value = data.aws_ami.ubuntu.id
 }
+
+output "architecture" {
+  value = data.aws_ami.ubuntu.architecture
+}
+
+output "platform" {
+  value = data.aws_ami.ubuntu.platform
+}

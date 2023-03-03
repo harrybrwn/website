@@ -9,8 +9,6 @@ docker compose \
   --file config/docker-compose.tools.yml \
   --ansi never                           \
   run \
-    -v "$SSH_AUTH_SOCK:/run/ssh" \
-    -e SSH_AUTH_SOCK=/run/ssh    \
     --interactive=true \
     --no-deps           \
     --rm                \

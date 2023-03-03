@@ -6,13 +6,14 @@ metadata:
 
 ---
 apiVersion: helm.cattle.io/v1
-kind: HemlChart
+kind: HelmChart
 metadata:
   name: mastodon
+  namespace: kube-system
 spec:
   name: mastodon
   chart: mastodon
-  version: "4.0.2"
+  version: "4.0.0"
   repo: https://helm.hrry.dev
   targetNamespace: mastodon
   valuesContent: |

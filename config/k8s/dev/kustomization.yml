@@ -42,6 +42,13 @@ secretGenerator:
     behavior: replace
     literals:
       - password=testbed01
+  # Redis secret for mastodon
+  - name: redis-secrets
+    options:
+      disableNameSuffixHash: true
+    namespace: mastodon
+    behavior: create
+    literals:
       - redis-password=testbed01 # For mastodon
   - name: minio-env-secrets
     behavior: create
