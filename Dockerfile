@@ -73,18 +73,20 @@ COPY pkg pkg/
 COPY app app/
 COPY files files/
 COPY internal internal/
-COPY main.go .
 COPY frontend/legacy/templates frontend/legacy/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
 COPY --from=frontend /opt/harrybrwn/frontend/legacy/embeds.go ./frontend/legacy/embeds.go
 COPY --from=frontend /opt/harrybrwn/frontend/legacy/pages ./frontend/legacy/pages
+
+FROM builder as api-builder
+COPY cmd/api cmd/api
 RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     --mount=type=cache,id=gomod,target=/go/pkg/mod \
-    go build -ldflags "${LINK}" -o bin/harrybrwn
+    go build -ldflags "${LINK}" -o bin/harrybrwn ./cmd/api
 
 FROM builder as legacy-site-builder
 COPY cmd/legacy-site cmd/legacy-site
-RUN  --mount=type=cache,id=gobuild,target=/root/.cache \
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     --mount=type=cache,id=gomod,target=/go/pkg/mod \
     go build -ldflags "${LINK}" -o bin/legacy-site ./cmd/legacy-site
 
@@ -137,7 +139,7 @@ COPY --from=wait /bin/wait.sh /usr/local/bin/wait.sh
 FROM service as api
 LABEL maintainer="Harry Brown <harry@harrybrwn.com>"
 COPY scripts/wait.sh /usr/local/bin/wait.sh
-COPY --from=builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
+COPY --from=api-builder /opt/harrybrwn/bin/harrybrwn /app/harrybrwn
 WORKDIR /app
 ENTRYPOINT ["/app/harrybrwn"]
 
@@ -164,7 +166,7 @@ ENTRYPOINT ["backups"]
 #
 FROM service as geoip
 RUN mkdir -p /opt/geoip
-COPY files/mmdb/GeoLite2* /opt/geoip/
+COPY files/mmdb/latest/GeoLite2* /opt/geoip/
 COPY --from=geoip-builder /opt/harrybrwn/bin/geoip /usr/local/bin/
 ENTRYPOINT ["geoip"]
 CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"]

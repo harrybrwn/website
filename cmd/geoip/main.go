@@ -7,21 +7,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oschwald/geoip2-golang"
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 	"harrybrown.com/pkg/log"
+	"harrybrown.com/pkg/urifs"
 	"harrybrown.com/pkg/web"
 )
 
@@ -196,7 +190,8 @@ func FetchDatabases(uris ...*url.URL) (*GeoData, error) {
 	var g GeoData
 	for _, uri := range uris {
 		var r *geoip2.Reader
-		reader, err := openURI(uri)
+		// reader, err := openURI(uri)
+		reader, err := urifs.Open(uri)
 		if err != nil {
 			return nil, err
 		}
@@ -233,50 +228,6 @@ func FetchDatabases(uris ...*url.URL) (*GeoData, error) {
 	return &g, nil
 }
 
-func openURI(uri *url.URL) (io.ReadCloser, error) {
-	switch uri.Scheme {
-	case "":
-		fallthrough // defaults to "file"
-	case "file":
-		p := uri.Path
-		if uri.Host != "" {
-			p = filepath.Join("./", uri.Host, uri.Path)
-		}
-		f, err := os.Open(p)
-		if err != nil {
-			return nil, err
-		}
-		return f, nil
-	case "s3":
-		session, err := s3SessionFromURI(uri, getenv("AWS_S3_REGION", "us-east-1"))
-		if err != nil {
-			return nil, err
-		}
-		in := objectRequestFromURI(uri)
-		if in == nil {
-			return nil, errors.New("invalid s3 uri")
-		}
-		resp, err := s3.New(session).GetObject(in)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body, nil
-	case "http", "https":
-		resp, err := http.DefaultClient.Do(&http.Request{
-			URL:    uri,
-			Method: "GET",
-			Host:   uri.Host,
-			Close:  true,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body, nil
-	default:
-		return nil, errors.New("unknown file scheme")
-	}
-}
-
 func writeJSON(w http.ResponseWriter, v any) {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
@@ -285,41 +236,6 @@ func writeJSON(w http.ResponseWriter, v any) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
-}
-
-func s3SessionFromURI(uri *url.URL, region string) (client.ConfigProvider, error) {
-	pw, ok := uri.User.Password()
-	if !ok {
-		return nil, errors.New("no s3 secret key")
-	}
-	var endpoint *string
-	if uri.Host != "" {
-		endpoint = aws.String(uri.Host)
-	}
-	return session.NewSession(&aws.Config{
-		Endpoint:         endpoint,
-		Region:           aws.String(region),
-		DisableSSL:       aws.Bool(true),
-		S3ForcePathStyle: aws.Bool(true),
-		Logger:           aws.LoggerFunc(logger.WithField("client", "s3").Info),
-		Credentials:      credentials.NewStaticCredentials(uri.User.Username(), pw, ""),
-	})
-}
-
-func objectRequestFromURI(uri *url.URL) *s3.GetObjectInput {
-	parts := strings.Split(uri.Path, string(filepath.Separator))
-	if len(parts) == 0 {
-		return nil
-	} else if parts[0] == "" {
-		parts = parts[1:]
-	}
-	if len(parts) < 2 {
-		return nil
-	}
-	return &s3.GetObjectInput{
-		Bucket: aws.String(parts[0]),
-		Key:    aws.String(filepath.Join(parts[1:]...)),
-	}
 }
 
 func parseURIs(s []string) ([]*url.URL, error) {
@@ -334,12 +250,4 @@ func parseURIs(s []string) ([]*url.URL, error) {
 		}
 	}
 	return uris, nil
-}
-
-func getenv(key, defaultValue string) string {
-	val, ok := os.LookupEnv(key)
-	if !ok {
-		return defaultValue
-	}
-	return val
 }

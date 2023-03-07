@@ -32,7 +32,7 @@ func New(opts ...LoggerOpt) *Logger {
 }
 
 func SetLogger(l *Logger) *Logger {
-	std = l
+	*std = *l
 	return std
 }
 
