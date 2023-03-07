@@ -68,6 +68,7 @@ tools:
 	ln -sf ../scripts/tools/hydra bin/hydra
 	ln -sf ../scripts/tools/bake bin/bake
 	ln -sf ../scripts/tools/k8s bin/k8s
+	ln -sf ../scripts/tools/tootctl bin/tootctl
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
@@ -76,6 +77,13 @@ tools:
 	done
 
 .PHONY: tools
+
+# https://dev.maxmind.com/geoip/updating-databases?lang=en
+geoip:
+	@mkdir -p files/mmdb
+	@if [ -d files/mmdb/latest ]; then mv files/mmdb/latest files/mmdb/$(shell date '+%Y-%m-%d'); fi
+	mkdir -p files/mmdb/latest
+	geoipupdate -d files/mmdb/latest
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \

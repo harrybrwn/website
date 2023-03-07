@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+set -euo pipefail
+
+kubectl -n mastodon exec -it deployment/mastodon-web -- tootctl "$@"
