@@ -16,6 +16,7 @@ __pycache__/
 yarn-error.log
 .terraform/
 terraform/*.tfstate*.backup
+*.tar.gz
 
 # Config
 .vscode
@@ -34,6 +35,7 @@ config/user-gen.env
 !bin
 !bin/.gitignore
 config/vault-cluster-keys*.json
+/secrets.env
 
 # Testing
 /.testing/
@@ -64,3 +66,4 @@ scripts/deploy.sh
 
 # Wait I want these
 !config/**/*.sh
+

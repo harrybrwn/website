@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 set -euo pipefail
 
@@ -25,6 +25,7 @@ declare -r HOSTNAMES=(
 	ip.hrry.local
 	hooks.hrry.local
   mastodon.hrry.local
+  1k.hrry.local
 	# Crazy ones
 	hrry.me.local
 	hrry.dev.local
@@ -94,29 +95,33 @@ usage() {
 	echo "  -b --build        build and load docker images"
 }
 
+cmd-load() {
+	#docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
+	if [ -n "$@" ]; then
+		images=("$@")
+	else
+		images="$(docker buildx bake \
+			--file config/docker/docker-bake.hcl \
+			--print 2>&1 \
+			| jq -r '.target[] | .tags[]' \
+			| sort \
+			| uniq \
+			| grep -P 'latest$')"
+	fi
+	name="$(get-cluster-name)"
+	if [ -z "${name}" ]; then
+		echo "Error: could not find k3d cluster"
+		exit 1
+	fi
+	k3d image load --cluster "${name}" "${images}"
+}
+
 if [ $# -eq 0 ]; then
 	echo "Error: no arguments"
 	echo
 	usage short
 	exit 1
 fi
-
-cmd-build() {
-	docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
-	images="$(docker buildx bake \
-		--file config/docker/docker-bake.hcl \
-		--print 2>&1 \
-		| jq -r '.target[] | .tags[]' \
-		| sort \
-		| uniq \
-		| grep -P 'latest$')"
-	name="$(get-cluster-name)"
-	if [ -z "${name}" ]; then
-		echo "Error: could not find k3d cluster"
-		exit 1
-	fi
-	k3d image load --cluster "${name}" ${images}
-}
 
 args=()
 
@@ -133,7 +138,8 @@ while [ $# -gt 0 ]; do
 			exit 0
 			;;
 		-b|--build)
-			cmd-build
+			docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
+			cmd-load
 			shift
 			;;
 		--etc-hosts)
@@ -151,13 +157,16 @@ done
 # out="$(k3d-running)"
 # echo $?
 
+set -- "${args[@]}"
 for arg in ${args[@]}; do
+	shift
   case "${arg}" in
     up)
       echo "starting..."
       ;;
 		load)
-			cmd-build
+			cmd-load "$@"
+			break
 			;;
 		ip)
 			get-ingress-ip

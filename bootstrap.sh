@@ -5,6 +5,7 @@ set -meuo pipefail
 USE_COMPOSE=true
 USE_K8s=false
 K3D_CLUSTER=hrry-dev
+readonly MC_ALIAS=hrrylocal
 
 k3d_running() {
   if [ "$(k3d cluster get hrry-dev -o json | jq -M '.[0].serversRunning')" = "1" ]; then
@@ -32,6 +33,41 @@ provision() {
   bin/provision --config config/provision.json --config config/provision.dev.json
   bin/provision --config config/provision.json --config config/provision.dev.json migrate up --all
 }
+
+setup_mc() {
+  if ! mc alias ls "${MC_ALIAS}" > /dev/null 2>&1; then
+    echo "Creating alias ${MC_ALIAS}..."
+    mc alias set "${MC_ALIAS}" \
+      "http://localhost:9000" 'root' 'minio-testbed001' \
+      --api 's3v4'
+  fi
+}
+
+upload_mmdb() {
+  if [ -d files/mmdb/latest ]; then
+    for f in files/mmdb/latest/*.mmdb; do
+      mc cp "$f" "${MC_ALIAS}/files/maxmind/latest/$(basename "$f")"
+    done
+  fi
+}
+
+stop_all() {
+  if [ -n "$(jobs -p)" ]; then
+    kill $(jobs -p)
+  fi
+}
+
+env_files=(
+  .env
+  secrets.env
+  config/env/prod/maxmind.env
+)
+
+for env in ${env_files}; do
+  if [ -f "${env}" ]; then
+    source "${env}"
+  fi
+done
 
 services=()
 while [ $# -gt 0 ]; do
@@ -81,6 +117,11 @@ if ! network_exists "hrry.me"; then
     --subnet "172.22.0.0/16"
 fi
 
+# Create certificates
+if [ ! -f config/pki/certs/ca.crt ]; then
+  scripts/certs.sh
+fi
+
 if ${USE_COMPOSE}; then
   echo "Starting databases."
   docker compose up --no-deps --detach --force-recreate db s3
@@ -93,18 +134,27 @@ elif ${USE_K8s}; then
   scripts/infra/k3d-load.sh
   k3d kubeconfig merge "${K3D_CLUSTER}" --kubeconfig-merge-default
   kubectl apply -k config/k8s/dev || true # fails sometimes when cert-manager CRDs are being installed.
-  kubectl wait pods -l app=db --for condition=Ready
-  kubectl wait pods -l app=s3 --for condition=Ready
+  kubectl wait pods -l 'app=db' --for condition=Ready
+  kubectl wait pods -l 'app=s3' --for condition=Ready
+  kubectl -n mastodon wait pods -l 'app.kubernetes.io/name=mastodon' --for condition=Ready
+  # Expose databases to localhost
   kubectl port-forward svc/s3 9000:9000 &
   kubectl port-forward svc/db 5432:5432 &
-fi
-
-if [ ! -f config/pki/certs/ca.crt ]; then
-  scripts/certs.sh
+  trap stop_all EXIT
+  # Create an admin user for mastodon
+  # TODO make this idempotent
+  #kubectl -n mastodon exec -it deployment/mastodon-web -- \
+  # tootctl accounts create \
+  #   'admin' \
+  #   --email 'admin@hrry.local' \
+  #   --role Owner \
+  #   --confirmed
 fi
 
 wait_on_dbs
 provision
+setup_mc
+upload_mmdb
 
 if ${USE_COMPOSE} && [ ${#services[@]} -gt 0 ]; then
 	echo "Starting services \"${services[@]}\"."
@@ -119,7 +169,3 @@ echo 'testbed' | bin/user-gen - \
   --email 'admin@hrry.local' \
   --username 'admin'         \
   --roles 'admin,family,tanya'
-
-if [ -n "$(jobs -p)" ]; then
-  kill $(jobs -p)
-fi
