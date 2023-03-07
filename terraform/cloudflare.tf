@@ -49,14 +49,27 @@ resource "cloudflare_record" "root_dns" {
   ttl     = 1 # proxied records require ttl of 1
 }
 
+resource "cloudflare_email_routing_settings" "harrybrwn_com" {
+  zone_id = local.zones.harrybrwn_com
+  enabled = true
+}
+
+resource "cloudflare_email_routing_address" "tanya_email_destination" {
+  account_id = var.cf_account_id
+  email      = var.tanya_destination_email
+}
+
 resource "cloudflare_email_routing_rule" "harry" {
-  for_each = toset([
+  for_each = toset(concat(
+    [
     "cloudflare-notifications",
     # "harry",
     # "admin",
     "ynvybmvyigvtywlscg",
     "trash",
-  ])
+    ],
+    flatten([ for i in range(4): "trash${i + 1}" ])
+  ))
   zone_id = local.zones.harrybrwn_com
   enabled = true
   name    = "cf email route ${each.key}"

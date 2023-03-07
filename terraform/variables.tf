@@ -1,3 +1,5 @@
+# Cloudflare Variables
+
 variable "cloudflare_token" {
   type = string
 }
@@ -15,6 +17,8 @@ variable "r2_secret_access_key" {
   description = "Cloudflare R2 secret accesss key."
   type        = string
 }
+
+# DNS Variables
 
 variable "gateway_ip" {
   description = "IP address of the main gateway."
@@ -36,6 +40,10 @@ variable "destination_email" {
   type        = string
 }
 
+variable "tanya_destination_email" {
+  type = string
+}
+
 variable "postgres_password" {
   type = string
 }
@@ -52,4 +60,9 @@ variable "sendgrid_verify" {
     id        = string
     subdomain = string
   }))
+}
+
+variable "aws_region" {
+  type = string
+  default = "us-west-2"
 }

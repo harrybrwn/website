@@ -134,17 +134,20 @@ resource "null_resource" "openvpn_install" {
 
 resource "null_resource" "openvpn_adduser" {
   triggers = {
-    user        = var.ssh_user
+    ssh_user    = var.ssh_user
     port        = format("%d", var.ssh_port)
     private_key = var.private_key_openssh
     host        = aws_eip.vpn_ip.public_ip
+    users       = [
+      local.admin_user,
+    ]
   }
 
   depends_on = [null_resource.openvpn_install]
 
   connection {
     type        = "ssh"
-    user        = self.triggers.user
+    user        = self.triggers.ssh_user
     port        = self.triggers.port
     private_key = self.triggers.private_key
     host        = self.triggers.host
@@ -153,6 +156,7 @@ resource "null_resource" "openvpn_adduser" {
   provisioner "file" {
     destination = local.update_user_script
     content = templatefile(
+      # TODO add support for multiple users
       format("%s/%s", path.module, "templates/update_user.sh.tpl"),
       {
         client = local.admin_user
@@ -163,8 +167,12 @@ resource "null_resource" "openvpn_adduser" {
   provisioner "remote-exec" {
     inline = [
       format("%s %s", "sudo chmod a+x", local.update_user_script),
+      # TODO add support for multiple users
       format("%s %s", "sudo ", local.update_user_script),
-      "sudo cp /root/${local.admin_user}.ovpn /home/${var.ssh_user}/"
+      format(
+        "sudo cp %s /home/${var.ssh_user}/",
+        join(" ", [for u in self.triggers.users : "/root/${u}.ovpn" ])
+      )
     ]
   }
 }
