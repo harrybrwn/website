@@ -23,6 +23,7 @@ services:
       - ./config:/home/ansible/config
       # So I can copy the kubeconfig after setting up a new cluster
       - ${HOME}/.kube:/home/ansible/.kube
+      - ${HOME}/.aws:/home/ansible/.aws
     working_dir: /home/ansible
     network_mode: host # needs to be able to communicate with link-local addresses
     environment:
@@ -48,28 +49,6 @@ services:
       x-bake:
         platforms:
           - linux/amd64
-
-  nfs:
-    image: ${REGISTRY}/harrybrwn/nfs-server:${VERSION:-latest}
-    build:
-      context: config/docker/nfs
-      target: nfs-server
-    privileged: true
-    volumes:
-      - ./.tmp/nfs/nfs:/mnt/nfs
-      - ./.tmp/nfs/exports:/exports
-
-  nfs-client:
-    image: ${REGISTRY}/harrybrwn/nfs-server:${VERSION:-latest}
-    build:
-      context: config/docker/nfs
-      target: nfs-server
-    privileged: true
-    command: ["--client", "/mnt/nfs:/media"]
-    environment:
-      - NFS_PORT_2049_TCP_ADDR=nfs
-    volumes:
-      - ./.tmp/nfs/media:/media
 
   oidc-tester:
     # https://medium.com/application-security/openid-connect-tester-for-developers-63427324faea
