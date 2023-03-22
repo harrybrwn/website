@@ -1,0 +1,8 @@
+secretGenerator:
+  - name: geoipupdate-secret
+    behavior: create
+    envs:
+      # GEOIP_UPDATE_ACCOUNT_ID and GEOIP_UPDATE_LICENSE_KEY
+      - geoipupdate.env
+    options:
+      disableNameSuffixHash: true

@@ -144,6 +144,13 @@ secretGenerator:
       - REGISTRY_STORAGE_S3_REGION=us-east-1
       - REGISTRY_STORAGE_S3_ACCESSKEY=registry
       - REGISTRY_STORAGE_S3_SECRETKEY=minio-testbed001-registry
+  - name: geoip-secrets
+    behavior: create
+    literals:
+      - AWS_ACCESS_KEY_ID=github-actions
+      - AWS_SECRET_ACCESS_KEY=minio-testbed001
+    options:
+      disableNameSuffixHash: true
 
 configMapGenerator:
   - name: environment-config

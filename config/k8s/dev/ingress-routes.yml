@@ -10,6 +10,7 @@ spec:
   - match: >-
       HostSNI(`hrry.local`)
       || HostSNI(`hrry.me.local`)
+      || HostSNI(`1k.hrry.local`)
       || HostSNI(`s3.hrry.local`)
       || HostSNI(`harrybrwn.local`)
       || HostSNI(`hextris.harrybrwn.local`)
