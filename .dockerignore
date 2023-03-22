@@ -55,3 +55,6 @@ deploy.sh
 # Want these
 !/config/docker/freeradius/rules
 !/config/docker/freeradius/debian
+
+# Build
+/services/geoip/target

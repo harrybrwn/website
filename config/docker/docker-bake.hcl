@@ -23,6 +23,10 @@ variable "GO_VERSION" {
     default = "1.18-alpine"
 }
 
+variable "RUST_VERSION" {
+    default = "1.68.0"
+}
+
 variable "FLUENTBIT_VERSION" {
     default = "1.9.10"
     #default = "2.0.6"
@@ -53,7 +57,8 @@ group "services" {
         "api",
         "hooks",
         "backups",
-        "geoip",
+        "go-geoip",
+        "geoip-rs",
         "legacy-site",
         "vanity-imports",
         "outline",
@@ -77,15 +82,22 @@ group "databases" {
 }
 
 function "tags" {
-    params = [name, extra_labels]
+    params = [registry, name, extra_labels]
     result = concat(
         [
-            "${REGISTRY}/harrybrwn/${name}:latest",
-            "${REGISTRY}/harrybrwn/${name}:${VERSION}",
-            notequal("", GIT_COMMIT) ? "${REGISTRY}/harrybrwn/${name}:${GIT_COMMIT}" : "",
-            notequal("", GIT_BRANCH) ? "${REGISTRY}/harrybrwn/${name}:${GIT_BRANCH}" : "",
+            join("/", compact([registry, "harrybrwn", "${name}:latest"])),
+            join("/", compact([registry, "harrybrwn", "${name}:${VERSION}"])),
+            notequal("", GIT_COMMIT) ?
+                join("/", compact([registry, "harrybrwn", "${name}:${GIT_COMMIT}"])) :
+                "",
+            notequal("", GIT_BRANCH) ?
+                join("/", compact([registry, "harrybrwn", "${name}:${GIT_BRANCH}"])) :
+                "",
         ],
-        [for t in extra_labels : "${REGISTRY}/harrybrwn/${name}:${t}"],
+        [
+            for t in compact(extra_labels) :
+                join("/", compact([registry, "harrybrwn", "${name}:${t}"]))
+        ],
     )
 }
 
@@ -105,6 +117,7 @@ target "base-service" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
         GO_VERSION     = GO_VERSION
+        RUST_VERSION   = RUST_VERSION
     }
 }
 
@@ -114,44 +127,53 @@ target "nginx" {
         NGINX_VERSION = "1.23.3-alpine"
         REGISTRY_UI_ROOT = "/var/www/registry.hrry.dev"
     }
-    tags = tags("nginx", ["1.23.3-alpine", "1.23.3"])
+    tags = tags(REGISTRY, "nginx", ["1.23.3-alpine", "1.23.3"])
     inherits = ["base-service"]
-    platforms = ["linux/amd64", "linux/arm/v7"]
+    platforms = [
+        "linux/amd64",
+        "linux/arm/v7",
+    ]
 }
 
 target "api" {
     target = "api"
-    tags = tags("api", [])
+    tags = tags(REGISTRY, "api", [])
     inherits = ["base-service"]
 }
 
 target "hooks" {
     target = "hooks"
-    tags = tags("hooks", [])
+    tags = tags(REGISTRY, "hooks", [])
     inherits = ["base-service"]
 }
 
 target "backups" {
     target = "backups"
-    tags = tags("backups", [])
+    tags = tags(REGISTRY, "backups", [])
     inherits = ["base-service"]
 }
 
-target "geoip" {
+target "go-geoip" {
     target = "geoip"
-    tags = tags("geoip", [])
+    tags = tags(REGISTRY, "geoip", [])
+    inherits = ["base-service"]
+}
+
+target "geoip-rs" {
+    context  = "services/geoip"
+    tags     = tags("", "geoip", []) // publish to dockerhub
     inherits = ["base-service"]
 }
 
 target "legacy-site" {
     target = "legacy-site"
-    tags = tags("legacy-site", [])
+    tags = tags(REGISTRY, "legacy-site", [])
     inherits = ["base-service"]
 }
 
 target "vanity-imports" {
     target = "vanity-imports"
-    tags = tags("vanity-imports", [])
+    tags = tags(REGISTRY, "vanity-imports", [])
     inherits = ["base-service"]
 }
 
@@ -160,7 +182,7 @@ target "postgres" {
     args = {
         BASE_IMAGE_VERSION = "13.6-alpine"
     }
-    tags = tags("postgres", ["13.6-alpine", "13.6"])
+    tags = tags(REGISTRY, "postgres", ["13.6-alpine", "13.6"])
     inherits = ["base-service"]
 }
 
@@ -170,7 +192,7 @@ target "fluentbit" {
         FLUENTBIT_VERSION = FLUENTBIT_VERSION
         #FLUENTBIT_VERSION = "${FLUENTBIT_VERSION}-debug"
     }
-    tags = tags("fluent-bit", [FLUENTBIT_VERSION])
+    tags = tags(REGISTRY, "fluent-bit", [FLUENTBIT_VERSION])
     inherits = ["base-service"]
 }
 
@@ -179,7 +201,7 @@ target "grafana" {
     args = {
         GRAFANA_VERSION = "9.1.4"
     }
-    tags = tags("grafana", ["9.1.4"])
+    tags = tags(REGISTRY, "grafana", ["9.1.4"])
     inherits = ["base-service"]
 }
 
@@ -188,7 +210,7 @@ target "loki" {
     args = {
         LOKI_VERSION = "2.5.0"
     }
-    tags = tags("loki", ["2.5.0"])
+    tags = tags(REGISTRY, "loki", ["2.5.0"])
     inherits = ["base-service"]
 }
 
@@ -198,7 +220,7 @@ target "redis" {
     args = {
         REDIS_VERSION = "6.2.6-alpine"
     }
-    tags = tags("redis", ["6.2.6", "6.2.6-alpine"])
+    tags = tags(REGISTRY, "redis", ["6.2.6", "6.2.6-alpine"])
     inherits = ["base-service"]
 }
 
@@ -210,7 +232,7 @@ target "s3" {
         MC_VERSION = "RELEASE.2022-05-09T04-08-26Z.fips"
     }
     labels = labels()
-    tags = tags("s3", ["RELEASE.2022-05-23T18-45-11Z.fips"])
+    tags = tags(REGISTRY, "s3", ["RELEASE.2022-05-23T18-45-11Z.fips"])
     platforms = [
         "linux/amd64",
     ]
@@ -222,7 +244,7 @@ target "outline" {
     args = {
         OUTLINE_VERSION = "0.66.0"
     }
-    tags = tags("outline", ["0.66.0"])
+    tags = tags(REGISTRY, "outline", ["0.66.0"])
     labels = labels()
     inherits = ["base-service"]
 }
@@ -237,7 +259,7 @@ target "nomad" {
     }
     platforms = platforms
     tags = concat(
-        tags("nomad", ["1.3.5", "1.3.5-alpine"]),
+        tags(REGISTRY, "nomad", ["1.3.5", "1.3.5-alpine"]),
         [
             # There is no private information in this docker image so I'm
             # pushing to dockerhub.
@@ -258,7 +280,7 @@ target "curl" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
     }
-    tags = tags("curl", [ALPINE_VERSION])
+    tags = tags(REGISTRY, "curl", [ALPINE_VERSION])
     platforms = [
         "linux/amd64",
         "linux/arm/v7",
@@ -268,14 +290,14 @@ target "curl" {
 
 target "provision" {
     target = "provision"
-    tags = tags("provision", [])
+    tags = tags(REGISTRY, "provision", [])
     inherits = ["base-service"]
 }
 
 target "ansible" {
     dockerfile = "config/ansible/Dockerfile"
     labels = labels()
-    tags = tags("ansible", [])
+    tags = tags(REGISTRY, "ansible", [])
     platforms = ["linux/amd64"]
 }
 

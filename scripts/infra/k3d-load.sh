@@ -21,6 +21,10 @@ images="$(docker buildx bake \
   | uniq \
   | grep -E 'latest$')"
 
+if [ -n "${@:-}" ]; then
+  images="$(echo "${images}" | grep "$@")"
+fi
+
 echo "loading images..."
 echo "${images}"
 k3d image load --cluster hrry-dev ${images}

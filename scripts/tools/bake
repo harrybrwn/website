@@ -13,7 +13,7 @@ SOURCE_HASH="$(./scripts/sourcehash.sh -e '*_test.go')"
 REG="${REGISTRY:-10.0.0.11:5000}"
 export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 
-platform() {
+get_platform() {
   _kernel="$(uname -s | sed 's/^L/l/')"
   _arch="$(uname -m)"
   case "$_kernel" in
@@ -37,26 +37,23 @@ usage() {
   echo "bake [flags...] [-- [buildx-args...]]"
   echo
   echo "Flags"
-  echo "  -h --help           print help message"
-  echo "  --local             load images locally"
-  echo "  --registry <uri>    change the registry (default \"$REG\")"
-  echo "  --prune             delete all the images and their tags (default: false)"
+  echo "  -h --help              print help message"
+  echo "     --local             load images locally"
+  echo "     --registry <uri>    change the registry (default \"$REG\")"
+  echo "     --platform <s>      target a spesific platform"
+  echo "     --prune             delete all the images and their tags (default: false)"
+  echo "  -v --verbose           run verbose logging"
 }
-
-echo "GIT_TAG=$GIT_TAG"
-echo "GIT_BRANCH=$GIT_BRANCH"
-echo "GIT_COMMIT=$GIT_COMMIT"
-echo "SOURCE_HASH=$SOURCE_HASH"
 
 args=()
 is_local=false
 prune=false
+verbose=false
+platform=""
 while [ $# -gt 0 ]; do
   case $1 in
   	-h|--help)
       usage
-      echo
-      docker buildx bake --help
       exit 0
       ;;
     --local)
@@ -69,8 +66,16 @@ while [ $# -gt 0 ]; do
       REG="$2"
       shift 2
       ;;
+    --platform)
+      platform="${2}"
+      shift 2
+      ;;
     --prune)
       prune=true
+      shift 1
+      ;;
+    --verbose|-v)
+      verbose=true
       shift 1
       ;;
     --)
@@ -86,11 +91,26 @@ while [ $# -gt 0 ]; do
 done
 
 if ${is_local}; then
-  args+=("--set" "*.platform=$(platform)")
+  args+=("--set" "*.platform=$(get_platform)")
+  GIT_TAG=dev
+  GIT_BRANCH=dev
+  GIT_COMMIT=dev
+  export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
 elif ${prune}; then
   docker image ls | grep "${REG}" #| awk '{print $3}'
   docker image rm -f $(docker image ls | grep "${REG}" | awk '{print $3}')
   exit 0
+fi
+
+if [ -n "${platform}" ]; then
+  args+=("--set" "*.platform=${platform}")
+fi
+
+if ${verbose}; then
+  echo "GIT_TAG=$GIT_TAG"
+  echo "GIT_BRANCH=$GIT_BRANCH"
+  echo "GIT_COMMIT=$GIT_COMMIT"
+  echo "SOURCE_HASH=$SOURCE_HASH"
 fi
 
 REGISTRY="$REG" docker buildx bake -f config/docker/docker-bake.hcl "${args[@]}"

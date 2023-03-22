@@ -14,6 +14,7 @@ kubectl port-forward svc/s3 9000:9000 &
 kubectl port-forward svc/db 5432:5432 &
 kubectl port-forward svc/grafana 3000:3000 &
 kubectl port-forward svc/redis 6379:6379 &
+kubectl port-forward svc/geoip 8084:8084 &
 
 echo "running $(jobs -p)"
 

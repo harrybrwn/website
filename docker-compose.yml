@@ -55,6 +55,8 @@ services:
       - database:/var/lib/postgresql/data/
     env_file:
       - config/env/db.env
+    profiles:
+      - databases
     healthcheck:
       test: ["CMD-SHELL" , "pg_isready --username harrybrwn -d harrybrwn"]
       interval: 10s
@@ -84,6 +86,8 @@ services:
     volumes:
       # Only use this if the cache stays on one machine
       - cache-data:/data
+    profiles:
+      - databases
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "ping"]
       interval: 1m
@@ -273,6 +277,22 @@ services:
       timeout: 10s
       interval: 1m
 
+  geoip-rs:
+    image: ${REGISTRY}/harrybrwn/geoip-rs:${VERSION:-latest}
+    build:
+      context: ./services/geoip
+      args:
+        - ALPINE_VERSION=3.16
+      tags:
+        - ${REGISTRY}/harrybrwn/geoip-rust:latest
+        - ${REGISTRY}/harrybrwn/geoip-rust:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/geoip-rust:${GIT_BRANCH:-dev}
+    command: "geoip --file /opt/geoip/mmdb/latest/GeoLite2-City.mmdb"
+    ports:
+    - "8087:8087"
+    volumes:
+      - ./files/mmdb/latest:/opt/geoip/mmdb/latest:ro
+
   legacy-site:
     image: ${REGISTRY}/harrybrwn/legacy-site:${VERSION:-latest}
     build:
@@ -374,6 +394,8 @@ services:
         aliases:
           - s3.default.svc.cluster.local
       hrry.me:
+    profiles:
+      - databases
     healthcheck:
       test: ["CMD", "curl", "-fI", "http://localhost:9000/minio/health/cluster"]
       interval: 30s
@@ -423,6 +445,22 @@ services:
     #   timeout: 30s
     #   retries: 5
     #   start_period: 30s
+
+  vault:
+    image: vault:1.12.3
+    ports:
+    - "8200:8200"
+    environment:
+      VAULT_ADDR: "0.0.0.0:8200"
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+    cap_add:
+      - IPC_LOCK
+
+  vault-client:
+    image: vault:1.12.3
+    entrypoint: sh
+    environment:
+      VAULT_ADDR: "http://vault:8200"
 
 volumes:
   database:

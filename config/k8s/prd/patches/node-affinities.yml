@@ -1,3 +1,6 @@
+# Postgres uses architecture specific storage sizes when serializing data to
+# disk. Once the data has been written to x86_64 then it is incompatible with
+# arm or i386.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -47,6 +50,7 @@ spec:
         value: "arm64"
         effect: "NoSchedule"
 
+# My custom docker image only supports amd64
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -97,6 +101,7 @@ spec:
         value: "arm64"
         effect: "NoSchedule"
 
+# No arm docker image available.
 ---
 # Image has no arm version
 apiVersion: apps/v1
