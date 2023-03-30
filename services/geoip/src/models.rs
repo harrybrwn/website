@@ -1,12 +1,14 @@
-use std::{collections::BTreeMap, fmt::Display};
 use std::io;
 use std::io::ErrorKind;
 use std::net::IpAddr;
 use std::sync::TryLockError;
+use std::{collections::BTreeMap, fmt::Display};
 
 use actix_web::http;
 use maxminddb::geoip2;
 use serde::{Deserialize, Serialize};
+
+use crate::locale::Locales;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Loc {
@@ -34,8 +36,12 @@ struct Subdivision {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct LocationResponse {
+    #[serde(skip_serializing)]
+    pub(crate) locale: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) ip: Option<IpAddr>,
+
     location: Option<Loc>,
     city: Option<City>,
     country: Option<Country>,
@@ -50,6 +56,7 @@ impl Default for LocationResponse {
             city: None,
             country: None,
             subdivisions: None,
+            locale: "".to_string(),
         }
     }
 }
@@ -68,13 +75,13 @@ pub(crate) struct ErrorResponse {
 
 #[derive(Debug)]
 pub(crate) enum LocationError {
-    // Address not found
+    /// Address not found
     NotFound,
-    // Invalid input
+    /// Invalid input
     BadInput,
-    // Bad language code
+    /// Bad language code
     BadLang,
-    // Internal server error
+    /// Internal server error
     Internal,
 }
 
@@ -84,7 +91,7 @@ impl Display for LocationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BadInput => write!(f, "invalid input"),
-            Self::BadLang  => write!(f, "invalid language code"),
+            Self::BadLang => write!(f, "invalid language code"),
             Self::NotFound => write!(f, "ip address location not found"),
             Self::Internal => write!(f, "internal error"),
         }
@@ -158,13 +165,32 @@ impl<T> From<TryLockError<T>> for LocationError {
 
 fn get_i18n_name<'a>(
     names: &Option<BTreeMap<&str, &'a str>>,
-    lang: &str,
+    locales: &Locales,
+    locale: &mut String,
 ) -> Result<String, LocationError> {
     if let Some(map) = names {
-        if let Some(name) = map.get(lang).map(|n| n.to_string()) {
-            return Ok(name);
+        for l in locales.iter() {
+            // Try the full name, then just the raw name.
+            let key = l.full_name();
+            if let Some(name) = map.get(key.as_str()) {
+                if locale.len() == 0 {
+                    *locale = key;
+                }
+                return Ok(name.to_string());
+            }
+            // Try only the name
+            if let Some(name) = map.get(l.name.as_str()) {
+                if locale.len() == 0 {
+                    *locale = l.name.clone();
+                }
+                return Ok(name.to_string());
+            }
         }
-        log::warn!("invalid language code: {} not in {:?}", lang, map.keys());
+        log::warn!(
+            "invalid language codes: {:?} not in {:?}",
+            locales,
+            map.keys()
+        );
         return Err(LocationError::BadLang);
     }
     log::warn!("no locale names");
@@ -173,7 +199,7 @@ fn get_i18n_name<'a>(
 
 pub(crate) fn city_to_response(
     city: geoip2::City,
-    lang: &str,
+    locales: &Locales,
 ) -> Result<LocationResponse, LocationError> {
     let mut res = LocationResponse::default();
 
@@ -192,7 +218,7 @@ pub(crate) fn city_to_response(
     if let Some(country) = city.country {
         // If the country language code is not found, assume it's invalid and
         // bubble up the error
-        let c = get_i18n_name(&country.names, lang).map(|name| Country {
+        let c = get_i18n_name(&country.names, &locales, &mut res.locale).map(|name| Country {
             iso_code: country.iso_code.map(|s| s.to_string()),
             name: Some(name),
         })?;
@@ -202,7 +228,7 @@ pub(crate) fn city_to_response(
     if let Some(city) = city.city {
         res.city = Some(City {
             id: city.geoname_id,
-            name: get_i18n_name(&city.names, lang).ok(),
+            name: get_i18n_name(&city.names, &locales, &mut res.locale).ok(),
         })
     }
 
@@ -211,10 +237,12 @@ pub(crate) fn city_to_response(
             .iter()
             .map(|s| {
                 // If it has no language code name, return None and skip.
-                get_i18n_name(&s.names, lang).ok().map(|name| Subdivision {
-                    iso_code: s.iso_code.map(|c| c.to_string()),
-                    name: Some(name),
-                })
+                get_i18n_name(&s.names, &locales, &mut res.locale)
+                    .ok()
+                    .map(|name| Subdivision {
+                        iso_code: s.iso_code.map(|c| c.to_string()),
+                        name: Some(name),
+                    })
             })
             .collect();
     }

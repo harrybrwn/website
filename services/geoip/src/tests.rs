@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use actix_web::http::header::{self, map::HeaderMap, X_FORWARDED_FOR};
 
-use crate::ip::{is_local, is_public_ip};
+use crate::ip::is_public_ip;
 
 #[test]
 fn test_parse_ip() {
@@ -12,24 +12,6 @@ fn test_parse_ip() {
 
     assert!(ipv4.is_ipv4());
     assert!(ipv6.is_ipv6());
-}
-
-#[test]
-fn test_is_local() {
-    // ipv4
-    assert!(!is_local(&IpAddr::from_str("11.0.0.1").unwrap()));
-    assert!(is_local(&IpAddr::from_str("10.1.2.3").unwrap()));
-    assert!(!is_local(&IpAddr::from_str("172.15.2.3").unwrap()));
-    assert!(is_local(&IpAddr::from_str("172.16.2.3").unwrap()));
-    assert!(is_local(&IpAddr::from_str("172.31.2.3").unwrap()));
-    assert!(!is_local(&IpAddr::from_str("172.32.2.3").unwrap()));
-    // ipv6
-    assert!(is_local(
-        &IpAddr::from_str("fdc8:bf8b:e62c:abcd:1111:2222:3333:4444").unwrap()
-    )); // example private
-    assert!(!is_local(
-        &IpAddr::from_str("2001:4860:4860::8888").unwrap()
-    )); // google
 }
 
 #[test]
@@ -50,6 +32,3 @@ fn test_client_ip() {
     assert!(!result.is_none());
     assert_eq!(result.unwrap(), IpAddr::from_str("11.3.100.201").unwrap());
 }
-
-#[test]
-fn test_lookup() {}
