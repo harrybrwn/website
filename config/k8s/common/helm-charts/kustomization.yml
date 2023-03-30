@@ -2,3 +2,4 @@ resources:
   - cert-manager.yml
   - prometheus.yml
   - traefik-values.yml
+  - mastodon.yml
