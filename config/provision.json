@@ -142,7 +142,7 @@
           {
             "Effect": "Allow",
             "Action": ["s3:GetObject"],
-            "Resource": ["arn:aws:s3:::/files/maxmind/*"]
+            "Resource": ["arn:aws:s3:::geoip/latest/*"]
           }
         ]
       },

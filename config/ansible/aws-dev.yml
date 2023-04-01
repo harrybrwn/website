@@ -1,0 +1,40 @@
+- name: K3S Common Prep
+  hosts: dev-instance
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars/registry.yml
+  vars:
+    systemd_dir: /etc/systemd/system
+    k3s_version: v1.24.4+k3s1
+    k3s_server_location: /var/lib/rancher/k3s
+    k3s_master_ip: "{{ hostvars[groups['test'][0]]['ansible_host'] }}"
+    k3s_master: dell-amd
+    k3s_config:
+      node-label:
+      - hrry.me/env=stg
+      - hrry.me/node-size=big
+  pre_tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: true
+      upgrade: true
+  roles:
+    - role: k3s/prereq
+    - role: k3s/download
+    - role: k3s/config
+    - role: k3s/registry
+      vars:
+        registry: 'cr.hrry.dev'
+    - role: nfs
+      vars:
+        nfs_package_name: nfs-kernel-server
+        nfs_service_name: nfs-kernel-server
+        nfs_exports:
+          - path: /exports/nfs/hrry.dev/awsdev
+            host: '*'
+            options: [rw, no_root_squash, no_subtree_check, insecure]
+    - role: k3s/master
+    - role: k3s/kubeconfig
+      vars:
+        k3s_config_name: hrry-awsdev

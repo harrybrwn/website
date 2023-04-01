@@ -46,6 +46,10 @@
         mode: '0755'
         state: directory
 
+    - name: Set timezone to America/Los_Angeles
+      community.general.timezone:
+        name: America/Los_Angeles
+
     - name: Create docker certs dirs.
       file:
         path: "{{ item.path }}"

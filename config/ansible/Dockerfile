@@ -13,6 +13,7 @@ RUN apt-get install -yq \
     ansible          \
     ansible-lint     \
     python3-paramiko \
+    python3-boto3    \
     yamllint \
     git      \
     vim      \
@@ -33,5 +34,7 @@ RUN mkdir -p /usr/local/bin && \
 RUN \
 	# Mikrotik RouterOS
     # https://docs.ansible.com/ansible/devel/collections/community/routeros/
-    ansible-galaxy collection install community.routeros
+    ansible-galaxy collection install \
+        community.routeros \
+        community.general
 USER ansible

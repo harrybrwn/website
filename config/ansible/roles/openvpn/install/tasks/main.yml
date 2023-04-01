@@ -1,0 +1,25 @@
+- name: Check Variables.
+  debug:
+    msg: Variable check
+  failed_when: >
+    (openvpn_public_ip is not defined or
+     openvpn_user is not defined)
+
+- name: Download the install script
+  get_url:
+    url: https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+    dest: /usr/local/openvpn-install.sh
+    owner: root
+    group: root
+    mode: 0775
+
+- name: Install
+  command: /usr/local/install-openvpn.sh
+  environment:
+    AUTO_INSTALL: 'y'
+    APPROVE_INSTALL: 'y'
+    APPROVE_IP: "{{ openvpn_public_ip }}"
+    IPV6_SUPPORT: 'n'
+    PORT_CHOICE: '1'
+    CLIENT: "{{ openvpn_user }}"
+    DNS: '1'
