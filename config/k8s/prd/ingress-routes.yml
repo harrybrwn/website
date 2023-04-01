@@ -9,6 +9,7 @@ spec:
   routes:
   - match: >-
       HostSNI(`hrry.me`)
+      || HostSNI(`1k.hrry.me`)
       || HostSNI(`s3.hrry.dev`)
       || HostSNI(`harrybrwn.com`)
       || HostSNI(`hextris.harrybrwn.com`)
@@ -16,7 +17,9 @@ spec:
     services:
      - name: nginx
        port: https
-  - match: HostSNI(`grafana.hrry.dev`)
+  - match: >-
+      HostSNI(`grafana.hrry.dev`)
+      || HostSNI(`grafana.lab.hrry.dev`)
     services:
     - name: grafana
       port: http

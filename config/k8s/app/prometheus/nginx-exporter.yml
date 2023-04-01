@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-metrics-exporter
+  name: metrics-exporter-nginx
 spec:
   selector:
-    app: nginx-metrics-exporter
+    app: metrics-exporter-nginx
   ports:
   - port: 9113
     targetPort: metrics
@@ -14,18 +14,18 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-metrics-exporter
+  name: metrics-exporter-nginx
 spec:
   selector:
     matchLabels:
-      app: nginx-metrics-exporter
+      app: metrics-exporter-nginx
   template:
     metadata:
       labels:
-        app: nginx-metrics-exporter
+        app: metrics-exporter-nginx
     spec:
       containers:
-      - name: nginx-metrics-exporter
+      - name: metrics-exporter-nginx
         image: nginx/nginx-prometheus-exporter:0.10.0
         imagePullPolicy: IfNotPresent
         resources:

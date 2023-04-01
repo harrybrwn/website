@@ -46,6 +46,6 @@ spec:
           - name: GEOIP_PORT
             value: '8084'
           - name: GEOIP_DB_FILE
-            value: 's3://s3:9000/files/maxmind/latest/GeoLite2-City.mmdb'
+            value: 's3://s3:9000/geoip/latest/GeoLite2-City.mmdb'
         envFrom:
           - secretRef: { name: geoip-secrets }

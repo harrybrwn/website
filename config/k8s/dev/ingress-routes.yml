@@ -15,6 +15,7 @@ spec:
       || HostSNI(`harrybrwn.local`)
       || HostSNI(`hextris.harrybrwn.local`)
       || HostSNI(`registry.hrry.local`)
+      || HostSNI(`api.hrry.local`)
     services:
      - name: nginx
        port: https

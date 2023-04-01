@@ -27,6 +27,9 @@ spec:
   dnsNames:
     - "hrry.dev"
     - "*.hrry.dev"
+    - "*.lab.hrry.dev"
+  subject:
+    organizationalUnits: ["homelab"]
 
 ---
 apiVersion: cert-manager.io/v1
