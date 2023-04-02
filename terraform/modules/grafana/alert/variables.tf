@@ -22,11 +22,14 @@ variable "interval_seconds" {
 
 variable "rules" {
   type = list(object({
-    name               = string
-    summary            = optional(string)
-    description        = optional(string)
-    duration           = optional(string, "0s")
-    dashboard_panel_id = optional(number)
+    name        = string
+    summary     = optional(string)
+    description = optional(string)
+    duration    = optional(string, "0s")
+    dashboard = optional(object({
+      uid      = string
+      panel_id = number
+    }))
     # Prometheus query
     query = string
     # Trigger condition
@@ -73,11 +76,6 @@ variable "rules" {
       ], rule.condition.reducer)
     ])
   }
-}
-
-variable "dashboard_uid" {
-  type    = string
-  default = ""
 }
 
 variable "extra_annotations" {

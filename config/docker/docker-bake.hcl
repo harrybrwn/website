@@ -199,9 +199,9 @@ target "fluentbit" {
 target "grafana" {
     dockerfile = "config/grafana/Dockerfile"
     args = {
-        GRAFANA_VERSION = "9.1.4"
+        GRAFANA_VERSION = "9.4.7"
     }
-    tags = tags(REGISTRY, "grafana", ["9.1.4"])
+    tags = tags(REGISTRY, "grafana", ["9.4.7"])
     inherits = ["base-service"]
 }
 

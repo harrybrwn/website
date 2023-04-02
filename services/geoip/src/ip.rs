@@ -90,18 +90,26 @@ impl FromRequest for ClientIP {
     fn from_request(req: &HttpRequest, _: &mut actix_web::dev::Payload) -> Self::Future {
         let peer_ip = req.peer_addr().map(|s| s.ip());
         if let Some(ip) = peer_ip.filter(is_public_ip) {
+            log::info!("using peer address: {ip}");
             return Box::pin(async move { Ok(Self(ip)) });
         }
         if let Some(ip) = get_ip_header(req, &CF_CONNECTING_IP) {
+            log::info!("using cf-connecting-ip: {ip}");
             return Box::pin(async move { Ok(Self(ip)) });
         }
         let forwarded = get_ip_header(req, &X_FORWARDED_FOR);
         Box::pin(async move {
             match forwarded {
-                Some(ip) => Ok(Self(ip)),
+                Some(ip) => {
+                    log::info!("using x-forwarded-for ip: {ip}");
+                    Ok(Self(ip))
+                },
                 // Return the peer IP address if nothing is found
                 None => match peer_ip {
-                    Some(ip) => Ok(Self(ip)),
+                    Some(ip) => {
+                        log::info!("using peer addr after checking cf-connecting-ip and x-forwarded-for: {ip}");
+                        Ok(Self(ip))
+                    },
                     None => Err(Error::new(ErrorKind::InvalidInput, "no ip address")),
                 },
             }

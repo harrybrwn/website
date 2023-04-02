@@ -86,14 +86,6 @@ resource "grafana_notification_policy" "root" {
   group_wait      = "30s" # time spent buffering fired alerts
 }
 
-locals {
-  base_rule_model = {
-    hide          = false
-    intervalMs    = 1000
-    maxDataPoints = 43200
-  }
-}
-
 resource "grafana_folder" "alerting_rule_folder" {
   title = "Homelab Alerts"
 }
@@ -104,12 +96,12 @@ module "homelab_alerts" {
   folder_uid       = grafana_folder.alerting_rule_folder.uid
   datasource_uid   = grafana_data_source.prometheus.uid
   interval_seconds = 120
-  dashboard_uid    = "MsjffzSZz"
   rules = [
     {
       name               = "NGINX Up"
       description        = "Triggers when nginx stops reporting the \"up\" metric."
       dashboard_panel_id = 15
+      dashboard          = { uid = "MsjffzSZz", panel_id = 15 }
       duration           = "2m"
       query              = "nginx_up{}"
       condition = {
@@ -128,6 +120,7 @@ locals {
     { name = "rpi2" },
     { name = "rpi3" },
   ])
+  dashboards_dir = "../../../config/grafana/dashboards"
 }
 
 resource "grafana_folder" "node_alerts_folder" {
@@ -135,7 +128,7 @@ resource "grafana_folder" "node_alerts_folder" {
 }
 
 resource "grafana_dashboard" "node_resources" {
-  config_json = jsonencode(merge(jsondecode(file("../../../config/grafana/dashboards/node-resources.json")), {
+  config_json = jsonencode(merge(jsondecode(file("${local.dashboards_dir}/node-resources.json")), {
     editable = false
     time = {
       from = "now-1h"
@@ -146,26 +139,29 @@ resource "grafana_dashboard" "node_resources" {
   overwrite = true
 }
 
-/*
+# resource "grafana_dashboard" "nginx" {
+#   # config_json = jsonencode(merge(jsondecode(file("${local.dashboards_dir}/nginx.json")), {}))
+#   config_json = file("${local.dashboards_dir}/nginx.json")
+# }
+
 module "node_alerts" {
   source = "../../modules/grafana/alert"
 
   name             = "Node Alerts"
   folder_uid       = grafana_folder.node_alerts_folder.uid
-  interval_seconds = 60 * 3
+  interval_seconds = floor(60 * 2.5)
   datasource_uid   = grafana_data_source.prometheus.uid
-  dashboard_uid    = grafana_dashboard.node_resources.uid
 
   rules = concat(
     [
       for node in local.nodes :
       {
-        name               = "Node Memory: \"${node.name}\""
-        summary            = "Memory for node \"${node.name}\""
-        description        = "Triggered when the Memory for node \"${node.name}\" does above 40%"
-        dashboard_panel_id = 1
-        duration           = "5m"
-        query              = <<EOT
+        name        = "Node Memory: \"${node.name}\""
+        summary     = "Memory for node \"${node.name}\""
+        description = "Triggered when the Memory for node \"${node.name}\" does above 40%"
+        dashboard   = { uid = grafana_dashboard.node_resources.uid, panel_id = 1 }
+        duration    = "5m"
+        query       = <<EOT
             (
               node_memory_MemTotal_bytes{node="${node.name}"} -
               node_memory_MemAvailable_bytes{node="${node.name}"}
@@ -181,12 +177,12 @@ module "node_alerts" {
     [
       for node in local.nodes :
       {
-        name               = "Node CPU: \"${node.name}\""
-        summary            = "CPU for node \"${node.name}\""
-        description        = "Triggered when the CPU for node \"${node.name}\" does above the threshold"
-        dashboard_panel_id = 0
-        duration           = "5m"
-        query              = <<EOT
+        name        = "Node CPU: \"${node.name}\""
+        summary     = "CPU for node \"${node.name}\""
+        description = "Triggered when the CPU for node \"${node.name}\" does above the threshold"
+        dashboard   = { uid = grafana_dashboard.node_resources.uid, panel_id = 0 }
+        duration    = "5m"
+        query       = <<EOT
             avg without (cpu) (
               rate(node_cpu_seconds_total{mode="user", node="${node.name}"}[5m]) * 100
             )
@@ -200,134 +196,33 @@ module "node_alerts" {
     ],
   )
 }
-moved {
-  from = grafana_rule_group.node_alerts
-  to = module.node_alerts.grafana_rule_group.node_alerts
-}
-*/
 
-resource "grafana_rule_group" "node_alerts" {
-  org_id           = 1
-  name             = "Node Alerts"
+module "node_disk_usage" {
+  source = "../../modules/grafana/alert"
+
+  name             = "Disk Usage Alerts"
   folder_uid       = grafana_folder.node_alerts_folder.uid
-  interval_seconds = 60 * 3
+  interval_seconds = 60 * 10
+  datasource_uid   = grafana_data_source.prometheus.uid
 
-  dynamic "rule" {
-    for_each = local.nodes
-    iterator = item
-    content {
-      name = "Node Memory: \"${item.value.name}\""
-      annotations = {
-        summary          = "Memory for node \"${item.value.name}\""
-        description      = "Triggered when the Memory for node \"${item.value.name}\" does above 40%"
-        __dashboardUid__ = grafana_dashboard.node_resources.uid
-        __panelId__      = "1"
-      }
-      for       = "5m"
-      is_paused = false
-      condition = "B"
-
-      data {
-        ref_id         = "A"
-        datasource_uid = grafana_data_source.prometheus.uid
-        relative_time_range {
-          from = 600
-          to   = 0
-        }
-        model = jsonencode(merge(local.base_rule_model, {
-          expr  = <<EOT
-            (
-              node_memory_MemTotal_bytes{node="${item.value.name}"} -
-              node_memory_MemAvailable_bytes{node="${item.value.name}"}
-            ) / node_memory_MemTotal_bytes
-          EOT
-          range = true
-          refId = "A"
-        }))
-      }
-
-      data {
-        ref_id         = "B"
-        datasource_uid = "-100"
-        relative_time_range {
-          from = 0
-          to   = 0
-        }
-        model = jsonencode(merge(local.base_rule_model, {
-          conditions = [
-            {
-              type      = "query"
-              evaluator = { type = "gt", params = [10.0] }
-              operator  = { type = "and" }
-              reducer   = { type = "last", params = [] }
-              query     = { params = ["A"] }
-            }
-          ]
-          refId      = "B"
-          type       = "classic_conditions"
-          datasource = { type = "__expr__", uid = "-100" }
-        }))
+  rules = [
+    for node in local.nodes :
+    {
+      name     = "Disk Usage: ${node.name}"
+      summary  = "Disk usage > 80%"
+      query    = <<EOT
+        100 - (
+          (node_filesystem_avail_bytes{mountpoint="/", node="${node.name}"} * 100)
+          / node_filesystem_size_bytes{mountpoint="/", node="${node.name}"}
+        )
+      EOT
+      duration = "0s"
+      condition = {
+        op   = "gt"
+        args = [80.0]
       }
     }
-  }
-
-  dynamic "rule" {
-    for_each = local.nodes
-    iterator = item
-    content {
-      name = "Node CPU: \"${item.value.name}\""
-      annotations = {
-        summary          = "CPU for node \"${item.value.name}\""
-        description      = "Triggered when the CPU for node \"${item.value.name}\" does above the threshold"
-        __dashboardUid__ = grafana_dashboard.node_resources.uid
-        __panelId__      = "0"
-      }
-      for       = "5m"
-      is_paused = false
-      condition = "B"
-
-      data {
-        ref_id         = "A"
-        datasource_uid = grafana_data_source.prometheus.uid
-        relative_time_range {
-          from = 600
-          to   = 0
-        }
-        model = jsonencode(merge(local.base_rule_model, {
-          expr  = <<EOT
-            avg without (cpu) (
-              rate(node_cpu_seconds_total{mode="user", node="${item.value.name}"}[5m]) * 100
-            )
-          EOT
-          range = true
-          refId = "A"
-        }))
-      }
-
-      data {
-        ref_id         = "B"
-        datasource_uid = "-100"
-        relative_time_range {
-          from = 0
-          to   = 0
-        }
-        model = jsonencode(merge(local.base_rule_model, {
-          conditions = [
-            {
-              type      = "query"
-              evaluator = { type = "gt", params = [4.5] }
-              operator  = { type = "and" }
-              reducer   = { type = "last", params = [] }
-              query     = { params = ["A"] }
-            }
-          ]
-          refId      = "B"
-          type       = "classic_conditions"
-          datasource = { type = "__expr__", uid = "-100" }
-        }))
-      }
-    }
-  }
+  ]
 }
 
 resource "grafana_folder" "kubernetes" {
@@ -352,15 +247,14 @@ module "k8s_alerts" {
   folder_uid       = grafana_folder.kubernetes.uid
   name             = "Kubernetes Alerts"
   interval_seconds = 60 * 5
-  dashboard_uid    = grafana_dashboard.kubernetes.uid
   rules = [
     {
-      name               = "Pod Restarts"
-      summary            = "Pod restart events"
-      description        = "Triggers an alert if a pod restarts."
-      dashboard_panel_id = 0
-      duration           = "0s"
-      query              = <<EOT
+      name        = "Pod Restarts"
+      summary     = "Pod restart events"
+      description = "Triggers an alert if a pod restarts."
+      duration    = "0s"
+      dashboard   = { uid = grafana_dashboard.kubernetes.uid, panel_id = 0 }
+      query       = <<EOT
         sum by (node, pod, container, service) (
           changes(kube_pod_container_status_restarts_total{}[1m])
         )

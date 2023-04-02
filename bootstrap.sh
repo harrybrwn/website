@@ -46,7 +46,8 @@ setup_mc() {
 upload_mmdb() {
   if [ -d files/mmdb/latest ]; then
     for f in files/mmdb/latest/*.mmdb; do
-      mc cp "$f" "${MC_ALIAS}/files/maxmind/latest/$(basename "$f")"
+      #mc cp "$f" "${MC_ALIAS}/files/maxmind/latest/$(basename "$f")"
+      mc cp "$f" "${MC_ALIAS}/geoip/latest/$(basename "$f")"
     done
   fi
 }

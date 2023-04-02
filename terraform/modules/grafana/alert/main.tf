@@ -20,10 +20,10 @@ resource "grafana_rule_group" "alerts" {
       for       = i.value.duration
       is_paused = i.value.is_paused
       annotations = merge({
-        summary          = i.value.summary == null ? i.value.name : i.value.summary
-        description      = i.value.description == null ? "" : i.value.description
-        __dashboardUid__ = var.dashboard_uid
-        __panelId__      = "${i.value.dashboard_panel_id}"
+        summary     = i.value.summary == null ? i.value.name : i.value.summary
+        description = i.value.description == null ? "" : i.value.description
+        __dashboardUid__ = i.value.dashboard == null ? null : i.value.dashboard.uid
+        __panelId__      = i.value.dashboard == null ? null : i.value.dashboard.panel_id
       }, var.extra_annotations)
       labels    = i.value.labels
       condition = "B"

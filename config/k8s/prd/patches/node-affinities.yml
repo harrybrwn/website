@@ -6,9 +6,6 @@ kind: StatefulSet
 metadata:
   name: db
 spec:
-  selector:
-    matchLabels:
-      app: db
   template:
     spec:
       affinity:
@@ -31,9 +28,6 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
-  selector:
-    matchLabels:
-      app: nginx
   template:
     spec:
       affinity:
@@ -57,9 +51,6 @@ kind: StatefulSet
 metadata:
   name: s3
 spec:
-  selector:
-    matchLabels:
-      app: s3
   template:
     spec:
       affinity:
@@ -82,9 +73,6 @@ kind: StatefulSet
 metadata:
   name: loki
 spec:
-  selector:
-    matchLabels:
-      app: loki
   template:
     spec:
       affinity:
@@ -109,9 +97,6 @@ kind: Deployment
 metadata:
   name: filestash
 spec:
-  selector:
-    matchLabels:
-      app: filestash
   template:
     spec:
       affinity:
@@ -127,3 +112,20 @@ spec:
         operator: "Equal"
         value: "arm64"
         effect: "NoSchedule"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: In
+                values: ["amd64"]

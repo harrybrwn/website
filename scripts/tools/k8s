@@ -18,6 +18,7 @@ declare -r HOSTNAMES=(
 	# Apps
 	s3-console.hrry.local
   s3.console.hrry.local
+	api.hrry.local
 	grafana.hrry.local
 	wiki.hrry.local
 	gopkg.hrry.local

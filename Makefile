@@ -1,14 +1,33 @@
 DATE=$(shell date '+%a, %d %b %Y %H:%M:%S %Z')
-ENV=production
+ENV=?production
 TESTCACHE=.cache/test
 BUILDCACHE=.cache/build
 
-build:
+help:
+	@echo Makefile for hrry.me
+	@echo
+	@echo 'Targets'
+	@echo '  help    print this help message'
+	@echo '  tools   build the tooling'
+	@echo '  init    initialize the environment for builds and management'
+	@echo
+	@echo 'Variables'
+	@echo '  ENV     environment (default: "production")'
+
+init:
+	terraform -chdir=terraform init
+	terraform/projects/homelab/tf init
+	yarn
+
+build: tools
 	sh scripts/build.sh
 	docker-compose build
-	docker buildx bake -f config/docker/docker-bake.hcl --set='*.platform=linux/amd64' --load
+	@#docker buildx bake -f config/docker/docker-bake.hcl --set='*.platform=linux/amd64' --load
+	bin/bake --local --load
 
 test: test-ts test-go
+
+.PHONY: help init build test
 
 lint: lint-go
 
@@ -95,19 +114,10 @@ resume:
 latex-image:
 	docker image build -t latex -f config/docker/Dockerfile.latex .
 
-blog: build/blog
-.PHONY: blog
-
-build/blog: blog/resources/remora.svg
-	hugo --environment $(ENV)
-
-blog/resources/remora.svg: diagrams/remora.svg
-	cp $< $@
-
 diagrams/remora.svg: diagrams/remora.drawio
-	./scripts/diagrams.svg
+	./scripts/diagrams.sh
 
-.PHONY: build run test clean deep-clean test-go test-ts resume tools
+.PHONY: run clean deep-clean test-go test-ts resume
 
 functional-build:
 	scripts/functional.sh build
