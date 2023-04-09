@@ -154,8 +154,8 @@ target "backups" {
 }
 
 target "go-geoip" {
-    target = "geoip"
-    tags = tags(REGISTRY, "geoip", [])
+    target = "go-geoip"
+    tags = tags(REGISTRY, "go-geoip", [])
     inherits = ["base-service"]
 }
 

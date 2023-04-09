@@ -57,10 +57,11 @@ func (tc *tokenConfig) GetToken(r *http.Request) (string, error) {
 }
 
 type TokenService struct {
-	Tokens     auth.TokenStore
-	Users      UserStore
-	Config     auth.TokenConfig
-	HydraAdmin hydra.AdminApi
+	Tokens       auth.TokenStore
+	Users        UserStore
+	Config       auth.TokenConfig
+	HydraAdmin   hydra.AdminApi
+	CookieDomain string
 }
 
 func (ts *TokenService) Login(c echo.Context) error {
@@ -366,7 +367,9 @@ func (ts *TokenService) setTokenCookie(response http.ResponseWriter, token *auth
 		Value:    token.Token,
 		Expires:  claims.ExpiresAt.Time,
 		Path:     "/",
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
+		Domain:   ts.CookieDomain,
+		Secure:   true,
 	})
 }
 

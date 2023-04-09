@@ -176,6 +176,7 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=harrybrwn_api
       - HYDRA_ADMIN_URL=http://hydra:4445
+      - API_TOKEN_COOKIE_DOMAIN=hrry.local
     ports:
       - "8081:8081"
     networks:
@@ -254,15 +255,15 @@ services:
       retries: 10
       start_period: 2m
 
-  geoip:
-    image: ${REGISTRY}/harrybrwn/geoip:${VERSION:-latest}
+  go-geoip:
+    image: ${REGISTRY}/harrybrwn/go-geoip:${VERSION:-latest}
     build:
-      target: geoip
+      target: go-geoip
       context: .
       tags:
-        - ${REGISTRY}/harrybrwn/geoip:latest
-        - ${REGISTRY}/harrybrwn/geoip:${GIT_COMMIT:-dev}
-        - ${REGISTRY}/harrybrwn/geoip:${GIT_BRANCH:-dev}
+        - ${REGISTRY}/harrybrwn/go-geoip:latest
+        - ${REGISTRY}/harrybrwn/go-geoip:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/go-geoip:${GIT_BRANCH:-dev}
     command:
       - "--port=8084"
       - "--file=file:///opt/geoip/GeoLite2-City.mmdb"
@@ -284,14 +285,18 @@ services:
       args:
         - ALPINE_VERSION=3.16
       tags:
-        - ${REGISTRY}/harrybrwn/geoip-rust:latest
-        - ${REGISTRY}/harrybrwn/geoip-rust:${GIT_COMMIT:-dev}
-        - ${REGISTRY}/harrybrwn/geoip-rust:${GIT_BRANCH:-dev}
+        - ${REGISTRY}/harrybrwn/geoip-rs:latest
+        - ${REGISTRY}/harrybrwn/geoip-rs:${GIT_COMMIT:-dev}
+        - ${REGISTRY}/harrybrwn/geoip-rs:${GIT_BRANCH:-dev}
     command: "geoip --file /opt/geoip/mmdb/latest/GeoLite2-City.mmdb"
     ports:
     - "8087:8087"
     volumes:
       - ./files/mmdb/latest:/opt/geoip/mmdb/latest:ro
+    networks:
+      backend:
+        aliases:
+          - geoip.default.svc.cluster.local
 
   legacy-site:
     image: ${REGISTRY}/harrybrwn/legacy-site:${VERSION:-latest}

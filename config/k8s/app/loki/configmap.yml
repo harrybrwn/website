@@ -57,7 +57,7 @@ data:
       boltdb_shipper:
         active_index_directory: /var/loki/index
         cache_location: /var/loki/index_cache
-        cach_ttl: 168h # 1 week
+        cache_ttl: 168h # 1 week
         shared_store: s3
       aws:
         region: us-east-1

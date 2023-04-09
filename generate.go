@@ -10,4 +10,4 @@ package main
 
 /// Files needed by the api
 //go :generate cp build/harrybrwn.com/invite/index.html cmd/api/invite.html
-//go:generate cp frontend/public/pub.asc cmd/api/
+//go:generate cp frontend/legacy/public/pub.asc cmd/api/

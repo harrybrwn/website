@@ -49,7 +49,11 @@ get-cluster-name() {
 }
 
 get-ingress-ip() {
-	kubectl --namespace 'kube-system' get services \
+  local conf="${HOME}/.kube/config"
+  if [ -n "$SUDO_USER" ]; then
+    conf="/home/${SUDO_USER}/.kube/config"
+  fi
+	KUBECONFIG="${conf}" kubectl --namespace 'kube-system' get services \
 		--no-headers \
 		--field-selector metadata.name=traefik \
 		--output json \
@@ -59,7 +63,7 @@ get-ingress-ip() {
 etc-hosts() {
 	local ingress_ip="$(get-ingress-ip)"
 	for name in "${HOSTNAMES[@]}"; do
-		if [ -n "$(grep -P "^.*?[\t ]+${name}$" /etc/hosts)" ]; then
+		if [ -n "$(grep -P "^[A-Za-z0-9]+?[\t ]+${name}$" /etc/hosts)" ]; then
 			sudo sed -Ei "s/^(([0-9]{1,3}\.?){4}|localhost)[ \t]+(${name})/${ingress_ip}	${name}/" /etc/hosts
 		else
 		 	echo "adding ${name}"
@@ -88,7 +92,12 @@ usage() {
 		echo
 	fi
 	echo "Usage"
-	echo "  ${SELF_SCRIPT_NAME} [...flags]"
+	echo "  ${SELF_SCRIPT_NAME} [...flags] [command]"
+	echo
+	echo "Commands"
+	echo "	load    load an image into the hosts containers"
+	echo "	ip      print the ip if the local cluster"
+	echo "  test    test if the local cluster is running"
 	echo
 	echo "Flags"
 	echo "  -h --help         print help message"
@@ -166,7 +175,23 @@ for arg in ${args[@]}; do
       echo "starting..."
       ;;
 		load)
-			cmd-load "$@"
+			#cmd-load "$@"
+			images="$(docker buildx bake \
+				--file config/docker/docker-bake.hcl \
+				--print 2>&1 \
+				| jq -r '.target[] | .tags[]' \
+				| sort \
+				| uniq \
+				| grep -E 'latest$')"
+
+			if [[ -n "${@:-}" ]]; then
+				images="$(echo "${images}" | grep "$@")"
+			fi
+			echo "Loading images..."
+			for img in ${images}; do
+				echo "loading image: '$img'"
+			done
+			k3d image load --cluster "$(get-cluster-name)" ${images}
 			break
 			;;
 		ip)
@@ -175,9 +200,11 @@ for arg in ${args[@]}; do
     test)
       #test "$(k3d cluster ls -o json | jq '.[0].serversRunning')" != "0"
       if k3d-running; then
-        echo yes
+        echo running
+				exit 0
       else
-        echo no
+        echo not running
+				exit 1
       fi
       ;;
     *)

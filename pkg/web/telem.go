@@ -101,8 +101,8 @@ type logResponse struct {
 }
 
 func (r *logResponse) WriteHeader(status int) {
-	r.status = status
 	r.ResponseWriter.WriteHeader(status)
+	r.status = status
 }
 
 func (r *logResponse) Write(b []byte) (int, error) {

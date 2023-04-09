@@ -2,8 +2,8 @@
 
 set -meuo pipefail
 
-USE_COMPOSE=true
-USE_K8s=false
+USE_K8s=true
+USE_COMPOSE=false
 K3D_CLUSTER=hrry-dev
 readonly MC_ALIAS=hrrylocal
 

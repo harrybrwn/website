@@ -171,3 +171,7 @@ configMapGenerator:
     behavior: replace
     files:
       - files/registry/config.yml
+  - name: web-api-env
+    behavior: merge
+    literals:
+      - API_TOKEN_COOKIE_DOMAIN=hrry.me

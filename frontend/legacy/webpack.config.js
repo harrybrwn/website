@@ -135,9 +135,9 @@ module.exports = function (webpackEnv) {
   const embedCSS = false;
 
   const constants = {
-    //OIDC_URL: isProd ? "https://auth.hrry.dev" : "https://auth.hrry.local",
     //OIDC_CLIENT_ID: isProd ? "" : "testid",
-    OIDC_URL: "https://auth.hrry.local",
+    //OIDC_URL: "https://auth.hrry.local",
+    OIDC_URL: isProd ? "https://auth.hrry.dev" : "https://auth.hrry.local",
     OIDC_CLIENT_ID: "testid",
   };
 

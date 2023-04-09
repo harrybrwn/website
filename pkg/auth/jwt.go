@@ -46,7 +46,7 @@ type getter interface {
 }
 
 func GetClaims(g getter) *Claims {
-	val := g.Get(ClaimsContextKey)
+	val := g.Get(string(ClaimsContextKey))
 	claims, ok := val.(*Claims)
 	if !ok {
 		return nil
@@ -125,6 +125,8 @@ func Guard(conf TokenConfig) func(h http.Handler) http.Handler {
 	}
 }
 
+// ImplicitUser will look for an auth token and store a partial user in the
+// request context if one is found.
 func ImplicitUser(conf TokenConfig) echo.MiddlewareFunc {
 	keyfunc := func(*jwt.Token) (interface{}, error) {
 		return conf.Public(), nil
@@ -134,11 +136,13 @@ func ImplicitUser(conf TokenConfig) echo.MiddlewareFunc {
 			req := c.Request()
 			auth, err := conf.GetToken(req)
 			if err != nil {
+				logger.Info("ImplicitUser: no token found")
 				return next(c)
 			}
 			var claims Claims
 			token, err := jwt.ParseWithClaims(auth, &claims, keyfunc)
 			if err != nil {
+				logger.Warn("ImplicitUser: failed to token from claims")
 				return next(c)
 			}
 			err = isValid(token, &claims)

@@ -55,11 +55,14 @@ var (
 func main() {
 	var (
 		port = "8080"
-		env  []string
-		e    = echo.New()
+		// cookieDomain = getenv("API_TOKEN_COOKIE_DOMAIN", "hrry.local")
+		cookieDomain = getenv("API_TOKEN_COOKIE_DOMAIN", "localhost:3000")
+		env          []string
+		e            = echo.New()
 	)
 	flag.StringVarP(&port, "port", "p", port, "the port to run the server on")
 	flag.StringArrayVar(&env, "env", env, "environment files")
+	flag.StringVar(&cookieDomain, "token-cookie-domain", cookieDomain, "domain for cookies")
 	flag.BoolVarP(&app.Debug, "debug", "d", app.Debug, "run the app in debug mode")
 	flag.Parse()
 
@@ -116,10 +119,11 @@ func main() {
 	// e.POST("/invite/:id", invites.SignUp(userStore))
 
 	tokenSrv := app.TokenService{
-		Config:     jwtConf,
-		Tokens:     auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
-		Users:      userStore,
-		HydraAdmin: hydra.NewAPIClient(app.HydraAdminConfig()).AdminApi,
+		Config:       jwtConf,
+		Tokens:       auth.NewRedisTokenStore(auth.RefreshExpiration, rd),
+		Users:        userStore,
+		HydraAdmin:   hydra.NewAPIClient(app.HydraAdminConfig()).AdminApi,
+		CookieDomain: cookieDomain,
 	}
 	api := e.Group("/api")
 	api.POST("/token", tokenSrv.Token)
@@ -137,6 +141,54 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/health/ready", app.Ready(db, rd))
 	api.Any("/health/alive", app.Alive)
+	api.OPTIONS("/token", WrapHandler(HandleCORS))
+	api.OPTIONS("/consent", WrapHandler(HandleCORS))
+	api.OPTIONS("/login", WrapHandler(HandleCORS))
+	api.Any("/demo", func(ctx echo.Context) error {
+		HandleCORS(ctx.Response(), ctx.Request())
+		d := ctx.QueryParam("domain")
+		if len(d) == 0 {
+			d = "hrry.local"
+		}
+		var ss http.SameSite
+		switch ctx.QueryParam("ss") {
+		case "none":
+			ss = http.SameSiteNoneMode
+		case "lax":
+			ss = http.SameSiteLaxMode
+		case "strict":
+			ss = http.SameSiteStrictMode
+		default:
+			ss = http.SameSiteNoneMode
+		}
+		secure, err := strconv.ParseBool(ctx.QueryParam("secure"))
+		if err != nil {
+			secure = true
+		}
+		httpOnly, err := strconv.ParseBool(ctx.QueryParam("httponly"))
+		if err != nil {
+			httpOnly = false
+		}
+		path := ctx.QueryParam("path")
+		if len(path) == 0 {
+			path = "/"
+		}
+
+		http.SetCookie(ctx.Response(), &http.Cookie{
+			Name:  "demo",
+			Value: time.Now().String(),
+			// Expires:  time.Now().Add(time.Minute * 5),
+			Path:     path,
+			Domain:   d,
+			Secure:   secure,
+			SameSite: ss,
+			HttpOnly: httpOnly,
+		})
+		return ctx.JSON(200, map[string]any{
+			"status":  200,
+			"message": "this is a demo",
+		})
+	})
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)
@@ -182,6 +234,14 @@ func NotFoundHandler() echo.HandlerFunc {
 	}
 }
 
+func HandleCORS(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Add(
+		"Access-Control-Allow-Headers",
+		"Content-Type, Authorization, Cookie, Origin",
+	)
+}
+
 func newInviteMailer(client *sendgrid.Client) invite.Mailer {
 	m, err := invite.NewMailer(
 		email.Email{Name: "Harry Brown", Address: "admin@harrybrwn.com"},
@@ -195,30 +255,6 @@ func newInviteMailer(client *sendgrid.Client) invite.Mailer {
 	return m
 }
 
-func invitesPageHandler(body []byte, contentType, debugFile string, invitations *app.Invitations) echo.HandlerFunc {
-	if app.Debug {
-		return func(c echo.Context) error {
-			raw, err := os.ReadFile(debugFile)
-			if err != nil {
-				return err
-			}
-			ct := http.DetectContentType(raw)
-			return invitations.Accept(raw, ct)(c)
-		}
-	} else {
-		return invitations.Accept(body, contentType)
-	}
-}
-
-// func keys(rw http.ResponseWriter, r *http.Request) {
-// 	staticLastModified(rw.Header())
-// 	rw.Header().Set("Cache-Control", app.StaticCacheControl)
-// 	_, err := rw.Write(gpgPubkey)
-// 	if err != nil {
-// 		logger.WithError(err).Error("could not write response")
-// 	}
-// }
-
 func json(raw []byte) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		h := c.Response().Header()
@@ -229,37 +265,10 @@ func json(raw []byte) echo.HandlerFunc {
 	}
 }
 
-func sitemapHandler(raw []byte, gzip bool) func(http.ResponseWriter, *http.Request) {
-	length := strconv.FormatInt(int64(len(raw)), 10)
-	return func(rw http.ResponseWriter, r *http.Request) {
-		h := rw.Header()
-		staticLastModified(h)
-		h.Set("Cache-Control", app.StaticCacheControl)
-		h.Set("Content-Length", length)
-		h.Set("Content-Type", "text/xml")
-		if gzip {
-			h.Set("Content-Encoding", "gzip")
-		}
-		_, err := rw.Write(raw)
-		if err != nil {
-			logger.WithError(err).Error("could not write response body")
-		}
-	}
-}
-
 func ping(rw http.ResponseWriter, r *http.Request) { rw.WriteHeader(200) }
 
 func staticLastModified(h http.Header) {
 	h.Set("Last-Modified", app.StartTime.UTC().Format(http.TimeFormat))
-}
-
-func staticCache(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		header := rw.Header()
-		staticLastModified(header)
-		header.Set("Cache-Control", app.StaticCacheControl)
-		h.ServeHTTP(rw, r)
-	})
 }
 
 func WrapHandler(h http.HandlerFunc) echo.HandlerFunc {
@@ -283,4 +292,14 @@ func mustSub(sys fs.FS, dir string) fs.FS {
 		logger.Fatal(err)
 	}
 	return f
+}
+
+func getenv(key, defaultValue string) string {
+	v, ok := os.LookupEnv(key)
+	if !ok {
+		logger.WithField("key", key).Infof("using ENV value %s", defaultValue)
+		return defaultValue
+	}
+	logger.WithField("key", key).Infof("using ENV value %s", v)
+	return v
 }
