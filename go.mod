@@ -18,8 +18,8 @@ require (
 	github.com/hashicorp/hcl/v2 v2.15.0
 	github.com/imdario/mergo v0.3.13
 	github.com/joho/godotenv v1.4.0
-	github.com/labstack/echo/v4 v4.6.1
-	github.com/labstack/gommon v0.3.0
+	github.com/labstack/echo/v4 v4.9.1
+	github.com/labstack/gommon v0.4.0
 	github.com/lib/pq v1.10.3
 	github.com/minio/madmin-go v1.3.16
 	github.com/minio/minio-go/v7 v7.0.27
@@ -62,7 +62,7 @@ require (
 	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/klauspost/cpuid v1.3.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.4 // indirect
-	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/minio/md5-simd v1.1.0 // indirect
