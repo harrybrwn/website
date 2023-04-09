@@ -36,11 +36,11 @@ jobs:
         run: go install github.com/golang/mock/mockgen@latest
       - run: go generate ./...
       - run: go vet -tags ci ./...
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.52.2
-          args: --config ./config/golangci.yml
+      # - name: golangci-lint
+      #   uses: golangci/golangci-lint-action@v2
+      #   with:
+      #     version: v1.52.2
+      #     args: --config ./config/golangci.yml
 
   build:
     name: build

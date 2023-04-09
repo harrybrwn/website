@@ -59,10 +59,6 @@ func ScanOne(r Rows, dest ...interface{}) (err error) {
 
 type dbOptions struct {
 	logger log.FieldLogger
-	// TODO auto logging database
-	autoLogging bool
-	// TODO create an auto tracing database
-	tracing bool
 }
 
 type Option func(*dbOptions)

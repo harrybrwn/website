@@ -92,8 +92,8 @@ func TestFileServerServeHTTP(t *testing.T) {
 		req := httptest.NewRequest("GET", tt.path, nil)
 		fs.ServeHTTP(rec, req)
 		body := rec.Body.String()
-		ct := rec.HeaderMap.Get("Content-Type")
-		ce := rec.HeaderMap.Get("Content-Encoding")
+		ct := rec.Header().Get("Content-Type")
+		ce := rec.Header().Get("Content-Encoding")
 		if rec.Code != tt.status {
 			t.Errorf("wrong status code: got %d, want %d", rec.Code, tt.status)
 			continue
@@ -102,7 +102,7 @@ func TestFileServerServeHTTP(t *testing.T) {
 			// the next tests will fail for non-ok requests
 			continue
 		}
-		cl, err := strconv.Atoi(rec.HeaderMap.Get("Content-Length"))
+		cl, err := strconv.Atoi(rec.Header().Get("Content-Length"))
 		if err != nil {
 			t.Errorf("%q: could not parse Content-Length: %v", tt.path, err)
 		}
@@ -179,7 +179,7 @@ func TestFileServerHooks(t *testing.T) {
 	if !didRes {
 		t.Error("did not execute response hook")
 	}
-	ua := rec.HeaderMap.Get("Sec-CH-UA")
+	ua := rec.Header().Get("Sec-CH-UA")
 	if ua != "i don't know what this header is for" {
 		t.Error("header not set")
 	}

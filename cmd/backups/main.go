@@ -124,7 +124,6 @@ func initBucket(store *s3.S3, bucket string) error {
 	switch e := err.(type) {
 	case nil:
 		loc = *res.Location
-		break
 	case awserr.Error:
 		switch e.Code() {
 		case s3.ErrCodeBucketAlreadyOwnedByYou, s3.ErrCodeBucketAlreadyExists:
