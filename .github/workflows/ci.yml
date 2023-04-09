@@ -39,7 +39,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.45.2
+          version: v1.52.2
           args: --config ./config/golangci.yml
 
   build:
@@ -52,7 +52,7 @@ jobs:
       # Install node
       - uses: actions/setup-node@v2
         with:
-          node-version-file: 'frontend/.nvmrc'
+          node-version-file: 'frontend/legacy/.nvmrc'
           cache: 'yarn'
       - uses: actions/setup-go@v2
         with:
@@ -142,7 +142,7 @@ jobs:
     # Install node
     - uses: actions/setup-node@v2
       with:
-        node-version-file: 'frontend/.nvmrc'
+        node-version-file: 'frontend/legacy/.nvmrc'
         cache: 'yarn'
 
     - name: Install Go dependencies
