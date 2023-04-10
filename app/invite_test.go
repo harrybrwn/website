@@ -153,7 +153,7 @@ func TestInviteCreate(t *testing.T) {
 			req := httptest.NewRequest("POST", invites.Path.Path(tt.id), body(tt.body)).WithContext(ctx)
 			rec := httptest.NewRecorder()
 			c := echo.New().NewContext(req, rec)
-			c.Set(auth.ClaimsContextKey, tt.claims)
+			c.Set(string(auth.ClaimsContextKey), tt.claims)
 
 			// Find expected values
 			if tt.body.Timeout == 0 {
@@ -208,7 +208,7 @@ func TestInviteCreate(t *testing.T) {
 	is := is.New(t)
 	req := httptest.NewRequest("POST", "/", strings.NewReader("{")) // bad json
 	c := echo.New().NewContext(req, httptest.NewRecorder())
-	c.Set(auth.ClaimsContextKey, &auth.Claims{})
+	c.Set(string(auth.ClaimsContextKey), &auth.Claims{})
 	err := (&Invitations{}).Create()(c)
 	is.True(err != nil)                // Expecting an error
 	is.Equal(io.ErrUnexpectedEOF, err) // Bad json should return unexpected EOF
@@ -591,7 +591,7 @@ func TestInviteDelete(t *testing.T) {
 			req := httptest.NewRequest("DELETE", fmt.Sprintf("/invite/%s", tt.id), nil).WithContext(ctx)
 			rec := httptest.NewRecorder()
 			c := echo.New().NewContext(req, rec)
-			c.Set(auth.ClaimsContextKey, tt.claims)
+			c.Set(string(auth.ClaimsContextKey), tt.claims)
 			c.SetParamNames("id")
 			c.SetParamValues(tt.id)
 
@@ -756,7 +756,7 @@ func TestInviteList(t *testing.T) {
 			req := httptest.NewRequest("GET", "/invite/list", nil).WithContext(ctx)
 			rec := httptest.NewRecorder()
 			c := echo.New().NewContext(req, rec)
-			c.Set(auth.ClaimsContextKey, tt.claims)
+			c.Set(string(auth.ClaimsContextKey), tt.claims)
 			if tt.mock != nil {
 				tt.mock(rdb, &tt, nil)
 			}

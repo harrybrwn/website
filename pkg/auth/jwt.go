@@ -36,9 +36,11 @@ var (
 	ErrNoClaims           = errors.New("no claims found")
 )
 
+type AuthContextKey string
+
 const (
-	ClaimsContextKey = "jwt-ctx-claims"
-	TokenContextKey  = "jwt-ctx-token"
+	ClaimsContextKey = AuthContextKey("jwt-ctx-claims")
+	TokenContextKey  = AuthContextKey("jwt-ctx-token")
 )
 
 type getter interface {
@@ -91,7 +93,7 @@ func GuardMiddleware(conf TokenConfig) echo.MiddlewareFunc {
 			if err != nil {
 				return err
 			}
-			c.Set(ClaimsContextKey, &claims)
+			c.Set(string(ClaimsContextKey), &claims)
 			return next(c)
 		}
 	}
@@ -147,7 +149,7 @@ func ImplicitUser(conf TokenConfig) echo.MiddlewareFunc {
 			}
 			err = isValid(token, &claims)
 			if err == nil {
-				c.Set(ClaimsContextKey, &claims)
+				c.Set(string(ClaimsContextKey), &claims)
 			}
 			return next(c)
 		}

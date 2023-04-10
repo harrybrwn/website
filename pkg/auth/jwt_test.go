@@ -313,7 +313,7 @@ func TestAdminOnly(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/", nil)
 		c := e.NewContext(req, rec)
-		c.Set(ClaimsContextKey, tt.claims)
+		c.Set(string(ClaimsContextKey), tt.claims)
 		executed := false
 		next := func(c echo.Context) error {
 			executed = true
@@ -396,7 +396,7 @@ func TestRoleRequired(t *testing.T) {
 		},
 		func(t *testing.T, c echo.Context) {
 			h := RoleRequired(RoleFamily)
-			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleDefault}})
+			c.Set(string(ClaimsContextKey), &Claims{Roles: []Role{RoleDefault}})
 			err := h(func(echo.Context) error {
 				t.Fatal("should not execute")
 				return nil
@@ -407,7 +407,7 @@ func TestRoleRequired(t *testing.T) {
 		},
 		func(t *testing.T, c echo.Context) {
 			h := RoleRequired(RoleAdmin)
-			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleAdmin}})
+			c.Set(string(ClaimsContextKey), &Claims{Roles: []Role{RoleAdmin}})
 			err := h(func(echo.Context) error {
 				return ErrInvalidRole
 			})(c)
@@ -417,7 +417,7 @@ func TestRoleRequired(t *testing.T) {
 		},
 		func(t *testing.T, c echo.Context) {
 			h := RoleRequired(RoleAdmin)
-			c.Set(ClaimsContextKey, &Claims{Roles: []Role{RoleAdmin}})
+			c.Set(string(ClaimsContextKey), &Claims{Roles: []Role{RoleAdmin}})
 			err := h(func(echo.Context) error { return nil })(c)
 			if err != nil {
 				t.Error("should get nil error")

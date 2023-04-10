@@ -150,7 +150,7 @@ func (ts *TokenService) Login(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
-	c.Set(auth.ClaimsContextKey, claims)
+	c.Set(string(auth.ClaimsContextKey), claims)
 	ts.setTokenCookie(c.Response(), resp, claims)
 	return c.JSON(200, map[string]any{
 		"redirect_to": r.RedirectTo,
@@ -280,7 +280,7 @@ func (ts *TokenService) Token(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
-	c.Set(auth.ClaimsContextKey, claims)
+	c.Set(string(auth.ClaimsContextKey), claims)
 	if setCookie {
 		ts.setTokenCookie(c.Response(), resp, claims)
 	}
@@ -341,7 +341,7 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 	// Send back the same refresh token they sent
 	resp.RefreshToken = tokenReq.RefreshToken
 
-	c.Set(auth.ClaimsContextKey, claims)
+	c.Set(string(auth.ClaimsContextKey), claims)
 	if setCookie {
 		ts.setTokenCookie(c.Response(), resp, &claims)
 	}
