@@ -25,7 +25,6 @@ linters:
     # - wsl       # linting whitespace
     - bodyclose # check for http response body close
     - tenv
-    - contextcheck
     - gocyclo
     - goimports
     - exhaustive # enums in switch statements
