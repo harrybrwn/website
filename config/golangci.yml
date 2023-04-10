@@ -30,7 +30,7 @@ linters:
     - goimports
     - exhaustive # enums in switch statements
     - stylecheck
-    - rowserrcheck
   disable:
     - errcheck
     - deadcode
+    - unused

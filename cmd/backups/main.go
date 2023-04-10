@@ -10,12 +10,10 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
-	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"
@@ -114,30 +112,6 @@ func handleUpdateConfig(config *JobConfig) http.HandlerFunc {
 		res.Message = "success"
 		writeJSON(w, &res)
 	}
-}
-
-func initBucket(store *s3.S3, bucket string) error {
-	res, err := store.CreateBucket(&s3.CreateBucketInput{
-		Bucket: aws.String(bucket),
-	})
-	var loc string
-	switch e := err.(type) {
-	case nil:
-		loc = *res.Location
-	case awserr.Error:
-		switch e.Code() {
-		case s3.ErrCodeBucketAlreadyOwnedByYou, s3.ErrCodeBucketAlreadyExists:
-			goto ok
-		}
-	default:
-		return err
-	}
-ok:
-	logger.WithFields(logrus.Fields{
-		"bucket":   bucket,
-		"location": loc,
-	}).Info("created default s3 bucket")
-	return nil
 }
 
 func s3Endpoint() string {

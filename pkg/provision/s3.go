@@ -51,8 +51,8 @@ type S3Policy struct {
 		SID       string `json:"Sid,omitempty"`
 		Condition struct {
 			StringEquals StringEqualsPolicyCondition `json:",omitempty"`
-			IpAddress    IPAddressPolicyCondition    `json:",omitempty"`
-			NotIpAddress IPAddressPolicyCondition    `json:",omitempty"`
+			IPAddress    IPAddressPolicyCondition    `json:"IpAddress,omitempty"`
+			NotIPAddress IPAddressPolicyCondition    `json:"NotIpAddress,omitempty"`
 			StringLike   struct {
 				AWSReferer []string `json:"aws:Referer,omitempty"`
 			} `json:",omitempty"`
@@ -72,7 +72,7 @@ type IPAddressPolicyCondition struct {
 }
 
 type StringEqualsPolicyCondition struct {
-	S3AmzAcl []string `json:"s3:x-amx-acl,omitempty"`
+	S3AmzACL []string `json:"s3:x-amx-acl,omitempty"`
 	S3Prefix []string `json:"s3:prefix,omitempty"`
 }
 
@@ -139,7 +139,6 @@ func (s3 *S3Config) Provision(
 		var raw []byte
 		if b.Policy == "" {
 			// Delete any policies on the bucket
-			raw = []byte{}
 			err = client.SetBucketPolicy(ctx, b.Name, "")
 			if err != nil {
 				return errors.Wrap(err, "failed to set bucket policy")

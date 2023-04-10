@@ -158,13 +158,13 @@ func (ss *SessionStore) Get(ctx context.Context, key string) (*Session, error) {
 	return s, nil
 }
 
-func (iss *SessionStore) View(ctx context.Context, key string) (*Session, error) {
-	s, err := iss.get(ctx, key)
+func (ss *SessionStore) View(ctx context.Context, key string) (*Session, error) {
+	s, err := ss.get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 	if s.TTL == 0 {
-		err = iss.Del(ctx, key)
+		err = ss.Del(ctx, key)
 		if err != nil {
 			logger.WithError(err).Error("could not delete invite expired session")
 		}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"strings"
 
 	"github.com/joho/godotenv"
@@ -203,38 +202,35 @@ func configFilesFromEnv() ([]string, bool) {
 	if filesListEnv == "" {
 		return nil, false
 	}
-	configFiles := []string{}
-	for _, f := range strings.Split(filesListEnv, ":") {
-		configFiles = append(configFiles, f)
-	}
+	configFiles := strings.Split(filesListEnv, ":")
 	return configFiles, true
 }
 
-func dbUserTransformer(typ reflect.Type) func(dst, src reflect.Value) error {
-	fn := func(dst, src reflect.Value) error {
-		names := make(map[string][]*provision.DBUser)
-		for i := 0; i < src.Len(); i++ {
-			v := src.Index(i)
-			name := v.FieldByName("Name").String()
-			if u, ok := names[name]; ok {
-				names[name] = append(u, v.Interface().(*provision.DBUser))
-			} else {
-				names[name] = []*provision.DBUser{v.Interface().(*provision.DBUser)}
-			}
-		}
-		return nil
-	}
-	if typ == reflect.TypeOf([]*provision.DBUser{}) {
-		return fn
-	}
-	return nil
-}
+// func dbUserTransformer(typ reflect.Type) func(dst, src reflect.Value) error {
+// 	fn := func(dst, src reflect.Value) error {
+// 		names := make(map[string][]*provision.DBUser)
+// 		for i := 0; i < src.Len(); i++ {
+// 			v := src.Index(i)
+// 			name := v.FieldByName("Name").String()
+// 			if u, ok := names[name]; ok {
+// 				names[name] = append(u, v.Interface().(*provision.DBUser))
+// 			} else {
+// 				names[name] = []*provision.DBUser{v.Interface().(*provision.DBUser)}
+// 			}
+// 		}
+// 		return nil
+// 	}
+// 	if typ == reflect.TypeOf([]*provision.DBUser{}) {
+// 		return fn
+// 	}
+// 	return nil
+// }
 
-type transformerFunc func(typ reflect.Type) func(dst, src reflect.Value) error
+// type transformerFunc func(typ reflect.Type) func(dst, src reflect.Value) error
 
-func (tf transformerFunc) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
-	return tf(typ)
-}
+// func (tf transformerFunc) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+// 	return tf(typ)
+// }
 
 func exists(file string) bool {
 	_, err := os.Stat(file)

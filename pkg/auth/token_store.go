@@ -33,7 +33,7 @@ func NewInMemoryTokenStore(timeout time.Duration) TokenStore {
 		timeout:  timeout,
 		timeouts: make(chan int),
 	}
-	go store.tidy() // background process to handle ttl
+	go store.tidy(context.Background()) // background process to handle ttl
 	return store
 }
 
@@ -111,8 +111,7 @@ func (ms *memoryTokenStore) Del(ctx context.Context, id int) error {
 	return nil
 }
 
-func (ms *memoryTokenStore) tidy() {
-	ctx := context.Background()
+func (ms *memoryTokenStore) tidy(ctx context.Context) {
 	for {
 		id, ok := <-ms.timeouts
 		if !ok {

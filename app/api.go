@@ -134,6 +134,7 @@ func (ts *TokenService) Login(c echo.Context) error {
 			Internal: err,
 		}
 	}
+	defer hydraResp.Body.Close()
 	logger.Infof("redirecting to %s", r.RedirectTo)
 
 	if claims == nil {
@@ -190,12 +191,13 @@ func ConsentHandler(admin hydra.AdminApi, users UserStore) echo.HandlerFunc {
 			logger.WithError(err).Error("failed to fetch consent request")
 			return &echo.HTTPError{Code: hydraRes.StatusCode, Internal: err}
 		}
+		defer hydraRes.Body.Close()
 		logger.WithFields(log.Fields{
 			"skip":             *cr.Skip,
 			"client.name":      cr.Client.ClientName,
 			"client.client_id": cr.Client.ClientId,
 		}).Info("accepting consent request")
-		r, _, err := admin.AcceptConsentRequest(ctx).
+		r, hydraConsentResp, err := admin.AcceptConsentRequest(ctx).
 			ConsentChallenge(body.Challenge).
 			AcceptConsentRequest(hydra.AcceptConsentRequest{
 				GrantAccessTokenAudience: cr.RequestedAccessTokenAudience,
@@ -217,6 +219,7 @@ func ConsentHandler(admin hydra.AdminApi, users UserStore) echo.HandlerFunc {
 			logger.Error("failed to accept consent request")
 			return echo.ErrInternalServerError
 		}
+		defer hydraConsentResp.Body.Close()
 		return c.JSON(200, map[string]any{"redirect_to": r.RedirectTo})
 	}
 }
@@ -257,12 +260,13 @@ func (ts *TokenService) Token(c echo.Context) error {
 	}
 
 	if len(body.LoginChallenge) > 0 {
-		_, _, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
+		_, acceptLoginResp, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
 			LoginChallenge(body.LoginChallenge).
 			Execute()
 		if err != nil {
 			return echo.ErrInternalServerError
 		}
+		defer acceptLoginResp.Body.Close()
 		// return c.Redirect(http.StatusFound, )
 	}
 	claims := u.NewClaims()

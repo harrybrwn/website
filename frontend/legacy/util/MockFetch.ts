@@ -1,10 +1,10 @@
 export type FetchFn = (
-  input: RequestInfo,
+  input: RequestInfo | URL,
   init?: RequestInit | undefined
 ) => Promise<Response>;
 
 export interface FetchParams {
-  input: RequestInfo;
+  input: RequestInfo | URL;
   init?: RequestInit | undefined;
 }
 
@@ -26,7 +26,7 @@ export default class MockFetch {
     const mockFetch = this;
     global.fetch = jest.fn(
       (
-        input: RequestInfo,
+        input: RequestInfo | URL,
         init?: RequestInit | undefined
       ): Promise<Response> => {
         return mockFetch.call(input, init);
@@ -53,7 +53,10 @@ export default class MockFetch {
     return this;
   }
 
-  call(input: RequestInfo, init?: RequestInit | undefined): Promise<Response> {
+  call(
+    input: RequestInfo | URL,
+    init?: RequestInit | undefined
+  ): Promise<Response> {
     if (this.resultStack.length == 0)
       throw new Error("no results left in the stack");
     if (this.callStack.length == 0)

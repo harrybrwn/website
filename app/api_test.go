@@ -266,6 +266,7 @@ func TestTokenHandler(t *testing.T) {
 			}
 
 			resp := rec.Result()
+			defer resp.Body.Close()
 			var (
 				tok     *auth.TokenResponse
 				cookies = resp.Cookies()
@@ -373,6 +374,7 @@ func TestRefreshTokenHandler(t *testing.T) {
 	err = service.Refresh(c)
 	is.NoErr(err)
 	res := rec.Result()
+	defer res.Body.Close()
 	is.Equal(res.StatusCode, 200)
 	is.Equal(1, len(res.Cookies()))
 	cookie := res.Cookies()[0]

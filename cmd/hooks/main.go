@@ -25,6 +25,7 @@ import (
 	"golang.org/x/oauth2"
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/session"
 	"harrybrown.com/pkg/web"
@@ -101,7 +102,9 @@ func main() {
 
 	conn, err := grpc.Dial(
 		lokiAddr,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(
+			insecure.NewCredentials(),
+		),
 		grpc.WithUserAgent(fmt.Sprintf(
 			"hooks (%s; %s; %s) grpc-go/%s",
 			runtime.Version(),
