@@ -2,7 +2,7 @@ on: [push]
 name: ci
 
 env:
-  GO_VERSION: 1.18
+  GO_VERSION: 1.20
   COMPOSE_DOCKER_CLI_BUILD: '1'
   DOCKER_BUILDKIT: '1'
 
@@ -86,7 +86,7 @@ jobs:
       - name: Build Backend
         run: |
           go generate ./...
-          go build -x -trimpath -ldflags "-w -s"
+          go build -x -trimpath -ldflags "-w -s" -o /tmp/hrry-api ./cmd/api
       - name: Store frontend build
         uses: actions/upload-artifact@v3
         with:
@@ -99,7 +99,7 @@ jobs:
       matrix:
         go-version:
           # - 1.16.x
-          - ~1.18
+          - ~1.20
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
