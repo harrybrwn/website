@@ -2,7 +2,7 @@ on: [push]
 name: ci
 
 env:
-  GO_VERSION: 1.20
+  GO_VERSION: '1.20'
   COMPOSE_DOCKER_CLI_BUILD: '1'
   DOCKER_BUILDKIT: '1'
 
@@ -36,11 +36,11 @@ jobs:
         run: go install github.com/golang/mock/mockgen@latest
       - run: go generate ./...
       - run: go vet -tags ci ./...
-      # - name: golangci-lint
-      #   uses: golangci/golangci-lint-action@v2
-      #   with:
-      #     version: v1.52.2
-      #     args: --config ./config/golangci.yml
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.52.2
+          args: --config ./config/golangci.yml
 
   build:
     name: build
