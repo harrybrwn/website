@@ -48,7 +48,6 @@ async fn index(ip: ClientIP) -> impl Responder {
     format!("{}\n", ip.ip())
 }
 
-//#[get("/{address}")]
 async fn lookup_address(
     address: web::Path<IpAddr>,
     db: web::Data<GeoIpDB>,
@@ -236,7 +235,7 @@ macro_rules! cors_route {
 pub(crate) struct Cli {
     /// File path for GeoIP or GeoLite2 database file
     #[arg(short, long, env = "GEOIP_DB_FILE")]
-    file: String,
+    file: Vec<String>,
     /// Server host
     #[arg(long, short = 'H', default_value = "0.0.0.0", env = "GEOIP_HOST")]
     host: String,
@@ -256,7 +255,7 @@ async fn main() -> std::io::Result<()> {
     let args = Cli::parse_from(env::args());
     let log = new_logger("geoip")?;
 
-    let geoip_db = match open_mmdb(args.file).await {
+    let geoip_db = match open_mmdb(&args.file[0]).await {
         Ok(db) => db,
         Err(e) => {
             return Err(io::Error::new(io::ErrorKind::Other, e.to_string()));

@@ -93,7 +93,7 @@ while [ $# -gt 0 ]; do
       echo "Flags"
       echo "  -h --help     print help message"
       echo "     --compose  use 'docker compose'"
-      echo "     --k8s      use kubenetes (uses k3d)"
+      echo "     --k8s      use kubenetes (k3d)"
       echo
       echo "Services"
       for s in ${svcs}; do

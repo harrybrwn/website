@@ -4,8 +4,8 @@
   "description": "My personal website",
   "private": true,
   "scripts": {
-    "test": "jest --rootDir ../ -c jest.config.ts",
-    "test:ci": "jest --rootDir ../ -c jest.config.ts --coverage --runInBand --ci",
+    "test": "jest --rootDir ../ -c jest.config.mjs",
+    "test:ci": "jest --rootDir ../ -c jest.config.mjs --coverage --runInBand --ci",
     "coverage": "x-www-browser .cache/test/jest/coverage/lcov-report/index.html",
     "build": "webpack -c webpack.config.js --env prod --mode=production --progress",
     "build:ci": "webpack -c webpack.config.js --env ci --mode=production --no-devtool --no-cache",

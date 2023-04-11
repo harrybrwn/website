@@ -55,8 +55,6 @@ services:
       - database:/var/lib/postgresql/data/
     env_file:
       - config/env/db.env
-    profiles:
-      - databases
     healthcheck:
       test: ["CMD-SHELL" , "pg_isready --username harrybrwn -d harrybrwn"]
       interval: 10s
@@ -86,8 +84,6 @@ services:
     volumes:
       # Only use this if the cache stays on one machine
       - cache-data:/data
-    profiles:
-      - databases
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "ping"]
       interval: 1m
@@ -399,8 +395,6 @@ services:
         aliases:
           - s3.default.svc.cluster.local
       hrry.me:
-    profiles:
-      - databases
     healthcheck:
       test: ["CMD", "curl", "-fI", "http://localhost:9000/minio/health/cluster"]
       interval: 30s
