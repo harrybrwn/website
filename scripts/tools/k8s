@@ -2,8 +2,6 @@
 
 set -euo pipefail
 
-# echo "Using k8s \"$(kubectl config current-context)\""
-
 declare -r SELF_SCRIPT_NAME="$(basename $BASH_SOURCE)"
 declare -r K3D_CLUSTER_CONFIG=config/k8s/k3d.yml
 declare -r HOSTNAMES=(
@@ -28,20 +26,22 @@ declare -r HOSTNAMES=(
   mastodon.hrry.local
   1k.hrry.local
 	# Crazy ones
-	hrry.me.local
-	hrry.dev.local
-	hrry.lol.local
-	s3.hrry.dev.local
-	auth.hrry.dev.local
-	cr.hrry.dev.local
-	cr.hrry.io.local
-	registry.hrry.dev.local
-	s3-console.hrry.dev.local
-	grafana.hrry.dev.local
-	wiki.hrry.me.local
-	gopkg.hrry.dev.local
-	files.hrry.dev.local
-	ip.hrry.dev.local
+	hrry.me-local
+	hrry.dev-local
+	hrry.lol-local
+	s3.hrry.dev-local
+	auth.hrry.dev-local
+	cr.hrry.dev-local
+	cr.hrry.io-local
+	registry.hrry.dev-local
+	s3-console.hrry.dev-local
+	grafana.hrry.dev-local
+	wiki.hrry.me-local
+	1k.hrry.me-local
+	api.hrry.me-local
+	gopkg.hrry.dev-local
+	files.hrry.dev-local
+	ip.hrry.dev-local
 )
 
 get-cluster-name() {
@@ -50,7 +50,7 @@ get-cluster-name() {
 
 get-ingress-ip() {
   local conf="${HOME}/.kube/config"
-  if [ -n "$SUDO_USER" ]; then
+  if [ -n "${SUDO_USER:-}" ]; then
     conf="/home/${SUDO_USER}/.kube/config"
   fi
 	KUBECONFIG="${conf}" kubectl --namespace 'kube-system' get services \
@@ -95,9 +95,9 @@ usage() {
 	echo "  ${SELF_SCRIPT_NAME} [...flags] [command]"
 	echo
 	echo "Commands"
-	echo "	load    load an image into the hosts containers"
-	echo "	ip      print the ip if the local cluster"
-	echo "  test    test if the local cluster is running"
+	echo "  load     load an image into the hosts containers"
+	echo "  ip       print the ip if the local cluster"
+	echo "  test     test if the local cluster is running"
 	echo
 	echo "Flags"
 	echo "  -h --help         print help message"
@@ -133,6 +133,7 @@ if [ $# -eq 0 ]; then
 	exit 1
 fi
 
+echo "Using k8s context \"$(kubectl config current-context)\""
 args=()
 
 while [ $# -gt 0 ]; do

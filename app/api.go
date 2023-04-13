@@ -89,11 +89,6 @@ func (ts *TokenService) Login(c echo.Context) error {
 		return echo.ErrInternalServerError.SetInternal(err)
 	}
 
-	if len(body.LoginChallenge) == 0 {
-		logger.Warn("did not get login challenge")
-		return echo.ErrBadRequest.SetInternal(errors.New("no login challenge"))
-	}
-
 	// Login flow
 	var (
 		u      *User
@@ -112,30 +107,37 @@ func (ts *TokenService) Login(c echo.Context) error {
 		"email":    u.Email,
 		"user_id":  u.UUID,
 	})
+
 	logger.Info("handling login_challenge")
-	r, hydraResp, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
-		LoginChallenge(body.LoginChallenge).
-		AcceptLoginRequest(hydra.AcceptLoginRequest{
-			Subject:  u.Email,
-			Remember: hydra.PtrBool(true),
-			Context: map[string]any{
-				"email":    u.Email,
-				"uuid":     u.UUID.String(),
-				"username": u.Username,
-				"roles":    u.Roles,
-			},
-		}).
-		Execute()
-	if err != nil {
-		logger.WithError(err).Error("failed to accept login request")
-		return &echo.HTTPError{
-			Code:     hydraResp.StatusCode,
-			Message:  http.StatusText(hydraResp.StatusCode),
-			Internal: err,
+	var redirectTo string
+	if len(body.LoginChallenge) > 0 {
+		r, hydraResp, err := ts.HydraAdmin.AcceptLoginRequest(ctx).
+			LoginChallenge(body.LoginChallenge).
+			AcceptLoginRequest(hydra.AcceptLoginRequest{
+				Subject:  u.Email,
+				Remember: hydra.PtrBool(true),
+				Context: map[string]any{
+					"email":    u.Email,
+					"uuid":     u.UUID.String(),
+					"username": u.Username,
+					"roles":    u.Roles,
+				},
+			}).
+			Execute()
+		if err != nil {
+			logger.WithError(err).Error("failed to accept login request")
+			return &echo.HTTPError{
+				Code:     hydraResp.StatusCode,
+				Message:  http.StatusText(hydraResp.StatusCode),
+				Internal: err,
+			}
 		}
+		defer hydraResp.Body.Close()
+		redirectTo = r.GetRedirectTo()
+		logger.Infof("redirecting to %s", redirectTo)
+	} else {
+		logger.Warn("did not get login challenge")
 	}
-	defer hydraResp.Body.Close()
-	logger.Infof("redirecting to %s", r.RedirectTo)
 
 	if claims == nil {
 		claims = u.NewClaims()
@@ -153,7 +155,7 @@ func (ts *TokenService) Login(c echo.Context) error {
 	c.Set(string(auth.ClaimsContextKey), claims)
 	ts.setTokenCookie(c.Response(), resp, claims)
 	return c.JSON(200, map[string]any{
-		"redirect_to": r.RedirectTo,
+		"redirect_to": redirectTo,
 	})
 }
 

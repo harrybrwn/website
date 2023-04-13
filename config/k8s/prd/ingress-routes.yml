@@ -9,12 +9,11 @@ spec:
   routes:
   - match: >-
       HostSNI(`hrry.me`)
-      || HostSNI(`api.hrry.dev`)
+      || HostSNI(`api.hrry.me`)
       || HostSNI(`1k.hrry.me`)
       || HostSNI(`s3.hrry.dev`)
       || HostSNI(`harrybrwn.com`)
       || HostSNI(`hextris.harrybrwn.com`)
-      || HostSNI(`registry.hrry.dev`)
       || HostSNI(`hrry.dev`)
     services:
      - name: nginx

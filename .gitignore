@@ -32,7 +32,7 @@ config/user-gen.env
 /config/pki/
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd
-!bin
+/bin/
 !bin/.gitignore
 config/vault-cluster-keys*.json
 /secrets.env

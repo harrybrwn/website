@@ -25,6 +25,7 @@ resource "cloudflare_record" "hrry_me_dns" {
   for_each = toset([
     "wiki",
     "1k",
+    "api",
   ])
   name    = each.key
   value   = var.gateway_ip

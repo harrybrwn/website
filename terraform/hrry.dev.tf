@@ -4,12 +4,10 @@ resource "cloudflare_record" "hrry_dev_dns" {
     "gopkg",
     "hooks",
     "ip",
-    "registry",
     "grafana",
     "s3-console",
     "s3",
     "auth",
-    "api",
   ])
   name    = each.key
   value   = "_homelab.hrry.dev"

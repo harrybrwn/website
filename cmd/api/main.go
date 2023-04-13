@@ -114,7 +114,6 @@ func main() {
 	// e.GET("/tanya/hyt", app.Page(hytStaticPage, "harrybrwn.com/harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	// e.GET("/admin", app.Page(adminStaticPage, "harrybrwn.com/admin/index.html"), guard, auth.AdminOnly())
 	// e.GET("/chat/*", app.Page(chatroomStaticPage, "chatroom/index.html"))
-
 	// e.GET("/invite/:id", invitesPageHandler(inviteStaticPage, "text/html", "build/invite/index.html", invites))
 	// e.POST("/invite/:id", invites.SignUp(userStore))
 
@@ -141,54 +140,9 @@ func main() {
 	api.GET("/logs", app.LogListHandler(db), guard, auth.AdminOnly())
 	api.Any("/health/ready", app.Ready(db, rd))
 	api.Any("/health/alive", app.Alive)
-	api.OPTIONS("/token", WrapHandler(HandleCORS))
-	api.OPTIONS("/consent", WrapHandler(HandleCORS))
-	api.OPTIONS("/login", WrapHandler(HandleCORS))
-	api.Any("/demo", func(ctx echo.Context) error {
-		HandleCORS(ctx.Response(), ctx.Request())
-		d := ctx.QueryParam("domain")
-		if len(d) == 0 {
-			d = "hrry.local"
-		}
-		var ss http.SameSite
-		switch ctx.QueryParam("ss") {
-		case "none":
-			ss = http.SameSiteNoneMode
-		case "lax":
-			ss = http.SameSiteLaxMode
-		case "strict":
-			ss = http.SameSiteStrictMode
-		default:
-			ss = http.SameSiteNoneMode
-		}
-		secure, err := strconv.ParseBool(ctx.QueryParam("secure"))
-		if err != nil {
-			secure = true
-		}
-		httpOnly, err := strconv.ParseBool(ctx.QueryParam("httponly"))
-		if err != nil {
-			httpOnly = false
-		}
-		path := ctx.QueryParam("path")
-		if len(path) == 0 {
-			path = "/"
-		}
-
-		http.SetCookie(ctx.Response(), &http.Cookie{
-			Name:  "demo",
-			Value: time.Now().String(),
-			// Expires:  time.Now().Add(time.Minute * 5),
-			Path:     path,
-			Domain:   d,
-			Secure:   secure,
-			SameSite: ss,
-			HttpOnly: httpOnly,
-		})
-		return ctx.JSON(200, map[string]any{
-			"status":  200,
-			"message": "this is a demo",
-		})
-	})
+	api.OPTIONS("/token", func(c echo.Context) error { return nil })
+	api.OPTIONS("/consent", func(c echo.Context) error { return nil })
+	api.OPTIONS("/login", func(c echo.Context) error { return nil })
 
 	//withUser := auth.ImplicitUser(jwtConf)
 	//chatStore := chat.NewStore(db)
