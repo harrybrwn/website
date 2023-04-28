@@ -1,0 +1,135 @@
+#!/bin/sh
+
+set -eu
+
+os_attr() {
+	awk -F= "\$1==\"$1\" { print \$2 ;}" /etc/os-release \
+	| sed -Ee 's/(^"|"$)//g;'
+}
+
+pkg_install() {
+	OS_ID="$(os_attr ID_LIKE)"
+	if [ -z "${OS_ID}" ]; then
+		OS_ID="$(os_attr ID)"
+	fi
+	# TODO: The ID_LIKE attribute can be a space delimited list of IDs.
+	case "${OS_ID}" in
+		debian|ubuntu)
+			apt install -y "$@"
+		;;
+		alpine)
+			apk add "$@"
+		;;
+		fedora|rhel|centos)
+			echo "Error: can't install package for OS \"$OS_ID\""
+			exit 1
+		;;
+		*)
+			echo "Error: can't install package for OS \"$OS_ID\""
+			exit 1
+	esac
+}
+
+get_musl_arch_name() {
+	case "${1}" in
+		linux/amd64)
+			echo -n 'x86_64-linux-musl'
+			;;
+		linux/arm64)
+			echo -n "aarch64-linux-musl"
+			;;
+		linux/arm/v7)
+			echo -n 'arm-linux-musleabi'
+			;;
+		linux/arm/v6)
+			echo -n 'armv6-linux-musleabi'
+			;;
+		linux/mips64)
+		 	echo -n 'mips64-unknown-linux-muslabi64'
+			;;
+		linux/mips64le)
+			echo -n 'mips64el-unknown-linux-muslabi64'
+			;;
+	esac
+}
+
+install_musl_compiler() {
+	CC_VERSION=11.2.1
+	CC_NAME=$(get_musl_arch_name "${1}")
+	curl -fsL \
+		-o "/tmp/${CC_NAME}-cross.tgz" \
+		"https://more.musl.cc/${CC_VERSION}/x86_64-linux-musl/${CC_NAME}-cross.tgz"
+	tar -xzf "/tmp/${CC_NAME}-cross.tgz" \
+		--exclude '*/usr' \
+		-C /usr/ \
+		--strip-components 1
+}
+
+if [ "$(uname -m)" != "x86_64" ]; then
+	echo "Error: x86_64 is the only arch supported"
+	exit 1
+fi
+
+LIBC_TYPE=''
+if [ -f "/lib/ld-musl-x86_64.so.1" ] && /lib/ld-musl-x86_64.so.1 2>&1 | grep 'musl libc' >/dev/null; then
+	LIBC_TYPE="musl"
+elif [ -f "/lib/x86_64-linux-gnu/libc.so.6" ]; then
+	if /lib/x86_64-linux-gnu/libc.so.6 | grep 'GNU libc' >/dev/null; then
+		LIBC_TYPE="gnu"
+	elif /lib/x86_64-linux-gnu/libc.so.6 | grep 'Ubuntu GLIBC' >/dev/null; then
+		LIBC_TYPE="gnu"
+	fi
+elif [ -f "/lib64/libc.so.6" ]; then
+	if /lib64/libc.so.6 | grep 'GNU libc' > /dev/null; then
+		LIBC_TYPE="gnu"
+	fi
+elif [ -f "/lib/libc.so.6" ]; then
+	if /lib/libc.so.6 | grep 'GNU libc' > /dev/null; then
+		LIBC_TYPE="gnu"
+	fi
+elif [ -f "/lib/ld-linux-armhf.so.3" ]; then
+	if /lib/ld-linux-armhf.so.3 | grep 'Ubuntu GLIBC' > /dev/null; then
+		LIBC_TYPE="gnu"
+	fi
+fi
+
+if [ -z "${LIBC_TYPE}" ]; then
+	echo "Error: failed to find libc compatibility type"
+	exit 1
+fi
+
+TARGETPLATFORM="${TARGETPLATFORM:-${1:-}}"
+if [ -z "${TARGETPLATFORM}" ]; then
+	echo "Error: no TARGETPLATFORM found. Please add 'ARG TARGETPLATFORM'."
+	exit 1
+fi
+
+TARGET="$(/usr/local/bin/rust-target ${TARGETPLATFORM} ${LIBC_TYPE})"
+echo "target: ${TARGET}"
+
+if [ "${LIBC_TYPE}" = "musl" ]; then
+	pkg_install curl musl-dev
+	install_musl_compiler "${TARGETPLATFORM}"
+else
+	pkg_install curl
+fi
+
+rustup target add "${TARGET}"
+
+cat > /usr/local/cargo/config <<EOF
+[build]
+target = "${TARGET}"
+
+[target.x86_64.unkonwn-linux-musl]
+linker = "x86_64-linux-musl-gcc"
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+[target.armv7-unknown-linux-musleabi]
+linker = "arm-linux-musleabi-gcc"
+[target.mips64-unknown-linux-muslabi64]
+linker = "mips64-linux-musl-gcc"
+[target.mips64el-unknown-linux-muslabi64]
+linker = "mips64el-linux-musl-gcc"
+EOF
+
+touch /usr/local/rustup/harrybrwn-rust.txt

@@ -61,7 +61,33 @@ ca_cert() {
 		-subj "/CN=${CN}/OU=development/O=${ORG}" \
 		-key "${CA_KEY}" \
 		-out "${CA_CRT}" \
-		-sha256 -days 365
+		-sha256 -days 720
+}
+
+cert_created() {
+	local certs="${PKI}/certs"
+	local CN=""
+	while [ $# -gt 0 ]; do
+		case $1 in
+			-cn)
+				CN="$2"
+				shift 2
+				;;
+			*)
+				echo "Unknown flag \"$1\""
+				break
+				;;
+		esac
+	done
+	if [ -z "${CN}" ]; then
+		echo "Error: no common name given, pass '-cn'"
+		return 1
+	fi
+	crt="${certs}/${CN}.crt"
+	key="${certs}/${CN}.key"
+	if [ ! -f "${crt}" ] || [ ! -f "${key}" ]; then
+		return 1
+	fi
 }
 
 server_cert() {
@@ -141,14 +167,17 @@ EOF
 # Flags
 INSTALL=true
 ONLY_INSTALL=false
+CHECK=false
 
 usage() {
 	echo "Usage"
 	echo "  certs.sh [flags...]"
 	echo
 	echo "Flags"
-	echo "  -h, --help        show this help message"
-	echo "      --no-install  skip the certificate installation step"
+	echo "  -h, --help          show this help message"
+	echo "      --no-install    skip the certificate installation step"
+	echo "      --only-install  only install existing certificates"
+	echo "      --check         check that certificates have been created"
 	echo
 }
 
@@ -157,6 +186,10 @@ while [ $# -gt 0 ]; do
 		-h|--help)
 			usage
 			exit
+			;;
+		--check)
+			CHECK=true
+			shift
 			;;
 		--no-install)
 			INSTALL=false
@@ -174,14 +207,27 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
+if ${CHECK}; then
+	cert_created -cn "harrybrwn.com"
+	cert_created -cn "hrry.me"
+	cert_created -cn "hrry.dev"
+	exit 0
+fi
+
 if ! ${ONLY_INSTALL}; then
 	rm -rf "${PKI}/certs"
 	mkdir -p "${PKI}/certs"
 
 	ca_cert "harrybrwn local dev"
-	server_cert -cn "harrybrwn.com" -alt "harrybrwn.local" -alt "*.harrybrwn.local"
-	server_cert -cn 'hrry.me'  -alt 'hrry.local' -alt '*.hrry.local'
-	server_cert -cn 'hrry.dev' -alt 'hrry.local' -alt '*.hrry.local'
+	server_cert -cn "harrybrwn.com" \
+		-alt "harrybrwn.local"     -alt "*.harrybrwn.local" \
+		-alt 'harrybrwn.com-local' -alt '*.harrybrwn.com-local'
+	server_cert -cn 'hrry.me' \
+		-alt 'hrry.local'    -alt '*.hrry.local' \
+		-alt 'hrry.me-local' -alt '*.hrry.me-local'
+	server_cert -cn 'hrry.dev' \
+		-alt 'hrry.local'     -alt '*.hrry.local' \
+		-alt 'hrry.dev-local' -alt '*.hrry.dev-local'
 	server_cert -cn 'hydra' -alt 'auth.hrry.local'
 
 	# ln -s "harrybrwn.local" "${PKI}/certs/harrybrwn.com"

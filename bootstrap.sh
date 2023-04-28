@@ -61,7 +61,6 @@ stop_all() {
 env_files=(
   .env
   secrets.env
-  config/env/prod/maxmind.env
 )
 
 for env in ${env_files}; do
@@ -108,6 +107,15 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Create certificates
+if ! scripts/certs.sh --check ; then
+  scripts/certs.sh
+fi
+
+# Check configuration
+bash scripts/configure.sh
+exit 0
+
 go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 
@@ -116,11 +124,6 @@ if ! network_exists "hrry.me"; then
   	--driver "bridge"           \
     --gateway "172.22.0.1"      \
     --subnet "172.22.0.0/16"
-fi
-
-# Create certificates
-if [ ! -f config/pki/certs/ca.crt ]; then
-  scripts/certs.sh
 fi
 
 if ${USE_COMPOSE}; then

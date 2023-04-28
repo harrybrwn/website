@@ -17,6 +17,8 @@ yarn-error.log
 .terraform/
 terraform/*.tfstate*.backup
 *.tar.gz
+target/
+services/geoip/target/
 
 # Config
 .vscode

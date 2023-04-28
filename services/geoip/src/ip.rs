@@ -4,7 +4,7 @@ use std::net::IpAddr;
 use std::pin::Pin;
 use std::str::FromStr;
 
-use actix_web::http::header::{HeaderName, X_FORWARDED_FOR};
+use actix_web::http::header::HeaderName;
 use actix_web::{FromRequest, HttpRequest};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -69,7 +69,8 @@ impl ClientIP {
     }
 }
 
-const CF_CONNECTING_IP: HeaderName = HeaderName::from_static("cf-connecting-ip");
+static CF_CONNECTING_IP: HeaderName = HeaderName::from_static("cf-connecting-ip");
+static X_FORWARDED_FOR: HeaderName = actix_web::http::header::X_FORWARDED_FOR;
 
 fn get_ip_header(req: &HttpRequest, header: &HeaderName) -> Option<IpAddr> {
     req.headers()
@@ -79,8 +80,7 @@ fn get_ip_header(req: &HttpRequest, header: &HeaderName) -> Option<IpAddr> {
             log::info!("found {}: {:?}", header, h);
             IpAddr::from_str(h).ok()
         })
-        .filter(is_public_ip)
-        .next()
+        .find(is_public_ip)
 }
 
 impl FromRequest for ClientIP {
@@ -103,13 +103,13 @@ impl FromRequest for ClientIP {
                 Some(ip) => {
                     log::info!("using x-forwarded-for ip: {ip}");
                     Ok(Self(ip))
-                },
+                }
                 // Return the peer IP address if nothing is found
                 None => match peer_ip {
                     Some(ip) => {
                         log::info!("using peer addr after checking cf-connecting-ip and x-forwarded-for: {ip}");
                         Ok(Self(ip))
-                    },
+                    }
                     None => Err(Error::new(ErrorKind::InvalidInput, "no ip address")),
                 },
             }

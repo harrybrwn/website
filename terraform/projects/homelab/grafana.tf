@@ -184,12 +184,12 @@ module "node_alerts" {
         duration    = "5m"
         query       = <<EOT
             avg without (cpu) (
-              rate(node_cpu_seconds_total{mode="user", node="${node.name}"}[5m]) * 100
+              rate(node_cpu_seconds_total{mode="user", node="${node.name}"}[1m]) * 100
             )
         EOT
         condition = {
           op      = "gt"
-          args    = [4.5]
+          args    = [6.0]
           reducer = "last"
         }
       }

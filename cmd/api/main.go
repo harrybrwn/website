@@ -49,7 +49,11 @@ var (
 	//go :embed build/harrybrwn.com/pub.asc
 	//gpgPubkey []byte
 
-	logger = log.SetLogger(log.New(log.WithEnv(), log.WithServiceName("api")))
+	logger = log.SetLogger(log.New(
+		log.WithEnv(),
+		log.WithFormat(log.JSONFormat),
+		log.WithServiceName("api"),
+	))
 )
 
 func main() {
@@ -92,24 +96,20 @@ func main() {
 	defer rd.Close()
 
 	userStore := app.NewUserStore(db)
-	var (
-		mailer      invite.Mailer
-		emailClient *sendgrid.Client
-	)
-	if emailClient := app.SendgridClient(); emailClient != nil {
-		mailer = newInviteMailer(emailClient)
-		logger.Info("found sendgrid api key")
-	} else {
-		logger.Info("emailing disabled: no sendgrid api key")
-	}
+	mailer := SetupMailer()
 	invites := app.NewInvitations(rd, &InvitePathBuilder{"/invite"}, mailer)
+	sessions := app.NewSessionManager(rd, cookieDomain)
 
 	jwtConf := app.NewTokenConfig()
 	guard := auth.GuardMiddleware(jwtConf)
 	e.Pre(echo.WrapMiddleware(web.AccessLog(logger)))
-	e.Use(echo.WrapMiddleware(web.Metrics()))
+	e.Use(
+		echo.WrapMiddleware(web.Metrics()),
+		echo.WrapMiddleware(app.CollectSession(sessions)),
+	)
 
 	e.GET("/metrics", WrapHandler(web.MetricsHandler().ServeHTTP))
+	e.GET("/session", WrapHandler(app.Session(sessions)))
 
 	// e.GET("/tanya/hyt", app.Page(hytStaticPage, "harrybrwn.com/harry_y_tanya/index.html"), guard, auth.RoleRequired(auth.RoleTanya))
 	// e.GET("/admin", app.Page(adminStaticPage, "harrybrwn.com/admin/index.html"), guard, auth.AdminOnly())
@@ -154,7 +154,6 @@ func main() {
 	api.POST("/invite/create", invites.Create(), guard)
 	api.DELETE("/invite/:id", invites.Delete(), guard)
 	api.GET("/invites", invites.List(), guard, auth.AdminOnly())
-	api.POST("/mail/send", app.SendMail(emailClient), guard, auth.AdminOnly())
 
 	logger.WithFields(logrus.Fields{"time": app.StartTime}).Info("server starting")
 	if web.SSLCertificateFileFlag != "" && web.SSLKeyFileFlag != "" {
@@ -207,6 +206,21 @@ func newInviteMailer(client *sendgrid.Client) invite.Mailer {
 		logger.Fatal(err)
 	}
 	return m
+}
+
+func invitePageHandler(body []byte, contentType, debugFile string, invitations *app.Invitations) echo.HandlerFunc {
+	return invitations.Accept(body, contentType)
+}
+
+func SetupMailer() invite.Mailer {
+	var mailer invite.Mailer
+	if emailClient := app.SendgridClient(); emailClient != nil {
+		mailer = newInviteMailer(emailClient)
+		logger.Info("found sendgrid api key")
+	} else {
+		logger.Info("emailing disabled: no sendgrid api key")
+	}
+	return mailer
 }
 
 func json(raw []byte) echo.HandlerFunc {

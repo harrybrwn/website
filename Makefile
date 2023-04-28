@@ -79,30 +79,31 @@ lint-k8s:
 	kubectl kustomize config/k8s/stg | kubeval --ignore-missing-schemas
 	kubectl kustomize config/k8s/prd | kubeval --ignore-missing-schemas
 
-tools:
+scripts:
 	@mkdir -p bin
-	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
-	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 	ln -sf ../scripts/functional.sh bin/functional
 	ln -sf ../scripts/tools/hydra bin/hydra
 	ln -sf ../scripts/tools/bake bin/bake
 	ln -sf ../scripts/tools/k8s bin/k8s
 	ln -sf ../scripts/tools/tootctl bin/tootctl
-	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
 		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 		ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 	done
 
-.PHONY: tools
+tools: scripts
+	@mkdir -p bin
+	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
+	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
+	go build -trimpath -ldflags "-s -w" -o bin/mail ./cmd/tools/mail
+	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
+
+.PHONY: tools scripts
 
 # https://dev.maxmind.com/geoip/updating-databases?lang=en
 geoip:
-	@mkdir -p files/mmdb
-	@if [ -d files/mmdb/latest ]; then mv files/mmdb/latest files/mmdb/$(shell date '+%Y-%m-%d'); fi
-	mkdir -p files/mmdb/latest
-	geoipupdate -d files/mmdb/latest
+	scripts/data/geoipupdate.sh
 
 resume:
 	docker container run --rm -it -v $(shell pwd):/app latex \
@@ -119,23 +120,6 @@ diagrams/remora.svg: diagrams/remora.drawio
 
 .PHONY: run clean deep-clean test-go test-ts resume
 
-functional-build:
-	scripts/functional.sh build
-
-functional-setup:
-	scripts/functional.sh build
-	scripts/functional.sh setup
-
-functional-run:
-	scripts/functional.sh run
-
-functional-stop:
-	scripts/functional.sh stop
-
-functional: functional-setup functional-run functional-stop
-
-.PHONY: functional functional-setup functional-run functional-run functional-build
-
 build-k8s:
 	scripts/infra/build-minikube.sh
 
@@ -143,24 +127,6 @@ load-k8s-images:
 	scripts/infra/minikube-load.sh
 expose-k8s:
 	scripts/expose-k8s.sh
-
-bake:
-	scripts/deployment --prod bake
-
-deploy:
-	scripts/deployment --stack harrybrwn up
-
-deploy-dev:
-	scripts/deployment --stack hb --dev up
-
-deploy-infra:
-	docker --context harrybrwn stack deploy \
-		--prune \
-		--with-registry-auth \
-		--compose-file config/docker-compose.infra.yml \
-		infra
-
-.PHONY: bake deploy deploy-dev
 
 k3d-image-load:
 	docker compose -f docker-compose.yml -f config/docker-compose.tools.yml build

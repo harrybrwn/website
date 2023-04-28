@@ -13,6 +13,12 @@ variable "domain_verify_code" {
   description = "DNS verification challenge code for Github Pages."
 }
 
+variable "name" {
+  default     = "@"
+  type        = string
+  description = "subdomain for cloudflare record"
+}
+
 variable "ttl" {
   type        = number
   default     = 1 # 1 is used as "auto"

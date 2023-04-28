@@ -75,10 +75,11 @@ func (ts *TokenService) Login(c echo.Context) error {
 		req    = c.Request()
 		ctx    = req.Context()
 		logger = log.FromContext(ctx)
+		binder echo.DefaultBinder
 	)
 
 	logger.Info("starting login request")
-	switch err = c.Bind(&body); err {
+	switch err = binder.BindBody(c, &body); err {
 	case nil:
 		break
 	case echo.ErrUnsupportedMediaType:
@@ -610,8 +611,6 @@ var (
 	quotes   = []Quote{
 		{Body: "Do More", Author: "Casey Neistat"},
 		{Body: "Imagination is something you do alone.", Author: "Steve Wazniak"},
-		{Body: "I was never really good at anything except for the ability to learn.", Author: "Kanye West"},
-		{Body: "I love sleep; It's my favorite.", Author: "Kanye West"},
 		{Body: "I'm gunna be the next hokage!", Author: "Naruto Uzumaki"},
 		{
 			Body: "I am so clever that sometimes I don't understand a single word of " +
@@ -625,9 +624,8 @@ var (
 				"you could do anything?",
 			Author: "That one kid",
 		},
-		// {Body: "640K ought to be enough memory for anybody.", Author: "Bill Gates"},
+		{Body: "640K ought to be enough memory for anybody.", Author: "Bill Gates"},
 		// {Body: "I did not have sexual relations with that woman.", Author: "Bill Clinton"},
-		// {Body: "Bush did 911.", Author: "A very intelligent internet user"},
 	}
 )
 

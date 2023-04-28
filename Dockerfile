@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.3
+
 ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
@@ -37,6 +38,7 @@ RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
 RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
     --mount=type=cache,id=npm,target=/root/.npm \
     yarn workspaces run build
+COPY frontend/1k build/1k.hrry.me
 COPY ./cmd/hooks/*.html ./cmd/hooks/
 
 #
@@ -103,10 +105,10 @@ RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     go build -ldflags "${LINK}" -o bin/hooks ./cmd/hooks
 
 FROM builder as geoip-builder
-COPY cmd/go-geoip cmd/go-geoip
+COPY services/go-geoip services/go-geoip
 RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     --mount=type=cache,id=gomod,target=/go/pkg/mod \
-    go build -ldflags "${LINK}" -o bin/geoip ./cmd/go-geoip
+    go build -ldflags "${LINK}" -o bin/geoip ./services/go-geoip
 
 FROM builder as vanity-imports-builder
 COPY cmd/vanity-imports cmd/vanity-imports
@@ -166,7 +168,7 @@ ENTRYPOINT ["backups"]
 #
 FROM service as go-geoip
 RUN mkdir -p /opt/geoip
-COPY files/mmdb/latest/GeoLite2* /opt/geoip/
+COPY files/mmdb/2023-04-27/GeoLite2* /opt/geoip/
 COPY --from=geoip-builder /opt/harrybrwn/bin/geoip /usr/local/bin/
 ENTRYPOINT ["geoip"]
 CMD ["--file=file:///opt/geoip/GeoLite2-City.mmdb", "--file=file:///opt/geoip/GeoLite2-ASN.mmdb"]
@@ -230,6 +232,7 @@ COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 #
 FROM python:3.9-slim-buster as python
 VOLUME /opt/harrybrwn
+ARG POETRY_VERSION=1.4.2
 ENV PATH="/root/.poetry/bin:$PATH"
 ENV POETRY_VIRTUALENVS_CREATE=false
 ENV GET_POETRY_IGNORE_DEPRECATION=1
@@ -237,15 +240,13 @@ ENV GET_POETRY_IGNORE_DEPRECATION=1
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 WORKDIR /opt/harrybrwn/test
 RUN apt update && \
-    apt upgrade -y && \
-    apt install -y \
+    apt upgrade -yq && \
+    apt install -yq \
         curl netcat build-essential \
         libffi-dev libpq-dev python3-dev \
         vim less && \
     pip install --user --upgrade pip && \
-    curl \
-        -sSL \
-        https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - && \
+    pip install poetry==$POETRY_VERSION && \
     echo "alias l='ls -lA --group-directories-first --color=always'" >> /root/.bashrc
 COPY test/pyproject.toml test/poetry.lock /opt/harrybrwn/test/
 RUN poetry install

@@ -209,9 +209,9 @@ jobs:
         if: steps.geo-lite2-dl.outputs.cache-hit != 'true'
         run: |
           mkdir -p ./files/mmdb
-          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-ASN.mmdb ./files/mmdb/
-          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-City.mmdb ./files/mmdb/
-          mc cp s3-hrry-dev/geoip/GeoLite2_20220621/GeoLite2-Country.mmdb ./files/mmdb/
+          mc cp s3-hrry-dev/geoip/2023-04-27/GeoLite2-ASN.mmdb ./files/mmdb/latest/
+          mc cp s3-hrry-dev/geoip/2023-04-27/GeoLite2-City.mmdb ./files/mmdb/latest/
+          mc cp s3-hrry-dev/geoip/2023-04-27/GeoLite2-Country.mmdb ./files/mmdb/latest/
 
       - name: Generate test certs
         run: scripts/certs.sh --no-install
@@ -239,56 +239,60 @@ jobs:
           key: ${{ runner.os }}-buildx-always_cache
           restore-keys: |
             ${{ runner.os }}-buildx-
+      - name: Prep tools
+        run: make scripts
+      - name: Build functional test images
+        run: bin/functional build
 
-      - name: Build api image
-        uses: docker/build-push-action@v2
-        with:
-          push: false # Don't push image to an image repository
-          load: true  # Finish the build by exporting as a regular docker image
-          # Must match the image name in docker-compose.yml
-          tags: registry.digitalocean.com/webreef/harrybrwn/api:latest
-          context: .
-          file: ./Dockerfile
-          target: api
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-          platforms: linux/amd64
-      - name: Build nginx server image
-        uses: docker/build-push-action@v2
-        with:
-          load: true  # Finish the build by exporting as a regular docker image
-          # Must match the image name in docker-compose.yml
-          tags: harrybrwn/nginx:latest
-          context: .
-          target: nginx
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache-new
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-      - name: Build testing image
-        uses: docker/build-push-action@v2
-        with:
-          push: false # Don't push image to an image repository
-          load: true  # Finish the build by exporting as a regular docker image
-          # Must match the image name in docker-compose.yml
-          tags: python-tests:latest,functional-tests:latest
-          context: .
-          file: ./Dockerfile
-          target: python
-          builder: ${{ steps.buildx.outputs.name }}
-          cache-from: type=local,src=/tmp/.buildx-cache-new
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      #- name: Build api image
+      #  uses: docker/build-push-action@v2
+      #  with:
+      #    push: false # Don't push image to an image repository
+      #    load: true  # Finish the build by exporting as a regular docker image
+      #    # Must match the image name in docker-compose.yml
+      #    tags: registry.digitalocean.com/webreef/harrybrwn/api:latest
+      #    context: .
+      #    file: ./Dockerfile
+      #    target: api
+      #    builder: ${{ steps.buildx.outputs.name }}
+      #    cache-from: type=local,src=/tmp/.buildx-cache
+      #    cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      #    platforms: linux/amd64
+      #- name: Build nginx server image
+      #  uses: docker/build-push-action@v2
+      #  with:
+      #    load: true  # Finish the build by exporting as a regular docker image
+      #    # Must match the image name in docker-compose.yml
+      #    tags: harrybrwn/nginx:latest
+      #    context: .
+      #    target: nginx
+      #    builder: ${{ steps.buildx.outputs.name }}
+      #    cache-from: type=local,src=/tmp/.buildx-cache-new
+      #    cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+      #- name: Build testing image
+      #  uses: docker/build-push-action@v2
+      #  with:
+      #    push: false # Don't push image to an image repository
+      #    load: true  # Finish the build by exporting as a regular docker image
+      #    # Must match the image name in docker-compose.yml
+      #    tags: python-tests:latest,functional-tests:latest
+      #    context: .
+      #    file: ./Dockerfile
+      #    target: python
+      #    builder: ${{ steps.buildx.outputs.name }}
+      #    cache-from: type=local,src=/tmp/.buildx-cache-new
+      #    cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
-      - name: Move buildx cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+      #- name: Move buildx cache
+      #  run: |
+      #    rm -rf /tmp/.buildx-cache
+      #    mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Download Frontend build
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend-build
-          path: ./build/
+      # - name: Download Frontend build
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: frontend-build
+      #     path: ./build/
       - name: Start services
         run: scripts/functional.sh setup
       - name: Run tests

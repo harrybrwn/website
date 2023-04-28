@@ -13,13 +13,6 @@ locals {
   zones = { for z in data.cloudflare_zones.all.zones : replace(z.name, ".", "_") => z.id }
 }
 
-resource "cloudflare_zone" "hryb_dev" {
-  account_id = var.cf_account_id
-  zone       = "hryb.dev"
-  type       = "full"
-  plan       = "free"
-}
-
 # homelab's gateway DNS records
 resource "cloudflare_record" "homelab_gateway" {
   for_each = toset([
@@ -84,11 +77,4 @@ resource "cloudflare_email_routing_rule" "harry" {
     type  = "forward"
     value = [var.destination_email]
   }
-}
-
-module "sendgrid" {
-  source             = "./modules/cloudflare-sendgrid"
-  zone_id            = local.zones.hryb_dev
-  em_id              = var.sendgrid_verify["hryb.dev"].id
-  sendgrid_subdomain = var.sendgrid_verify["hryb.dev"].subdomain
 }

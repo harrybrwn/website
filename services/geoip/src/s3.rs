@@ -1,15 +1,12 @@
 use std::error::Error;
 
 use anyhow::bail;
-use aws_sdk_s3::Credentials;
-use aws_sdk_s3::Region;
+use aws_sdk_s3::config::Credentials;
+use aws_sdk_s3::config::Region;
 
 fn credentials_from_url(u: &url::Url) -> Option<Credentials> {
-    if let Some(pw) = u.password() {
-        Some(Credentials::new(u.username(), pw, None, None, ""))
-    } else {
-        None
-    }
+    u.password()
+        .map(|pw| Credentials::new(u.username(), pw, None, None, ""))
 }
 
 fn get_endpoint(url: &url::Url) -> Option<impl Into<String>> {
@@ -27,9 +24,9 @@ fn get_endpoint(url: &url::Url) -> Option<impl Into<String>> {
         };
         let endpoint = format!("{}://{}{}", endpoint_scheme, domain, port);
         log::info!("using s3 endpoint \"{}\"", endpoint);
-        return Some(endpoint);
+        Some(endpoint)
     } else {
-        return None;
+        None
     }
 }
 
@@ -48,7 +45,7 @@ pub(crate) async fn open_from_s3(url: &url::Url) -> anyhow::Result<Vec<u8>> {
     }
     let builder = aws_sdk_s3::config::Builder::from(&loader.load().await).force_path_style(true);
     let client = aws_sdk_s3::Client::from_conf(builder.build());
-    let path = match url.path().strip_prefix("/") {
+    let path = match url.path().strip_prefix('/') {
         Some(p) => p,
         None => url.path(),
     };

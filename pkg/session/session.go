@@ -4,9 +4,25 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
-	"time"
 )
+
+func NewManager[T any](name string, store Store[T], opts ...CookieOpt) *Manager[T] {
+	m := Manager[T]{
+		Name:  name,
+		Store: store,
+		GenID: defaultIDGenerator,
+		opts: &CookieOptions{
+			Path:     "/",
+			SameSite: http.SameSiteDefaultMode,
+		},
+	}
+	for _, o := range opts {
+		o(m.opts)
+	}
+	return &m
+}
 
 type Manager[T any] struct {
 	Store Store[T]
@@ -15,11 +31,12 @@ type Manager[T any] struct {
 	opts  *CookieOptions
 }
 
-func (m *Manager[T]) NewSession(v *T) *Session[T] {
+func (m *Manager[T]) NewSession(v *T, opts ...CookieOpt) *Session[T] {
 	if v == nil {
 		v = new(T)
 	}
-	return m.newSession(m.GenID(), v)
+	id := m.GenID()
+	return m.newSession(id, v, opts...)
 }
 
 func (m *Manager[T]) Get(r *http.Request) (*Session[T], error) {
@@ -27,7 +44,7 @@ func (m *Manager[T]) Get(r *http.Request) (*Session[T], error) {
 	if err != nil {
 		return nil, err
 	}
-	val, err := m.Store.Get(r.Context(), c.Value)
+	val, err := m.Store.Get(r.Context(), m.key(c.Value))
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +56,14 @@ func (m *Manager[T]) Delete(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if err = m.Store.Del(r.Context(), c.Value); err != nil {
+	if err = m.Store.Del(r.Context(), m.key(c.Value)); err != nil {
 		return err
 	}
-	c.Expires = time.Unix(0, 0)
-	c.Value = ""
-	http.SetCookie(w, c)
+	unsetCookie(w, c)
 	return nil
 }
 
-func (m *Manager[T]) NewValue(w http.ResponseWriter, r *http.Request, value *T) error {
+func (m *Manager[T]) SetValue(w http.ResponseWriter, r *http.Request, value *T) error {
 	id := m.GenID()
 	return m.set(r.Context(), w, id, value)
 }
@@ -66,21 +81,25 @@ func (m *Manager[T]) GetValue(r *http.Request) (*T, error) {
 	if err != nil {
 		return nil, err
 	}
-	return m.Store.Get(r.Context(), c.Value)
+	return m.Store.Get(r.Context(), m.key(c.Value))
 }
 
-func (m *Manager[T]) newSession(id string, val *T) *Session[T] {
-	return &Session[T]{
+func (m *Manager[T]) newSession(id string, val *T, opts ...CookieOpt) *Session[T] {
+	s := Session[T]{
 		Value: val,
 		Opts:  *m.opts,
 		name:  m.Name,
 		id:    id,
 		store: m.Store,
 	}
+	for _, o := range opts {
+		o(&s.Opts)
+	}
+	return &s
 }
 
 func (m *Manager[T]) set(ctx context.Context, w http.ResponseWriter, id string, value *T) error {
-	err := m.Store.Set(ctx, id, value)
+	err := m.Store.Set(ctx, m.key(id), value)
 	if err != nil {
 		return err
 	}
@@ -88,28 +107,8 @@ func (m *Manager[T]) set(ctx context.Context, w http.ResponseWriter, id string, 
 	return nil
 }
 
-type CookieOptions struct {
-	Path       string
-	Domain     string
-	Expiration time.Duration
-	MaxAge     int
-	HTTPOnly   bool
-	SameSite   http.SameSite
-	Secure     bool
-}
-
-func (co *CookieOptions) newCookie(name, value string) *http.Cookie {
-	return &http.Cookie{
-		Name:     name,
-		Value:    value,
-		Path:     co.Path,
-		Domain:   co.Domain,
-		Expires:  time.Now().Add(co.Expiration),
-		MaxAge:   co.MaxAge,
-		HttpOnly: co.HTTPOnly,
-		SameSite: co.SameSite,
-		Secure:   co.Secure,
-	}
+func (m *Manager[T]) key(v string) string {
+	return fmt.Sprintf("%s:%s", m.Name, v)
 }
 
 func defaultIDGenerator() string {
@@ -128,9 +127,11 @@ type Session[T any] struct {
 
 func (s *Session[T]) ID() string   { return s.id }
 func (s *Session[T]) Name() string { return s.name }
+func (s *Session[T]) Set(value *T) { s.Value = value }
+func (s *Session[T]) key() string  { return fmt.Sprintf("%s:%s", s.name, s.id) }
 
 func (s *Session[T]) Save(ctx context.Context, w http.ResponseWriter) error {
-	err := s.store.Set(ctx, s.id, s.Value)
+	err := s.store.Set(ctx, s.key(), s.Value)
 	if err != nil {
 		return err
 	}
@@ -139,10 +140,26 @@ func (s *Session[T]) Save(ctx context.Context, w http.ResponseWriter) error {
 }
 
 func (s *Session[T]) Delete(ctx context.Context, w http.ResponseWriter) error {
-	err := s.store.Del(ctx, s.id)
+	err := s.store.Del(ctx, s.key())
 	if err != nil {
 		return err
 	}
 	http.SetCookie(w, s.Opts.newCookie(s.name, ""))
 	return nil
+}
+
+type sessionContextKeyType struct{}
+
+var sessionContextKey sessionContextKeyType
+
+func StashInContext[T any](ctx context.Context, s *Session[T]) context.Context {
+	return context.WithValue(ctx, sessionContextKey, s)
+}
+
+func FromContext[T any](ctx context.Context) *Session[T] {
+	v := ctx.Value(sessionContextKey)
+	if v == nil {
+		return nil
+	}
+	return v.(*Session[T])
 }

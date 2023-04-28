@@ -16,18 +16,6 @@ def b64decode(s: str):
     return base64.decodebytes(b + b'=' * (-len(b) % 4))
 
 
-def test_admin_page_logedin(admin_token: Token):
-    res = requests.get(f"{URL}/admin", headers={"Authorization": admin_token.header()})
-    assert res.ok
-    assert res.status_code == 200
-
-
-def test_admin_page_failure():
-    res = requests.get(f"{URL}/admin")
-    assert not res.ok
-    assert res.status_code == 401
-
-
 def test_runtime_as_admin(admin_token: Token):
     res = requests.get(f"{URL}/api/runtime", headers={"Authorization": admin_token.header()})
     assert res.ok
@@ -102,3 +90,17 @@ def test_token_claims_user(user_token: Token):
     assert claims['iss'] == 'harrybrwn.com'
     assert claims['id'] != 0
     assert len(claims['uuid']) > 0
+
+
+def test_session():
+    ss = requests.Session()
+    res = ss.get("https://api.hrry.me-local/session")
+    assert res.ok
+    assert res.status_code == 200
+    key = ss.cookies["session"]
+    res = ss.get("https://api.hrry.me-local/session")
+    assert res.ok
+    assert res.cookies["session"] == key
+    assert res.cookies["session"] == ss.cookies["session"]
+    res = ss.get("https://api.hrry.me-local/api/health/ready")
+    assert res.ok

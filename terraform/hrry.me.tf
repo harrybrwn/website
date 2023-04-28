@@ -13,12 +13,22 @@ resource "cloudflare_zone_dnssec" "hrry_me_dnssec" {
   zone_id = local.zones.hrry_me
 }
 
-module "github_pages" {
-  source             = "./modules/github-page"
-  github_username    = "harrybrwn"
-  zone_id            = local.zones.hrry_me
-  ttl                = 1 # Auto TTL
-  domain_verify_code = var.gh_pages_domain_verify_codes.hrry_me
+resource "cloudflare_record" "netlify" {
+  type    = "CNAME"
+  name    = "@"
+  value   = "apex-loadbalancer.netlify.com"
+  proxied = false
+  ttl     = 60
+  zone_id = local.zones.hrry_me
+}
+
+resource "cloudflare_record" "netlify_www" {
+  type    = "CNAME"
+  name    = "www"
+  value   = "apex-loadbalancer.netlify.com"
+  proxied = false
+  ttl     = 60
+  zone_id = local.zones.hrry_me
 }
 
 resource "cloudflare_record" "hrry_me_dns" {
@@ -84,4 +94,24 @@ resource "cloudflare_email_routing_rule" "hrry_me" {
     type  = "forward"
     value = [var.destination_email]
   }
+}
+
+#module "github_pages" {
+#  source = "./modules/github-page"
+#  github_username = "harrybrwn"
+#  zone_id  = local.zones.hrry_me
+#  name = "@"
+#  ttl = 1 # auth ttl
+#  domain_verify_code=var.gh_pages_domain_verify_codes.hrry_me
+#}
+
+# Github pages domain verification. Remove if you add the github-pages module
+# call back in.
+resource "cloudflare_record" "gh_pages_domain_verify" {
+  type    = "TXT"
+  name    = "_github-pages-challenge-harrybrwn"
+  value   = var.gh_pages_domain_verify_codes.hrry_me
+  proxied = false
+  ttl     = 1 # auth ttl
+  zone_id = local.zones.hrry_me
 }

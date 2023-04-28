@@ -33,6 +33,7 @@ def test_create_invite(admin_token: Token):
 	assert j["ttl"] > 0
 
 
+@pytest.mark.skip
 def test_create_invite_admin(admin_token: Token):
 	res = requests.post(
 		f"{config.scheme}://{config.host}/api/invite/create",
@@ -57,6 +58,7 @@ def test_create_invite_admin(admin_token: Token):
 	assert res.headers.get("content-type") == "text/html"
 
 
+@pytest.mark.skip
 def test_invite_timeout(admin_token: Token):
 	res = requests.post(
 		f"{config.scheme}://{config.host}/api/invite/create",

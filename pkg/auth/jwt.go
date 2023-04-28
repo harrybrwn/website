@@ -67,7 +67,6 @@ type TokenConfig interface {
 	Private() crypto.PrivateKey
 	Public() crypto.PublicKey
 	Type() jwt.SigningMethod
-
 	GetToken(*http.Request) (string, error)
 }
 

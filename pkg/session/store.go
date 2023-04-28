@@ -37,16 +37,24 @@ type Store[T any] interface {
 
 var ErrSessionNotFound = errors.New("session not found")
 
+func NewStore[T any](client redis.UniversalClient, ttl time.Duration) Store[T] {
+	return NewRedisStore[T](client, ttl)
+}
+
+const Forever = time.Duration(-1)
+
 func NewRedisStore[T any](client redis.UniversalClient, ttl time.Duration) *RedisStore[T] {
 	return &RedisStore[T]{c: client, ttl: ttl}
 }
+
+var tidyTime = time.Second
 
 func NewMemStore[T any](ttl time.Duration) *MemStore[T] {
 	s := MemStore[T]{
 		m:   make(map[string]*memstoreValue[T]),
 		ttl: ttl,
 	}
-	go s.tidy(time.Second)
+	go s.tidy(tidyTime)
 	return &s
 }
 
@@ -128,6 +136,8 @@ func (ms *MemStore[T]) Del(ctx context.Context, key string) error {
 
 func (ms *MemStore[T]) SetTTL(ttl time.Duration) { ms.ttl = ttl }
 
+var now = time.Now
+
 func (ms *MemStore[T]) tidy(period time.Duration) {
 	ticker := time.NewTicker(period)
 	for {
@@ -135,9 +145,9 @@ func (ms *MemStore[T]) tidy(period time.Duration) {
 		if ms.ttl == -1 {
 			continue
 		}
-		now := time.Now()
+		n := now()
 		for key, val := range ms.m {
-			if now.After(val.ts.Add(ms.ttl)) {
+			if n.After(val.ts.Add(ms.ttl)) {
 				ms.mu.Lock()
 				delete(ms.m, key)
 				ms.mu.Unlock()

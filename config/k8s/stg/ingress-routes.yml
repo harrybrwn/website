@@ -9,6 +9,7 @@ spec:
   routes:
   - match: >-
       HostSNI(`stg.hrry.me`)
+      || HostSNI(`api.stg.hrry.me`)
       || HostSNI(`s3.stg.hrry.dev`)
       || HostSNI(`stg.harrybrwn.com`)
       || HostSNI(`hextris.stg.harrybrwn.com`)

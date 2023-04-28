@@ -24,7 +24,7 @@ resource "cloudflare_record" "gh_pages_root_v4" {
     "185.199.111.153",
   ])
   type    = "A"
-  name    = "@"
+  name    = var.name
   value   = each.key
   proxied = false
   ttl     = var.ttl

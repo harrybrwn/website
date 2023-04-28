@@ -15,17 +15,10 @@ variable "GIT_BRANCH" {
     default = "dev"
 }
 
-variable "ALPINE_VERSION" {
-    default = "3.17.0"
-}
-
-variable "GO_VERSION" {
-    default = "1.18-alpine"
-}
-
-variable "RUST_VERSION" {
-    default = "1.68.0"
-}
+variable "ALPINE_VERSION"  { default = "3.17.0" }
+variable "GO_VERSION"      { default = "1.18-alpine" }
+variable "GRAFANA_VERSION" { default = "9.4.7" }
+variable "RUST_BASE"       { default = "alpine3.16"}
 
 variable "FLUENTBIT_VERSION" {
     default = "1.9.10"
@@ -45,10 +38,7 @@ group "default" {
         "databases",
         "services",
         "logging",
-
-        "provision",
-        "ansible",
-        "curl",
+        "tools",
     ]
 }
 
@@ -57,8 +47,7 @@ group "services" {
         "api",
         "hooks",
         "backups",
-        "go-geoip",
-        "geoip-rs",
+        "geoip",
         "legacy-site",
         "vanity-imports",
         "outline",
@@ -81,23 +70,38 @@ group "databases" {
     ]
 }
 
+group "tools" {
+    targets = [
+        "provision",
+        "ansible",
+        "curl",
+        "rust",
+    ]
+}
+
+variable "_IS_LOCAL" { default = false }
+
 function "tags" {
     params = [registry, name, extra_labels]
     result = concat(
         [
             join("/", compact([registry, "harrybrwn", "${name}:latest"])),
-            join("/", compact([registry, "harrybrwn", "${name}:${VERSION}"])),
-            notequal("", GIT_COMMIT) ?
-                join("/", compact([registry, "harrybrwn", "${name}:${GIT_COMMIT}"])) :
-                "",
-            notequal("", GIT_BRANCH) ?
-                join("/", compact([registry, "harrybrwn", "${name}:${GIT_BRANCH}"])) :
-                "",
         ],
-        [
-            for t in compact(extra_labels) :
-                join("/", compact([registry, "harrybrwn", "${name}:${t}"]))
-        ],
+        _IS_LOCAL ? [] : concat(
+            [
+                join("/", compact([registry, "harrybrwn", "${name}:${VERSION}"])),
+                notequal("", GIT_COMMIT) ?
+                    join("/", compact([registry, "harrybrwn", "${name}:${GIT_COMMIT}"])) :
+                    "",
+                notequal("", GIT_BRANCH) ?
+                    join("/", compact([registry, "harrybrwn", "${name}:${GIT_BRANCH}"])) :
+                    "",
+            ],
+            [
+                for t in compact(extra_labels) :
+                    join("/", compact([registry, "harrybrwn", "${name}:${t}"]))
+            ],
+        ),
     )
 }
 
@@ -108,6 +112,7 @@ function "labels" {
         "git.branch"      = "${GIT_BRANCH}"
         "version"         = "${VERSION}"
         "docker.registry" = "${REGISTRY}"
+        "author"          = "Harry Brown"
     }
 }
 
@@ -117,7 +122,6 @@ target "base-service" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
         GO_VERSION     = GO_VERSION
-        RUST_VERSION   = RUST_VERSION
     }
 }
 
@@ -152,6 +156,8 @@ target "backups" {
     tags = tags(REGISTRY, "backups", [])
     inherits = ["base-service"]
 }
+
+group "geoip" { targets = ["geoip-rs"] }
 
 target "go-geoip" {
     target = "go-geoip"
@@ -201,7 +207,7 @@ target "grafana" {
     args = {
         GRAFANA_VERSION = "9.4.7"
     }
-    tags = tags(REGISTRY, "grafana", ["9.4.7"])
+    tags = tags(REGISTRY, "grafana", [GRAFANA_VERSION])
     inherits = ["base-service"]
 }
 
@@ -309,6 +315,47 @@ target "service" {
 target "wait" {
     target = "wait"
     output = ["./.tmp/wait"]
+}
+
+group "rust" {
+    targets = [
+        for i in [
+            68,
+            69,
+        ]:
+        "rust_1-${i}-0"
+    ]
+}
+
+target "rust-base" {
+    context    = "config/docker/rust"
+    dockerfile = "Dockerfile"
+    labels     = labels()
+    platforms  = ["linux/amd64"]
+    args       = {RUST_BASE = RUST_BASE}
+}
+
+function "rust_tags" {
+    params = [version, latest]
+    result = [
+        for t in compact(concat([
+            version,
+            RUST_BASE == "" ? "" : "${version}-${RUST_BASE}",
+        ], latest ? ["latest", GIT_COMMIT] : [])) :
+        "harrybrwn/rust:${t}"
+    ]
+}
+
+target "rust_1-69-0" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.69.0", true)
+    args = {RUST_VERSION = "1.69.0"}
+}
+
+target "rust_1-68-0" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.68.0", false)
+    args = {RUST_VERSION = "1.68.0"}
 }
 
 #

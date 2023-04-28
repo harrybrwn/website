@@ -45,7 +45,10 @@ spec:
             value: 'true'
           - name: GEOIP_PORT
             value: '8084'
-          - name: GEOIP_DB_FILE
-            value: 's3://s3:9000/geoip/latest/GeoLite2-City.mmdb'
+          - name: GEOIP_CITY_FILE
+            value: 's3://s3:9000/geoip/2023-04-27/GeoLite2-City.mmdb'
+          - name: GEOIP_ASN_FILE
+            value: 's3://s3:9000/geoip/2023-04-27/GeoLite2-ASN.mmdb'
         envFrom:
           - secretRef: { name: geoip-secrets }
+          - configMapRef: { name: geoip-env-config }

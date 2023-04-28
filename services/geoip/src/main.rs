@@ -9,39 +9,19 @@ use clap::Parser;
 use maxminddb::geoip2;
 use serde::Serialize;
 
+mod geoip;
 mod ip;
 mod locale;
 mod logging;
-mod models;
 mod s3;
 #[cfg(test)]
 mod tests;
 
+use geoip::{GeoDB, GeoLoc, GeoError, ErrorResponse};
 use ip::ClientIP;
-use locale::{Language, Locales};
+use locale::{Locales};
 use logging::new_logger;
-use models::{city_to_response, ErrorResponse, LocationError, LocationResponse};
 use s3::open_from_s3;
-
-type GeoIpDB = RwLock<maxminddb::Reader<Vec<u8>>>;
-
-fn lookup(
-    db: &web::Data<GeoIpDB>,
-    ip: IpAddr,
-    locales: &Locales,
-) -> Result<LocationResponse, LocationError> {
-    match db.try_read() {
-        Ok(db) => match db.lookup::<geoip2::City>(ip) {
-            Ok(c) => city_to_response(c, locales),
-            Err(e) => Err(LocationError::from(e)),
-        },
-        Err(e) => Err(LocationError::from(e)),
-    }
-}
-
-trait IpDb {
-    fn lookup(&self, ip: IpAddr, lang: &Language) -> Result<LocationResponse, LocationError>;
-}
 
 async fn index(ip: ClientIP) -> impl Responder {
     // Adds newline for curl users
@@ -50,77 +30,66 @@ async fn index(ip: ClientIP) -> impl Responder {
 
 async fn lookup_address(
     address: web::Path<IpAddr>,
-    db: web::Data<GeoIpDB>,
+    db: web::Data<RwLock<GeoDB>>,
     locales: Locales,
 ) -> HttpResponse {
-    match lookup(&db, *address, &locales) {
-        Err(e) => e.into(),
+    let db = match db.try_read() {
+        Ok(db) => db,
+        Err(e) => return GeoError::from(e).into(),
+    };
+    match db.lookup(*address, &locales) {
         Ok(r) => HttpResponse::Ok()
             .insert_header((header::CONTENT_LANGUAGE, r.locale.clone()))
             .json(r),
-    }
-}
-
-async fn lookup_self(ip: ClientIP, db: web::Data<GeoIpDB>, locales: Locales) -> HttpResponse {
-    match lookup(&db, ip.ip(), &locales) {
         Err(e) => e.into(),
-        Ok(mut r) => {
-            r.ip = Some(ip.ip());
-            let locale = r.locale.clone();
-            HttpResponse::Ok()
-                .insert_header((header::CONTENT_LANGUAGE, locale))
-                .json(r)
-        }
     }
 }
 
-async fn lookup_self_languages(ip: ClientIP, db: web::Data<GeoIpDB>) -> HttpResponse {
+async fn lookup_self(ip: ClientIP, db: web::Data<RwLock<GeoDB>>, locales: Locales) -> HttpResponse {
     let db = match db.try_read() {
         Ok(db) => db,
-        Err(e) => return LocationError::from(e).into(),
+        Err(e) => return GeoError::from(e).into(),
     };
-    match db.lookup::<geoip2::City>(ip.ip()) {
-        Ok(city) => {
-            match city
-                .country
-                .and_then(|c| c.names)
-                .map(|n| n.iter().map(|(k, _)| *k).collect::<Vec<_>>())
-            {
-                Some(langs) => HttpResponse::Ok().json(langs),
-                None => HttpResponse::NotFound().finish(),
-            }
+    match db.lookup(ip.ip(), &locales) {
+        Ok(mut r) => {
+            r.ip = Some(ip.ip());
+            HttpResponse::Ok()
+                .insert_header((header::CONTENT_LANGUAGE, r.locale.clone()))
+                .json(r)
         }
-        Err(e) => LocationError::from(e).into(),
+        Err(e) => e.into(),
+    }
+}
+
+async fn lookup_self_languages(ip: ClientIP, db: web::Data<RwLock<GeoDB>>) -> HttpResponse {
+    let db = match db.try_read() {
+        Ok(db) => db,
+        Err(e) => return GeoError::from(e).into(),
+    };
+    match db.languages(ip.ip()) {
+        Ok(langs) => HttpResponse::Ok().json(langs),
+        Err(e) => e.into(),
     }
 }
 
 async fn lookup_address_languages(
     address: web::Path<IpAddr>,
-    db: web::Data<GeoIpDB>,
+    db: web::Data<RwLock<GeoDB>>,
 ) -> HttpResponse {
     let db = match db.try_read() {
         Ok(db) => db,
-        Err(e) => return LocationError::from(e).into(),
+        Err(e) => return GeoError::from(e).into(),
     };
-    match db.lookup::<geoip2::City>(*address) {
-        Ok(city) => {
-            match city
-                .country
-                .and_then(|c| c.names)
-                .map(|n| n.iter().map(|(k, _)| *k).collect::<Vec<_>>())
-            {
-                Some(langs) => HttpResponse::Ok().json(langs),
-                None => HttpResponse::NotFound().finish(),
-            }
-        }
-        Err(e) => LocationError::from(e).into(),
+    match db.languages(*address) {
+        Ok(langs) => HttpResponse::Ok().json(langs),
+        Err(e) => e.into(),
     }
 }
 
 #[derive(Serialize)]
 struct DebugResponse<'a> {
     geolocation: geoip2::City<'a>,
-    response: Option<LocationResponse>,
+    response: Option<GeoLoc<'a>>,
     error: Option<ErrorResponse>,
     ip: IpAddr,
     client_ip: IpAddr,
@@ -131,20 +100,20 @@ struct DebugResponse<'a> {
 #[get("/{address}/debug")]
 async fn lookup_address_debug(
     address: web::Path<IpAddr>,
-    db: web::Data<GeoIpDB>,
+    db: web::Data<RwLock<GeoDB>>,
     ip: ClientIP,
     locales: Locales,
 ) -> HttpResponse {
-    let (response, error) = match lookup(&db, *address, &locales) {
+    let db = match db.try_read() {
+        Ok(db) => db,
+        Err(e) => return GeoError::from(e).into(),
+    };
+    let (response, error) = match db.lookup(*address, &locales) {
         Ok(r) => (Some(r), None),
         Err(e) => (None, Some(e.into())),
     };
-    let db = match db.try_read() {
-        Ok(db) => db,
-        Err(e) => return LocationError::from(e).into(),
-    };
     let langs: Vec<_> = locales.iter().map(|l| l.to_string()).collect();
-    match db.lookup::<geoip2::City>(*address) {
+    match db.city.lookup::<geoip2::City>(*address) {
         Ok(geolocation) => HttpResponse::Ok().json(DebugResponse {
             client_ip: ip.ip(),
             ip: *address,
@@ -153,7 +122,7 @@ async fn lookup_address_debug(
             error,
             geolocation,
         }),
-        Err(e) => LocationError::from(e).into(),
+        Err(e) => GeoError::from(e).into(),
     }
 }
 
@@ -185,7 +154,7 @@ where
         },
         Err(_) => {
             log::debug!("getting GeoIP database file from local fs");
-            fs::read(&filepath)?
+            fs::read(filepath)?
         }
     };
     match maxminddb::Reader::from_source(body) {
@@ -234,8 +203,10 @@ macro_rules! cors_route {
 #[derive(clap::Parser, Debug)]
 pub(crate) struct Cli {
     /// File path for GeoIP or GeoLite2 database file
-    #[arg(short, long, env = "GEOIP_DB_FILE")]
-    file: Vec<String>,
+    #[arg(long, env = "GEOIP_CITY_FILE")]
+    city_file: Vec<String>,
+    #[arg(long, env = "GEOIP_ASN_FILE")]
+    asn_file: String,
     /// Server host
     #[arg(long, short = 'H', default_value = "0.0.0.0", env = "GEOIP_HOST")]
     host: String,
@@ -255,14 +226,31 @@ async fn main() -> std::io::Result<()> {
     let args = Cli::parse_from(env::args());
     let log = new_logger("geoip")?;
 
-    let geoip_db = match open_mmdb(&args.file[0]).await {
+    let geoip_db = match open_mmdb(&args.city_file[0]).await {
+        Ok(db) => db,
+        Err(e) => {
+            return Err(io::Error::new(io::ErrorKind::Other, e.to_string()));
+        }
+    };
+    let city_db = match open_mmdb(&args.city_file[0]).await {
+        Ok(db) => db,
+        Err(e) => {
+            return Err(io::Error::new(io::ErrorKind::Other, e.to_string()));
+        }
+    };
+    let asn_db = match open_mmdb(&args.asn_file).await {
         Ok(db) => db,
         Err(e) => {
             return Err(io::Error::new(io::ErrorKind::Other, e.to_string()));
         }
     };
     let langs = geoip_db.metadata.languages.clone();
-    let db = web::Data::new(GeoIpDB::new(geoip_db));
+    let database = web::Data::new(RwLock::new(GeoDB::new(city_db, asn_db)));
+    log::info!(
+        "loaded geoip databases {} {}",
+        args.city_file[0],
+        args.asn_file
+    );
 
     let prometheus = PrometheusMetricsBuilder::new("")
         .endpoint("/metrics")
@@ -280,7 +268,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(logging::AutoLog::new(log.clone()))
             .wrap(middleware::NormalizePath::trim());
 
-        app.app_data(web::Data::clone(&db))
+        app.app_data(web::Data::clone(&database))
             .app_data(web::Data::new(langs.clone()))
             .service(cors_route!(web::resource("/"), index))
             .service(cors_route!(web::resource("/languages"), languages))

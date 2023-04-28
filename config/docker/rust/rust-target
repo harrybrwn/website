@@ -1,0 +1,72 @@
+#!/bin/sh
+
+set -eu
+
+TARGETPLATFORM="${TARGETPLATFORM:-${1:-}}"
+if [ -z "${TARGETPLATFORM}" ]; then
+	echo "Error: no TARGETPLATFORM found. Please add 'ARG TARGETPLATFORM'."
+	exit 1
+fi
+
+ABI="${2:-musl}"
+
+case "${ABI}" in
+	gnu|musl)
+		;;
+	*|sgx|msvc)
+		echo "Error: \"${ABI}\" is not supported"
+		exit 1
+		;;
+esac
+
+case "${TARGETPLATFORM}" in
+	linux/amd64)
+		export TARGET="x86_64-unknown-linux-${ABI}"
+		;;
+	linux/amd64/v2)
+		;;
+	linux/amd64/v3)
+		;;
+	linux/arm64)
+		export TARGET="aarch64-unknown-linux-${ABI}"
+		;;
+	linux/arm/v7)
+		export TARGET="armv7-unknown-linux-${ABI}eabi"
+		# export _MUSL_CROSS_NAME=armv7${ARMV7_EXT}-linux-musleabi
+		# export _MUSL_CROSS_NAME='armv7l-linux-musleabi'
+		;;
+	linux/arm/v6)
+		export TARGET="arm-unknown-linux-${ABI}eabi"
+		;;
+	linux/riscv64)
+		;;
+	linux/mips64)
+		export TARGET="mips64-unknown-linux-${ABI}abi64"
+		;;
+	linux/mips64le)
+		export TARGET="mips64el-unknown-linux-${ABI}abi64"
+		;;
+	linux/386)
+		export TARGET="i686-pc-windows-${ABI}"
+		;;
+	linux/ppc64le)
+		if [ "${ABI}" != "gnu" ]; then
+			echo "Error: powerpc64le only supports GNU"
+			exit 1
+		fi
+	 	export TARGET="powerpc64le-unknown-linux-gnu"
+		;;
+	linux/s390x)
+		if [ "${ABI}" != "gnu" ]; then
+			echo "Error: x390x only supports GNU"
+			exit 1
+		fi
+		export TARGET="s390x-unknown-linux-gnu"
+		;;
+	*)
+		echo "Error: ${TARGETPLATFORM} not supported"
+		exit 1
+		;;
+esac
+
+echo "${TARGET}"

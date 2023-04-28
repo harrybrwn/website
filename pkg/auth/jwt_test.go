@@ -210,13 +210,9 @@ func TestGuard(t *testing.T) {
 	}
 }
 
-type requestContext struct {
-	*http.Request
-}
+type requestContext struct{ *http.Request }
 
-func (rc *requestContext) Get(key string) interface{} {
-	return rc.Context().Value(key)
-}
+func (rc *requestContext) Get(key string) interface{} { return rc.Context().Value(AuthContextKey(key)) }
 
 func TestValidateRefreshToken(t *testing.T) {
 	type table struct {

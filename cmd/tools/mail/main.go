@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/sendgrid/sendgrid-go"
@@ -16,8 +17,12 @@ import (
 var apikey string
 
 func main() {
-	var env string
+	var (
+		env string
+		to  = "harrybrown98@gmail.com"
+	)
 	flag.StringVar(&env, "env", ".env", ".env file to look for SENDGRID_API_KEY")
+	flag.StringVar(&to, "to", to, "email address to send an email to")
 	flag.Parse()
 
 	err := godotenv.Load(env)
@@ -29,34 +34,44 @@ func main() {
 	if len(apikey) == 0 {
 		log.Fatal("could not find api key")
 	}
-	err = run()
+	err = run(to)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run() error {
-	from := mail.NewEmail("harrybrwn", "noreply@harrybrwn.com")
-	to := mail.NewEmail("harry", "harrybrown98@gmail.com")
-
+func run(to string) error {
+	from := mail.NewEmail("harrybrwn", "noreply@hrry.io")
+	toEmail := mail.NewEmail(emailName(to), to)
 	subject := "Testing Out Our System"
-	// plainTextContent := "and easy to do anywhere, even with Go."
-	// plainTextContent := "this is a test message"
-	// htmlContent := `<p>this is a test message</p>`
-	// htmlContent := "<p>It is easy to send from <em>anywhere</em>, even with Go</p>"
 	plainTextContent := "This is a testing email, please disregard its contents."
-	htmlContent := `<div>Hi ` + to.Name +
-		`,<br><br>This is a testing email, please disregard its contents.` +
-		`<br><br>Thank you for you patience.<br><br>Harry</div>`
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	// plainTextContent = ""
+	//htmlContent := `<div>Hi ` + toEmail.Name +
+	//	`,<br><br>This is a testing email, please disregard its contents.` +
+	//	`<br><br>Thank you for you patience.<br><br>Harry</div>`
+	htmlContent := ""
+	message := mail.NewSingleEmail(from, subject, toEmail, plainTextContent, htmlContent)
 	client := sendgrid.NewSendClient(apikey)
+	fmt.Printf("%#v\n", message)
+	fmt.Printf("body: %s\n", mail.GetRequestBody(message))
+
 	response, err := client.SendWithContext(context.Background(), message)
 	if err != nil {
 		return err
 	} else {
 		fmt.Println(response.StatusCode, http.StatusText(response.StatusCode))
 		fmt.Println(response.Body)
-		fmt.Println(response.Headers)
+		for k, v := range response.Headers {
+			fmt.Printf("%s: %v\n", k, v)
+		}
 	}
 	return nil
+}
+
+func emailName(addr string) string {
+	parts := strings.Split(addr, "@")
+	if len(parts) == 2 {
+		return parts[0]
+	}
+	return addr
 }

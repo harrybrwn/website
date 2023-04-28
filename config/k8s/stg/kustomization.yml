@@ -217,3 +217,14 @@ configMapGenerator:
     behavior: replace
     files:
       - files/registry/config.yml
+  - name: web-api-env
+    behavior: merge
+    literals:
+      - API_TOKEN_COOKIE_DOMAIN=stg.hrry.me
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      - GEOIP_CITY_FILE=s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb
+    options:
+      disableNameSuffixHash: true

@@ -69,7 +69,7 @@ function help() {
   return $ret
 }
 
-readonly SERVICES=("db" "redis" "nginx" "api" "hooks" "legacy-site" "geoip" "vanity-imports" "backups")
+readonly SERVICES=("db" "redis" "nginx" "api" "hooks" "legacy-site" "geoip")
 
 #############
 # Utilities #
@@ -101,7 +101,7 @@ GIT_COMMIT=$(git rev-parse HEAD)
 SOURCE_HASH=$(./scripts/sourcehash.sh -e '*_test.go')
 
 build() {
-   compose build "$@"
+   compose build "${SERVICES[@]}" tests
 }
 
 setup() {
@@ -110,7 +110,7 @@ setup() {
 
 run_tests() {
   local pytest_args script
-  pytest_args="${*:-test/}"
+  pytest_args="${@:-test/}"
   script=$(cat <<-EOF
 scripts/wait.sh "\${POSTGRES_HOST}:\${POSTGRES_PORT}" -w 1 -- migrate.sh up
 scripts/wait.sh "\${APP_HOST}:\${APP_PORT:-443}" -w 1 -- pytest -s ${pytest_args}

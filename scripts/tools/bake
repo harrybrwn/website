@@ -38,7 +38,7 @@ usage() {
   echo
   echo "Flags"
   echo "  -h --help              print help message"
-  echo "     --local             load images locally"
+  echo "  -l --local             load images locally"
   echo "     --registry <uri>    change the registry (default \"$REG\")"
   echo "     --platform <s>      target a spesific platform"
   echo "     --prune             delete all the images and their tags (default: false)"
@@ -50,16 +50,22 @@ is_local=false
 prune=false
 verbose=false
 platform=""
+push=false
 while [ $# -gt 0 ]; do
   case $1 in
   	-h|--help)
       usage
       exit 0
       ;;
-    --local)
+    -l|--local)
       is_local=true
       GIT_BRANCH=""
       GIT_COMMIT=""
+      shift 1
+      ;;
+    --push)
+      push=true
+      args+=("--push")
       shift 1
       ;;
     --registry)
@@ -91,11 +97,16 @@ while [ $# -gt 0 ]; do
 done
 
 if ${is_local}; then
-  args+=("--set" "*.platform=$(get_platform)")
+  if ${push}; then
+    echo "Error: should not use --push and --local together"
+    exit 1
+  fi
+  args+=("--set" "*.platform=local")
   GIT_TAG=dev
   GIT_BRANCH=dev
   GIT_COMMIT=dev
   export GIT_GIT GIT_BRANCH GIT_COMMIT SOURCE_HASH
+  export _IS_LOCAL=true
 elif ${prune}; then
   docker image ls | grep "${REG}" #| awk '{print $3}'
   docker image rm -f $(docker image ls | grep "${REG}" | awk '{print $3}')

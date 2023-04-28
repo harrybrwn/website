@@ -1,3 +1,4 @@
+use std::iter::Iterator;
 use std::pin::Pin;
 use std::{cmp::Ordering, io};
 
@@ -6,7 +7,7 @@ use serde::Deserialize;
 
 static DEFAULT_LANGUAGE_CODE: &str = "en";
 
-fn get_accept_language<'a>(req: &'a HttpRequest) -> Option<&'a str> {
+fn get_accept_language(req: &HttpRequest) -> Option<&str> {
     req.headers()
         .get(http::header::ACCEPT_LANGUAGE)?
         .to_str()
@@ -42,7 +43,7 @@ static DEFAULT_LOCALE_Q: f32 = 1.0;
 fn parse_locale(raw: &str) -> Locale {
     let mut l = Locale::default();
     let name;
-    match raw.split_once(";") {
+    match raw.split_once(';') {
         Some((n, q)) => {
             name = n.trim();
             l.q = q
@@ -66,7 +67,7 @@ fn parse_locale(raw: &str) -> Locale {
             l.name = name.to_string();
         }
     };
-    return l;
+    l
 }
 
 fn get_locales(req: &HttpRequest) -> Locales {
@@ -77,14 +78,12 @@ fn get_locales(req: &HttpRequest) -> Locales {
             q: DEFAULT_LOCALE_Q,
         }])
     } else {
-        let mut l: Vec<_> = get_accept_language(req)
-            .unwrap_or(DEFAULT_LANGUAGE_CODE)
-            .split(",")
-            .map(|l| l.trim())
-            .map(parse_locale)
-            .collect();
-        l.sort_by(|a, b| b.compare(a));
-        Locales(l)
+        Locales::from_iter(
+            get_accept_language(req)
+                .unwrap_or(DEFAULT_LANGUAGE_CODE)
+                .split(',')
+                .map(|l| l.trim()),
+        )
     }
 }
 
@@ -95,6 +94,66 @@ impl Locales {
     #[inline]
     pub fn iter(&self) -> std::slice::Iter<'_, Locale> {
         self.0.iter()
+    }
+}
+
+impl From<Vec<Locale>> for Locales {
+    fn from(v: Vec<Locale>) -> Self {
+        Self::from_iter(v)
+    }
+}
+
+impl<'a, V, const N: usize> From<[V; N]> for Locales
+where
+    V: Into<&'a str>,
+{
+    fn from(values: [V; N]) -> Self {
+        Self::from_iter(values)
+    }
+}
+
+impl<'a, V> From<&[V]> for Locales
+where
+    V: Into<&'a str> + Clone,
+{
+    fn from(v: &[V]) -> Self {
+        Self::from_iter(v.to_vec())
+    }
+}
+
+impl<'a, T> From<Vec<T>> for Locales
+where
+    T: Into<&'a str>,
+{
+    fn from(value: Vec<T>) -> Self {
+        Self::from_iter(value)
+    }
+}
+
+impl FromIterator<Locale> for Locales {
+    fn from_iter<T: IntoIterator<Item = Locale>>(iter: T) -> Self {
+        let mut l: Vec<_> = iter.into_iter().collect();
+        l.sort_by(|a, b| b.compare(a));
+        Self(l)
+    }
+}
+
+impl<'a, S> FromIterator<S> for Locales
+where
+    S: Into<&'a str>,
+{
+    fn from_iter<T: IntoIterator<Item = S>>(iter: T) -> Self {
+        let mut l: Vec<_> = iter.into_iter().map(|l| parse_locale(l.into())).collect();
+        l.sort_by(|a, b| b.compare(a));
+        Self(l)
+    }
+}
+
+impl IntoIterator for Locales {
+    type Item = Locale;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -123,12 +182,12 @@ impl Locale {
             key.push('-');
             key.push_str(&self.region);
         }
-        return key;
+        key
     }
 
     #[inline]
     pub fn has_region(&self) -> bool {
-        self.region.len() > 0
+        self.region.is_empty()
     }
 
     #[inline]
@@ -147,7 +206,7 @@ impl std::string::ToString for Locale {
         }
         s.push_str(";q=");
         s.push_str(&self.q.to_string());
-        return s;
+        s
     }
 }
 
@@ -164,7 +223,7 @@ impl FromRequest for Locale {
 
     fn from_request(req: &HttpRequest, _: &mut actix_web::dev::Payload) -> Self::Future {
         let l = get_locales(req).0;
-        let locale = if l.len() < 1 {
+        let locale = if l.is_empty() {
             Locale {
                 name: DEFAULT_LANGUAGE_CODE.to_string(),
                 region: "".to_string(),
@@ -211,12 +270,12 @@ mod test {
         assert_eq!(l.region, "GB");
         assert_eq!(l.q, 0.8);
 
-        l = parse_locale("en-GB-1998;q=0.7");
+        l = Locale::from("en-GB-1998;q=0.7");
         assert_eq!(l.name, "en");
         assert_eq!(l.region, "GB-1998");
         assert_eq!(l.q, 0.7);
 
-        l = parse_locale("ja");
+        l = Locale::from("ja");
         assert_eq!(l.name, "ja");
         assert_eq!(l.region, "");
         assert_eq!(l.q, 1.0);

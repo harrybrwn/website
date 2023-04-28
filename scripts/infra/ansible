@@ -1,15 +1,29 @@
-#!/bin/sh
+#!/usr/bin/bash
 
-set -eu
+set -euo pipefail
 
 name="$(basename $0)"
+root="$(pwd)"
+p="$(realpath "${BASH_SOURCE[0]}")"
+dir="$(dirname $p)"
+
+if [ "${dir: -13}" == "scripts/infra" ]; then
+  root="$(realpath --logical "${dir}/../../")"
+else
+  echo "Error: the asumption is that this script is in ./scripts/infra/"
+  exit 1
+fi
+
+rel="$(realpath --relative-to="${root}" "$(pwd)")"
+container_working_dir="/home/ansible/hrry.me/${rel}"
 
 docker compose \
-  --project-directory "$(pwd)" \
-  --file config/docker-compose.tools.yml \
+  --project-directory "${root}" \
+  --file "${root}/config/docker-compose.tools.yml" \
   --ansi never                           \
   run \
-    --interactive=true \
-    --no-deps           \
-    --rm                \
+    --interactive=true                   \
+    --workdir "${container_working_dir}" \
+    --no-deps                            \
+    --rm                                 \
     ansible "${name}" "$@"

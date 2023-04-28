@@ -1,0 +1,110 @@
+# syntax=docker/dockerfile:1.4
+
+ARG ALPINE_VERSION=3.16
+ARG RUST_VERSION=1.68.0
+ARG RUST_BASE=alpine3.16
+FROM --platform=$BUILDPLATFORM rust:${RUST_VERSION}-${RUST_BASE} as rust-builder
+
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+# Used to turn armv7 into armv7l, or armv7m, or armv5l, etc.
+ARG ARMV7_EXT='l'
+
+RUN \
+	apk -U add curl musl-dev && \
+	# See https://musl.cc/
+	case "${TARGETPLATFORM}" in \
+	linux/amd64) \
+		echo -n 'x86_64-unknown-linux-musl' > /tmp/target ;\
+		export TARGET='x86_64-unknown-linux-musl' ;\
+		export _MUSL_CROSS_NAME='x86_64-linux-musl' ;\
+		;;\
+	linux/amd64/v2) \
+		;; \
+	linux/amd64/v3) \
+		;; \
+	linux/arm64) \
+	 	echo -n 'aarch64-unknown-linux-musl' > /tmp/target ;\
+		export TARGET='aarch64-unknown-linux-musl' ;\
+		export _MUSL_CROSS_NAME='aarch64-linux-musl' ;\
+		;; \
+	linux/arm/v7) \
+		echo -n 'armv7-unknown-linux-musleabi' > /tmp/target ;\
+		export TARGET='armv7-unknown-linux-musleabi' ;\
+		# export _MUSL_CROSS_NAME=armv7${ARMV7_EXT}-linux-musleabi ;\
+		# export _MUSL_CROSS_NAME='armv7l-linux-musleabi' ;\
+		export _MUSL_CROSS_NAME='arm-linux-musleabi' ;\
+		;;\
+	linux/arm/v6) \
+		echo -n 'arm-unknown-linux-musleabi' > /tmp/target   ;\
+		export TARGET='arm-unknown-linux-musleabi' ;\
+		export _MUSL_CROSS_NAME="armv6-linux-musleabi" ;\
+		;; \
+	linux/riscv64) \
+		;; \
+	linux/mips64) \
+		echo -n 'mips64-unknown-linux-muslabi64' > /tmp/target ;\
+		export TARGET='mips64-unknown-linux-muslabi64' ;\
+		export _MUSL_CROSS_NAME='mips64-linux-musl'      ;\
+		;; \
+	linux/mips64le) \
+		echo -n 'mips64el-unknown-linux-muslabi64' > /tmp/target ;\
+		export TARGET='mips64el-unknown-linux-muslabi64' ;\
+		export _MUSL_CROSS_NAME='mips64el-linux-musl'      ;\
+		;; \
+	*) \
+		echo "Error: ${TARGETPLATFORM} not supported" ;\
+		exit 1 ;\
+		;; \
+	esac && \
+	curl -fsL "https://more.musl.cc/11.2.1/x86_64-linux-musl/${_MUSL_CROSS_NAME}-cross.tgz" -o "/tmp/${_MUSL_CROSS_NAME}-cross.tgz" && \
+	tar -xzf "/tmp/${_MUSL_CROSS_NAME}-cross.tgz" \
+		--exclude '*/usr' \
+		-C /usr/ \
+		--strip-components 1 && \
+	rustup target add $(cat /tmp/target) && \
+	cat > /usr/local/cargo/config <<EOF
+[build]
+target = "$(cat /tmp/target)"
+
+[target.x86_64.unkonwn-linux-musl]
+linker = "x86_64-linux-musl-gcc"
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+[target.armv7-unknown-linux-musleabi]
+linker = "arm-linux-musleabi-gcc"
+[target.mips64-unknown-linux-muslabi64]
+linker = "mips64-linux-musl-gcc"
+[target.mips64el-unknown-linux-muslabi64]
+linker = "mips64el-linux-musl-gcc"
+EOF
+
+FROM rust-builder as builder
+WORKDIR /opt/hrry.me/geoip
+RUN USER=root cargo init
+COPY Cargo.toml Cargo.lock ./
+RUN --mount=type=cache,target=/usr/local/cargo/registry,id=geoip-cargo-registry \
+	cargo fetch && \
+	mkdir -p .cargo && \
+	# Vendor for arm builds so they can find the custom assembly in the ring crate
+    cargo vendor 2>/dev/null >> .cargo/config.toml
+COPY src src
+RUN --mount=type=cache,target=/usr/local/cargo/registry,id=geoip-cargo-registry \
+	--mount=type=cache,target=/opt/hrry.me/geoip/target,id=geoip-build-target-${TARGETPLATFORM} \
+	cargo build --release && \
+	case "${TARGETPLATFORM}" in \
+		linux/amd64)  export TARGET='x86_64-unknown-linux-musl' ;;\
+		linux/arm64)  export TARGET='aarch64-unknown-linux-musl' ;;\
+		linux/arm/v7) export TARGET='armv7-unknown-linux-musleabi' ;;\
+		linux/arm/v6) export TARGET='arm-unknown-linux-musleabi' ;;\
+		*) \
+			echo "Error: ${TARGETPLATFORM} not supported" ;\
+			exit 1 ;\
+			;; \
+	esac && \
+	mv "target/${TARGET}/release/geoip" /usr/local/bin/
+
+FROM alpine:${ALPINE_VERSION}
+RUN apk -U add ca-certificates && rm -rf /var/cache/apk
+COPY --from=builder /usr/local/bin/geoip /usr/local/bin/
+CMD [ "geoip" ]

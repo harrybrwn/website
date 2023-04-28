@@ -175,3 +175,10 @@ configMapGenerator:
     behavior: merge
     literals:
       - API_TOKEN_COOKIE_DOMAIN=hrry.me
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      - GEOIP_CITY_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-ASN.mmdb
+    options:
+      disableNameSuffixHash: true
