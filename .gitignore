@@ -19,9 +19,9 @@ terraform/*.tfstate*.backup
 *.tar.gz
 target/
 services/geoip/target/
+/result*
 
 # Config
-.vscode
 *.pgpass
 terraform.tfvars
 *.auto.tfvars
@@ -68,4 +68,3 @@ scripts/deploy.sh
 
 # Wait I want these
 !config/**/*.sh
-

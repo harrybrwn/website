@@ -4,7 +4,6 @@ set -eu
 
 BUILDKIT_NAME=harrybrwn-builder
 BUILDKIT_CONFIG=./config/docker/buildkit-config.toml
-REGISTY=registry.digitalocean.com/webreef
 # PLATFORMS=linux/amd64,linux/386,linux/arm/v6,linux/arm/v7,linux/arm64,linux/riscv64
 PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v6
 IMAGE=
@@ -101,7 +100,7 @@ if [ ! -f "$DOCKERFILE" ]; then
     exit 1
 fi
 
-if ! docker buildx use $BUILDKIT_NAME ; then
+if ! docker buildx use "$BUILDKIT_NAME" ; then
     CREATE_FLAGS="--use --name $BUILDKIT_NAME --platform $PLATFORMS"
     CREATE_FLAGS="$CREATE_FLAGS --driver-opt network=host"
     if [ -n "$BUILDKIT_CONFIG" ]; then
@@ -111,12 +110,12 @@ if ! docker buildx use $BUILDKIT_NAME ; then
             CREATE_FLAGS="$CREATE_FLAGS --config $BUILDKIT_CONFIG"
         fi
     fi
-    docker buildx create $CREATE_FLAGS
+    docker buildx create "$CREATE_FLAGS"
     docker buildx inspect --bootstrap
     docker run --privileged --rm tonistiigi/binfmt --install all
 fi
 
-if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" -a -f "${CACERT}" ]; then
+if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" ] && f [ -f "${CACERT}" ]; then
     container="$(docker buildx inspect harrybrwn-builder | grep -iE 'name:.*?[0-9]+$' | awk '{ print $2 }')"
     if [ -z "${container}" ]; then
       echo "Error: could not find container name"

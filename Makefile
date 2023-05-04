@@ -20,21 +20,19 @@ init:
 	yarn
 
 build: tools
-	sh scripts/build.sh
-	docker-compose build
-	@#docker buildx bake -f config/docker/docker-bake.hcl --set='*.platform=linux/amd64' --load
 	bin/bake --local --load
 
 test: test-ts test-go
 
 .PHONY: help init build test
 
-lint: lint-go
+lint: lint-go lint-rs lint-sh
 
 clean:
 	$(RM) -r .cache .pytest_cache .cache \
 		test-cover files/resume.pdf files/resume.log files/resume.aux
 	yarn clean
+	$(RM) result result-man
 
 coverage: coverage-ts coverage-go
 
@@ -53,31 +51,21 @@ test-go:
 	go tool cover -html=.cache/test/coverprofile.txt -o .cache/test/coverage.html
 	@#x-www-browser .cache/test/coverage.html
 
-test-ts:
-	yarn workspaces run test
-
 .PHONY: coverage-go coverage-ts
 coverage-go:
 	x-www-browser .cache/test/coverage.html
-
-coverage-ts:
-	yarn coverage
 
 lint-go:
 	go vet -tags ci ./...
 	golangci-lint run --config ./config/golangci.yml
 
 lint-sh:
-	shellcheck -x $(shell find ./scripts/ -name '*.sh' -type f)
+	@shellcheck -x \
+		$(shell find ./scripts/ -name '*.sh' -type f) \
+		$(shell find ./scripts/tools -type f)
 
-lint-k8s:
-	# kubectl kustomize config/k8s/dev | kube-score score -
-	kubeval -d config/k8s \
-	  --ignored-path-patterns 'kustomization.yml,registry/config.yml,prd/patches/,stg/patches/,k3d.yml' \
-	  --ignore-missing-schemas
-	kubectl kustomize config/k8s/dev | kubeval --ignore-missing-schemas
-	kubectl kustomize config/k8s/stg | kubeval --ignore-missing-schemas
-	kubectl kustomize config/k8s/prd | kubeval --ignore-missing-schemas
+lint-rs:
+	cargo clippy
 
 scripts:
 	@mkdir -p bin
@@ -105,64 +93,18 @@ tools: scripts
 geoip:
 	scripts/data/geoipupdate.sh
 
-resume:
-	docker container run --rm -it -v $(shell pwd):/app latex \
-		pdflatex \
-		--output-directory=/app/files \
-		/app/files/resume.tex
+.PHONY: run clean deep-clean test-go test-ts
 
-.PHONY: latex-image
-latex-image:
-	docker image build -t latex -f config/docker/Dockerfile.latex .
+k8s:
+	make -C config/k8s all
 
-diagrams/remora.svg: diagrams/remora.drawio
-	./scripts/diagrams.sh
+helm:
+	make -C config/helm build
 
-.PHONY: run clean deep-clean test-go test-ts resume
+.PHONY: k8s helm
 
-build-k8s:
-	scripts/infra/build-minikube.sh
+dist:
+	mkdir dist
 
-load-k8s-images:
-	scripts/infra/minikube-load.sh
-expose-k8s:
-	scripts/expose-k8s.sh
-
-k3d-image-load:
-	docker compose -f docker-compose.yml -f config/docker-compose.tools.yml build
-	scripts/infra/k3d-load.sh
-
-oidc-client:
-	scripts/tools/hydra clients create                 \
-		--id testid                                    \
-		--callbacks 'https://hrry.local/login'         \
-		--response-types code,id_token                 \
-		--grant-types authorization_code,refresh_token \
-		--scope openid,offline                         \
-		--token-endpoint-auth-method none
-
-outline-client:
-	@#scripts/tools/hydra clients create
-	echo hydra clients create  \
-		--fake-tls-termination \
-	 	--name outline         \
-		--id outline0          \
-		--secret b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465 \
-		--callbacks 'https://wiki.stg.hrry.me/auth/oidc.callback' \
-		--response-types code,id_token                 \
-		--grant-types authorization_code,refresh_token \
-		--scope openid,offline,profile,email           \
-		--token-endpoint-auth-method client_secret_post
-
-grafana-client:
-	@#scripts/tools/hydra clients create
-	hydra clients create  \
-		--fake-tls-termination \
-	 	--name grafana         \
-		--id cd5979b60b7c4b73  \
-		--secret 7ae3a681e9b0ab60f7b9012baf178557d6d3826117cbae0ee2955b3cdb8f1c29 \
-		--callbacks 'https://grafana.stg.hrry.dev/login/generic_oauth' \
-		--response-types code,id_token                 \
-		--grant-types authorization_code,refresh_token \
-		--scope openid,offline,profile,email           \
-		--token-endpoint-auth-method client_secret_post
+gomod2nix.toml:
+	nix develop --command gomod2nix generate

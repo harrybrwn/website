@@ -7,6 +7,7 @@ if [ ! -f  $env_file ]; then
 	echo "Error: could not find grafana admin credentials"
 	exit 1
 fi
+# shellcheck source=config/env/prod/grafana-admin.env
 source $env_file
 
 conf="./config/grafana/dashboards"
@@ -16,8 +17,8 @@ auth="Authorization: Bearer ${GRAFANA_API_KEY}"
 sync_dashboard() {
 	local uid="${1}"
 	local name="${2}"
-	local data="$(curl -sS --fail -H "${auth}" "${base}/api/dashboards/uid/${uid}")"
-	if [ $? -ne 0 ]; then
+	local data
+  if ! data="$(curl -sS --fail -H "${auth}" "${base}/api/dashboards/uid/${uid}")"; then
 		echo "Error: failed to fetch dashobard"
 		exit 1
 	fi
@@ -30,6 +31,7 @@ PERF_UID=Tt6NZyXnz
 REGISTRY_UID=X9CPPsj7k
 GEOIP_UID='4Ba84XCnz'
 OBS_UID=n-VhV_j7z
+# shellcheck disable=SC2034
 MINIO_UID=TgmJnqnnk
 NODE_RESOURCES_UID=iqlJI6RRz
 K8S_UID=FnhmVizRz

@@ -1,0 +1,37 @@
+on:
+  push:
+    branches:
+      - master
+      - staging
+name: publish
+
+jobs:
+  publish-rust:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        driver: docker-container
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: harrybrwn
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    - name: Get source hash
+      id: api-source-hash
+      run: echo "::set-output name=source-hash::$(scripts/sourcehash.sh --lang go -e '*_test.go')"
+    - name: Push Rust Images
+      env:
+        GIT_COMMIT: ${{ github.sha }}
+        GIT_BRANCH: ${{ github.ref_name }}
+        SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
+      run: docker buildx bake --file config/docker/docker-bake.hcl rust --push
+    - name: Push GeoIP Images
+      env:
+        GIT_COMMIT: ${{ github.sha }}
+        GIT_BRANCH: ${{ github.ref_name }}
+        SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
+      run: docker buildx bake --file config/docker/docker-bake.hcl geoip-rs --push

@@ -2,6 +2,7 @@
 
 declare -r CERTDB="sql:$HOME/.pki/nssdb"
 declare -r LOCAL_CERT_NAME="harrybrwn-local-dev"
+export CERTDB LOCAL_CERT_NAME
 
 in_docker() {
 	grep -q docker /proc/1/cgroup || [ -f /.dockerenv ]

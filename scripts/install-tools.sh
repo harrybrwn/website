@@ -2,10 +2,10 @@
 
 set -e
 
-TOOLS="${@:-mockgen migrate}"
+TOOLS="${*:-mockgen migrate}"
 
 i() {
-  go install -trimpath -ldflags '-w -s' $@
+  go install -trimpath -ldflags '-w -s' "$@"
 }
 
 for tool in $TOOLS; do

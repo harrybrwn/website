@@ -187,7 +187,7 @@ impl Locale {
 
     #[inline]
     pub fn has_region(&self) -> bool {
-        self.region.is_empty()
+        !self.region.is_empty()
     }
 
     #[inline]
@@ -279,6 +279,17 @@ mod test {
         assert_eq!(l.name, "ja");
         assert_eq!(l.region, "");
         assert_eq!(l.q, 1.0);
+    }
+
+    #[test]
+    fn test_locale_full_name() {
+        let l = Locale::from("zh-CN");
+        assert_eq!("zh", l.name);
+        assert_eq!("CN", l.region);
+        assert!(l.has_region());
+        assert_eq!("zh-CN", l.full_name());
+        let l = Locale::from("en");
+        assert_eq!("en", l.full_name());
     }
 
     #[actix_web::test]

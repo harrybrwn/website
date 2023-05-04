@@ -136,13 +136,8 @@
           },
           {
             "Effect": "Allow",
-            "Action": ["s3:GetObject"],
-            "Resource": ["arn:aws:s3:::geoip/GeoLite2_20220621/*"]
-          },
-          {
-            "Effect": "Allow",
-            "Action": ["s3:GetObject"],
-            "Resource": ["arn:aws:s3:::geoip/latest/*"]
+            "Action": ["s3:GetObject", "s3:ListBucket"],
+            "Resource": ["arn:aws:s3:::geoip/*"]
           }
         ]
       },

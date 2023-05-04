@@ -1,4 +1,5 @@
-import { storeToken } from "~/frontend/api/auth";
+// import { storeToken } from "~/frontend/api/auth";
+import { storeToken } from "@hrry.me/api/auth";
 import { clearCookie } from "./cookies";
 import { isEmail } from "./email";
 import LoginManager from "./LoginManager";

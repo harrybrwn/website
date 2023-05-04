@@ -28,7 +28,7 @@ get_platform() {
     arm*)
       _arch="$(echo "$_arch" | sed -E 's/.*?v([0-9]+).*$/arm\/v\1/')"
       ;;
-    *) break;;
+    *) return;;
   esac
   echo -n "${_kernel}/${_arch}"
 }
@@ -109,7 +109,7 @@ if ${is_local}; then
   export _IS_LOCAL=true
 elif ${prune}; then
   docker image ls | grep "${REG}" #| awk '{print $3}'
-  docker image rm -f $(docker image ls | grep "${REG}" | awk '{print $3}')
+  docker image rm -f "$(docker image ls | grep "${REG}" | awk '{print $3}')"
   exit 0
 fi
 

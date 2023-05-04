@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-readonly DIR="$(pwd)/$(dirname ${BASH_SOURCE[0]})"
+# shellcheck disable=SC2155
+readonly DIR="$(pwd)/$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=scripts/shell/common.sh
 source "$DIR/shell/common.sh"
 
 RED="\e[31m"
@@ -13,18 +15,18 @@ NOCOL="\e[0m"
 info() {
 	_log="$1"
 	shift
-	echo -e "${GREEN}[$_log]${NOCOL} $@"
+	echo -e "${GREEN}[$_log]${NOCOL} $*"
 }
 
 error() {
 	_log="$1"
 	shift
-	echo -e "${RED}[$_log]${NOCOL} $@" 1>&2
+	echo -e "${RED}[$_log]${NOCOL} $*" 1>&2
 }
 
 block() {
 	echo
-	while read line; do
+	while read -r line; do
 	 	if [ ${#line} -eq 0 ]; then
 		 	echo
 		else
@@ -32,6 +34,22 @@ block() {
 		fi
 	done
 	echo
+}
+
+setup_local_tooling() {
+	local BIN_DIR=./bin
+	info configure "Setting up local tools in ${BIN_DIR}"
+  mkdir -p "${BIN_DIR}"
+
+	ln -sf ../scripts/functional.sh $BIN_DIR/functional
+	ln -sf ../scripts/tools/hydra $BIN_DIR/hydra
+	ln -sf ../scripts/tools/bake $BIN_DIR/bake
+	ln -sf ../scripts/tools/k8s $BIN_DIR/k8s
+	ln -sf ../scripts/tools/tootctl $BIN_DIR/tootctl
+	ln -sf ../scripts/infra/ansible $BIN_DIR/ansible
+	for s in playbook inventory config galaxy test pull console connection vault lint; do
+		ln -sf ../scripts/infra/ansible "$BIN_DIR/ansible-$s"
+	done
 }
 
 TOOLS=(
@@ -57,8 +75,7 @@ TOOLS=(
 	openssl
 )
 for tool in "${TOOLS[@]}"; do
-	path="$(type -P "${tool}")"
-	if [ $? -ne 0 ]; then
+	if ! path="$(type -P "${tool}")"; then
 		error configure "Cannot find tool \"${tool}\""
 		exit 1
 	fi
@@ -67,7 +84,7 @@ done
 
 docker_plugins="$(docker system info -f json | jq -r '.ClientInfo.Plugins[].Name')"
 for cmd in buildx compose; do
-	if ! grep "${cmd}" <<< $docker_plugins > /dev/null; then
+	if ! grep "${cmd}" <<< "$docker_plugins" > /dev/null; then
 		error configure "Docker plugin not found: 'docker ${cmd}' is a required plugin"
 		exit 1
 	fi
@@ -78,7 +95,8 @@ if ! grep 'harrybrwn.local' /etc/hosts > /dev/null 2>&1; then
 	error configure "Local DNS configuration needed:"
 	echo
 	echo "Run the following:"
-	echo ' $ echo "127.0.0.1 harrybrwn.local\n127.0.0.1 home.harrybrwn.local" sudo tee -a /etc/hosts'
+	printf ' $ echo "127.0.0.1 harrybrwn.local\n127.0.0.1 home.harrybrwn.local" sudo tee -a /etc/hosts'
+  echo
 	echo
 	exit 1
 fi
@@ -106,5 +124,7 @@ for name in "${CERT_NAMES[@]}"; do
 		info configure "Certificate ${name}.crt OK"
 	fi
 done
+
+setup_local_tooling
 
 echo -e "${CYAN}Configuration looks good.${NOCOL}"

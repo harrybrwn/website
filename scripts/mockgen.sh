@@ -1,8 +1,12 @@
 #!/bin/sh
 
-set -e
+set -eu
 
 dest="internal/mocks"
+
+if [ -n "${NIX_BUILD_CORES:-}" ]; then
+	set -x
+fi
 
 mockgen -package mockdb -destination $dest/mockdb/db.go harrybrown.com/pkg/db DB,Rows
 mockgen -package mockredis -destination $dest/mockredis/cmdable.go github.com/go-redis/redis/v8 Cmdable,UniversalClient

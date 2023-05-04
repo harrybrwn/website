@@ -1,0 +1,26 @@
+{
+	"cSpell.words": [
+		"certbot",
+		"configmap",
+		"filestash",
+		"fluentbit",
+		"GEOIP",
+		"grafana",
+		"harrybrwn",
+		"healthcheck",
+		"hrry",
+		"kustomize",
+		"letsencrypt",
+		"minio",
+		"OIDC",
+		"pkce",
+		"raspberrypi",
+		"rdbmaster",
+		"SENDGRID",
+		"vimrc"
+	],
+	"[nix]": {
+		"editor.insertSpaces": true,
+		"editor.tabSize": 2
+	},
+}

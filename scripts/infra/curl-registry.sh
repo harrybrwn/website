@@ -10,7 +10,7 @@ set -eu
 
 CONF_DIR="${DOCKER_CONFIG:-$HOME/.docker}"
 CONF_FILE="${CONF_DIR}/config.json"
-AUTH="$(cat ${CONF_FILE} | jq -r '.auths | .["10.0.0.11:5000"].auth' | base64 -d)"
+AUTH="$(jq -r '.auths | .["10.0.0.11:5000"].auth' "${CONF_FILE}"| base64 -d)"
 
 curl \
 	--user "${AUTH}" \
