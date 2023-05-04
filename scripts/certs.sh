@@ -2,7 +2,9 @@
 
 set -e
 
-readonly DIR="$(pwd)/$(dirname ${BASH_SOURCE[0]})"
+# shellcheck disable=SC2155
+readonly DIR="$(pwd)/$(dirname "${BASH_SOURCE[0]}")"
+# shellcheck source=scripts/shell/common.sh
 source "$DIR/shell/common.sh"
 
 declare -r ORG="HarryBrown"

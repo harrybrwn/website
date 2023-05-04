@@ -1,7 +1,5 @@
 - name: Random Tests
   hosts: localhost
-  # hosts: stg
-  # become: true
   vars_files:
     - vars/become-password.yml
   become: false
@@ -26,3 +24,6 @@
 #     #   delegate_to: localhost
 #     # - shell: ssh admin@router.lan '/system resource print'
 #     #   delegate_to: localhost
+
+- name: Testing kubernetes
+  hosts: lenovo

@@ -1,31 +1,41 @@
-#!/bin/sh
+#!/usr/bin/bash
 
-set -eu
+set -euo pipefail
 
-#images="$(docker-compose \
-#  --file docker-compose.yml \
-#  --file config/docker-compose.logging.yml \
-#  --file config/docker-compose.tools.yml \
-#  config \
-#  | grep -E 'image:.*' \
-#  | grep 'harrybrwn'   \
-#  | awk '{ print $2 }' \
-#  | sort \
-#  | uniq)"
+find_image() {
+  local e match="$1"
+  shift
+  for e; do
+    if [[ "$e" =~ $match ]]; then
+      echo "$e"
+      return 0
+    fi
+  done
+  return 1
+}
 
-images="$(docker buildx bake \
+readarray -t images < <(docker buildx bake \
   --file config/docker/docker-bake.hcl \
   --print 2>&1 \
   | jq -r '.target[] | .tags[]' \
   | sort \
   | uniq \
-  | grep -E 'latest$')"
+  | grep -E 'latest$')
 
-if [ -n "${@:-}" ]; then
-  images="$(echo "${images}" | grep "$@")"
+if [ -n "${*:-}" ]; then
+  img="$(find_image "$@" "${images[@]}")"
+  images=("$img")
 fi
 
-echo "loading images..."
-echo "${images}"
-k3d image load --cluster hrry-dev ${images}
+existing_images=()
+for i in "${images[@]}"; do
+  if docker image inspect "$i" > /dev/null 2>&1; then
+    existing_images+=("$i")
+  else
+    echo "Warning: skipping image \"$i\""
+  fi
+done
 
+echo "loading images..."
+for i in "${images[@]}"; do echo "$i"; done
+k3d image load --cluster hrry-dev "${existing_images[@]}"

@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
 
     -e|--exclude|-e=*|--exclude=*)
       arg="${1#*=}"
-      if [ "$arg" = "-e" -o "$arg" = "--exclude" ]; then
+      if [ "$arg" = "-e" ] || [ "$arg" = "--exclude" ]; then
         arg="$2"
         shift 2
       else
@@ -49,7 +49,7 @@ while [ $# -gt 0 ]; do
 
     -i|--include|-i=*|--include=*)
       arg="${1#*=}"
-      if [ "$arg" = "-i" -o "$arg" = "--include" ]; then
+      if [ "$arg" = "-i" ] || [ "$arg" = "--include" ]; then
         arg="$2"
         shift 2
       else
@@ -83,13 +83,13 @@ while [ $# -gt 0 ]; do
 done
 
 list() {
-  local e=""
+  e=""
   if [ -n "$EXCLUDE" ]; then
     for f in $EXCLUDE; do
       e="-not -path $f $e"
     done
   fi
-  local i=""
+  i=""
   if [ -n "$INCLUDE" ]; then
     for f in $INCLUDE; do
       i="-o -name $f $i"
@@ -98,43 +98,50 @@ list() {
 
   case "$LANG" in
     go)
-      find .                   \
-        -type f                \
-        \(                     \
-          -name '*.go'         \
-          -o -name 'go.mod'    \
-          -o -name 'go.sum' $i \
-        \)                     \
-        -not -path './test/*'  \
-        -not -path './vendor/*' $e
+      find .                     \
+        -type f                  \
+        \(                       \
+          -name '*.go'           \
+          -o -name 'go.mod'      \
+          -o -name 'go.sum' "$i" \
+        \)                       \
+        -not -path './test/*'    \
+        -not -path './vendor/*' "$e"
       ;;
     ts|typescript)
-      find .                              \
-        -type f                           \
-        \(                                \
-          -name '*.ts'                    \
-          -o -name 'yarn.lock'            \
-          -o -name 'package-lock.json' $i \
-        \)                                \
-        -not -path './node_modules/*' $e
+      find .                                \
+        -type f                             \
+        \(                                  \
+          -name '*.ts'                      \
+          -o -name 'yarn.lock'              \
+          -o -name 'package-lock.json' "$i" \
+        \)                                  \
+        -not -path './node_modules/*' "$e"
       ;;
     py|python)
-      find .                             \
-        -type f                          \
-        \(                               \
-          -name '*.py'                   \
-          -o -name 'poetry.lock'         \
-          -o -name 'requirements.txt' $i \
-        \)                               \
-        -not -path './node_modules/*' $e
+      find .                               \
+        -type f                            \
+        \(                                 \
+          -name '*.py'                     \
+          -o -name 'poetry.lock'           \
+          -o -name 'requirements.txt' "$i" \
+        \)                                 \
+        -not -path './node_modules/*' "$e"
       ;;
     css)
-      find .               \
-        -type f            \
-        \(                 \
-          -name '*.css' $i \
-        \)                 \
-        -not -path './node_modules' $e
+      find .                 \
+        -type f              \
+        \(                   \
+          -name '*.css' "$i" \
+        \)                   \
+        -not -path './node_modules' "$e"
+      ;;
+    rust)
+      find .                \
+        -type f             \
+        \(                  \
+          -name '*.rs' "$i" \
+        \) "$e"
       ;;
     *)
       echo "unknown language \"$LANG\", see (--lang)"

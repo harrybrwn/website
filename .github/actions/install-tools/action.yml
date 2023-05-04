@@ -1,0 +1,27 @@
+name: Install Tools
+description: Installs build tools
+
+runs:
+  using: "composite"
+  steps:
+    - id: go-version
+      run: echo "::set-output name=version-used::$(go env GOVERSION)"
+      shell: sh
+    - uses: actions/cache@v2
+      id: go-tool-cache
+      with:
+        path: |
+          ~/go/pkgs/mod
+          ~/.cache/go-build
+          ~/go/bin
+        key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gotools-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gotools-
+    - if: steps.go-tool-cache.outputs.cache-hit != 'true'
+      run: go install -ldflags '-w -s' github.com/golang/mock/mockgen@latest
+      shell: sh
+    - if: steps.go-tool-cache.outputs.cache-hit != 'true'
+      shell: sh
+      run: go mod download
+    - run: go generate ./...
+      shell: sh

@@ -2,8 +2,8 @@
 
 set -e
 
-declare -r CADIR="./ca"
-declare -r KEY_SIZE=2048
+#declare -r CADIR="./ca"
+#declare -r KEY_SIZE=2048
 export OPENSSL_CONF=./openssl.cnf
 declare override=false
 

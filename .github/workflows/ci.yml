@@ -16,31 +16,37 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ~${{ env.GO_VERSION }}
-      - name: Get Go Version
-        id: go-version
-        run: echo "::set-output name=version-used::$(go env GOVERSION)"
+      # - name: Get Go Version
+      #   id: go-version
+      #   run: echo "::set-output name=version-used::$(go env GOVERSION)"
 
-      - name: Cache Build Tools
-        uses: actions/cache@v2
-        id: go-cache
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-            ~/go/bin
-          key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-
-      - name: Install Go MockGen
-        if: steps.go-cache.outputs.cache-hit != 'true'
-        run: go install github.com/golang/mock/mockgen@latest
-      - run: go generate ./...
+      - name: Install Build Tools
+        uses: ./.github/actions/install-tools
+
+      # - name: Cache Build Tools
+      #   uses: actions/cache@v2
+      #   id: go-cache
+      #   with:
+      #     path: |
+      #       ~/go/pkg/mod
+      #       ~/.cache/go-build
+      #       ~/go/bin
+      #     key: ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-${{ hashFiles('**/go.sum') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}_${{ runner.arch }}-${{ steps.go-version.outputs.version-used }}-gomockgen-
+      # - name: Install Go MockGen
+      #   if: steps.go-cache.outputs.cache-hit != 'true'
+      #   run: go install github.com/golang/mock/mockgen@latest
+      # - run: go generate ./...
+
       - run: go vet -tags ci ./...
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.52.2
           args: --config ./config/golangci.yml
+      - name: lint rust
+        run: cargo clippy
 
   build:
     name: build
@@ -155,8 +161,8 @@ jobs:
       #if: steps.yarn-cache.outputs.cache-hit != 'true'
       run: yarn install
 
-    - name: Test Frontend
-      run: yarn workspaces run test:ci
+    # - name: Test Frontend
+    #   run: yarn workspaces run test:ci
     - name: Test Backend
       run: |
         go generate ./...

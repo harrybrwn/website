@@ -1,12 +1,18 @@
-use rhai::Engine;
+use rhai::{Engine, Scope};
 
 fn main() {
     let engine = Engine::new();
-    let script = "print(69 + 420)";
-    match engine.run(script) {
-        Ok(res) => println!("{:?}", res),
-        Err(e) => println!("{}", e),
+    let mut scope = Scope::new();
+    let ast = match engine.compile_file("build.rhai".into())  {
+        Ok(ast) => ast,
+        Err(err) => {
+            println!("compile failed: {}", err);
+            return;
+        },
     };
+    if let Some(err) = engine.run_ast_with_scope(&mut scope, &ast).err() {
+        println!("Error: {}", err);
+    }
 }
 
 #[cfg(test)]

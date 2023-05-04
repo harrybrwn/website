@@ -1,3 +1,5 @@
+#!/bin/sh
+
 docker_compose_images() {
   docker compose                                  \
     --file docker-compose.yml                     \

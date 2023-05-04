@@ -3,7 +3,7 @@
 set -e
 
 #GIT_TAG="$(git describe --tags --abbrev=0)"
-GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+#GIT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 GIT_COMMIT="$(git rev-parse HEAD)"
 DATE="$(date '+%d-%m-%Y_%H:%M:%S')"
 
@@ -23,6 +23,8 @@ if [ "$1" = "--tar" ]; then
     --exclude="__pycache__" \
     --exclude="*.tar.gz" \
     --exclude="*.tgz" \
+    --exclude="target" \
+    --exclude=".next" \
     -czvf \
     "$tarball" .
     mc cp "$tarball" "r2/storage/hrry.me/$tarball"
@@ -37,6 +39,7 @@ else
     --exclude "terraform/.terraform/*" \
     --exclude "*.terraform/*" \
     --exclude "files/mmdb/*"           \
+    --exclude="target/*" \
     --overwrite                        \
     --preserve --remove    \
     "$@" \

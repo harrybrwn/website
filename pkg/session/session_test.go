@@ -90,7 +90,9 @@ func TestManager_Get(t *testing.T) {
 	_, err = m.Get(req)
 	is.Equal(err, http.ErrNoCookie)
 
-	cookie := rec.Result().Cookies()[0]
+	res := rec.Result()
+	defer res.Body.Close()
+	cookie := res.Cookies()[0]
 	req.AddCookie(cookie)
 
 	s, err := m.Get(req)
@@ -123,7 +125,9 @@ func TestManager_Get_timeout(t *testing.T) {
 	err := m.SetValue(rec, req, &data{ID: 3, Name: "johnny"})
 	is.NoErr(err)
 
-	cookie := rec.Result().Cookies()[0]
+	res := rec.Result()
+	defer res.Body.Close()
+	cookie := res.Cookies()[0]
 	req.AddCookie(cookie)
 
 	time.Sleep(time.Millisecond * 5)
@@ -151,7 +155,9 @@ func TestManager_Delete(t *testing.T) {
 
 	err := m.SetValue(rec, req, &data{ID: 3, Name: "johnny"})
 	is.NoErr(err)
-	cookie := rec.Result().Cookies()[0]
+	res := rec.Result()
+	defer res.Body.Close()
+	cookie := res.Cookies()[0]
 	v, err := m.Store.Get(ctx, m.key(cookie.Value))
 	is.NoErr(err)
 	is.Equal(v.ID, 3)
@@ -184,7 +190,9 @@ func TestManager_UpdateValue(t *testing.T) {
 	err := m.SetValue(rec, req, &data{ID: 69, Name: "nice"})
 	is.NoErr(err)
 
-	req.AddCookie(rec.Result().Cookies()[0])
+	res := rec.Result()
+	defer res.Body.Close()
+	req.AddCookie(res.Cookies()[0])
 	v, err := m.GetValue(req)
 	is.NoErr(err)
 	is.Equal(v.ID, 69)

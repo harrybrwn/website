@@ -2,7 +2,7 @@
 
 set -eu
 
-extras=""
+#extras=""
 
 # Custom SSL
 #extras="-v $(pwd)/config/pki/certs/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro"

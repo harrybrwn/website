@@ -2,7 +2,7 @@
 
 set -eu
 
-if [ -z "${SUDO_USER:-}" -o -z "${SUDO_COMMAND:-}" ]; then
+if [ -z "${SUDO_USER:-}" ] || [ -z "${SUDO_COMMAND:-}" ]; then
   echo "Error: must run script as sudo"
   exit 1
 fi
@@ -19,7 +19,7 @@ kubectl port-forward svc/geoip 8084:8084 &
 echo "running $(jobs -p)"
 
 stopall() {
-  kill -9 $(jobs -p)
+  kill -9 "$(jobs -p)"
 }
 trap stopall SIGINT
 wait

@@ -58,3 +58,6 @@ deploy.sh
 
 # Build
 /services/geoip/target
+/target/
+/services/geoip/target/
+/result

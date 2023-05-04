@@ -47,6 +47,7 @@ for file in "${ENV_FILES[@]}"; do
     echo "Error: $file does not exist"
     exit 1
   fi
+  # shellcheck disable=SC1090
   source "$file"
 done
 

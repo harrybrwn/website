@@ -19,6 +19,10 @@ network_exists() {
   docker network inspect "$1" > /dev/null 2>&1
 }
 
+volume_exists() {
+  docker volume inspect "$1" > /dev/null 2>&1
+}
+
 wait_on_dbs() {
   # wait for postgres and minio
   echo "Waiting for postgres and minio to start."
@@ -91,8 +95,8 @@ while [ $# -gt 0 ]; do
       echo
       echo "Flags"
       echo "  -h --help     print help message"
-      echo "     --compose  use 'docker compose'"
-      echo "     --k8s      use kubenetes (k3d)"
+      echo "     --compose  use 'docker compose' (default: $USE_COMPOSE)"
+      echo "     --k8s      use kubenetes (k3d)  (default: $USE_K8s)"
       echo
       echo "Services"
       for s in ${svcs}; do
@@ -114,7 +118,6 @@ fi
 
 # Check configuration
 bash scripts/configure.sh
-exit 0
 
 go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
@@ -131,12 +134,21 @@ if ${USE_COMPOSE}; then
   docker compose up --no-deps --detach --force-recreate db s3
 elif ${USE_K8s}; then
   if ! k3d cluster get "${K3D_CLUSTER}" > /dev/null; then
+    if volume_exists "k3d-${K3D_CLUSTER}-images"; then
+      docker volume rm "k3d-${K3D_CLUSTER}-images"
+    fi
+    if network_exists "k3d-${K3D_CLUSTER}"; then
+      docker network rm "k3d-${K3D_CLUSTER}"
+    fi
     k3d cluster create --config config/k8s/k3d.yml
   elif ! k3d_running; then
     k3d cluster start "${K3D_CLUSTER}"
   fi
   scripts/infra/k3d-load.sh
   k3d kubeconfig merge "${K3D_CLUSTER}" --kubeconfig-merge-default
+  if [ "$(kubectl config current-context)" != "k3d-${K3D_CLUSTER}" ]; then
+    kubectl config use-context "k3d-${K3D_CLUSTER}"
+  fi
   kubectl apply -k config/k8s/dev || true # fails sometimes when cert-manager CRDs are being installed.
   kubectl wait pods -l 'app=db' --for condition=Ready
   kubectl wait pods -l 'app=s3' --for condition=Ready
@@ -145,6 +157,7 @@ elif ${USE_K8s}; then
   kubectl port-forward svc/s3 9000:9000 &
   kubectl port-forward svc/db 5432:5432 &
   trap stop_all EXIT
+  kubectl apply -k config/k8s/dev | grep -i created
   # Create an admin user for mastodon
   # TODO make this idempotent
   #kubectl -n mastodon exec -it deployment/mastodon-web -- \

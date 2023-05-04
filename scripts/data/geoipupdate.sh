@@ -6,8 +6,9 @@ DATE="$(date '+%Y-%m-%d')"
 DEST=files/mmdb
 
 docker_download() {
-	local user="$(id -u):$(id -g)"
-	local dir="$(realpath ${DEST}/${DATE})"
+	local user dir
+  user="$(id -u):$(id -g)"
+  dir="$(realpath "${DEST}/${DATE:?}")"
 	mkdir -p "${dir}"
 	docker container run         \
 		--rm                       \
@@ -30,20 +31,20 @@ download() {
 }
 
 if [ -d "${DEST}/${DATE}" ]; then
-	rm -rf "${DEST}/${DATE}"
+	rm -rf "${DEST}/${DATE:?}"
 fi
 if [ -L "${DEST}/latest" ]; then
 	rm "${DEST}/latest"
 fi
 
-download
+download "$@"
 ln -s "${DATE}" "${DEST}/latest"
 ln -s "../../../${DEST}/latest" "services/geoip/testdata/latest"
 ln -s "../../../${DEST}/latest" "services/go-geoip/testdata/latest"
 
-mc cp ${DEST}/${DATE}/*.mmdb "hrry.dev/geoip/${DATE}/"
+mc cp "${DEST}/${DATE}"/*.mmdb "hrry.dev/geoip/${DATE}/"
 mc tree --files "hrry.dev/geoip/${DATE}/"
 
-for f in ${DEST}/${DATE}/*.mmdb; do
-	echo "s3://s3:9000/geoip/${DATE}/$(basename $f)"
+for f in "${DEST}/${DATE}"/*.mmdb; do
+	echo "s3://s3:9000/geoip/${DATE}/$(basename "$f")"
 done

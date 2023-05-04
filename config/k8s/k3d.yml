@@ -6,7 +6,7 @@ servers: 1
 agents: 1
 image: docker.io/rancher/k3s:v1.24.4-k3s1
 volumes:
-  - volume: .:/opt/hrry.me
+  - volume: k8s-dev-data:/opt/hrry.me
     nodeFilters:
       - server:*
       - agent:*

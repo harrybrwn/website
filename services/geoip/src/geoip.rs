@@ -117,7 +117,7 @@ fn get_i18n_name<'a>(
             return Err(GeoError::Internal);
         }
     };
-    if cache.is_empty() {
+    if !cache.is_empty() {
         if let Some(name) = map.get(cache) {
             return Ok((name.to_string(), cache.to_owned()));
         }
@@ -280,9 +280,7 @@ mod tests {
             ("ru", "Финляндия"),
             ("zh-CN", "芬兰"),
         ]);
-        // let locales = Locales::from(["en;q=0.1", "zh-CN; q=0.8", "ja; q=0.2"]);
         let locales: &[&str] = &["en;q=0.1", "zh-CN; q=0.8", "ja; q=0.2"];
-        // let mut l = String::new();
         let result = get_i18n_name(&Some(names.clone()), "", &locales.into()).unwrap();
         assert_eq!("芬兰", result.0);
         assert_eq!("zh-CN", result.1);
@@ -291,6 +289,7 @@ mod tests {
         assert_eq!("en", result.1);
         let result = get_i18n_name(&Some(names.clone()), "", &["en"].into()).unwrap();
         assert_eq!("Finland", result.0);
+        assert_eq!("en", result.1);
         let result = get_i18n_name(&Some(names.clone()), "ru", &["en"].into()).unwrap();
         assert_eq!("Финляндия", result.0);
         assert_eq!("ru", result.1);
