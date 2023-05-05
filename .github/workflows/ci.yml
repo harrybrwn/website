@@ -53,12 +53,6 @@ jobs:
         run: |
           go generate ./...
           go build -x -trimpath -ldflags "-w -s" -o /tmp/hrry-api ./cmd/api
-      - name: Store frontend build
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend-build
-          path: ./build
-          retention-days: 1
 
   test:
     strategy:
@@ -210,12 +204,6 @@ jobs:
       #  run: |
       #    rm -rf /tmp/.buildx-cache
       #    mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-
-      # - name: Download Frontend build
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: frontend-build
-      #     path: ./build/
 
       - name: Start services
         run: scripts/functional.sh setup

@@ -22,7 +22,7 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     - name: Get source hash
       id: api-source-hash
-      run: echo "source-hash::$(scripts/sourcehash.sh --lang go -e '*_test.go')" >> "$GITHUB_OUTPUT"
+      run: echo "source-hash=$(scripts/sourcehash.sh --lang go -e '*_test.go')" >> "$GITHUB_OUTPUT"
     - name: Push Rust Images
       env:
         GIT_COMMIT: ${{ github.sha }}
