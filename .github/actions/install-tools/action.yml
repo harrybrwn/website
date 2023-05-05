@@ -13,7 +13,7 @@ runs:
   using: "composite"
   steps:
     - id: go-version
-      run: echo "version-used=$(go env GOVERSION)"
+      run: echo "version-used=$(go env GOVERSION)" >> "$GITHUB_OUTPUT"
       shell: sh
     - uses: actions/cache@v2
       id: go-tool-cache
