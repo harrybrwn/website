@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/internal/mocks/mockdb"
+	"harrybrown.com/pkg/internal/mocks/mockdb"
 )
 
 func Test(t *testing.T) {

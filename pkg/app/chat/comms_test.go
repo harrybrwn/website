@@ -12,8 +12,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/internal/mocks/mockredis"
-	"harrybrown.com/internal/mocks/mockws"
+	"harrybrown.com/pkg/internal/mocks/mockredis"
+	"harrybrown.com/pkg/internal/mocks/mockws"
 	"harrybrown.com/pkg/ws"
 )
 

@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
-	"harrybrown.com/internal/mocks/mockemail"
 	"harrybrown.com/pkg/email"
+	"harrybrown.com/pkg/internal/mocks/mockemail"
 )
 
 func TestNewMailer(t *testing.T) {

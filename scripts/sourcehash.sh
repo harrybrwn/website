@@ -98,50 +98,55 @@ list() {
 
   case "$LANG" in
     go)
-      find .                     \
-        -type f                  \
-        \(                       \
-          -name '*.go'           \
-          -o -name 'go.mod'      \
-          -o -name 'go.sum' "$i" \
-        \)                       \
-        -not -path './test/*'    \
-        -not -path './vendor/*' "$e"
+      # shellcheck disable=SC2086
+      find .                   \
+        -type f                \
+        \(                     \
+          -name '*.go'         \
+          -o -name 'go.mod'    \
+          -o -name 'go.sum' $i \
+        \)                     \
+        -not -path './test/*'  \
+        -not -path './vendor/*' $e
       ;;
     ts|typescript)
-      find .                                \
-        -type f                             \
-        \(                                  \
-          -name '*.ts'                      \
-          -o -name 'yarn.lock'              \
-          -o -name 'package-lock.json' "$i" \
-        \)                                  \
-        -not -path './node_modules/*' "$e"
+      # shellcheck disable=SC2086
+      find .                              \
+        -type f                           \
+        \(                                \
+          -name '*.ts'                    \
+          -o -name 'yarn.lock'            \
+          -o -name 'package-lock.json' $i \
+        \)                                \
+        -not -path './node_modules/*' $e
       ;;
     py|python)
-      find .                               \
-        -type f                            \
-        \(                                 \
-          -name '*.py'                     \
-          -o -name 'poetry.lock'           \
-          -o -name 'requirements.txt' "$i" \
-        \)                                 \
-        -not -path './node_modules/*' "$e"
+      # shellcheck disable=SC2086
+      find .                             \
+        -type f                          \
+        \(                               \
+          -name '*.py'                   \
+          -o -name 'poetry.lock'         \
+          -o -name 'requirements.txt' $i \
+        \)                               \
+        -not -path './node_modules/*' $e
       ;;
     css)
-      find .                 \
-        -type f              \
-        \(                   \
-          -name '*.css' "$i" \
-        \)                   \
-        -not -path './node_modules' "$e"
+      # shellcheck disable=SC2086
+      find .               \
+        -type f            \
+        \(                 \
+          -name '*.css' $i \
+        \)                 \
+        -not -path './node_modules' $e
       ;;
     rust)
-      find .                \
-        -type f             \
-        \(                  \
-          -name '*.rs' "$i" \
-        \) "$e"
+      # shellcheck disable=SC2086
+      find .              \
+        -type f           \
+        \(                \
+          -name '*.rs' $i \
+        \) $e
       ;;
     *)
       echo "unknown language \"$LANG\", see (--lang)"

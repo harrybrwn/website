@@ -22,7 +22,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"golang.org/x/term"
 
-	"harrybrown.com/app"
+	"harrybrown.com/pkg/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/db"
 	"harrybrown.com/pkg/log"

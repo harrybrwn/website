@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"harrybrown.com/app/chat"
+	"harrybrown.com/pkg/app/chat"
 	"nhooyr.io/websocket"
 )
 

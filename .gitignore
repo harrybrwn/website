@@ -42,6 +42,7 @@ config/vault-cluster-keys*.json
 # Testing
 /.testing/
 /internal/mocks/
+/pkg/internal/mocks/
 /db/data/
 /tests/
 /inspiration/

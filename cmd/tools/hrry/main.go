@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"harrybrown.com/app"
+	"harrybrown.com/pkg/app"
 )
 
 func main() {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/app"
+	"harrybrown.com/pkg/app"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/log"
 	"harrybrown.com/pkg/web"

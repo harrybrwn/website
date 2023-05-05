@@ -23,10 +23,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"harrybrown.com/internal/mocks/mockdb"
-	"harrybrown.com/internal/mocks/mockredis"
-	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
+	"harrybrown.com/pkg/internal/mocks/mockdb"
+	"harrybrown.com/pkg/internal/mocks/mockredis"
+	"harrybrown.com/pkg/internal/mockutil"
 )
 
 func init() {

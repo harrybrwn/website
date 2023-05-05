@@ -19,12 +19,12 @@ import (
 	"github.com/lib/pq"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/internal/mocks/mockdb"
-	"harrybrown.com/internal/mocks/mockinvite"
-	"harrybrown.com/internal/mocks/mockredis"
-	"harrybrown.com/internal/mockutil"
 	"harrybrown.com/pkg/auth"
 	"harrybrown.com/pkg/email"
+	"harrybrown.com/pkg/internal/mocks/mockdb"
+	"harrybrown.com/pkg/internal/mocks/mockinvite"
+	"harrybrown.com/pkg/internal/mocks/mockredis"
+	"harrybrown.com/pkg/internal/mockutil"
 	"harrybrown.com/pkg/invite"
 )
 
