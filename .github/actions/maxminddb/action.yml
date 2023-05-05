@@ -1,0 +1,48 @@
+name: Maxmind Database
+description: Install my maxmind databases
+
+inputs:
+  dest:
+    description: Destination folder for where the databases will be placed
+    required: true
+  s3-access-key:
+    required: true
+    description: Access key for S3
+  s3-secret-key:
+    required: true
+    description: Secret key for S3
+  s3-path:
+    description: Base path in S3 where the databases are stored
+    default: geoip/latest
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache@v2
+      with:
+        path: |
+          /tmp/mmdb
+          /usr/local/bin/mc
+        key: mmdb-cache-${{ inputs.s3-path }}-${{ hashFiles('/tmp/mmdb/*') }}
+        restore-keys: |
+          mmdb-cache-${{ inputs.s3-path }}-
+          mmdb-cache-
+      id: mmdb-cache
+    - if: steps.mmdb-cache.outputs.cache-hit != 'true'
+      name: Install minio client
+      shell: bash
+      run: |
+        wget -O /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
+        chmod +x /usr/local/bin/mc
+        mc alias set s3-geoip https://s3.hrry.dev ${{ inputs.s3-access-key }} ${{ inputs.s3-secret-key }} --api "s3v4"
+    - if: steps.mmdb-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        mkdir -p /tmp/mmdb
+        mc cp s3-geoip/${{ inputs.s3-path }}/GeoLite2-ASN.mmdb /tmp/mmdb
+        mc cp s3-geoip/${{ inputs.s3-path }}/GeoLite2-City.mmdb /tmp/mmdb
+        mc cp s3-geoip/${{ inputs.s3-path }}/GeoLite2-Country.mmdb /tmp/mmdb
+    - shell: bash
+      run: |
+        mkdir -p ${{ inputs.dest }}
+        cp /tmp/mmdb/* ${{ inputs.dest }}

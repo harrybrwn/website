@@ -163,13 +163,8 @@ EOF
 		-out "${crt}"      \
 		-extfile "${ext}"  \
 		-days 825 -sha256
-	rm "${csr}" "${ext}" "${PKI}/certs/ca.srl"
+	rm -f "${csr}" "${ext}" "${PKI}/certs/ca.srl"
 }
-
-# Flags
-INSTALL=true
-ONLY_INSTALL=false
-CHECK=false
 
 usage() {
 	echo "Usage"
@@ -182,6 +177,11 @@ usage() {
 	echo "      --check         check that certificates have been created"
 	echo
 }
+
+# Flags
+INSTALL=true
+ONLY_INSTALL=false
+CHECK=false
 
 while [ $# -gt 0 ]; do
 	case $1 in

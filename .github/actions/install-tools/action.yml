@@ -1,11 +1,19 @@
 name: Install Tools
 description: Installs build tools
 
+outputs:
+  cache-hit:
+    description: Same as actions/cache output
+    value: ${{ steps.go-tool-cache.outputs.cache-hit }}
+  go-version:
+    description: Version of Go being used
+    value: ${{ steps.go-version.outputs.version-used }}
+
 runs:
   using: "composite"
   steps:
     - id: go-version
-      run: echo "::set-output name=version-used::$(go env GOVERSION)"
+      run: echo "version-used=$(go env GOVERSION)"
       shell: sh
     - uses: actions/cache@v2
       id: go-tool-cache
