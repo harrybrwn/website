@@ -1,10 +1,12 @@
 {
 	"cSpell.words": [
 		"certbot",
+		"chrono",
 		"configmap",
 		"filestash",
 		"fluentbit",
 		"GEOIP",
+		"GEOIPUPDATE",
 		"grafana",
 		"harrybrwn",
 		"healthcheck",

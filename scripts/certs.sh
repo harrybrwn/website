@@ -100,10 +100,15 @@ server_cert() {
 	local key=""
 	local ext=""
 	local alt_names=()
+	local cert_ips=()
 	while [ $# -gt 0 ]; do
 		case $1 in
 			-alt)
 				alt_names+=("$2")
+				shift 2
+				;;
+			-ip)
+				cert_ips+=("$2")
 				shift 2
 				;;
 			-key)
@@ -147,6 +152,11 @@ EOF
 	local i=2
 	for alt_name in "${alt_names[@]}"; do
 		echo "DNS.${i} = ${alt_name}" >> "${ext}"
+		((i+=1))
+	done
+	i=0
+	for ip_name in "${cert_ips[@]}"; do
+		echo "IP.${i} = ${ip_name}" >> "${ext}"
 		((i+=1))
 	done
 

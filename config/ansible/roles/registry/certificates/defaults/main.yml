@@ -1,0 +1,4 @@
+# Directory where all the certs and keys will be placed
+registry_cert_dir: ./registry
+# Register variables used for the role 'k3s/registry'
+register_k3s_vars: false

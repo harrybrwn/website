@@ -10,7 +10,6 @@ datasources:
     isDefault: true
     version: 1
     editable: true
-    isDefault: true
 
   - name: prometheus
     type: prometheus
@@ -21,4 +20,3 @@ datasources:
     orgId: 1
     version: 1
     editable: true
-    isDefault: false

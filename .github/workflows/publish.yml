@@ -5,6 +5,10 @@ on:
       - staging
 name: publish
 
+env:
+  COMPOSE_DOCKER_CLI_BUILD: '1'
+  DOCKER_BUILDKIT: '1'
+
 jobs:
   publish-rust:
     runs-on: ubuntu-22.04
@@ -34,4 +38,4 @@ jobs:
         GIT_COMMIT: ${{ github.sha }}
         GIT_BRANCH: ${{ github.ref_name }}
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
-      run: docker buildx bake --file config/docker/docker-bake.hcl geoip-rs --push
+      run: docker buildx bake --file config/docker/docker-bake.hcl geoip-rs geoipupdate --push

@@ -2,31 +2,11 @@
 
 set -euo pipefail
 
-find_image() {
-  local e match="$1"
-  shift
-  for e; do
-    if [[ "$e" =~ $match ]]; then
-      echo "$e"
-      return 0
-    fi
-  done
-  return 1
-}
+source "scripts/shell/common.sh"
+readonly K3D_CONFIG=config/k8s/k3d.yml
+K3D_CLUSTER="$(k3d_cluster_name "${K3D_CONFIG}")"
 
-readarray -t images < <(docker buildx bake \
-  --file config/docker/docker-bake.hcl \
-  --print 2>&1 \
-  | jq -r '.target[] | .tags[]' \
-  | sort \
-  | uniq \
-  | grep -E 'latest$')
-
-if [ -n "${*:-}" ]; then
-  img="$(find_image "$@" "${images[@]}")"
-  images=("$img")
-fi
-
+readarray -t images < <(list-images "$@")
 existing_images=()
 for i in "${images[@]}"; do
   if docker image inspect "$i" > /dev/null 2>&1; then
@@ -36,6 +16,6 @@ for i in "${images[@]}"; do
   fi
 done
 
-echo "loading images..."
-for i in "${images[@]}"; do echo "$i"; done
-k3d image load --cluster hrry-dev "${existing_images[@]}"
+for i in "${images[@]}"; do info util "found image '$i'"; done
+info util "Loading images"
+k3d image load --cluster "${K3D_CLUSTER}" "${existing_images[@]}"

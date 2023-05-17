@@ -2,10 +2,11 @@
 
 set -euo pipefail
 
-declare -r SELF_SCRIPT_NAME
+source "scripts/shell/common.sh"
+
 SELF_SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
-declare -r K3D_CLUSTER_CONFIG=config/k8s/k3d.yml
-export K3D_CLUSTER_CONFIG
+readonly K3D_CONFIG=config/k8s/k3d.yml
+declare -r SELF_SCRIPT_NAME
 declare -r HOSTNAMES=(
 	# Bases
 	hrry.local
@@ -46,10 +47,6 @@ declare -r HOSTNAMES=(
 	ip.hrry.dev-local
 )
 
-get-cluster-name() {
-	k3d cluster list -o json | jq -r '.[0].name'
-}
-
 get-ingress-ip() {
   local conf="${HOME}/.kube/config"
   if [ -n "${SUDO_USER:-}" ]; then
@@ -73,13 +70,6 @@ etc-hosts() {
 			echo "${ingress_ip}	${name}" | sudo tee -a /etc/hosts > /dev/null
 		fi
 	done
-}
-
-k3d-running() {
-  if k3d cluster ls -o json | jq '.[0].serversRunning'; then
-    return 1
-  fi
-  return 0
 }
 
 get-sudo() {
@@ -108,36 +98,16 @@ usage() {
 	echo "  -b --build        build and load docker images"
 }
 
-cmd-load() {
-	#docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
-	if [ -n "$*" ]; then
-		images=("$@")
-	else
-		readarray -t images < <(docker buildx bake \
-			--file config/docker/docker-bake.hcl \
-			--print 2>&1 \
-			| jq -r '.target[] | .tags[]' \
-			| sort \
-			| uniq \
-			| grep -P 'latest$')
-	fi
-	name="$(get-cluster-name)"
-	if [ -z "${name}" ]; then
-		echo "Error: could not find k3d cluster"
-		exit 1
-	fi
-	k3d image load --cluster "${name}" "${images[@]}"
-}
-
 if [ $# -eq 0 ]; then
-	echo "Error: no arguments"
+	error k8s "Error: no arguments"
 	echo
 	usage short
 	exit 1
 fi
 
-echo "Using k8s context \"$(kubectl config current-context)\""
 args=()
+QUIET=false
+ENV=dev
 
 while [ $# -gt 0 ]; do
 	case $1 in
@@ -146,15 +116,18 @@ while [ $# -gt 0 ]; do
 			shift
 			exit 0
 			;;
+		-q|--quiet)
+		 	shift
+			QUIET=true
+			;;
+		-env|--env)
+			ENV="$2"
+			shift 2
+			;;
 		--ip)
 			get-ingress-ip
 			shift
 			exit 0
-			;;
-		-b|--build)
-			docker compose --file docker-compose.yml --file config/docker-compose.tools.yml build
-			cmd-load "$@"
-			shift
 			;;
 		--etc-hosts)
 		 	get-sudo
@@ -168,51 +141,51 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-# out="$(k3d-running)"
-# echo $?
+if ! $QUIET; then
+	info k8s "Using k8s context \"$(kubectl config current-context)\"" >&2
+fi
 
 set -- "${args[@]}"
 for arg in "${args[@]}"; do
 	shift
   case "${arg}" in
     up)
-      echo "starting..."
+			info k8s "starting..."
       ;;
 		load)
-			readarray -t images < <(docker buildx bake \
-				--file config/docker/docker-bake.hcl \
-				--print 2>&1 \
-				| jq -r '.target[] | .tags[]' \
-				| sort \
-				| uniq \
-				| grep -E 'latest$')
-
-			if [[ -n "${*:-}" ]]; then
-				readarray -t images < <(echo "${images[@]}" | grep "$@")
-			fi
-			echo "Loading images..."
-      # shellcheck disable=SC2128
-			for img in "${images[@]}"; do
-				echo "loading image: '$img'"
+			readarray -t images < <(list-images "$@")
+			existing_images=()
+			for i in "${images[@]}"; do
+				if docker image inspect "$i" > /dev/null 2>&1; then
+					existing_images+=("$i")
+				else
+					warn k8s "Warning: skipping image \"$i\""
+				fi
 			done
-			#k3d image load --cluster "$(get-cluster-name)" "${images[@]}"
+			if ! $QUIET; then
+				for i in "${images[@]}"; do info k8s "found image '$i'"; done
+				info k8s "Loading images"
+			fi
+			k3d image load \
+				--cluster "$(k3d_cluster_name "${K3D_CONFIG}")" \
+				"${existing_images[@]}"
 			break
 			;;
 		ip)
 			get-ingress-ip
 			;;
     test)
-      #test "$(k3d cluster ls -o json | jq '.[0].serversRunning')" != "0"
-      if k3d-running; then
-        echo running
+			name="$(k3d_cluster_name "${K3D_CONFIG}")"
+      if k3d_running "$name"; then
+        info k8s running
 				exit 0
       else
-        echo not running
+        warn k8s not running
 				exit 1
       fi
       ;;
     *)
-      echo "Error: unknown command \"${arg}\""
+      error k8s "Error: unknown command \"${arg}\""
       exit 1
       ;;
   esac

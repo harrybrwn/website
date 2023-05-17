@@ -14,6 +14,7 @@ RUN apt-get install -yq \
     ansible-lint     \
     python3-paramiko \
     python3-boto3    \
+    python3-docker   \
     yamllint \
     git      \
     vim      \

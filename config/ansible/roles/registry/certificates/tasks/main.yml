@@ -1,0 +1,125 @@
+- name: Create Keys and Issue Certificates
+  block:
+    - name: Check Variables
+      fail:
+        msg: "'registry_cert_dir', 'common_name', and 'subject_alt_name' are required variables"
+      when: >-
+        (registry_cert_dir is not defined and
+        common_name is not defined and
+        subject_alt_name is not defined)
+
+    - name: Create Cert Dir
+      file:
+        state: directory
+        path: "{{ registry_cert_dir }}"
+
+    - name: Check whether CA cert key exists
+      stat:
+        path: "{{ registry_cert_dir }}/registry-ca.key"
+      register: ca_key_exists
+    - name: Create CA key
+      when: not ca_key_exists.stat.exists
+      community.crypto.openssl_privatekey:
+        path: "{{ registry_cert_dir }}/registry-ca.key"
+      register: create_ca_key
+
+    - name: Create CA CSR
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
+        common_name: docker registry ca
+        organization_name: Harry Brown
+        use_common_name_for_san: false
+        basic_constraints:
+          - 'CA:TRUE'
+        basic_constraints_critical: true
+        key_usage:
+          - keyCertSign
+          - cRLSign
+        key_usage_critical: true
+      register: ca_csr
+    - name: Create CA Cert
+      when: create_ca_key.changed
+      community.crypto.x509_certificate:
+        path: "{{ registry_cert_dir }}/registry-ca.crt"
+        privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
+        csr_content: "{{ ca_csr.csr }}"
+        provider: selfsigned
+
+    - name: Check whether server cert key exists
+      stat:
+        path: "{{ registry_cert_dir }}/registry-server.key"
+      register: server_key_exists
+    - name: Create Server key
+      community.crypto.openssl_privatekey:
+        path: "{{ registry_cert_dir }}/registry-server.key"
+      when: not server_key_exists.stat.exists or create_ca_key.changed
+      register: create_server_key
+    - name: Create Server CSR
+      register: server_csr
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ registry_cert_dir }}/registry-server.key"
+        common_name: "{{ common_name }}"
+        subject_alt_name: "{{ subject_alt_name }}"
+        key_usage: [ digitalSignature, nonRepudiation, keyEncipherment ]
+        basic_constraints: [ 'CA:FALSE' ]
+
+    - name: Check whether the Server Certificate exists
+      stat:
+        path: "{{ registry_cert_dir }}/registry-server.crt"
+      register: reg_certificate_exists
+    - name: Read existing certificate if exists
+      slurp:
+        src: "{{ registry_cert_dir }}/registry-server.crt"
+      when: reg_certificate_exists.stat.exists
+      register: certificate
+    - name: Sign Server Certificate
+      community.crypto.x509_certificate_pipe:
+        content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists else omit }}"
+        csr_content: "{{ server_csr.csr }}"
+        privatekey_path: "{{ registry_cert_dir }}/registry-server.key"
+        provider: ownca
+        ownca_path: "{{ registry_cert_dir }}/registry-ca.crt"
+        ownca_privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
+        ownca_create_subject_key_identifier: always_create
+        ownca_not_after: +365d
+        ownca_not_before: "+0s"
+      register: certificate
+
+    - name: Write certificate file
+      when: >
+        (not reg_certificate_exists.stat.exists or
+         create_server_key.changed or
+         create_ca_key.changed)
+      copy:
+        dest: "{{ registry_cert_dir }}/registry-server.crt"
+        content: "{{ certificate.certificate }}"
+
+    - name: Set Variables for k3s/registry role
+      block:
+        - name: Read CA certificate
+          slurp:
+            src: "{{ registry_cert_dir }}/registry-ca.crt"
+          register: registry_ca_contents_slurp
+        - name: Read Cert Key
+          slurp:
+            src: "{{ registry_cert_dir }}/registry-server.key"
+          register: registry_key_contents_slurp
+        - name: Set k3s registry variables
+          set_fact:
+            registry_ca_contents: "{{ registry_ca_contents_slurp.content | b64decode }}"
+            registry_key_contents: "{{ registry_key_contents_slurp.content | b64decode }}"
+            registry_cert_contents: "{{ certificate.certificate }}"
+
+      when: register_k3s_vars is defined and register_k3s_vars
+
+    - name: Cleanup Local variables
+      set_fact:
+        # unset internal variables
+        certificate: null
+        reg_certificate_exists: null
+        ca_csr: null
+        server_csr: null
+        ca_key_exists: null
+  # Run the whole block on localhost
+  delegate_to: localhost
+  run_once: true

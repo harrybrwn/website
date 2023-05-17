@@ -116,7 +116,7 @@ fi
 
 rustup target add "${TARGET}"
 
-cat > /usr/local/cargo/config <<EOF
+cat > "${CARGO_HOME}/config" <<EOF
 [build]
 target = "${TARGET}"
 

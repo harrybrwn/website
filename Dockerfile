@@ -1,21 +1,23 @@
-# syntax=docker/dockerfile:1.3
+# syntax=docker/dockerfile:1.5
 
 ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
 ARG GO_VERSION=1.18-alpine
+ARG RUST_VERSION=1.69.0
 
 #
 # Frontend Build
 #
 FROM node:${NODE_VERSION} as frontend
-RUN --mount=type=cache,id=node-apk,target=/var/cache/apk \
+ARG TARGETPLATFORM
+RUN --mount=type=cache,id=node-apk-${TARGETPLATFORM},target=/var/cache/apk \
     apk update  && \
     apk upgrade && \
     apk add git && \
     mkdir -p /usr/local/sbin/ && \
     ln -s /usr/local/bin/node /usr/local/sbin/node
-RUN --mount=type=cache,id=npm,target=/root/.npm \
+RUN --mount=type=cache,id=npm-${TARGETPLATFORM},target=/root/.npm \
     npm update -g npm
 RUN git clone --depth 1 --branch v1.1.2 \
     https://github.com/harrybrwn/hextris.git /opt/hextris && \
@@ -31,8 +33,8 @@ RUN git clone --depth 1 --branch v1.1.2 \
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
 COPY frontend/legacy/ frontend/legacy/
-RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
-    --mount=type=cache,id=npm,target=/root/.npm \
+RUN --mount=type=cache,id=yarn-${TARGETPLATFORM},target=/usr/local/share/.cache/yarn \
+    --mount=type=cache,id=npm-${TARGETPLATFORM},target=/root/.npm \
     yarn install
 #COPY ./frontend/ /opt/harrybrwn/frontend/
 RUN --mount=type=cache,id=yarn,target=/usr/local/share/.cache/yarn \
@@ -72,9 +74,7 @@ ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
-COPY app app/
 COPY files files/
-COPY internal internal/
 COPY frontend/legacy/templates frontend/legacy/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
 COPY --from=frontend /opt/harrybrwn/frontend/legacy/embeds.go ./frontend/legacy/embeds.go
@@ -127,6 +127,12 @@ COPY cmd/registry-auth cmd/registry-auth
 RUN --mount=type=cache,id=gobuild,target=/root/.cache \
     --mount=type=cache,id=gomod,target=/go/pkg/mod \
     go build -ldflags "${LINK}" -o bin/registry-auth ./cmd/registry-auth
+
+FROM builder as geoipupdate-go-builder
+COPY cmd/geoipupdate/main.go cmd/geoipupdate/main.go
+RUN --mount=type=cache,id=gobuild,target=/root/.cache \
+    --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    go build -ldflags "${LINK}" -o bin/geoipupdate ./cmd/geoipupdate
 
 #
 # Base service
@@ -189,11 +195,72 @@ COPY --from=legacy-site-builder /opt/harrybrwn/bin/legacy-site /usr/local/bin/
 ENTRYPOINT ["legacy-site", "--templates", "/opt/harrybrwn/templates"]
 
 #
+# geoipupdate-go
+#
+FROM service as geoipupdate-go
+COPY --from=geoipupdate-go-builder /opt/harrybrwn/bin/geoipupdate /usr/local/bin/
+ENTRYPOINT [ "geoipupdate" ]
+
+#
 # registry auth service
 #
 FROM service as registry-auth
 COPY --from=registry-auth-builder /opt/harrybrwn/bin/registry-auth /usr/local/bin/
 ENTRYPOINT ["registry-auth"]
+
+#
+# Rust builder
+#
+FROM --platform=$BUILDPLATFORM harrybrwn/rust:${RUST_VERSION} as rust-builder
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+WORKDIR /opt/hrry.me
+RUN mkdir -p /usr/local/multi-cargo/${TARGETPLATFORM} && \
+    mv /usr/local/cargo/* /usr/local/multi-cargo/${TARGETPLATFORM}/
+ENV CARGO_HOME /usr/local/multi-cargo/${TARGETPLATFORM}
+ENV PATH=${CARGO_HOME}/bin:${PATH}
+RUN --mount=type=cache,target=/var/cache/apk \
+    setup-rust
+COPY Cargo.toml Cargo.lock ./
+COPY services/geoip services/geoip
+COPY services/geoipupdate services/geoipupdate
+COPY cmd/foreman cmd/foreman
+RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
+	cargo fetch && \
+	mkdir -p .cargo && \
+	# Vendor for arm builds so they can find the custom assembly in the ring crate
+    cargo vendor 2>/dev/null >> .cargo/config.toml
+COPY services services
+COPY cmd/foreman cmd/foreman
+ENV CARGO_INCREMENTAL=1
+ENV CARGO_CACHE_RUSTC_INFO=1
+ENV CARGO_TARGET_DIR=/opt/hrry.me/target/${TARGETPLATFORM}
+RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
+    --mount=type=cache,target=/opt/hrry.me/target/${TARGETPLATFORM} \
+    export TARGET="$(rust-target)" && \
+	cargo build --release --target "${TARGET}"
+RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
+    --mount=type=cache,target=/opt/hrry.me/target/${TARGETPLATFORM} \
+    export TARGET="$(rust-target)" && \
+	mv "target/${TARGETPLATFORM}/${TARGET}/release/geoip" /usr/local/bin/ && \
+	mv "target/${TARGETPLATFORM}/${TARGET}/release/geoipupdate" /usr/local/bin/ && \
+	mv "target/${TARGETPLATFORM}/${TARGET}/release/foreman" /usr/local/bin/
+
+#######################
+# geoipupdate
+#######################
+FROM alpine:${ALPINE_VERSION} as geoipupdate
+RUN apk -U add ca-certificates openssl && rm -rf /var/cache/apk
+COPY --from=rust-builder /usr/local/bin/geoipupdate /usr/bin/
+CMD [ "geoipupdate" ]
+
+#######################
+# geoip
+#######################
+FROM alpine:${ALPINE_VERSION} as geoip-rs
+RUN apk -U add ca-certificates && rm -rf /var/cache/apk
+COPY --from=rust-builder /usr/local/bin/geoip /usr/bin/
+CMD [ "geoip" ]
 
 #
 # Webserver Frontend
@@ -275,3 +342,37 @@ RUN apk add bash curl bind-tools
 COPY cmd/tools/debug cmd/tools/debug
 RUN go build -o /usr/local/bin/debug ./cmd/tools/debug
 ENTRYPOINT ["bash"]
+
+#
+# DB Tools
+#
+FROM 10.0.0.11:5000/harrybrwn/postgres:13.6 as data-tools
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
+ARG MC_VERSION=RELEASE.2023-05-04T18-10-16Z
+RUN \
+	case "${TARGETPLATFORM}" in \
+      linux/amd64) \
+        wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION} && \
+        wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION}.sha256sum \
+        ;; \
+      linux/arm/v7) \
+        wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION} && \
+        wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION}.sha256sum \
+        ;;  \
+    esac && \
+    # https://github.com/gliderlabs/docker-alpine/issues/174
+    sed -i 's/ /  /g;' mc.${MC_VERSION}.sha256sum && \
+    sha256sum -wc "mc.${MC_VERSION}.sha256sum"    && \
+    chmod +x "mc.${MC_VERSION}"                   && \
+    mv "mc.${MC_VERSION}" /usr/local/bin/mc       && \
+    cat <<EOF > /usr/local/bin/entrypoint.sh
+set -eu
+if [ -z "\$@" ]; then
+    sh
+else
+    exec "\$@"
+fi
+EOF
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT [ "sh", "/usr/local/bin/entrypoint.sh" ]

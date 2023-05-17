@@ -13,6 +13,9 @@ all:
     k3s_version: v1.26.3+k3s1
     k3s_server_location: /var/lib/rancher/k3s
     k3s_master_ip: "{{ hostvars[groups['k3s_master'][0]]['ansible_host'] }}"
+    k3s_config:
+      node-label:
+        - hrry.me/env=prd
     systemd_dir: /etc/systemd/system
 
   hosts:
@@ -21,7 +24,9 @@ all:
       ansible_host: 10.0.0.13
       ansible_ssh_user: harry
       k3s_config:
-        node-label: [hrry.me/node-size=big]
+        node-label:
+          - hrry.me/env=prd
+          - hrry.me/node-size=big
     rpi1: { ansible_host: 10.0.0.21 }
     rpi2: { ansible_host: 10.0.0.22 }
     rpi3: { ansible_host: 10.0.0.23, nfs_server: false }
@@ -31,10 +36,6 @@ all:
       ansible_ssh_user: admin
       ansible_connection: ansible.netcommon.network_cli
       ansible_network_os: community.routeros.routeros
-    dell-amd:
-      ansible_ssh_user: harry
-      # ansible_host: 169.254.158.18
-      ansible_host: 10.0.0.12
 
   children:
     ubuntu:
@@ -50,24 +51,10 @@ all:
         rpi2:
         rpi3:
 
-    test:
-      hosts:
-        dell-amd:
-          ansible_ssh_user: harry
-          # ansible_host: 169.254.158.18
-          ansible_host: 10.0.0.12
-        rpi0:
-          ansible_ssh_user: pi
-          ansible_host: 10.0.0.40
-
     prod:
       children:
         ubuntu:
         raspberrypi:
-
-    stg:
-      hosts:
-        dell-amd:
 
     k3s_master:
       hosts:

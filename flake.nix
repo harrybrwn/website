@@ -61,7 +61,7 @@
               name = name;
               subPackages = [ "./cmd/${name}" ];
               src = ./.;
-              vendorSha256 = "sha256-y0WPBo8onZ9bshRRI8rSdDcqfvLG6B2srLek6gTAT2Q=";
+              vendorSha256 = "sha256-3EFmgfzddlRJCrFYgO35iipcKlYMG/uAU4wX2T/f0kQ=";
               preBuild = "go generate ./...";
               doCheck = false;
               nativeBuildInputs = [ mockgen ];
@@ -113,18 +113,22 @@
               kubernetes-helm # helm
               kube3d # k3d
               k9s
-              ansible
-              ansible-lint
+              kubeseal  # kubernetes secrets encryption
+              #ansible  # there are special cases where this doesn't work
+              #ansible-lint
               postgresql
+              vault
               # Dev tools
               bmake
               rust-analyzer
               golangci-lint
+              yamllint
               kube-linter
               operator-sdk # sdk for k8s operators
               # Shell utilities
               git
-              jq
+              jq # json query
+              yq # yaml query
               curl
               shellcheck
               ripgrep
@@ -136,15 +140,25 @@
                 requests
                 paramiko
                 boto3
-                # poetry
+                docker
               ]))
             ];
 
             shellHook = ''
-              scripts/configure.sh
-              alias bake=bin/bake k8s=bin/k8s
+              if [ -f ./scripts/configure.sh ]; then
+                scripts/configure.sh
+              fi
+              if [ -f ./scripts/tools/bake ] && [ -f ./scripts/tools/k8s ]; then
+                alias bake=bin/bake k8s=bin/k8s
+              fi
               export GOROOT="${go.outPath}/share/go"
+              export VAULT_ADDR="http://localhost:8200"
               #PS1="$(echo $PS1 | sed -Ee 's/\\\$$/\(nix dev\) \\$/') "
+
+              export ANSIBLE_HOST_KEY_CHECKING=False
+              export ANSIBLE_INVENTORY="$(pwd)/config/ansible/inventory.yml"
+              export ANSIBLE_VAULT_PASSWORD_FILE="$(pwd)/config/ansible/vault-password.txt"
+              export LANG=C.UTF-8
             '';
           };
         });

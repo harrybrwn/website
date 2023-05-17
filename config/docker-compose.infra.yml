@@ -49,6 +49,3 @@ volumes:
 
 networks:
   registry:
-  service-mesh:
-    external: true
-    name: service-mesh

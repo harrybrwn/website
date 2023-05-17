@@ -1,0 +1,54 @@
+- hosts: localhost
+  roles:
+    # - { role: link_local, become: false, delegate_to: localhost, run_once: true }
+    - role: registry/certificates
+      become: false
+      delegate_to: localhost
+      run_once: true
+      vars:
+        register_k3s_vars: true
+        registry_cert_dir: ./registry
+        common_name: registry server cert
+        subject_alt_name:
+          - "DNS:localhost"
+          - "IP:127.0.0.1"
+          # - "IP:{{ link_local_ip }}"  # set in link_local role
+          - "IP:169.254.158.18"
+          # - "IP:{{ registry_ip }}"
+  tasks:
+    - name: Configure local registry
+      block:
+        - name: Create htpasswd file on localhost
+          community.general.htpasswd:
+            path: ./registry/.htpasswd
+            name: "{{ registry_username }}"
+            password: "{{ registry_password }}"
+            state: present
+            crypt_scheme: bcrypt
+        - name: Start registry
+          community.docker.docker_container:
+            name: stg-registry
+            image: registry:2
+            state: started
+            restart_policy: on-failure
+            ports:
+              - "5000:5000"
+            volumes:
+              - "{{ playbook_dir }}/registry:/opt/registry"
+            env:
+              REGISTRY_HTTP_TLS_CERTIFICATE: /opt/registry/registry-server.crt
+              REGISTRY_HTTP_TLS_KEY: /opt/registry/registry-server.key
+              REGISTRY_HTTP_ADDR: ':5000'
+              REGISTRY_HTTP_HTTP2_DISABLED: 'false'
+              REGISTRY_AUTH: htpasswd
+              REGISTRY_AUTH_HTPASSWD_PATH: /run/secrets/registry-htpasswd-file
+              REGISTRY_AUTH_HTPASSWD_REALM: registry.harybrwn.com
+              REGISTRY_LOG_LEVEL: debug
+              REGISTRY_LOG_FORMAT: json
+            comparisons:
+              env: strict
+              volumes: strict
+              image: strict
+      delegate_to: localhost
+      run_once: true
+      become: false

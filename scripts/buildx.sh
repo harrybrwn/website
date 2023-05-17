@@ -115,23 +115,30 @@ if ! docker buildx use "$BUILDKIT_NAME" ; then
     docker run --privileged --rm tonistiigi/binfmt --install all
 fi
 
-if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${CACERT:-}" ] && f [ -f "${CACERT}" ]; then
+install_certificate() {
+  local cert="$1"
+  local name
+  name="$(basename "$cert")"
+  if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${cert:-}" ] && [ -f "${cert}" ]; then
     container="$(docker buildx inspect harrybrwn-builder | grep -iE 'name:.*?[0-9]+$' | awk '{ print $2 }')"
     if [ -z "${container}" ]; then
       echo "Error: could not find container name"
       exit 1
     fi
-
     container_name="buildx_buildkit_${container}"
     status="$(docker buildx inspect "$BUILDKIT_NAME"  | grep -i status | awk '{print $2}')"
     if [ "${status}" = "stopped" ]; then
       docker container start "${container_name}"
     fi
-
-    docker container cp "${CACERT}" "${container_name}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}.crt"
+    docker container cp "${cert}" "${container_name}:/usr/local/share/ca-certificates/${BUILDKIT_NAME}-${name}.crt"
     if [ -f config/pki/certs/ca.crt ]; then
       docker container cp config/pki/certs/ca.crt "${container_name}:/usr/local/share/ca-certificates/harrybrwn-local-rootca.crt"
     fi
     docker container exec "${container_name}" update-ca-certificates --verbose --force
     docker container restart "${container_name}"
-fi
+  fi
+}
+
+for c in "${CACERT}" "./config/ansible/registry/registry-ca.crt"; do
+  install_certificate "$c"
+done

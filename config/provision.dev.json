@@ -37,6 +37,11 @@
       {
         "AccessKey": "mastodon",
         "SecretKey": "minio-testbed001-mastodon"
+      },
+      {
+        "AccessKey": "geoipupdate",
+        "SecretKey": "minio-testbed001-geoipupdate",
+        "Policies": ["geoip-readwrite"]
       }
     ]
   },

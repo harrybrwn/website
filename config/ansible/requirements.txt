@@ -1,0 +1,4 @@
+passlib
+paramiko
+boto3
+docker

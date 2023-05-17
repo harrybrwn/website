@@ -14,10 +14,34 @@ inputs:
   s3-path:
     description: Base path in S3 where the databases are stored
     default: geoip/latest
+  mc-version:
+    description: Use a different version of the minio client. See https://dl.min.io/client/mc/release/linux-amd64/
+    default: RELEASE.2023-05-04T18-10-16Z
 
 runs:
   using: "composite"
   steps:
+    - uses: actions/cache@v2
+      id: mc-client
+      with:
+        path: /usr/local/bin/mc
+        key: mc-client-${{ runner.os }}-${{ runner.arch }}-${{ inputs.mc-version }}
+        restore-keys: |
+          mc-client-${{ runner.os }}-${{ runner.arch }}-
+          mc-client-
+    - if: steps.mc-client.outputs.cache-hit != 'true'
+      name: Install mc command
+      shell: bash
+      run: |
+        URL='https://dl.min.io/client/mc/release/linux-amd64'
+        NAME="mc.${{ inputs.mc-version }}"
+        HASH="mc.${{ inputs.mc-version }}.sha256sum"
+        wget -qO "${NAME}" "${URL}/${NAME}"
+        wget -qO "${HASH}" "${URL}/${HASH}"
+        sha256sum -c "${HASH}"
+        chmod +x "${NAME}"
+        mv "${NAME}" /usr/local/bin/mc
+
     - uses: actions/cache@v2
       with:
         path: |
@@ -29,12 +53,14 @@ runs:
           mmdb-cache-
       id: mmdb-cache
     - if: steps.mmdb-cache.outputs.cache-hit != 'true'
-      name: Install minio client
+      name: Setup minio client
       shell: bash
       run: |
-        wget -O /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
-        chmod +x /usr/local/bin/mc
-        mc alias set s3-geoip https://s3.hrry.dev ${{ inputs.s3-access-key }} ${{ inputs.s3-secret-key }} --api "s3v4"
+        mc alias set s3-geoip         \
+          https://s3.hrry.dev         \
+          ${{ inputs.s3-access-key }} \
+          ${{ inputs.s3-secret-key }} \
+          --api "s3v4"
     - if: steps.mmdb-cache.outputs.cache-hit != 'true'
       shell: bash
       run: |

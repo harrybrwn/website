@@ -1,11 +1,17 @@
 - name: Check Variables.
   debug:
-    msg: Variable check
-  failed_when: >
-    (systemd_dir is not defined or
-     k3s_server_location is not defined or
-     ansible_user is not defined or
-     k3s_master_ip is not defined)
+    msg: "Variable check: 'systemd_dir' is a required variable"
+  failed_when: systemd_dir is not defined
+- name: Check systemd_dir
+  fail:
+    msg: "Variable check: 'systemd_dir' is required"
+  when: systemd_dir is not defined
+- name: Check k3s_server_location
+  debug: { msg: "Variable check: 'k3s_server_location' is required" }
+  failed_when: k3s_server_location is not defined
+- name: Check k3s_master_ip
+  debug: { msg: "Variable check: 'k3s_master_ip' is required" }
+  failed_when: k3s_master_ip is not defined
 
 - name: Copy K3s service file
   register: k3s_service

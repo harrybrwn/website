@@ -1,0 +1,21 @@
+- name: Teardown Staging Env
+  hosts: stg
+  become: true
+  vars_files:
+    - ../vars/become-password.yml
+  vars:
+    systemd_dir: /etc/systemd/system
+    k3s_version: v1.24.4+k3s1
+    k3s_server_location: /var/lib/rancher/k3s
+    k3s_master_ip: "{{ hostvars[groups['k3s_master'][0]]['ansible_host'] }}"
+  roles:
+    # - { role: ../roles/link_local, become: false, delegate_to: localhost, run_once: true }
+    - { role: ../roles/k3s/remove }
+  tasks:
+    - name: Remove registry CA cert
+      file:
+        state: absent
+        path: "{{ item }}"
+      with_items:
+        - "/var/lib/longhorn"
+        # - "/etc/docker/certs.d/{{ link_local_ip }}:5000"

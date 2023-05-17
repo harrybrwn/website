@@ -67,6 +67,9 @@ lint-sh:
 lint-rs:
 	cargo clippy
 
+lint-yml:
+	yamllint -c config/yamllint.yml .
+
 scripts:
 	@mkdir -p bin
 	ln -sf ../scripts/functional.sh bin/functional

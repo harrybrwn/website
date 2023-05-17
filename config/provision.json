@@ -26,6 +26,9 @@
       },
       {
         "Name": "mastodon"
+      },
+      {
+        "Name": "geoip"
       }
     ],
     "policies": {
@@ -84,6 +87,7 @@
           }
         ]
       },
+
       "static-files": {
         "Version": "2012-10-17",
         "Statement": [
@@ -121,6 +125,7 @@
           }
         ]
       },
+
       "geoip-readonly": {
         "Version": "2012-10-17",
         "Statement": [
@@ -141,6 +146,22 @@
           }
         ]
       },
+      "geoip-readwrite": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": ["s3:*"],
+            "Resource": ["arn:aws:s3:::geoip"]
+          },
+          {
+            "Effect": "Allow",
+            "Action": ["s3:*"],
+            "Resource": ["arn:aws:s3:::geoip/*"]
+          }
+        ]
+      },
+
       "frontend-uploader": {
         "Version": "2012-10-17",
         "Statement": [

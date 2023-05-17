@@ -15,10 +15,22 @@ variable "GIT_BRANCH" {
     default = "dev"
 }
 
-variable "ALPINE_VERSION"  { default = "3.17.0" }
-variable "GO_VERSION"      { default = "1.18-alpine" }
-variable "GRAFANA_VERSION" { default = "9.4.7" }
-variable "RUST_BASE"       { default = "alpine3.16"}
+variable "BAKE_USERNAME" { default = "harrybrwn" }
+
+variable "ALPINE_VERSION"   { default = "3.17.0" }
+variable "GO_VERSION"       { default = "1.18-alpine" }
+variable "POSTGRES_VERSION" { default = "13.6" }
+variable "REDIS_VERSION"    { default = "6.2.6" }
+variable "NGINX_VERSION"    { default = "1.23.3" }
+variable "LOKI_VERSION"     { default = "2.5.0" }
+variable "GRAFANA_VERSION"  { default = "9.5.1" }
+variable "MINIO_VERSION"    { default = "RELEASE.2022-05-23T18-45-11Z.fips" }
+variable "NOMAD_VERSION"    { default = "1.3.5" }
+
+variable "POSTGRES_BASE"    { default = "alpine" }
+variable "REDIS_BASE"       { default = "alpine" }
+variable "NGINX_BASE"       { default = "alpine" }
+variable "RUST_BASE"        { default = "alpine3.16"}
 
 variable "FLUENTBIT_VERSION" {
     default = "1.9.10"
@@ -73,9 +85,9 @@ group "databases" {
 group "tools" {
     targets = [
         "provision",
+        "geoipupdate",
         "ansible",
         "curl",
-        "rust",
     ]
 }
 
@@ -85,21 +97,21 @@ function "tags" {
     params = [registry, name, extra_labels]
     result = concat(
         [
-            join("/", compact([registry, "harrybrwn", "${name}:latest"])),
+            join("/", compact([registry, BAKE_USERNAME, "${name}:latest"])),
         ],
         _IS_LOCAL ? [] : concat(
             [
-                join("/", compact([registry, "harrybrwn", "${name}:${VERSION}"])),
+                join("/", compact([registry, BAKE_USERNAME, "${name}:${VERSION}"])),
                 notequal("", GIT_COMMIT) ?
-                    join("/", compact([registry, "harrybrwn", "${name}:${GIT_COMMIT}"])) :
+                    join("/", compact([registry, BAKE_USERNAME, "${name}:${GIT_COMMIT}"])) :
                     "",
                 notequal("", GIT_BRANCH) ?
-                    join("/", compact([registry, "harrybrwn", "${name}:${GIT_BRANCH}"])) :
+                    join("/", compact([registry, BAKE_USERNAME, "${name}:${GIT_BRANCH}"])) :
                     "",
             ],
             [
                 for t in compact(extra_labels) :
-                    join("/", compact([registry, "harrybrwn", "${name}:${t}"]))
+                    join("/", compact([registry, BAKE_USERNAME, "${name}:${t}"]))
             ],
         ),
     )
@@ -122,16 +134,17 @@ target "base-service" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
         GO_VERSION     = GO_VERSION
+        RUST_VERSION   = "1.69.0"
     }
 }
 
 target "nginx" {
     target = "nginx"
     args = {
-        NGINX_VERSION = "1.23.3-alpine"
+        NGINX_VERSION = "${NGINX_VERSION}-${NGINX_BASE}"
         REGISTRY_UI_ROOT = "/var/www/registry.hrry.dev"
     }
-    tags = tags(REGISTRY, "nginx", ["1.23.3-alpine", "1.23.3"])
+    tags = tags(REGISTRY, "nginx", ["${NGINX_VERSION}-${NGINX_BASE}", NGINX_VERSION])
     inherits = ["base-service"]
     platforms = [
         "linux/amd64",
@@ -166,9 +179,23 @@ target "go-geoip" {
 }
 
 target "geoip-rs" {
-    context  = "services/geoip"
+    target   = "geoip-rs"
     tags     = tags("", "geoip", []) // publish to dockerhub
     inherits = ["base-service"]
+}
+
+target "geoipupdate" {
+    target   = "geoipupdate"
+    tags     = tags("", "geoipupdate", [])
+    inherits = ["base-service"]
+}
+
+target "geoipupdate-go" {
+    inherits = ["base-service"]
+    // target = "geoipupdate-go"
+    context  = "cmd/geoipupdate"
+    args     = { GO_VERSION = "1.20.2" }
+    tags     = tags("docker.io", "geoipupdate-go", [])
 }
 
 target "legacy-site" {
@@ -186,9 +213,9 @@ target "vanity-imports" {
 target "postgres" {
     context = "config/docker/postgres"
     args = {
-        BASE_IMAGE_VERSION = "13.6-alpine"
+        BASE_IMAGE_VERSION = "${POSTGRES_VERSION}-${POSTGRES_BASE}"
     }
-    tags = tags(REGISTRY, "postgres", ["13.6-alpine", "13.6"])
+    tags = tags(REGISTRY, "postgres", ["${POSTGRES_VERSION}-${POSTGRES_BASE}", POSTGRES_VERSION])
     inherits = ["base-service"]
 }
 
@@ -205,7 +232,7 @@ target "fluentbit" {
 target "grafana" {
     dockerfile = "config/grafana/Dockerfile"
     args = {
-        GRAFANA_VERSION = "9.4.7"
+        GRAFANA_VERSION = GRAFANA_VERSION
     }
     tags = tags(REGISTRY, "grafana", [GRAFANA_VERSION])
     inherits = ["base-service"]
@@ -214,9 +241,9 @@ target "grafana" {
 target "loki" {
     dockerfile = "config/docker/Dockerfile.loki"
     args = {
-        LOKI_VERSION = "2.5.0"
+        LOKI_VERSION = LOKI_VERSION
     }
-    tags = tags(REGISTRY, "loki", ["2.5.0"])
+    tags = tags(REGISTRY, "loki", [LOKI_VERSION])
     inherits = ["base-service"]
 }
 
@@ -224,9 +251,9 @@ target "redis" {
     context = "config/redis"
     dockerfile = "Dockerfile"
     args = {
-        REDIS_VERSION = "6.2.6-alpine"
+        REDIS_VERSION = "${REDIS_VERSION}-${REDIS_BASE}"
     }
-    tags = tags(REGISTRY, "redis", ["6.2.6", "6.2.6-alpine"])
+    tags = tags(REGISTRY, "redis", [REDIS_VERSION, "${REDIS_VERSION}-${REDIS_BASE}"])
     inherits = ["base-service"]
 }
 
@@ -234,11 +261,11 @@ target "s3" {
     context = "./config"
     dockerfile = "docker/minio/Dockerfile"
     args = {
-        MINIO_VERSION = "RELEASE.2022-05-23T18-45-11Z.fips"
+        MINIO_VERSION = MINIO_VERSION
         MC_VERSION = "RELEASE.2022-05-09T04-08-26Z.fips"
     }
     labels = labels()
-    tags = tags(REGISTRY, "s3", ["RELEASE.2022-05-23T18-45-11Z.fips"])
+    tags = tags(REGISTRY, "s3", [MINIO_VERSION])
     platforms = [
         "linux/amd64",
     ]
@@ -261,17 +288,17 @@ target "nomad" {
     target = "nomad"
     args = {
         ALPINE_VERSION = ALPINE_VERSION
-        NOMAD_VERSION = "1.3.5"
+        NOMAD_VERSION = NOMAD_VERSION
     }
     platforms = platforms
     tags = concat(
-        tags(REGISTRY, "nomad", ["1.3.5", "1.3.5-alpine"]),
+        tags(REGISTRY, "nomad", [NOMAD_VERSION, "${NOMAD_VERSION}-alpine"]),
         [
             # There is no private information in this docker image so I'm
             # pushing to dockerhub.
             "harrybrwn/nomad:latest",
-            "harrybrwn/nomad:1.3.5",
-            "harrybrwn/nomad:1.3.5-alpine",
+            "harrybrwn/nomad:${NOMAD_VERSION}",
+            "harrybrwn/nomad:${NOMAD_VERSION}-alpine",
         ],
     )
 }
@@ -286,7 +313,7 @@ target "curl" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
     }
-    tags = tags(REGISTRY, "curl", [ALPINE_VERSION])
+    tags = tags("docker.io", "curl", [ALPINE_VERSION])
     platforms = [
         "linux/amd64",
         "linux/arm/v7",
@@ -305,6 +332,16 @@ target "ansible" {
     labels = labels()
     tags = tags(REGISTRY, "ansible", [])
     platforms = ["linux/amd64"]
+}
+
+target "data-tools" {
+    target = "data-tools"
+    labels = labels()
+    tags = tags(REGISTRY, "data-tools", [])
+    platforms = [
+        "linux/amd64",
+        "linux/arm/v7",
+    ]
 }
 
 target "service" {

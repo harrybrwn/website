@@ -7,23 +7,6 @@ readonly DIR="$(pwd)/$(dirname "${BASH_SOURCE[0]}")"
 # shellcheck source=scripts/shell/common.sh
 source "$DIR/shell/common.sh"
 
-RED="\e[31m"
-GREEN="\e[32m"
-CYAN="\e[36m"
-NOCOL="\e[0m"
-
-info() {
-	_log="$1"
-	shift
-	echo -e "${GREEN}[$_log]${NOCOL} $*"
-}
-
-error() {
-	_log="$1"
-	shift
-	echo -e "${RED}[$_log]${NOCOL} $*" 1>&2
-}
-
 block() {
 	echo
 	while read -r line; do
@@ -65,6 +48,7 @@ TOOLS=(
 	terraform
 	kubectl
 	k3d
+	kubeseal
 	# Utilities
 	jq
 	mc

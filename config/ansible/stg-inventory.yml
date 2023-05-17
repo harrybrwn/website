@@ -1,0 +1,31 @@
+all:
+  vars:
+    # Use python3 on all hosts
+    ansible_python_interpreter: /usr/bin/python3
+    nfs_server: false
+    container_registry: 10.0.0.11:5000
+    # k3s_server_location: /var/lib/rancher/k3s
+
+  hosts:
+    dell-amd:
+      ansible_ssh_user: harry
+      #ansible_host: 169.254.158.18  # link local address
+      ansible_host: 10.0.0.12
+    yoga920:
+      ansible_ssh_user: harry
+      ansible_host: 10.0.0.14
+
+  children:
+    k3s_master:
+      hosts:
+        dell-amd:
+    k3s_workers:
+      hosts:
+        yoga920:
+    stg:
+      vars:
+        k3s_version: v1.27.1+k3s1
+        k3s_master_ip: "{{ hostvars[groups['k3s_master'][0]]['ansible_host'] }}"
+      children:
+        k3s_master:
+        k3s_workers:
