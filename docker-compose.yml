@@ -313,6 +313,7 @@ services:
       test: ["CMD", "curl", "-fI", "localhost:8085/health/ready"]
       timeout: 10s
       interval: 1m
+
   # TODO look at distributed config <https://docs.min.io/docs/deploy-minio-on-docker-compose.html>
   s3:
     image: ${REGISTRY}/harrybrwn/s3:${VERSION:-latest}

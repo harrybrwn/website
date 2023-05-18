@@ -38,4 +38,8 @@ jobs:
         GIT_COMMIT: ${{ github.sha }}
         GIT_BRANCH: ${{ github.ref_name }}
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
-      run: docker buildx bake --file config/docker/docker-bake.hcl geoip-rs geoipupdate --push
+      run: |
+        docker buildx bake --file config/docker/docker-bake.hcl --push \
+          geoip-rs    \
+          geoipupdate \
+          geoipupdate-go

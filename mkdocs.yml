@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+
+site_name: Harry's Homelab
+site_url: https://docs.hrry.dev
+copyright: Copyright &copy; 2019-2023 Harry Brown
+repo_url: https://github.com/harrybrwn/harrybrwn.com
+
+# Build output directory
+site_dir: build/docs.hrry.dev
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-2  # moon
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        # icon: material/brightness-4
+        icon: material/brightness-6  # sun
+        name: Switch to light mode
+  features:
+    - navigation.indexes
+    - navigation.sections
+    - search.highlight
+    - search.share
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/harrybrwn/harrybrwn.com
+    - icon: fontawesome/brands/mastodon
+      link: https://hachyderm.io/@harrybrwn
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/r/harrybrwn

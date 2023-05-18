@@ -263,8 +263,17 @@ COPY --from=rust-builder /usr/local/bin/geoip /usr/bin/
 CMD [ "geoip" ]
 
 #
-# Webserver Frontend
+# mkdocs
 #
+FROM squidfunk/mkdocs-material:9.1.13 as mkdocs
+WORKDIR /opt/hrry.me/
+COPY mkdocs.yml ./
+COPY docs/ docs/
+RUN mkdocs build
+
+#####################
+# Webserver Frontend
+#####################
 FROM nginx:${NGINX_VERSION} as nginx
 ENV REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
@@ -281,6 +290,7 @@ COPY --from=frontend /opt/docker-registry-ui/favicon.ico /var/www/registry.hrry.
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com /var/www/harrybrwn.com
 COPY --from=harrybrwn/harrybrwn.github.io / /var/www/hrry.me
 COPY --from=frontend /opt/harrybrwn/cmd/hooks/index.html /var/www/hooks.harrybrwn.com/index.html
+COPY --from=mkdocs /opt/hrry.me/build/docs.hrry.dev /var/www/docs.hrry.dev
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
 COPY frontend/1k /var/www/1k.hrry.me

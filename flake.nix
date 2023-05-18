@@ -133,6 +133,7 @@
               shellcheck
               ripgrep
               tokei
+              mkdocs
               gomod2nix.packages.${system}.default # gomod2nix command line utility
               self.packages.${system}.tools
               # Python deps
@@ -141,6 +142,7 @@
                 paramiko
                 boto3
                 docker
+                mkdocs-material
               ]))
             ];
 
