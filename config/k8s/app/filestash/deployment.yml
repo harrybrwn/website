@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: filestash
+spec:
+  selector:
+    matchLabels:
+      app: filestash
+  template:
+    metadata:
+      labels:
+        app: filestash
+    spec:
+      containers:
+      - name: filestash
+        image: machines/filestash:d1a2c7a
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        ports:
+        - name: http
+          containerPort: 8334
+        volumeMounts:
+          - name: filestash-data
+            mountPath: /app/data/state
+      volumes:
+        - name: filestash-data
+          persistentVolumeClaim:
+            claimName: filestash-data-pvc

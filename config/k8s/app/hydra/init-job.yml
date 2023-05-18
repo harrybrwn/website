@@ -3,13 +3,13 @@ kind: Job
 metadata:
   name: hydra-init
 spec:
-  ttlSecondsAfterFinished: 100
+  ttlSecondsAfterFinished: 300
   template:
     spec:
       containers:
       - name: clients-init-job
         image: 10.0.0.11:5000/harrybrwn/curl:3.16
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command: ["sh", "-c"]
         args:
         - |

@@ -1,0 +1,36 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hrry-dev-longhorn-routes
+  namespace: longhorn-system
+spec:
+  entryPoints: [websecure]
+  routes:
+    - match: Host(`longhorn.hrry.dev-local`)
+      kind: Rule
+      middlewares:
+        - name: private-ip-only
+      services:
+        - name: longhorn-frontend
+          kind: Service
+          namespace: longhorn-system
+          port: http
+          scheme: http
+  tls:
+    # Use an existing secret
+    secretName: hrry-dev-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: private-ip-only
+  namespace: longhorn-system
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 127.0.0.0/8

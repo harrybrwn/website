@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-api
+spec:
+  selector:
+    matchLabels:
+      app: web-api
+  template:
+    metadata:
+      labels:
+        app: web-api
+    spec:
+      containers:
+        - name: web-api
+          image: 10.0.0.11:5000/harrybrwn/api:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          args:
+            - --port=8081
+          ports:
+            - containerPort: 8081
+              name: http
+          env:
+            - name: ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: environment-config
+                  key: env
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: web-api-env
+                  key: POSTGRES_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: redis-secrets, key: password }
+            - name: JWT_SEED
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secrets
+                  key: jwt-seed
+            - name: SENDGRID_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sendgrid
+                  key: api-key
+          envFrom:
+            - configMapRef: { name: web-api-env }

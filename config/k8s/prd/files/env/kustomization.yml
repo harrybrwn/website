@@ -1,0 +1,6 @@
+secretGenerator:
+- { name: jwt-secrets, envs: [jwt.env] }
+- { name: db-env-secrets, envs: [postgres.env] }
+- { name: redis-secrets, envs: [redis.env] }
+- { name: minio-env-secrets, envs: [minio-s3.env] }
+- { name: minio-console-env, envs: [minio-console.env] }

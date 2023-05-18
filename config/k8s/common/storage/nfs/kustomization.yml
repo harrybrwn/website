@@ -9,15 +9,13 @@
 
 namespace: nfs-provisioner
 
-bases:
+resources:
   - namespace.yml
   # - github.com/kubernetes-sigs/nfs-subdir-external-provisioner/deploy
   - nfs-subdir-external-provisioner.yml
 
-patchesStrategicMerge:
-  - nfs-provisioner-patch.yml
-
 patches:
+  - path: nfs-provisioner-patch.yml
   - target:
       kind: StorageClass
       name: nfs-client

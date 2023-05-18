@@ -27,7 +27,7 @@ spec:
       containers:
       - name: metrics-exporter-nginx
         image: nginx/nginx-prometheus-exporter:0.10.0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "128Mi"

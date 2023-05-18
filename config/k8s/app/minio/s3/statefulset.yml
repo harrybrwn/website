@@ -33,7 +33,7 @@ spec:
         volumeMounts:
           - name: data
             mountPath: /data
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
   volumeClaimTemplates:
   - metadata:
       name: data

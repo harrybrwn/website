@@ -1,0 +1,119 @@
+commonLabels:
+  environment: prd
+
+resources:
+  - ../../app/grafana
+  - ../../app/filestash
+  - ../../app/outline
+  - ../../app/web-api
+  - ../../app/nginx
+  - ../../app/hooks
+  - ../../app/legacy-site
+  - ../../app/vanity-imports
+  - ../../common/secrets/prd
+
+images:
+  - name: 10.0.0.11:5000/harrybrwn/grafana:latest
+    newTag: '9.5.1'
+
+patches:
+  - target:
+      kind: CronJob
+      name: geoipupdate
+    patch: |
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/args/0
+        value: "--env=prd"
+  - target: { kind: Deployment, name: nginx }
+    path: patches/nginx-affinity.yml
+  - target: { kind: Deployment, name: grafana }
+    path: patches/grafana-affinity.yml
+  - target: { kind: Deployment, name: filestash }
+    path: patches/filestash-affinity.yml
+  - target: { kind: PersistentVolumeClaim, name: filestash-data-pvc }
+    path: patches/filestash-pvc.yml
+
+secretGenerator:
+  - name: jwt-secrets
+    behavior: create
+    envs: [env/jwt.env]
+    options: { disableNameSuffixHash: true }
+  - name: grafana-env
+    behavior: replace
+    envs: [env/grafana.env]
+  - name: web-api-env
+    behavior: replace
+    envs: [env/api.env]
+  - name: hooks-env-secrets
+    behavior: replace
+    envs:
+      - env/hooks.env
+      - env/github.env
+  - name: outline-env
+    behavior: replace
+    envs: [env/outline.env]
+  - name: geoip-env-secrets
+    behavior: create
+    envs: [env/geoip-secrets.env]
+    options: { disableNameSuffixHash: true }
+
+configMapGenerator:
+  - name: environment-config
+    behavior: create
+    literals: [env=prd]
+    options:
+      disableNameSuffixHash: true
+  - name: nginx
+    behavior: replace
+    literals:
+      # - registry-url=https://cr.hrry.io
+      - registry-url=https://registry.hrry.dev
+  - name: grafana-env
+    behavior: merge
+    literals:
+      - GF_SERVER_DOMAIN=grafana.hrry.dev
+      - GF_SERVER_ROOT_URL=https://grafana.hrry.dev
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+      - GF_DATABASE_USER=grafana
+      - GF_REMOTE_CACHE_TYPE=redis
+      - GF_AUTH_GENERIC_OAUTH_NAME=hrry.me
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.hrry.dev/oauth2/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.hrry.dev/oauth2/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.hrry.dev/userinfo
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      # We are using our own certificates for server auth.
+      #- GF_AUTH_GENERIC_OAUTH_TLS_SKIP_VERIFY_INSECURE=true
+      - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.hrry.dev hrry.me harrybrwn.com gmail.com
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=email
+  - name: outline-env
+    behavior: merge
+    literals:
+      - URL=https://wiki.hrry.me
+      - OIDC_AUTH_URI=https://auth.hrry.dev/oauth2/auth
+      - OIDC_TOKEN_URI=https://auth.hrry.dev/oauth2/token
+      - OIDC_USERINFO_URI=https://auth.hrry.dev/userinfo
+      - OIDC_DISPLAY_NAME=hrry.me
+      - AWS_S3_UPLOAD_BUCKET_URL=https://s3.hrry.dev
+      - AWS_S3_UPLOAD_MAX_SIZE=26214400
+      - AWS_S3_UPLOAD_BUCKET_NAME=outline-wiki-data
+  - name: hooks-env-config
+    behavior: merge
+    literals:
+      - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=harrybrwn
+  - name: web-api-env
+    behavior: merge
+    literals:
+      - API_TOKEN_COOKIE_DOMAIN=hrry.me
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      - GEOIP_CITY_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-ASN.mmdb
+    options:
+      disableNameSuffixHash: true

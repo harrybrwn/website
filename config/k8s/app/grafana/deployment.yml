@@ -12,28 +12,28 @@ spec:
         app: grafana
     spec:
       containers:
-      - name: grafana
-        image: 10.0.0.11:5000/harrybrwn/grafana:9.1.4
-        imagePullPolicy: IfNotPresent
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "64Mi"
-          limits:
-            memory: "128Mi"
-            cpu: "250m"
-        ports:
-        - containerPort: 3000
-          name: http
-        envFrom:
-          - configMapRef: { name: grafana-env }
-          - secretRef: { name: grafana-env }
-        volumeMounts:
-          - name: provisioning-datasources
-            mountPath: /etc/grafana/provisioning/datasources/
-          - mountPath: /usr/share/grafana/tls
-            name: tls
-            readOnly: true
+        - name: grafana
+          image: 10.0.0.11:5000/harrybrwn/grafana:latest
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          ports:
+            - containerPort: 3000
+              name: http
+          envFrom:
+            - configMapRef: { name: grafana-env }
+            - secretRef: { name: grafana-env }
+          volumeMounts:
+            - name: provisioning-datasources
+              mountPath: /etc/grafana/provisioning/datasources/
+            - mountPath: /usr/share/grafana/tls
+              name: tls
+              readOnly: true
       volumes:
         - name: provisioning-datasources
           configMap:

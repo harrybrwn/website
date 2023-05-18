@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geoip
+  namespace: geoip
+  labels:
+    geoip.hrry.me/managed: 'true'
+spec:
+  selector:
+    matchLabels:
+      app: geoip
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: geoip
+        geoip.hrry.me/managed: 'true'
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8084'
+    spec:
+      containers:
+      - name: geoip
+        image: harrybrwn/geoip:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            # Loads GeoLite2 database into memory
+            memory: "256Mi"
+            cpu: "25m"
+        ports:
+        - name: http
+          containerPort: 8084
+        env:
+          - name: S3_ALLOW_INSECURE
+            value: 'true'
+          - name: GEOIP_PORT
+            value: '8084'
+        envFrom:
+          - secretRef: { name: geoip-env-secrets }
+          - configMapRef: { name: geoip-env-config }

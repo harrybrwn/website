@@ -1,0 +1,97 @@
+commonLabels:
+  environment: prd
+
+resources:
+  - ../../app/postgres
+  - ../../app/redis
+  - ../../app/minio
+  - ../../app/loki
+  - ../../app/fluent-bit
+  - ../../app/hydra
+  - ../files/oauth2
+  - issuer.yml
+  - ../../common/certificates
+
+patches:
+  - target:
+      kind: Certificate
+      name: hrry-me-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: 'hrry.me' }
+      - { op: add, path: /spec/dnsNames/0, value: 'hrry.me' }
+      - { op: add, path: /spec/dnsNames/1, value: '*.hrry.me' }
+  - target:
+      kind: Certificate
+      name: hrry-dev-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: 'hrry.dev' }
+      - { op: add, path: /spec/dnsNames/0, value: 'hrry.dev' }
+      - { op: add, path: /spec/dnsNames/1, value: '*.hrry.dev' }
+      - { op: add, path: /spec/dnsNames/2, value: '*.lab.hrry.dev' }
+      - op: add
+        path: /spec/subject/organizationalUnits/0
+        value: homelab
+  - target:
+      kind: Certificate
+      name: hrry-io-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: 'hrry.io' }
+      - { op: add, path: /spec/dnsNames/0, value: 'hrry.io' }
+      - { op: add, path: /spec/dnsNames/1, value: '*.hrry.io' }
+  - target:
+      kind: Certificate
+      name: harrybrwn-com-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: 'harrybrwn.com' }
+      - { op: add, path: /spec/dnsNames/0, value: 'harrybrwn.com' }
+      - { op: add, path: /spec/dnsNames/1, value: '*.harrybrwn.com' }
+  - target: { kind: StatefulSet, name: db }
+    path: patches/db-affinity.yml
+  - target: { kind: StatefulSet, name: db }
+    path: patches/db-pvc.yml
+  - target: { kind: StatefulSet, name: s3 }
+    path: patches/s3-affinity.yml
+  - target: { kind: StatefulSet, name: s3 }
+    path: patches/s3-pvc.yml
+  - target: { kind: StatefulSet, name: loki }
+    path: patches/loki-affinity.yml
+  - target: { kind: StatefulSet, name: loki }
+    path: patches/loki-pvc.yml
+  - target: { kind: StatefulSet, name: redis }
+    path: patches/redis-pvc.yml
+
+secretGenerator:
+  - name: db-env-secrets
+    behavior: replace
+    envs: [env/postgres.env]
+  - name: redis-secrets
+    behavior: replace
+    envs: [env/redis.env]
+  - name: minio-env-secrets
+    behavior: create
+    envs: [env/minio-s3.env]
+  - name: minio-console-env
+    behavior: replace
+    envs: [env/minio-console.env]
+  - name: hydra-env
+    behavior: replace
+    envs: [env/hydra.env]
+  - name: loki
+    behavior: replace
+    envs: [env/loki.env]
+
+configMapGenerator:
+  - name: minio-env-config
+    behavior: merge
+    literals:
+      - MINIO_BROWSER_REDIRECT_URL=http://s3-console.hrry.dev
+  - name: hydra-env
+    behavior: merge
+    literals:
+      - OAUTH2_EXPOSE_INTERNAL_ERRORS=false
+      - URLS_SELF_ISSUER=https://auth.hrry.dev
+      - URLS_SELF_PUBLIC=https://auth.hrry.dev
+      - URLS_LOGIN=https://hrry.me/login/
+      - URLS_CONSENT=https://hrry.me/login/
+      - URLS_ERROR=https://hrry.me/oidc-error
+      - URLS_LOGOUT=https://hrry.me/logout

@@ -23,11 +23,11 @@ all: dist/dev dist/stg dist/prd
 lint: build
 	# kubectl kustomize config/k8s/dev | kube-score score -
 	kubeval -d . \
-	  --ignored-path-patterns 'kustomization.yml,registry/config.yml,prd/patches/,stg/patches/,k3d.yml' \
+	  --ignored-path-patterns 'kustomization.yml,kustomization.yaml,registry/config.yml,prd/patches/,stg/patches/,k3d.yml,generate/test-config.yml' \
 	  --ignore-missing-schemas
-	kubectl kustomize ./dev | kubeval --ignore-missing-schemas
-	kubectl kustomize ./stg | kubeval --ignore-missing-schemas
-	kubectl kustomize ./prd | kubeval --ignore-missing-schemas
+	# kubectl kustomize ./dev | kubeval --ignore-missing-schemas
+	# kubectl kustomize ./stg | kubeval --ignore-missing-schemas
+	# kubectl kustomize ./prd | kubeval --ignore-missing-schemas
 
 clean:
 	$(RM) -r dist

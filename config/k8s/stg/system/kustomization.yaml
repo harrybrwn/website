@@ -1,0 +1,15 @@
+resources:
+  - ../../system/longhorn
+  - ../../system/cert-manager
+  - ../../system/prometheus
+  - ../../system/secrets
+  - ../../system/traefik-extras
+
+patches:
+  - target:
+      kind: IngressRoute
+      name: hrry-dev-longhorn-routes
+    patch: |
+      - op: replace
+        path: /spec/routes/0/match
+        value: Host(`longhorn.stg.hrry.dev`)

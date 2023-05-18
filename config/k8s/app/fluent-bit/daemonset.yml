@@ -23,7 +23,7 @@ spec:
       containers:
       - name: fluent-bit
         image: 10.0.0.11:5000/harrybrwn/fluent-bit:1.9.10
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "512Mi"

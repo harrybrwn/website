@@ -29,7 +29,6 @@ data:
         orgId: 1
         url: http://loki:3100
         basicAuth: false
-        isDefault: true
         version: 1
         editable: true
         isDefault: true
@@ -38,22 +37,10 @@ data:
         url: http://prometheus.prometheus.svc.cluster.local:9090
         access: proxy
         basicAuth: false
-        isDefault: true
         orgId: 1
         version: 1
         editable: true
         isDefault: false
-  alerts.yml: |
-    notifiers:
-      - name: discord-notifier-1
-        type: discord
-        org_id: 1
-        is_default: true
-        disable_resolve_message: false
-        settings:
-          url: https://discord.com/api/webhooks/<redacted>/<redacted>
-          message: "{{ template \"default.message\" . }} <@&989730245168988170>"
-          use_discord_username: true
   dashboards.yml: |
     apiVersion: 1
     providers:

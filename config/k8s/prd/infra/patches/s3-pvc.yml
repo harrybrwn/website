@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: s3
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      storageClassName: manual
+      resources:
+        requests:
+          storage: 3Gi
+      volumeName: s3-pv

@@ -1,0 +1,8 @@
+namespace: geoip
+
+resources:
+  - namespace.yml
+  - deployment.yml
+  - service.yml
+  - rbac.yml
+  - geoipupdate.yml

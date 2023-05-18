@@ -1,0 +1,41 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: geoipupdate
+  namespace: geoip
+spec:
+  #          ┌───────────── minute (0 - 59)
+  #          │ ┌───────────── hour (0 - 23)
+  #          │ │ ┌───────────── day of the month (1 - 31)
+  #          │ │ │ ┌───────────── month (1 - 12)
+  #          │ │ │ │ ┌───────────── day of the week (0 - 6) (Sunday to Saturday;
+  #          │ │ │ │ │                                   7 is also Sunday on some systems)
+  #          │ │ │ │ │                                   OR sun, mon, tue, wed, thu, fri, sat
+  #          │ │ │ │ │
+  #          * * * * *
+  schedule: '0 11 * * 3,5' # wed,fri at 11am
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: geoipupdate
+          containers:
+          - name: geoipupdate
+            image: harrybrwn/geoipupdate-go:latest
+            imagePullPolicy: Always
+            args:
+              - "--env=dev"
+              - "-l=geoip.hrry.me/managed=true"
+              - "--mode=s3"
+              - "--bucket=geoip"
+              - "--base-dir=/opt/geoipupdate"
+              - "--edition=GeoLite2-ASN"
+              - "--edition=GeoLite2-City"
+              - "--edition=GeoLite2-Country"
+            envFrom:
+              - secretRef: { name: geoip-rw-env-secrets }  # rw s3 credentials
+              - secretRef: { name: maxmind-license }
+              - configMapRef: { name: geoipupdate-env-config }
+          restartPolicy: OnFailure

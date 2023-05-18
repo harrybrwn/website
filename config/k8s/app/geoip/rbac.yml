@@ -1,0 +1,50 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: geoipupdate
+  namespace: geoip
+automountServiceAccountToken: true  # we want a token mounted to pods
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: geoipupdate
+  namespace: geoip
+  annotations:
+    hrry.me/demo: 'true'
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs:
+    - "get"
+    - "create"
+    - "delete"
+    - "watch"
+    - "list"
+    - patch
+    - update
+- apiGroups: [""]
+  resources: ["conifgmaps"]
+  verbs:
+    - get
+    - create
+    - edit
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: geoipupdate
+  namespace: geoip
+  annotations:
+    hrry.me/demo: 'true'
+roleRef:
+  kind: Role
+  name: geoipupdate
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: geoipupdate
+  namespace: geoip

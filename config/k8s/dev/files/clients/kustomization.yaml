@@ -1,0 +1,6 @@
+secretGenerator:
+  - name: hydra-client-migrations
+    behavior: create
+    files:
+      - grafana.json
+      - outline.json

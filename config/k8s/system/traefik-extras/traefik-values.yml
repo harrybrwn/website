@@ -1,0 +1,37 @@
+# https://github.com/traefik/traefik-helm-chart/tree/master/traefik
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    globalArguments:
+      - "--global.checknewversion"
+    additionalArguments:
+      - "--accesslog"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.headers.names.X-Forwarded-For"
+      - "--accesslog.fields.headers.names.Host"
+      - "--accesslog.fields.headers.names.Cf-Connecting-Ip"
+      - "--log"
+      - "--log.format=json"
+      - "--log.level=DEBUG"
+      - "--metrics.prometheus=true"
+    service:
+      spec:
+        # Use "Local" to forward client ip addresses correctly
+        externalTrafficPolicy: Local
+    podAnnotations:
+      prometheus.io/port: "8082"
+      prometheus.io/scrape: "true"
+
+    # service:
+    #   enabled: false
+    # hostNetwork: true
+    # securityContext:
+    #   capabilities:
+    #     add:
+    #       - NET_BIND_SERVICE
+    #   runAsNonRoot: false
+    #   runAsUser: 0

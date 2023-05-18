@@ -164,9 +164,10 @@
   - name: Install backups cron job.
     cron:
       name: 'data backups'
-      job: rsync -avAR /exports/nfs /opt/hrry.dev/backups/
-      weekday: '0,3,5' # sunday, wednesday, friday
-      hour: '2'        # 2 am
+      job: rsync -avAR --delete /exports/nfs /opt/hrry.dev/backups/$(date +\%F)/
+      #weekday: '0,3,5' # sunday, wednesday, friday
+      weekday: '*'
+      hour: '12'
 
 - name: Setup All k3s Cluster Nodes
   hosts: k3s_cluster

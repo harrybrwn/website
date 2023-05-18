@@ -1,0 +1,116 @@
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../app/grafana
+  - ../../app/filestash
+  - ../../app/outline
+  - ../../app/web-api
+  - ../../app/nginx
+  - ../../app/hooks
+  - ../../app/legacy-site
+  - ../../app/vanity-imports
+  - ../../app/mastodon
+  - mastodon-values.yml
+
+patches:
+  - path: web-api.patch.yml
+
+secretGenerator:
+  - name: jwt-secrets
+    behavior: create
+    literals:
+      - jwt-seed=505f0ed4a438f73454a8d8dfc5741327ffa73203be34f5a58db367591124282b
+    options: { disableNameSuffixHash: true }
+  - name: grafana-env
+    behavior: replace
+    literals:
+      - GF_DATABASE_PASSWORD=testbed02
+      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=4,password=testbed01
+      - GF_SECURITY_ADMIN_PASSWORD=testbed01
+  - name: redis-secrets
+    options:
+      disableNameSuffixHash: true
+    namespace: mastodon
+    behavior: create
+    literals:
+      - redis-password=testbed01  # For mastodon
+  - name: web-api-env
+    behavior: replace
+    literals:
+      - POSTGRES_PASSWORD=testbed01
+  - name: hooks-env-secrets
+    behavior: replace
+    literals:
+      - GITHUB_CLIENT_ID=123
+      - GITHUB_CLIENT_SECRET=12345
+      - GITHUB_CALLBACK_SECRET=abcde
+      - POSTGRES_PASSWORD=testbed04
+  - name: outline-env
+    behavior: merge  # Merge there are useful defaults
+    literals:
+      - SECRET_KEY=4823b18f05753c43c8e26566ab51ec02f639a31bd182419d5c1caa4cb257f2f7
+      - UTILS_SECRET=6909b3a32c304d274910dc51f07f18add342ca2927ccd9a6cc53271220860c41
+      # - DATABASE_URL=
+      # - REDIS_URL=redis://:testbed01
+      # - REDIS_PASSWORD=
+  - name: geoip-env-secrets
+    behavior: create
+    literals:
+      - AWS_ACCESS_KEY_ID=root
+      - AWS_SECRET_ACCESS_KEY=minio-testbed001
+    options:
+      disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: environment-config
+    behavior: create
+    literals: [env=dev]
+    options: { disableNameSuffixHash: true }
+  - name: nginx
+    behavior: replace
+    literals:
+      - registry-url=https://registry.hrry.local
+  - name: hooks-env-config
+    behavior: merge
+    literals:
+      - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=harrybrwn
+  - name: grafana-env
+    behavior: merge
+    literals:
+      - GF_SERVER_DOMAIN=grafana.hrry.local
+      - GF_SERVER_ROOT_URL=https://grafana.hrry.local
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+      - GF_DATABASE_USER=grafana
+      - GF_REMOTE_CACHE_TYPE=redis
+      - GF_AUTH_GENERIC_OAUTH_NAME=hrry.local
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.hrry.dev-local/oauth2/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.hrry.dev-local/oauth2/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.hrry.dev-local/userinfo
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.hrry.local hrry.me-local hrry.local harrybrwn.local gmail.com
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=email
+  - name: outline-env
+    behavior: merge
+    literals:
+      - URL=https://wiki.hrry.local
+      - PGSSLMODE=disable
+  - name: web-api-env
+    behavior: merge
+    literals:
+      - API_TOKEN_COOKIE_DOMAIN=hrry.me-local
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      - GEOIP_CITY_FILE=s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb
+      - S3_ALLOW_INSECURE=true
+      - GEOIP_PORT=8084
+    options:
+      disableNameSuffixHash: true

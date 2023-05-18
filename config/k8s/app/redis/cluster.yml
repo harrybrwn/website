@@ -27,7 +27,7 @@ spec:
       containers:
       - name: redis
         image: 10.0.0.11:5000/harrybrwn/redis:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command: ["cluster-entrypoint.sh"]
         ports:
         - name: redis
@@ -72,7 +72,7 @@ spec:
       containers:
       - name: start-redis-cluster
         image: 10.0.0.11:5000/harrybrwn/redis:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command: ["create-cluster.sh"]
         envFrom:
         - configMapRef: { name: redis-cluster-env }

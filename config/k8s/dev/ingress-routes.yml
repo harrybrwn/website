@@ -7,32 +7,32 @@ metadata:
 spec:
   entryPoints: [websecure]
   routes:
-  - match: >-
-      HostSNI(`hrry.local`)
-      || HostSNI(`hrry.me.local`) || HostSNI(`hrry.me-local`)
-      || HostSNI(`1k.hrry.local`) || HostSNI(`1k.hrry.me-local`)
-      || HostSNI(`s3.hrry.local`) || HostSNI(`s3.hrry.dev-local`)
-      || HostSNI(`api.hrry.local`) || HostSNI(`api.hrry.me-local`)
-      || HostSNI(`harrybrwn.local`)
-      || HostSNI(`hextris.harrybrwn.local`)
-      || HostSNI(`registry.hrry.local`)
-    services:
-     - name: nginx
-       port: https
-  - match: >-
-      HostSNI(`grafana.hrry.local`)
-      || HostSNI(`grafana.hrry.dev-local`)
-      || HostSNI(`grafana.hrry.dev.local`)
-    services:
-    - name: grafana
-      port: http
-  - match: >-
-      HostSNI(`cr.hrry.local`)
-      || HostSNI(`cr.hrry.io.local`)
-      || HostSNI(`registry.hrry.io.local`)
-    services:
-    - name: registry
-      port: http
+    - match: >-
+        HostSNI(`hrry.local`)
+        || HostSNI(`hrry.me.local`) || HostSNI(`hrry.me-local`)
+        || HostSNI(`1k.hrry.local`) || HostSNI(`1k.hrry.me-local`)
+        || HostSNI(`s3.hrry.local`) || HostSNI(`s3.hrry.dev-local`)
+        || HostSNI(`api.hrry.local`) || HostSNI(`api.hrry.me-local`)
+        || HostSNI(`harrybrwn.local`)
+        || HostSNI(`hextris.harrybrwn.local`)
+        || HostSNI(`registry.hrry.local`)
+      services:
+        - name: nginx
+          port: https
+    - match: >-
+        HostSNI(`grafana.hrry.local`)
+        || HostSNI(`grafana.hrry.dev-local`)
+        || HostSNI(`grafana.hrry.dev.local`)
+      services:
+        - name: grafana
+          port: http
+    - match: >-
+        HostSNI(`cr.hrry.local`)
+        || HostSNI(`cr.hrry.io.local`)
+        || HostSNI(`registry.hrry.io.local`)
+      services:
+        - name: registry
+          port: http
   tls:
     passthrough: true
 
@@ -44,10 +44,10 @@ metadata:
 spec:
   entryPoints: [web]
   routes:
-  - match: HostSNI(`*`)
-    services:
-    - name: nginx
-      port: http # will redirect most things to https
+    - match: HostSNI(`*`)
+      services:
+        - name: nginx
+          port: http  # will redirect most things to https
 
 ---
 apiVersion: traefik.containo.us/v1alpha1
@@ -57,43 +57,43 @@ metadata:
 spec:
   entryPoints: [websecure]
   routes:
-  - match: (Host(`ip.hrry.local`) || Host(`ip.hrry.dev.local`)) && !Path(`/metrics`)
-    kind: Rule
-    services:
-      - name: geoip
-        kind: Service
-        port: http
-        scheme: http
-  - match: Host(`files.hrry.local`) || Host(`files.hrry.dev.local`)
-    kind: Rule
-    services:
-      - name: filestash
-        kind: Service
-        port: http
-        scheme: http
-  - match: (Host(`gopkg.hrry.local`) || Host(`gopkg.hrry.dev.local`)) && !Path(`/metrics`)
-    kind: Rule
-    services:
-      - name: vanity-imports
-        kind: Service
-        port: http
-        scheme: http
-  - match: Host(`auth.hrry.local`) || Host(`auth.hrry.dev.local`)
-    kind: Rule
-    middlewares:
-      - name: handle-not-found
-    services:
-      - name: hydra
-        kind: Service
-        port: hydra-public
-        scheme: http
-  - match: Host(`s3-console.hrry.local`) || Host(`s3-console.hrry.dev.local`)
-    kind: Rule
-    services:
-      - name: minio-console
-        kind: Service
-        port: http
-        scheme: http
+    - match: (Host(`ip.hrry.local`) || Host(`ip.hrry.dev.local`)) && !Path(`/metrics`)
+      kind: Rule
+      services:
+        - name: geoip
+          kind: Service
+          port: http
+          scheme: http
+    - match: Host(`files.hrry.local`) || Host(`files.hrry.dev.local`)
+      kind: Rule
+      services:
+        - name: filestash
+          kind: Service
+          port: http
+          scheme: http
+    - match: (Host(`gopkg.hrry.local`) || Host(`gopkg.hrry.dev.local`)) && !Path(`/metrics`)
+      kind: Rule
+      services:
+        - name: vanity-imports
+          kind: Service
+          port: http
+          scheme: http
+    - match: Host(`auth.hrry.local`) || Host(`auth.hrry.dev.local`)
+      kind: Rule
+      middlewares:
+        - name: handle-not-found
+      services:
+        - name: hydra
+          kind: Service
+          port: hydra-public
+          scheme: http
+    - match: Host(`s3-console.hrry.local`) || Host(`s3-console.hrry.dev.local`)
+      kind: Rule
+      services:
+        - name: minio-console
+          kind: Service
+          port: http
+          scheme: http
   tls:
     # Use an existing secret
     secretName: hrry-dev-tls
@@ -105,13 +105,13 @@ metadata:
   name: harrybrwn-com-routes
 spec:
   routes:
-  - match: Host(`hooks.harrybrwn.local`)
-    kind: Rule
-    services:
-      - name: hooks
-        kind: Service
-        port: http
-        scheme: http
+    - match: Host(`hooks.harrybrwn.local`)
+      kind: Rule
+      services:
+        - name: hooks
+          kind: Service
+          port: http
+          scheme: http
   tls:
     secretName: harrybrwn-com-tls
 

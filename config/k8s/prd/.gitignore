@@ -1,2 +1,2 @@
-files/oauth2/
-env/*
+files/oauth2/*.json
+*.env

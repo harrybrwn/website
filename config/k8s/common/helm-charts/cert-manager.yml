@@ -16,6 +16,7 @@ spec:
   version: "v1.9.1"
   repo: https://charts.jetstack.io
   targetNamespace: cert-manager
+  # Make sure the CRDs are update to date in config/k8s/common/crds/kustomization.yaml
   valuesContent: |-
     enabled: true
     namespace: cert-manager

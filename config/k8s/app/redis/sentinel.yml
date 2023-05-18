@@ -37,7 +37,7 @@ spec:
       containers:
         - name: sentinel
           image: 10.0.0.11:5000/harrybrwn/redis:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["sentinel-entrypoint.sh"]
           ports:
             - containerPort: 26379

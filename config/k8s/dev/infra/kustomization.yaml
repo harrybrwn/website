@@ -1,0 +1,62 @@
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../app/postgres
+  - ../../app/redis
+  - ../../app/minio
+  - ../../app/loki
+  - ../../app/fluent-bit
+  - ../../app/hydra
+  - ../files/clients
+  - issuer.yml
+  - certificates.yml
+
+patches:
+  # Make sure all the certificates have the correct issuer
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: replace
+        path: /spec/issuerRef/name
+        value: ca-issuer
+
+secretGenerator:
+  # CA for self-signed issuer
+  - name: hrry-root-ca
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    files:
+      - tls.crt=certs/ca.crt
+      - tls.key=certs/ca.key
+  - name: db-env-secrets
+    behavior: replace
+    literals:
+      - POSTGRES_USER=harrybrwn
+      - POSTGRES_PASSWORD=testbed01
+      - POSTGRES_USERS=grafana:testbed02 db-backups:testbed03 hydra:testbed04
+      - POSTGRES_DATABASES=harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
+  - name: redis-secrets
+    behavior: replace
+    literals:
+      - password=testbed01
+  - name: minio-env-secrets
+    behavior: create
+    literals:
+      - MINIO_ROOT_USER=root
+      - MINIO_ROOT_PASSWORD=minio-testbed001
+  - name: loki
+    behavior: replace
+    literals:
+      - s3-access-key=loki
+      - s3-secret-key=minio-testbed001-loki
+
+configMapGenerator:
+  - name: minio-env-config
+    behavior: merge
+    literals:
+      - MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY=on
+      - MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/logs
+      - MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY=on
+      - MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/audit

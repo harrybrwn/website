@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hooks
+spec:
+  selector:
+    matchLabels:
+      app: hooks
+  template:
+    metadata:
+      labels:
+        app: hooks
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8889'
+    spec:
+      containers:
+      - name: hooks
+        image: 10.0.0.11:5000/harrybrwn/hooks:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        envFrom:
+          - configMapRef: { name: hooks-env-config }
+          - secretRef: { name: hooks-env-secrets }
+        ports:
+        - name: http
+          containerPort: 8889

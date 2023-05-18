@@ -1,0 +1,68 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: nginx
+    app.kubernetes.io/component: gateway-proxy
+    app.kubernetes.io/part-of: hrry.me
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: 10.0.0.11:5000/harrybrwn/nginx:1.23.3
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+          ports:
+            - containerPort: 80
+              name: nginx-http
+            - containerPort: 443
+              name: nginx-https
+          volumeMounts:
+            - name: nginx-certs
+              mountPath: /etc/harrybrwn/certs
+              readOnly: true
+          env:
+            - name: REGISTRY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: nginx
+                  key: registry-url
+            - name: REGISTRY_TITLE
+              value: Harry's Docker Registry
+            - name: CATALOG_ELEMENTS_LIMIT
+              value: '15'
+      volumes:
+        - name: nginx-certs
+          projected:
+            sources:
+            - secret:
+                name: harrybrwn-com-tls
+                items:
+                  - { key: tls.crt, path: harrybrwn.com.crt }
+                  - { key: tls.key, path: harrybrwn.com.key }
+            - secret:
+                name: hrry-me-tls
+                items:
+                  - { key: tls.crt, path: hrry.me.crt }
+                  - { key: tls.key, path: hrry.me.key }
+            - secret:
+                name: hrry-dev-tls
+                items:
+                  - { key: tls.crt, path: hrry.dev.crt }
+                  - { key: tls.key, path: hrry.dev.key }

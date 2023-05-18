@@ -1,0 +1,16 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: db
+spec:
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ ReadWriteMany ]
+      storageClassName: manual
+      resources:
+        requests:
+          storage: 5Gi
+      volumeName: postgres-pv

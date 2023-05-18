@@ -1,0 +1,102 @@
+resources:
+  # Databases
+  - ../../app/postgres
+  - ../../app/redis
+  - ../../app/minio
+  - ../../app/loki
+  - ../../app/fluent-bit
+  - ../../app/hydra
+  - ../files/clients  # hydra client secrets
+  - issuer.yml
+  - ../../common/certificates
+
+secretGenerator:
+  - name: db-env-secrets
+    behavior: replace
+    literals:
+      - POSTGRES_USER=harrybrwn
+      - POSTGRES_PASSWORD=testbed01
+      - POSTGRES_USERS=grafana:testbed02 db-backups:testbed03 hydra:testbed04
+      - POSTGRES_DATABASES=harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
+  - name: redis-secrets
+    behavior: replace
+    literals:
+      - password=testbed01
+  - name: minio-env-secrets
+    behavior: create
+    literals:
+      - MINIO_ROOT_USER=root
+      - MINIO_ROOT_PASSWORD=minio-testbed001
+  - name: loki
+    behavior: replace
+    literals:
+      - s3-access-key=loki
+      - s3-secret-key=minio-testbed001-loki
+
+configMapGenerator:
+  - name: minio-env-config
+    behavior: merge
+    literals:
+      - MINIO_BROWSER_REDIRECT_URL=http://s3-console.stg.hrry.dev
+  - name: hydra-env
+    behavior: merge
+    literals:
+      - OAUTH2_EXPOSE_INTERNAL_ERRORS=true
+      - URLS_SELF_ISSUER=https://auth.stg.hrry.dev
+      - URLS_SELF_PUBLIC=https://auth.stg.hrry.dev
+      - URLS_LOGIN=https://stg.hrry.me/login/
+      - URLS_CONSENT=https://stg.hrry.me/login/
+      - URLS_ERROR=https://stg.hrry.me/oidc-error
+      - URLS_LOGOUT=https://stg.hrry.me/logout
+
+patches:
+  # Postgres will recognize that the data dir is mounted in a logical volume so
+  # we will mount the parent dir /var/lib/postgresql/ and let it create its own
+  # sub-directories.
+  # This is only an issue with longhorn logical volume mounts.
+  - target:
+      kind: StatefulSet
+      name: db
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/volumeMounts/0/mountPath
+        value: /var/lib/postgresql/
+  # Make sure all the certificates have the correct issuer
+  - target:
+      kind: Certificate
+    patch: |-
+      - op: replace
+        path: /spec/issuerRef/name
+        value: stg-ca-issuer
+      - op: replace
+        path: /spec/renewBefore
+        value: 360h  # 15 days
+  # Certificate CRDs managed by cert-manager
+  - target:
+      kind: Certificate
+      name: hrry-me-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: stg.hrry.me }
+      - { op: add, path: /spec/dnsNames/0, value: stg.hrry.me }
+      - { op: add, path: /spec/dnsNames/1, value: '*.stg.hrry.me' }
+  - target:
+      kind: Certificate
+      name: hrry-dev-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: stg.hrry.dev }
+      - { op: add, path: /spec/dnsNames/0, value: stg.hrry.dev }
+      - { op: add, path: /spec/dnsNames/1, value: '*.stg.hrry.dev' }
+  - target:
+      kind: Certificate
+      name: hrry-io-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: stg.hrry.io }
+      - { op: add, path: /spec/dnsNames/0, value: stg.hrry.io }
+      - { op: add, path: /spec/dnsNames/1, value: '*.stg.hrry.io' }
+  - target:
+      kind: Certificate
+      name: harrybrwn-com-tls
+    patch: |-
+      - { op: add, path: /spec/commonName, value: stg.harrybrwn.com }
+      - { op: add, path: /spec/dnsNames/0, value: stg.harrybrwn.com }
+      - { op: add, path: /spec/dnsNames/1, value: '*.stg.harrybrwn.com' }

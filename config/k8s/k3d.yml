@@ -2,17 +2,23 @@ apiVersion: k3d.io/v1alpha4
 kind: Simple
 metadata:
   name: hrry-dev
-servers: 1
-agents: 1
+servers: 1 # control plane nodes
+agents: 3  # worker nodes
 image: docker.io/rancher/k3s:v1.24.4-k3s1
 volumes:
   - volume: k8s-dev-data:/opt/hrry.me
+    # https://k3d.io/v5.4.6/design/concepts/#nodefilters
+    # nodeFilters:
+    #   - servers
+    #   - agents
+  - volume: /tmp/k3d/longhorn:/var/lib/longhorn:shared
     nodeFilters:
-      - server:*
-      - agent:*
+      - all
+      # - servers
+      # - agents
 options:
   k3s:
     nodeLabels:
-    - label: hrry.me/node-size=big
-      nodeFilters:
-        - server:*
+      - label: hrry.me/node-size=big
+        nodeFilters:
+          - server:*

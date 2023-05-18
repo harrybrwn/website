@@ -1,0 +1,132 @@
+commonLabels:
+  environment: stg
+
+resources:
+  - ../../app/grafana
+  - ../../app/filestash
+  - ../../app/outline
+  - ../../app/web-api
+  - ../../app/nginx
+  - ../../app/hooks
+  - ../../app/legacy-site
+  - ../../app/vanity-imports
+  - ../../common/secrets/stg
+  - geoip
+
+images:
+  - name: 10.0.0.11:5000/harrybrwn/grafana:latest
+    newTag: '9.5.1'
+
+patches:
+  - target:
+      kind: Deployment
+      name: outline
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources/limits
+        value:
+          cpu: '50m'
+          memory: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: '10m'
+  - target:
+      kind: CronJob
+      name: geoipupdate
+    patch: |
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/args/0
+        value: "--env=stg"
+
+secretGenerator:
+  - name: jwt-secrets
+    behavior: create
+    literals:
+      - jwt-seed=505f0ed4a438f73454a8d8dfc5741327ffa73203be34f5a58db367591124282b
+    options:
+      disableNameSuffixHash: true
+  - name: web-api-env
+    behavior: replace
+    literals:
+      - POSTGRES_PASSWORD=testbed01
+  - name: grafana-env
+    behavior: replace
+    literals:
+      - GF_DATABASE_PASSWORD=testbed02
+      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=1,password=testbed01
+      - GF_SECURITY_ADMIN_PASSWORD=testbed01
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=cd5979b60b7c4b73
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=7ae3a681e9b0ab60f7b9012baf178557d6d3826117cbae0ee2955b3cdb8f1c29
+  - name: outline-env
+    behavior: replace
+    literals:
+      - SECRET_KEY=08c0290afae6b633ac86c831b2ca78b2338623b445726cdb00519fea034f7c60
+      - UTILS_SECRET=09109c097620a889bdf3ed6e1040a1e9a9b8fdfa3bc5b0cabf5e8113c8358b63
+      - AWS_ACCESS_KEY=outline
+      - AWS_SECRET_ACCESS_KEY=minio-testbed001
+      - OIDC_CLIENT_ID=outline0
+      - OIDC_CLIENT_SECRET=b59c1bedc32923e65d7abb7bb349bd7aa6fc64bc3f0b4a50674140d3149ce465
+      - DATABASE_URL=postgres://outline:testbed05@db:5432/outline
+      - REDIS_URL=redis://:testbed01@redis:6379/9
+      - REDIS_PASSWORD=testbed01
+  - name: hooks-env-secrets
+    behavior: replace
+    literals:
+      - GITHUB_CLIENT_ID=123
+      - GITHUB_CLIENT_SECRET=12345
+      - GITHUB_CALLBACK_SECRET=abcde
+      - POSTGRES_PASSWORD=testbed04
+
+configMapGenerator:
+  - name: environment-config
+    behavior: create
+    literals: [env=stg]
+    options:
+      disableNameSuffixHash: true
+  - name: web-api-env
+    behavior: merge
+    literals:
+      - API_TOKEN_COOKIE_DOMAIN=stg.hrry.me
+  - name: grafana-env
+    behavior: merge
+    literals:
+      - GF_SERVER_DOMAIN=grafana.stg.hrry.dev
+      - GF_SERVER_ROOT_URL=https://grafana.stg.hrry.dev
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=db:5432
+      - GF_DATABASE_NAME=grafana
+      - GF_DATABASE_USER=grafana
+      - GF_REMOTE_CACHE_TYPE=redis
+      - GF_AUTH_GENERIC_OAUTH_NAME=stg.hrry.me
+      - GF_AUTH_GENERIC_OAUTH_ENABLED=true
+      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.stg.hrry.dev/oauth2/auth
+      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.stg.hrry.dev/oauth2/token
+      - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.stg.hrry.dev/userinfo
+      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
+      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
+      # We are using our own certificates for server auth.
+      - GF_AUTH_GENERIC_OAUTH_TLS_SKIP_VERIFY_INSECURE=true
+      - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.stg.hrry.dev stg.hrry.me stg.harrybrwn.com gmail.com
+      - GF_AUTH_GENERIC_OAUTH_SCOPES=email
+  - name: outline-env
+    behavior: merge
+    literals:
+      - URL=https://wiki.stg.hrry.me
+      - OIDC_AUTH_URI=https://auth.stg.hrry.dev/oauth2/auth
+      - OIDC_TOKEN_URI=https://auth.stg.hrry.dev/oauth2/token
+      - OIDC_USERINFO_URI=https://auth.stg.hrry.dev/userinfo
+      - OIDC_DISPLAY_NAME=stg.hrry.me
+      - AWS_S3_UPLOAD_BUCKET_URL=https://s3.stg.hrry.dev
+      - AWS_S3_UPLOAD_MAX_SIZE=26214400
+      - AWS_S3_UPLOAD_BUCKET_NAME=outline-wiki-data
+      #- NODE_EXTRA_CA_CERTS
+  - name: hooks-env-config
+    behavior: merge
+    literals:
+      - GH_HOOK_CALLBACK_HOST=hooks.stg.harrybrwn.com
+      - POSTGRES_HOST=db
+      - POSTGRES_USER=harrybrwn
+  - name: nginx
+    behavior: replace
+    literals:
+      - registry-url=https://cr.stg.hrry.io

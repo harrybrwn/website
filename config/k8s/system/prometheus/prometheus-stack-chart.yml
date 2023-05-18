@@ -1,0 +1,69 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: prometheus-stack
+  namespace: kube-system
+spec:
+  name: kube-prometheus-stack
+  chart: kube-prometheus-stack
+  version: 45.25.0
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: prometheus
+  # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
+  valuesContent: |
+    namespaceOverride: prometheus
+    prometheus:
+      prometheusSpec:
+        ingress:
+          enabled: false
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: longhorn
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: "hrry.me/node-size"
+                  operator: In
+                  values: ["big"]
+                - key: "kubernetes.io/arch"
+                  operator: In
+                  values: ["amd64"]
+
+    kube-state-metrics:
+      namespaceOverride: prometheus
+    prometheus-node-exporter:
+      namespaceOverride: prometheus
+    kubernetesServiceMonitors:
+      enabled: true
+    kubelet:
+      enabled: true
+    # Disabled Services
+    grafana:
+      enabled: false
+    alertmanager:
+      enabled: false
+    # Disabled Scrapers
+    defaultRules:
+      create: false
+      rules:
+        etcd: false
+    kubeApiServer:
+      enabled: false
+    kubeEtcd:
+      enabled: false
+    kubeControllerManager:
+      enabled: false
+    kubeScheduler:
+      enabled: false
+    kubeDns:
+      enabled: false
+    thanosRuler:
+      enabled: false

@@ -1,0 +1,25 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: geoip-init
+  namespace: geoip
+spec:
+  template:
+    spec:
+      containers:
+      - name: geoip-init-geoipupdate
+        image: harrybrwn/geoipupdate-go:latest
+        imagePullPolicy: Always
+        args:
+          - '--env=stg'
+          - '--mode=s3'
+          - '--bucket=geoip'
+          - '--edition=GeoLite2-ASN'
+          - '--edition=GeoLite2-City'
+          - '--edition=GeoLite2-Country'
+        envFrom:
+          - secretRef: { name: geoip-rw-env-secrets }  # rw s3 credentials
+          - secretRef: { name: maxmind-license }
+          - configMapRef: { name: geoipupdate-env-config }
+      restartPolicy: OnFailure

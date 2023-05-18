@@ -20,14 +20,14 @@ spec:
       initContainers:
       - name: migrate
         image: oryd/hydra:v1.11.8
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: ["migrate", "sql", "-e", "-y"]
         envFrom:
           - secretRef: { name: hydra-env }
       containers:
       - name: hydra
         image: oryd/hydra:v1.11.8
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         args: ["serve", "all", "--config=/etc/hydra/hydra.yml"]
         envFrom:
           - secretRef: { name: hydra-env }

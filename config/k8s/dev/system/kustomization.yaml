@@ -1,0 +1,7 @@
+commonLabels:
+  environment: dev
+
+resources:
+  - ../../common/helm-charts
+  - ../../system/secrets
+  - ../../system/cert-manager

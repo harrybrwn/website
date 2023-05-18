@@ -14,13 +14,13 @@ storage:
     encrypt: false
     secure: true
     v4auth: true
-    chunksize: 33554432 # 32mb => 32 * 1024 * 1024
+    chunksize: 33554432  # 32mb => 32 * 1024 * 1024
     rootdirectory: /
   maintenance:
     # Clean out old containers periodically.
     uploadpurging:
       enabled: true
-      age: 336h # 2 weeks
+      age: 336h  # 2 weeks
       interval: 24h
       dryrun: false
 
@@ -41,7 +41,7 @@ http:
 
 health:
   storagedriver:
-    enabled: false # This ends up being pretty noisy
+    enabled: false  # This ends up being pretty noisy
     # 5 minutes
     interval: 300s
     threshold: 3

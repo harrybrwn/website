@@ -1,190 +1,11 @@
-bases:
-  - ../app
-  - ../common/sendgrid
-  - ../common/helm-charts
-
 commonLabels:
   environment: dev
 
 resources:
-  - issuer.yml
-  - certificates.yml
   - ingress-routes.yml
-  - ./helm-charts/mastodon.yml
-
-# Patch the certificate volumes to use the ones issued by cert-manager.
-patchesStrategicMerge:
-  - patches/web-api.yml
-
-patches:
-  # Make sure all the certificates have the correct issuer
-  - target:
-      kind: Certificate
-    patch: |-
-      - op: replace
-        path: /spec/issuerRef/name
-        value: ca-issuer
-
-# NOTES:
-# generator behavior can be 'create', 'replace', 'merge'
-secretGenerator:
-  # CA for self-signed issuer
-  - name: hrry-root-ca
-    behavior: create
-    options:
-      disableNameSuffixHash: true
-    files:
-      - tls.crt=certs/ca.crt
-      - tls.key=certs/ca.key
-  - name: jwt-secrets
-    behavior: merge
-    literals:
-      - jwt-seed=505f0ed4a438f73454a8d8dfc5741327ffa73203be34f5a58db367591124282b
-  - name: db-env-secrets
-    behavior: replace
-    literals:
-      - POSTGRES_USER=harrybrwn
-      - POSTGRES_PASSWORD=testbed01
-      - POSTGRES_USERS=grafana:testbed02 db-backups:testbed03 hydra:testbed04
-      - POSTGRES_DATABASES=harrybrwn_api:harrybrwn harrybrwn_hooks:harrybrwn grafana:grafana
-  - name: redis-secrets
-    behavior: replace
-    literals:
-      - password=testbed01
-  # Redis secret for mastodon
-  - name: redis-secrets
-    options:
-      disableNameSuffixHash: true
-    namespace: mastodon
-    behavior: create
-    literals:
-      - redis-password=testbed01 # For mastodon
-  - name: minio-env-secrets
-    behavior: create
-    literals:
-      - MINIO_ROOT_USER=root
-      - MINIO_ROOT_PASSWORD=minio-testbed001
-  - name: grafana-env
-    behavior: replace
-    literals:
-      - GF_DATABASE_PASSWORD=testbed02
-      - GF_REMOTE_CACHE_CONNSTR=addr=redis:6379,pool_size=50,db=4,password=testbed01
-      - GF_SECURITY_ADMIN_PASSWORD=testbed01
-  - name: loki
-    behavior: replace
-    literals:
-      - s3-access-key=loki
-      - s3-secret-key=minio-testbed001-loki
-  - name: web-api-env
-    behavior: replace
-    literals:
-      - POSTGRES_PASSWORD=testbed01
-  - name: hooks-env-secrets
-    behavior: replace
-    literals:
-      - GITHUB_CLIENT_ID=123
-      - GITHUB_CLIENT_SECRET=12345
-      - GITHUB_CALLBACK_SECRET=abcde
-      - POSTGRES_PASSWORD=testbed04
-  - name: outline-env
-    behavior: merge # Merge there are useful defaults
-    literals:
-    - SECRET_KEY=4823b18f05753c43c8e26566ab51ec02f639a31bd182419d5c1caa4cb257f2f7
-    - UTILS_SECRET=6909b3a32c304d274910dc51f07f18add342ca2927ccd9a6cc53271220860c41
-    # - DATABASE_URL=
-    # - REDIS_URL=redis://:testbed01
-    # - REDIS_PASSWORD=
-  - name: hydra-client-migrations
-    behavior: replace
-    files:
-      - files/clients/grafana.json
-      - files/clients/outline.json
-  - name: registry-secrets
-    behavior: replace
-    files:
-      # contains users:
-      #   harry:fdsafdsa
-      #   harrybrwn:fdsafdsa
-      - files/registry/htpasswd
-  - name: registry-secrets-env
-    behavior: replace
-    literals:
-      - REGISTRY_REDIS_PASSWORD=testbed01
-      - REGISTRY_REDIS_DB=5
-      - REGISTRY_HTTP_SECRET=1111110000001c6b90c320c622890c5a4b3d6ab0ff35da087df17616c931cd75
-      - REGISTRY_STORAGE_S3_REGIONENDPOINT=http://s3:9000/
-      - REGISTRY_STORAGE_S3_BUCKET=docker-registry
-      - REGISTRY_STORAGE_S3_REGION=us-east-1
-      - REGISTRY_STORAGE_S3_ACCESSKEY=registry
-      - REGISTRY_STORAGE_S3_SECRETKEY=minio-testbed001-registry
-  - name: geoip-secrets
-    behavior: create
-    literals:
-      - AWS_ACCESS_KEY_ID=root
-      - AWS_SECRET_ACCESS_KEY=minio-testbed001
-    options:
-      disableNameSuffixHash: true
-
-configMapGenerator:
-  - name: environment-config
-    behavior: replace
-    literals: [env=dev]
-  - name: nginx
-    behavior: replace
-    literals:
-      - registry-url=https://registry.hrry.local
-  - name: minio-env-config
-    behavior: merge
-    literals:
-      - MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY=on
-      - MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/logs
-      - MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY=on
-      - MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/audit
-  - name: hooks-env-config
-    behavior: merge
-    literals:
-      - GH_HOOK_CALLBACK_HOST=hooks.harrybrwn.com
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=harrybrwn
-  - name: grafana-env
-    behavior: merge
-    literals:
-    - GF_SERVER_DOMAIN=grafana.hrry.local
-    - GF_SERVER_ROOT_URL=https://grafana.hrry.local
-    - GF_DATABASE_TYPE=postgres
-    - GF_DATABASE_HOST=db:5432
-    - GF_DATABASE_NAME=grafana
-    - GF_DATABASE_USER=grafana
-    - GF_REMOTE_CACHE_TYPE=redis
-    - GF_AUTH_GENERIC_OAUTH_NAME=hrry.local
-    - GF_AUTH_GENERIC_OAUTH_ENABLED=true
-    - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://auth.hrry.dev-local/oauth2/auth
-    - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://auth.hrry.dev-local/oauth2/token
-    - GF_AUTH_GENERIC_OAUTH_API_URL=https://auth.hrry.dev-local/userinfo
-    - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGNUP=false
-    - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true
-    - GF_AUTH_GENERIC_OAUTH_ALLOWED_DOMAINS=grafana.hrry.local hrry.me-local hrry.local harrybrwn.local gmail.com
-    - GF_AUTH_GENERIC_OAUTH_SCOPES=email
-  - name: outline-env
-    behavior: merge
-    literals:
-      - URL=https://wiki.hrry.local
-      - PGSSLMODE=disable
-  - name: registry-config
-    behavior: replace
-    files:
-      - files/registry/config.yml
-  - name: web-api-env
-    behavior: merge
-    literals:
-      - API_TOKEN_COOKIE_DOMAIN=hrry.me-local
-  - name: geoip-env-config
-    behavior: create
-    literals:
-      - GEOIP_CITY_FILE=s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
-      - GEOIP_ASN_FILE=s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb
-    options:
-      disableNameSuffixHash: true
+  - system
+  - infra
+  - apps
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/s3
@@ -206,3 +27,31 @@ images:
     newTag: latest
   - name: 10.0.0.11:5000/harrybrwn/curl
     newTag: latest
+
+patches:
+  - target: { kind: Deployment }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target: { kind: StatefulSet }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target: { kind: DaemonSet }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target: { kind: Job }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
+  - target:
+      annotationSelector: hrry.me/has-init=true
+    patch: |-
+      - op: add
+        path: /spec/template/spec/initContainers/0/imagePullPolicy
+        value: IfNotPresent

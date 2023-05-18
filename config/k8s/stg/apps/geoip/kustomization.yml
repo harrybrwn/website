@@ -1,0 +1,44 @@
+namespace: geoip
+
+resources:
+  - ../../../app/geoip
+  - geoip-init-job.yml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+patches:
+  - target:
+      kind: CronJob
+      name: geoipupdate
+    patch: |
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/args/0
+        value: "--env=stg"
+
+secretGenerator:
+  # Read-Only access to S3
+  - name: geoip-env-secrets
+    behavior: create
+    literals:
+      - AWS_ACCESS_KEY_ID=github-actions
+      - AWS_SECRET_ACCESS_KEY=minio-testbed001
+  # Read-Write access to S3
+  - name: geoip-rw-env-secrets
+    behavior: create
+    literals:
+      - AWS_ACCESS_KEY_ID=geoipupdate
+      - AWS_SECRET_ACCESS_KEY=minio-testbed001-geoipupdate
+
+configMapGenerator:
+  - name: geoipupdate-env-config
+    behavior: create
+    literals:
+      - AWS_ENDPOINT_URL=http://s3.default.svc.cluster.local:9000
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      # - GEOIP_CITY_FILE=s3://s3.default.svc.cluster.local:9000/geoip/stg/latest/GeoLite2-City.mmdb
+      # - GEOIP_ASN_FILE=s3://s3.default.svc.cluster.local:9000/geoip/stg/latest/GeoLite2-ASN.mmdb
+      - GEOIP_CITY_FILE=s3://s3.default.svc.cluster.local:9000/geoip/stg/2023-05-16/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3.default.svc.cluster.local:9000/geoip/stg/2023-05-16/GeoLite2-ASN.mmdb

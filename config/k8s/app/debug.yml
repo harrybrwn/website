@@ -1,0 +1,91 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: debug-scripts
+  namespace: geoip
+data:
+  pods.sh: |
+    #!/bin/sh
+    set -eu
+    CA=/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    TOKEN="$(cat /run/secrets/kubernetes.io/serviceaccount/token)"
+    NS="$(cat /run/secrets/kubernetes.io/serviceaccount/namespace)"
+
+    POD=''
+    uri=''
+
+    ARGS=''
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -X)
+          ARGS="-X $2 $ARGS"
+          shift 2
+          ;;
+        -d)
+          ARGS="-d $2 $ARGS"
+          shift 2
+          ;;
+        -i)
+          ARGS="-i $ARGS"
+          shift
+          ;;
+        -n)
+          NS="$2"
+          shift 2
+          ;;
+        -p)
+          POD="$2"
+          shift 2
+          ;;
+        /*|?*)
+          uri="$1"
+          shift 1
+          ;;
+        *)
+          echo "Error: unknown flag $1"
+          exit 1
+      esac
+    done
+
+    if [ "${DEBUG:-}" = "true" ]; then
+      echo "args '$ARGS'" 1>&2
+      echo "namespace: ${NS}" 1>&2
+      echo "uri: ${uri}" 1>&2
+      echo "$TOKEN" | cut -d. -f2 | base64 -d || true
+    fi
+
+    curl \
+      -s \
+      --cacert "$CA" \
+      -H "Authorization: Bearer ${TOKEN}" \
+      $ARGS \
+      "https://kubernetes.default.svc/api/v1/namespaces/${NS}/pods${uri}"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: debug-pod
+  namespace: geoip
+spec:
+  serviceAccountName: geoipupdate
+  containers:
+  - name: debug-container
+    image: harrybrwn/curl:3.17
+    command: ['sleep', 'infinity']
+    resources:
+      limits:
+        cpu: 250m
+        memory: 512Mi
+    volumeMounts:
+    - name: scripts
+      mountPath: /usr/local/bin
+  volumes:
+  - name: scripts
+    projected:
+      sources:
+      - configMap:
+          name: debug-scripts
+          items:
+          - { key: pods.sh, path: pods, mode: 0775 }

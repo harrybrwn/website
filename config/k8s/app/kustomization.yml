@@ -13,11 +13,12 @@ resources:
 
   - redis
   - minio
+  - postgres
+
   - hydra
   - grafana
   - fluent-bit
   - loki
-  - prometheus
+  - prometheus  # only contains prometheus exporters
   - outline
-  - postgres
   - registry

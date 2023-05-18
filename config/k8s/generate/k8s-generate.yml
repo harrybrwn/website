@@ -1,0 +1,12 @@
+apps:
+- name: web-api
+  port: 8081
+  size: med
+  args: [--port=8081]
+- name: vanity-imports
+  port: 8889
+  size: sml
+- name: legacy-site
+  port: 8083
+  size: sml
+  skip_prometheus: true

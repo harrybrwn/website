@@ -28,7 +28,7 @@ spec:
             mountPath: /var/lib/postgresql/data/
         envFrom:
           - secretRef: { name: db-env-secrets }
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -36,4 +36,4 @@ spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 1Gi
+          storage: 2Gi

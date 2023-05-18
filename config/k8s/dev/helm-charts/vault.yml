@@ -26,3 +26,21 @@ spec:
         enabled: false
     ui:
       enabled: true
+
+---
+# Docs: https://developer.hashicorp.com/vault/docs/platform/k8s/vso
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: vault-secrets-operator
+  namespace: kube-system
+spec:
+  name: vault-secrets-operator
+  chart: vault-secrets-operator
+  version: "0.1.0-beta"
+  repo: https://helm.releases.hashicorp.com
+  targetNamespace: vault
+  valuesContent: |-
+    defaultVaultConnection:
+      enabled: true
+      address: http://vault.vault.svc.cluster.local:8200
