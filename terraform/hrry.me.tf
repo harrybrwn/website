@@ -55,7 +55,7 @@ resource "cloudflare_record" "hrry_me_dns_staging" {
   value   = var.staging_ip
   type    = "A"
   proxied = false
-  ttl     = 3600
+  ttl     = 60
   zone_id = local.zones.hrry_me
 }
 

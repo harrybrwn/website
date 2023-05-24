@@ -328,7 +328,7 @@ RUN apt update && \
 COPY test/pyproject.toml test/poetry.lock /opt/harrybrwn/test/
 RUN poetry install
 # Random tools
-COPY scripts/setup.sh scripts/migrate.sh scripts/wait.sh /usr/local/bin/
+COPY scripts/migrate.sh scripts/wait.sh /usr/local/bin/
 # Install self signed cert
 COPY config/pki/certs/ca.crt /usr/local/share/ca-certificates/HarryBrown.crt
 RUN update-ca-certificates
