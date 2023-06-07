@@ -186,6 +186,7 @@
         registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
         registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+    - k3s/config
 
 - name: Configure k3s Master Nodes
   hosts: k3s_master
@@ -194,7 +195,6 @@
   vars_files:
     - vars/become-password.yml
   roles:
-    - k3s/config
     - role: k3s/master
     - role: k3s/kubeconfig
       vars:
@@ -207,5 +207,4 @@
   vars_files:
     - vars/become-password.yml
   roles:
-    - k3s/config
     - k3s/worker

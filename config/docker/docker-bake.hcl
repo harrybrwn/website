@@ -30,7 +30,7 @@ variable "NOMAD_VERSION"    { default = "1.3.5" }
 variable "POSTGRES_BASE"    { default = "alpine" }
 variable "REDIS_BASE"       { default = "alpine" }
 variable "NGINX_BASE"       { default = "alpine" }
-variable "RUST_BASE"        { default = "alpine3.16"}
+variable "RUST_BASE"        { default = "alpine3.17"}
 
 variable "FLUENTBIT_VERSION" {
     default = "1.9.10"
@@ -359,6 +359,7 @@ group "rust" {
         for i in [
             68,
             69,
+            70,
         ]:
         "rust_1-${i}-0"
     ]
@@ -385,7 +386,7 @@ function "rust_tags" {
 
 target "rust_1-69-0" {
     inherits = ["rust-base"]
-    tags = rust_tags("1.69.0", true)
+    tags = rust_tags("1.69.0", false)
     args = {RUST_VERSION = "1.69.0"}
 }
 
@@ -393,6 +394,12 @@ target "rust_1-68-0" {
     inherits = ["rust-base"]
     tags = rust_tags("1.68.0", false)
     args = {RUST_VERSION = "1.68.0"}
+}
+
+target "rust_1-70-0" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.70.0", true)
+    args = {RUST_VERSION = "1.70.0"}
 }
 
 #

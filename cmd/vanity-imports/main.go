@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -89,6 +88,11 @@ func VanityImport(vanity *Vanity) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
+var (
+	errNoPackage   = errors.New("no package name")
+	errInvalidPath = errors.New("invalid url path")
+)
+
 const importPage = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,12 +106,12 @@ const importPage = `<!DOCTYPE html>
 
 func packageName(r *http.Request) (string, error) {
 	p := r.URL.Path
-	if p[0] == '/' {
-		p = p[1:]
+	if len(p) == 0 || p[0] != '/' {
+		return "", errInvalidPath
 	}
-	parts := strings.Split(p, string(filepath.Separator))
-	if len(parts) < 1 {
-		return "", errors.New("no package name")
+	parts := strings.Split(p, "/")
+	if len(parts) < 2 || len(parts[1]) == 0 {
+		return "", errNoPackage
 	}
-	return parts[0], nil
+	return strings.Join(parts[1:], "/"), nil
 }

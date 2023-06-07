@@ -13,7 +13,6 @@ WORKDIR /opt/hrry.me/geoipupdate
 ENV USER root
 RUN setup-rust && \
 	cargo init
-# COPY Cargo.toml Cargo.lock ./
 COPY Cargo.toml ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry,id=cargo-registry \
 	cargo fetch && \
@@ -25,16 +24,7 @@ COPY src src
 RUN --mount=type=cache,target=/usr/local/cargo/registry,id=cargo-registry \
 	--mount=type=cache,target=/opt/hrry.me/geoipupdate/target,id=rust-target-${TARGETPLATFORM} \
 	cargo build --package geoipupdate --release && \
-	case "${TARGETPLATFORM}" in \
-		linux/amd64)  export TARGET='x86_64-unknown-linux-musl' ;;\
-		linux/arm64)  export TARGET='aarch64-unknown-linux-musl' ;;\
-		linux/arm/v7) export TARGET='armv7-unknown-linux-musleabi' ;;\
-		linux/arm/v6) export TARGET='arm-unknown-linux-musleabi' ;;\
-		*) \
-			echo "Error: ${TARGETPLATFORM} not supported" ;\
-			exit 1 ;\
-			;; \
-	esac && \
+	export TARGET="$(rust-target)" && \
 	mv "target/${TARGET}/release/geoipupdate" /usr/local/bin/
 
 #######################

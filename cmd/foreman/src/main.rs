@@ -3,12 +3,12 @@ use rhai::{Engine, Scope};
 fn main() {
     let engine = Engine::new();
     let mut scope = Scope::new();
-    let ast = match engine.compile_file("build.rhai".into())  {
+    let ast = match engine.compile_file("build.rhai".into()) {
         Ok(ast) => ast,
         Err(err) => {
             println!("compile failed: {}", err);
             return;
-        },
+        }
     };
     if let Some(err) = engine.run_ast_with_scope(&mut scope, &ast).err() {
         println!("Error: {}", err);
@@ -55,5 +55,9 @@ mod test {
             Ok(result) => assert_eq!(1, result),
             Err(e) => panic!("{}", e),
         }
+    }
+
+    #[test]
+    fn test_misc() {
     }
 }

@@ -20,16 +20,7 @@ COPY src src
 RUN --mount=type=cache,target=/usr/local/cargo/registry,id=geoip-cargo-registry \
 	--mount=type=cache,target=/opt/hrry.me/geoip/target,id=geoip-build-target-${TARGETPLATFORM} \
 	cargo build --release && \
-	case "${TARGETPLATFORM}" in \
-		linux/amd64)  export TARGET='x86_64-unknown-linux-musl' ;;\
-		linux/arm64)  export TARGET='aarch64-unknown-linux-musl' ;;\
-		linux/arm/v7) export TARGET='armv7-unknown-linux-musleabi' ;;\
-		linux/arm/v6) export TARGET='arm-unknown-linux-musleabi' ;;\
-		*) \
-			echo "Error: ${TARGETPLATFORM} not supported" ;\
-			exit 1 ;\
-			;; \
-	esac && \
+	export TARGET="$(rust-target)" && \
 	mv "target/${TARGET}/release/geoip" /usr/local/bin/
 
 FROM alpine:${ALPINE_VERSION}

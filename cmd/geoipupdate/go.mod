@@ -1,4 +1,4 @@
-module harrybrown.com/cmd/geoipupdate
+module gopkg.hrry.dev/homelab/geoipupdate
 
 go 1.20
 

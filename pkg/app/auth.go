@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/hex"
 	"net/http"
 	"os"
@@ -53,30 +54,23 @@ type TokenService struct {
 	CookieDomain string
 }
 
+type tokenLoginBody struct {
+	Login
+	LoginChallenge string `json:"login_challenge"`
+	Remember       bool   `json:"remember"`
+}
+
 func (ts *TokenService) Login(c echo.Context) error {
 	var (
-		err  error
-		body struct {
-			Login
-			LoginChallenge string `json:"login_challenge"`
-			Remember       bool   `json:"remember"`
-		}
 		req    = c.Request()
 		ctx    = req.Context()
 		logger = log.FromContext(ctx)
-		binder echo.DefaultBinder
 	)
 
 	logger.Info("starting login request")
-	switch err = binder.BindBody(c, &body); err {
-	case nil:
-		break
-	case echo.ErrUnsupportedMediaType:
-		logger.WithField("content-type", req.Header.Get("Content-Type")).Error("unsupported content type")
+	body, err := ts.getLoginBody(c, req)
+	if err != nil {
 		return err
-	default:
-		err = errors.Wrap(err, "failed to bind user data")
-		return echo.ErrInternalServerError.SetInternal(err)
 	}
 
 	// Login flow
@@ -133,16 +127,10 @@ func (ts *TokenService) Login(c echo.Context) error {
 		claims = u.NewClaims()
 	}
 	// Generate both a new access token and refresh token.
-	resp, err := auth.NewTokenResponse(ts.Config, claims)
+	resp, err := ts.responseToken(ctx, c, claims)
 	if err != nil {
-		return echo.ErrInternalServerError.SetInternal(
-			errors.Wrap(err, "could not create token response"))
+		return err
 	}
-	err = ts.Tokens.Set(ctx, u.ID, resp.RefreshToken)
-	if err != nil {
-		return echo.ErrInternalServerError.SetInternal(err)
-	}
-	c.Set(string(auth.ClaimsContextKey), claims)
 	ts.setTokenCookie(c.Response(), resp, claims)
 	return c.JSON(200, map[string]any{
 		"redirect_to": redirectTo,
@@ -218,24 +206,13 @@ func ConsentHandler(admin hydra.AdminApi, users UserStore) echo.HandlerFunc {
 
 func (ts *TokenService) Token(c echo.Context) error {
 	var (
-		err  error
-		body struct {
-			Login
-			LoginChallenge string `json:"login_challenge"`
-			Remember       bool   `json:"remember"`
-		}
 		req    = c.Request()
 		ctx    = req.Context()
 		logger = log.FromContext(ctx)
 	)
-	switch err = c.Bind(&body); err {
-	case nil:
-		break
-	case echo.ErrUnsupportedMediaType:
+	body, err := ts.getLoginBody(c, req)
+	if err != nil {
 		return err
-	default:
-		err = errors.Wrap(err, "failed to bind user data")
-		return echo.ErrInternalServerError.SetInternal(err)
 	}
 	logger = logger.WithFields(logrus.Fields{
 		"username": body.Username,
@@ -262,16 +239,10 @@ func (ts *TokenService) Token(c echo.Context) error {
 	}
 	claims := u.NewClaims()
 	// Generate both a new access token and refresh token.
-	resp, err := auth.NewTokenResponse(ts.Config, claims)
+	resp, err := ts.responseToken(ctx, c, claims)
 	if err != nil {
-		return echo.ErrInternalServerError.SetInternal(
-			errors.Wrap(err, "could not create token response"))
+		return err
 	}
-	err = ts.Tokens.Set(ctx, u.ID, resp.RefreshToken)
-	if err != nil {
-		return echo.ErrInternalServerError.SetInternal(err)
-	}
-	c.Set(string(auth.ClaimsContextKey), claims)
 	if setCookie {
 		ts.setTokenCookie(c.Response(), resp, claims)
 	}
@@ -337,6 +308,39 @@ func (ts *TokenService) Refresh(c echo.Context) error {
 		ts.setTokenCookie(c.Response(), resp, &claims)
 	}
 	return c.JSON(200, resp)
+}
+
+func (ts *TokenService) getLoginBody(c echo.Context, req *http.Request) (*tokenLoginBody, error) {
+	var (
+		err    error
+		body   tokenLoginBody
+		binder echo.DefaultBinder
+	)
+	switch err = binder.BindBody(c, &body); err {
+	case nil:
+		break
+	case echo.ErrUnsupportedMediaType:
+		logger.WithField("content-type", req.Header.Get("Content-Type")).Error("unsupported content type")
+		return nil, err
+	default:
+		err = errors.Wrap(err, "failed to bind user data")
+		return nil, echo.ErrInternalServerError.SetInternal(err)
+	}
+	return &body, nil
+}
+
+func (ts *TokenService) responseToken(ctx context.Context, c echo.Context, claims *auth.Claims) (*auth.TokenResponse, error) {
+	resp, err := auth.NewTokenResponse(ts.Config, claims)
+	if err != nil {
+		return nil, echo.ErrInternalServerError.SetInternal(
+			errors.Wrap(err, "could not create token response"))
+	}
+	err = ts.Tokens.Set(ctx, claims.ID, resp.RefreshToken)
+	if err != nil {
+		return nil, echo.ErrInternalServerError.SetInternal(err)
+	}
+	c.Set(string(auth.ClaimsContextKey), claims)
+	return resp, nil
 }
 
 func (ts *TokenService) parserCookieQuery(req *http.Request) (bool, error) {

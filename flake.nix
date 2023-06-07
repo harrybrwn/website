@@ -116,7 +116,7 @@
               postgresql
               vault
               # Dev tools
-              bmake
+              bmake  # for Makefiles
               rust-analyzer
               golangci-lint
               yamllint
