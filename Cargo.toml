@@ -2,5 +2,6 @@
 members = [
     "services/geoip",
     "services/geoipupdate",
+    "services/gopkg",
     "cmd/foreman",
 ]

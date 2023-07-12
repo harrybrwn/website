@@ -145,6 +145,15 @@ services:
       timeout: 10s
       retries: 5
 
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    working_dir: /app
+    volumes:
+      - .:/app
+
   api:
     image: ${REGISTRY}/harrybrwn/api:${VERSION:-latest}
     build:

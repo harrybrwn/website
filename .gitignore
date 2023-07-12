@@ -69,3 +69,7 @@ scripts/deploy.sh
 
 # Wait I want these
 !config/**/*.sh
+
+# Needed for buildkit
+!config/*-ca.crt
+

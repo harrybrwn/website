@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=" />
+    <meta
+      name="go-import"
+      content="{{domain}}/{{package.name}} {{repo.kind}} https://{{repo.domain}}/{{repo.user}}/{{package.name}}"
+    />
+    <title>{{ package.name }}</title>
+    <meta
+      name="description"
+      content="Vanity import page for {{repo.domain}}/{{repo.user}}/{{package.name}}"
+    />
+    <style>
+      body {
+        font: 20px monospace;
+        max-width: 70ch;
+        margin: auto;
+        padding: 3em;
+        background: #111;
+        color: #fff;
+      }
+      a {
+        color: #88f;
+      }
+      code {
+        background: grey;
+        padding: 0.2em;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ package.name }}</h1>
+    <code> go get {{ domain }}/{{ package.name }} </code>
+    <p>
+      view on
+      <a href="https://{{ repo.domain }}/{{ repo.user }}/{{ package.name }}"
+        >{{ repo.domain }}</a
+      >
+      or
+      <a
+        href="https://{{ docs_url }}/{{ repo.domain }}/{{ repo.user }}/{{ package.name }}"
+        >{{ docs_url }}</a
+      >
+    </p>
+  </body>
+</html>

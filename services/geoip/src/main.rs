@@ -3,7 +3,6 @@ use std::{env, io, net::IpAddr, path::Path, sync::RwLock};
 use actix_web::http::header;
 use actix_web::middleware::{self, DefaultHeaders};
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use actix_web_prom::PrometheusMetricsBuilder;
 use anyhow::bail;
 use clap::Parser;
 use maxminddb::geoip2;
@@ -163,10 +162,6 @@ where
     }
 }
 
-async fn metrics_handler() -> impl Responder {
-    ""
-}
-
 macro_rules! cors_route {
     ($resource:expr, $handler_fn:ident) => {
         cors_route!($resource, $handler_fn, "*")
@@ -200,6 +195,13 @@ macro_rules! cors_route {
     };
 }
 
+fn prometheus() -> actix_web_prom::PrometheusMetrics {
+    actix_web_prom::PrometheusMetricsBuilder::new("")
+        .endpoint("/metrics")
+        .build()
+        .unwrap()
+}
+
 #[derive(clap::Parser, Debug)]
 pub(crate) struct Cli {
     /// File path for GeoIP or GeoLite2 database file
@@ -225,6 +227,7 @@ pub(crate) struct Cli {
 async fn main() -> std::io::Result<()> {
     let args = Cli::parse_from(env::args());
     let log = new_logger("geoip")?;
+    let prometheus = prometheus();
 
     let geoip_db = match open_mmdb(&args.city_file[0]).await {
         Ok(db) => db,
@@ -252,18 +255,13 @@ async fn main() -> std::io::Result<()> {
         args.asn_file
     );
 
-    let prometheus = PrometheusMetricsBuilder::new("")
-        .endpoint("/metrics")
-        .build()
-        .unwrap();
-
     let origin = args.allowed_origin;
     HttpServer::new(move || {
         let app = App::new()
             // The prometheus client will record hits to the '/metrics' endpoint
             // as hits to '/{address}' if these is no route for /metrics. Must
             // be added before all other routes.
-            .service(web::resource("/metrics").to(metrics_handler))
+            .service(web::resource("/metrics").to(HttpResponse::Ok))
             .wrap(prometheus.clone())
             .wrap(logging::AutoLog::new(log.clone()))
             .wrap(middleware::NormalizePath::trim());

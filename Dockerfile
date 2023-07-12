@@ -74,6 +74,7 @@ ENV LINK='-s -w'
 ENV GOFLAGS='-trimpath'
 ENV CGO_ENABLED=0
 COPY pkg pkg/
+COPY db/migrations db/migrations
 COPY files files/
 COPY frontend/legacy/templates frontend/legacy/templates/
 COPY --from=frontend /opt/harrybrwn/build/harrybrwn.com build/harrybrwn.com/
@@ -224,6 +225,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
 COPY Cargo.toml Cargo.lock ./
 COPY services/geoip services/geoip
 COPY services/geoipupdate services/geoipupdate
+COPY services/gopkg services/gopkg
 COPY cmd/foreman cmd/foreman
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
 	cargo fetch && \
