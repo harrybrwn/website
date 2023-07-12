@@ -91,7 +91,11 @@ certs() {
 echo '$ sudo -v'
 sudo -v
 
-names="harrybrwn.com hryb.dev hrry.me hrry.dev hrry.lol"
+#names="harrybrwn.com hryb.dev hrry.me hrry.dev hrry.lol"
+names="$@"
+if [ -z "${names}" ]; then
+	echo "Error: no names given"
+fi
 
 for name in $names; do
 	if sudo test ! -d "/etc/letsencrypt/live/${name}"; then

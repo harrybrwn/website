@@ -6,6 +6,24 @@ has_secret() {
 	docker secret inspect "$1" > /dev/null 2>&1
 }
 
+expires_at() {
+	openssl x509 -noout -in "$1" -enddate | cut -d= -f2
+}
+
+is_expired() {
+	a="$(
+		date \
+			--date="$(openssl x509 -noout -in "$1" -enddate | cut -d= -f2)" \
+			--utc '+%s'
+	)"
+	b="$(date '+%s')"
+	if [ $((a-b)) -le 0 ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
 echo "Running sudo:"
 echo "$ sudo -v"
 sudo -v
@@ -22,9 +40,19 @@ if [ ! -f "$confdir/htpasswd" ]; then
 	exit 1
 fi
 
+cafile=/etc/docker/ca.pem
+certfile=/etc/docker/server-cert.pem
+certkey=/etc/docker/server-key.pem
+
 certname=registry-server-cert
 keyname=registry-server-key
 passwd=registry-passwd-file
+
+if is_expired "${cafile}"; then
+	echo "${cafile} is expired"
+fi
+
+
 if ! has_secret "$certname"; then
 	sudo cat /etc/docker/server-cert.pem | docker secret create "$certname" -
 fi

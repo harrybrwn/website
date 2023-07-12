@@ -9,7 +9,7 @@ PLATFORMS=linux/amd64,linux/arm/v7,linux/arm/v6
 IMAGE=
 PUSH=false
 #CACERT="${DOCKER_CONFIG:-$HOME/.docker}/ca.pem"
-CACERT="./config/docker-root-ca.pem"
+CACERT="./config/registry-ca.crt"
 
 CONTEXT=.
 DOCKERFILE=./Dockerfile
@@ -120,7 +120,7 @@ install_certificate() {
   local name
   name="$(basename "$cert")"
   if docker buildx inspect "${BUILDKIT_NAME}" > /dev/null 2>&1 && [ -n "${cert:-}" ] && [ -f "${cert}" ]; then
-    container="$(docker buildx inspect harrybrwn-builder | grep -iE 'name:.*?[0-9]+$' | awk '{ print $2 }')"
+    container="$(docker buildx inspect harrybrwn-builder | grep -iE '^name:.*?[0-9]+$' | awk '{ print $2 }')"
     if [ -z "${container}" ]; then
       echo "Error: could not find container name"
       exit 1
@@ -136,9 +136,11 @@ install_certificate() {
     fi
     docker container exec "${container_name}" update-ca-certificates --verbose --force
     docker container restart "${container_name}"
+  else
+    echo "Was not able to find \"${BUILDKIT_NAME}\""
   fi
 }
 
-for c in "${CACERT}" "./config/ansible/registry/registry-ca.crt"; do
+for c in "${CACERT}"; do
   install_certificate "$c"
 done
