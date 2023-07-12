@@ -15,7 +15,7 @@ locals {
     california = "us-west-1" # more expensive
     london     = "eu-west-2"
   })
-  region_name   = "oregon"
+  region_name = "oregon"
   # https://instances.vantage.sh/?region=us-west-2&selected=t4g.micro
   instance_type = "t4g.micro" # 1GiB, 2vcpu burst, 5 Gib net
   # instance_type = "t3a.nano"
@@ -26,9 +26,9 @@ provider "aws" {
   region  = lookup(local.region_mapping, local.region_name)
 }
 
-module "ubuntu" {
-  source = "../../modules/aws/ubuntu_ami"
-}
+# module "ubuntu" {
+#   source = "../../modules/aws/ubuntu_ami"
+# }
 
 module "key" {
   source   = "../../modules/ssh-key"
@@ -47,7 +47,7 @@ module "vpn" {
   storage_path        = local.ovpn_storage_path
   vpc_id              = aws_vpc.vpc.id
   public_subnet_id    = aws_subnet.public.id
-  ami                 = module.ubuntu.ami
+  ami                 = "ami-0dca369228f3b2ce7" # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
   instance_type       = local.instance_type
   key_name            = aws_key_pair.key.key_name
   ssh_user            = "ubuntu"

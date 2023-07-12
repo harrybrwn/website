@@ -138,9 +138,10 @@ resource "null_resource" "openvpn_adduser" {
     port        = format("%d", var.ssh_port)
     private_key = var.private_key_openssh
     host        = aws_eip.vpn_ip.public_ip
-    users       = [
-      local.admin_user,
-    ]
+    # users       = [
+    #   local.admin_user,
+    # ]
+    user = local.admin_user
   }
 
   depends_on = [null_resource.openvpn_install]
@@ -171,7 +172,8 @@ resource "null_resource" "openvpn_adduser" {
       format("%s %s", "sudo ", local.update_user_script),
       format(
         "sudo cp %s /home/${var.ssh_user}/",
-        join(" ", [for u in self.triggers.users : "/root/${u}.ovpn" ])
+        #join(" ", [for u in self.triggers.users : "/root/${u}.ovpn" ])
+        "/root/${self.triggers.user}.ovpn"
       )
     ]
   }
