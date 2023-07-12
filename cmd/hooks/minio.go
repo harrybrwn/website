@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/grafana/loki/pkg/logproto"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 const (

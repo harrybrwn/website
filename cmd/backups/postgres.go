@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/prometheus/client_golang/prometheus"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 type PGDumpFormat string

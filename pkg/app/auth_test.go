@@ -17,9 +17,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/matryer/is"
 	"golang.org/x/crypto/bcrypt"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/internal/mocks/mockdb"
-	"harrybrown.com/pkg/internal/mockutil"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockdb"
+	"gopkg.hrry.dev/homelab/pkg/internal/mockutil"
 )
 
 func TestTokenHandler(t *testing.T) {

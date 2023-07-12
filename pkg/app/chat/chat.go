@@ -7,9 +7,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/db"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/ws"
+	"gopkg.hrry.dev/homelab/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/ws"
 )
 
 var logger logrus.FieldLogger = log.GetLogger()

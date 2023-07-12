@@ -15,9 +15,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi/v5"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/pkg/db"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var logger = log.New(

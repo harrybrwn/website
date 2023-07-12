@@ -17,7 +17,7 @@ import (
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/db"
 )
 
 type EmailClient interface {

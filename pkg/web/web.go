@@ -6,7 +6,7 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 var (

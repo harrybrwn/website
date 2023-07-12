@@ -19,13 +19,13 @@ import (
 	"github.com/lib/pq"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/email"
-	"harrybrown.com/pkg/internal/mocks/mockdb"
-	"harrybrown.com/pkg/internal/mocks/mockinvite"
-	"harrybrown.com/pkg/internal/mocks/mockredis"
-	"harrybrown.com/pkg/internal/mockutil"
-	"harrybrown.com/pkg/invite"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/email"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockdb"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockinvite"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockredis"
+	"gopkg.hrry.dev/homelab/pkg/internal/mockutil"
+	"gopkg.hrry.dev/homelab/pkg/invite"
 )
 
 type testPath struct {

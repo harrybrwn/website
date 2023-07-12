@@ -7,7 +7,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/email"
+	"gopkg.hrry.dev/homelab/pkg/email"
 )
 
 type Mailer interface {

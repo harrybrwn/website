@@ -20,8 +20,8 @@ import (
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/internal/mocks/mockdb"
-	"harrybrown.com/pkg/internal/mocks/mockredis"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockdb"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockredis"
 )
 
 func init() {

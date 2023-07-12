@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/ws"
+	"gopkg.hrry.dev/homelab/pkg/ws"
 	"nhooyr.io/websocket"
 )
 

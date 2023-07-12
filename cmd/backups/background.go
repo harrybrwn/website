@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 type JobInfo struct {

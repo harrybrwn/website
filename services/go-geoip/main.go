@@ -14,9 +14,9 @@ import (
 	"github.com/oschwald/geoip2-golang"
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/urifs"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/urifs"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var logger = log.SetLogger(log.New(

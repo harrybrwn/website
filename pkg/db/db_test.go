@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/matryer/is"
-	"harrybrown.com/pkg/internal/mocks/mockrows"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockrows"
 )
 
 func TestScanOne(t *testing.T) {

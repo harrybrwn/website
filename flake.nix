@@ -58,7 +58,8 @@
               name = name;
               subPackages = [ "./cmd/${name}" ];
               src = ./.;
-              vendorSha256 = "sha256-3EFmgfzddlRJCrFYgO35iipcKlYMG/uAU4wX2T/f0kQ=";
+              # vendorSha256 = "sha256-3EFmgfzddlRJCrFYgO35iipcKlYMG/uAU4wX2T/f0kQ=";
+              vendorSha256 = pkgs.lib.fakeSha256;
               preBuild = "go generate ./...";
               doCheck = false;
               nativeBuildInputs = [ mockgen ];

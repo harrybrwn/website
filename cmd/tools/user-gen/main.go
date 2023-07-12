@@ -22,10 +22,10 @@ import (
 	flag "github.com/spf13/pflag"
 	"golang.org/x/term"
 
-	"harrybrown.com/pkg/app"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/db"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/app"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 func init() {

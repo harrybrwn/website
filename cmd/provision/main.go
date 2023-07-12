@@ -14,8 +14,8 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/provision"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/provision"
 )
 
 var logger = log.New(

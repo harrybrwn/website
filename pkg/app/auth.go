@@ -13,8 +13,8 @@ import (
 	hydra "github.com/ory/hydra-client-go"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 const (

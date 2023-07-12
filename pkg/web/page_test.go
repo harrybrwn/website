@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 func TestPageTemplatesCollection(t *testing.T) {

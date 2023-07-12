@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/db"
 )
 
 type User struct {

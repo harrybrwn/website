@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/internal/mocks/mockredis"
-	"harrybrown.com/pkg/internal/mockutil"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockredis"
+	"gopkg.hrry.dev/homelab/pkg/internal/mockutil"
 )
 
 func init() {

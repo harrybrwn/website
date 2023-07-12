@@ -14,8 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 var logger = log.GetLogger()

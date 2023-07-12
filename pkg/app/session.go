@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"harrybrown.com/pkg/session"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/session"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 type SessionData struct {

@@ -13,9 +13,9 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/email"
-	"harrybrown.com/pkg/invite"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/email"
+	"gopkg.hrry.dev/homelab/pkg/invite"
 )
 
 var (

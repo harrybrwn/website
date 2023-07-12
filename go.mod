@@ -1,4 +1,4 @@
-module harrybrown.com
+module gopkg.hrry.dev/homelab
 
 // See list of available go versions supported by heroku:
 // https://github.com/heroku/heroku-buildpack-go/blob/main/data.json#L3

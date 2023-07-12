@@ -17,7 +17,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 var (
@@ -179,10 +179,14 @@ func Datastores(logger logrus.FieldLogger) (*database, *redis.Client, error) {
 	return db, rd, <-errs
 }
 
-func postgresConnectString() (string, error) {
+func ConnectURL() (*url.URL, error) {
+	return postgresConnectString()
+}
+
+func postgresConnectString() (*url.URL, error) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL != "" {
-		return dbURL, nil
+		return must(url.Parse(dbURL)), nil
 	}
 	host := os.Getenv("POSTGRES_HOST")
 	port := os.Getenv("POSTGRES_PORT")
@@ -197,16 +201,15 @@ func postgresConnectString() (string, error) {
 		port = "5432"
 	}
 	if len(host) == 0 {
-		return "", errors.New("no database host")
+		return nil, errors.New("no database host")
 	}
-	u := url.URL{
+	return &url.URL{
 		Scheme:   "postgres",
 		Host:     net.JoinHostPort(host, port),
 		User:     userinfo,
 		Path:     filepath.Join("/", db),
 		RawQuery: "sslmode=disable",
-	}
-	return u.String(), nil
+	}, nil
 }
 
 func Connect(logger logrus.FieldLogger) (*database, error) {
@@ -219,7 +222,7 @@ func Connect(logger logrus.FieldLogger) (*database, error) {
 	if err != nil {
 		return nil, errors.WithStack(errors.Wrap(err, "invalid database url"))
 	}
-	pool, err := sql.Open("postgres", url)
+	pool, err := sql.Open("postgres", url.String())
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -320,4 +323,11 @@ func S3CredentialsValue() (*credentials.Value, error) {
 		SecretAccessKey: secret,
 		SessionToken:    "",
 	}, nil
+}
+
+func must[T any](v T, e error) T {
+	if e != nil {
+		panic(e)
+	}
+	return v
 }

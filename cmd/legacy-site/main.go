@@ -7,10 +7,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/pkg/app"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/app"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var logger = log.SetLogger(log.New(

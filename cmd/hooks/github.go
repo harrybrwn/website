@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-github/v43/github"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
-	"harrybrown.com/pkg/session"
+	"gopkg.hrry.dev/homelab/pkg/session"
 )
 
 type GithubAuthService struct {

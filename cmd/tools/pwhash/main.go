@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"golang.org/x/term"
-	"harrybrown.com/pkg/app"
+	"gopkg.hrry.dev/homelab/pkg/app"
 )
 
 func main() {

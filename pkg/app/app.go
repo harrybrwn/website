@@ -7,8 +7,8 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/app/chat"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/app/chat"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 var (

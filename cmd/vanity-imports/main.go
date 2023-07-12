@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"html/template"
@@ -9,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var (
@@ -34,6 +35,12 @@ func main() {
 	v := Vanity{
 		Domain:  domain,
 		RepoURL: repo,
+		DocsURL: "pkg.go.dev",
+		Repo: Repo{
+			Type:   "git",
+			Domain: "github.com",
+			User:   "harrybrwn",
+		},
 	}
 	r := chi.NewRouter()
 	r.Use(web.AccessLog(logger))
@@ -50,7 +57,15 @@ func main() {
 type Vanity struct {
 	RepoURL string
 	Domain  string
+	DocsURL string
 	Package *Package
+	Repo    Repo
+}
+
+type Repo struct {
+	Type   string
+	Domain string
+	User   string
 }
 
 type Package struct {
@@ -58,27 +73,26 @@ type Package struct {
 	VCS  string
 }
 
+//go:embed index.html
+var importPage string
+
 func VanityImport(vanity *Vanity) func(http.ResponseWriter, *http.Request) {
 	t, err := template.New("base").Parse(importPage)
 	if err != nil {
 		panic(err)
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.FormValue("go-get") != "1" {
-			w.Header().Set("Location", home)
-			w.WriteHeader(http.StatusFound)
-			return
-		}
 		var (
 			err error
 			v   = *vanity
+			p   = Package{VCS: v.Repo.Type}
 		)
-		v.Package = &Package{VCS: "git"}
-		v.Package.Name, err = packageName(r)
+		p.Name, err = packageName(r)
 		if err != nil {
 			w.WriteHeader(404)
 			return
 		}
+		v.Package = &p
 		logger.WithField("headers", r.Header).Info("got package request")
 		err = t.Execute(w, &v)
 		if err != nil {
@@ -92,17 +106,6 @@ var (
 	errNoPackage   = errors.New("no package name")
 	errInvalidPath = errors.New("invalid url path")
 )
-
-const importPage = `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
-	<meta name="go-import" content="{{.Domain}}/{{.Package.Name}} {{.Package.VCS}} {{.RepoURL}}/{{.Package.Name}}">
-</head>
-<body>
-	go get {{.Domain}}/{{.Package.Name}}
-</body>
-</html>`
 
 func packageName(r *http.Request) (string, error) {
 	p := r.URL.Path

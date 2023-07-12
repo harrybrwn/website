@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"harrybrown.com/pkg/provision"
+	"gopkg.hrry.dev/homelab/pkg/provision"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/aws_s3"

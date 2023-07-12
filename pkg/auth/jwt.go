@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 const (

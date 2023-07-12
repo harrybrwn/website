@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 // JSONRoute is an api route that returns json.

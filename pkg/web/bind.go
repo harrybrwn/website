@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"harrybrown.com/pkg/codes"
+	"gopkg.hrry.dev/homelab/pkg/codes"
 )
 
 var (

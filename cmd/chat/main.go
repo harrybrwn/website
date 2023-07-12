@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/app/chat"
+	"gopkg.hrry.dev/homelab/pkg/app/chat"
 	"nhooyr.io/websocket"
 )
 

@@ -11,8 +11,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/db"
 )
 
 type RequestLog struct {

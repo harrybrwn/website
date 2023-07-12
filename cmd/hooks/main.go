@@ -26,9 +26,9 @@ import (
 	githuboauth "golang.org/x/oauth2/github"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/session"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/session"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var (

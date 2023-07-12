@@ -9,8 +9,8 @@ import (
 	"runtime"
 
 	"github.com/labstack/echo/v4"
-	"harrybrown.com/pkg/codes"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/codes"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 type ErrorCode int

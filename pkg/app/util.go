@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 const (

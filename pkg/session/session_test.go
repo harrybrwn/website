@@ -14,7 +14,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/golang/mock/gomock"
 	"github.com/matryer/is"
-	"harrybrown.com/pkg/internal/mocks/mockredis"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockredis"
 )
 
 type data struct {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 func OldHomepageHandler(fs fs.FS) http.Handler {

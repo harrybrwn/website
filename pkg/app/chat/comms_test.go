@@ -12,9 +12,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/matryer/is"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/internal/mocks/mockredis"
-	"harrybrown.com/pkg/internal/mocks/mockws"
-	"harrybrown.com/pkg/ws"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockredis"
+	"gopkg.hrry.dev/homelab/pkg/internal/mocks/mockws"
+	"gopkg.hrry.dev/homelab/pkg/ws"
 )
 
 func TestPubSub_Sub(t *testing.T) {

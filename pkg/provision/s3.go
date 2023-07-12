@@ -10,7 +10,7 @@ import (
 	"github.com/minio/madmin-go"
 	"github.com/minio/minio-go/v7"
 	"github.com/pkg/errors"
-	"harrybrown.com/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
 type S3Config struct {

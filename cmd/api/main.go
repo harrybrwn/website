@@ -21,15 +21,16 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
-	"harrybrown.com/files"
-	frontend "harrybrown.com/frontend/legacy"
-	"harrybrown.com/pkg/app"
-	"harrybrown.com/pkg/auth"
-	"harrybrown.com/pkg/db"
-	"harrybrown.com/pkg/email"
-	"harrybrown.com/pkg/invite"
-	"harrybrown.com/pkg/log"
-	"harrybrown.com/pkg/web"
+	"gopkg.hrry.dev/homelab/db/migrations"
+	"gopkg.hrry.dev/homelab/files"
+	frontend "gopkg.hrry.dev/homelab/frontend/legacy"
+	"gopkg.hrry.dev/homelab/pkg/app"
+	"gopkg.hrry.dev/homelab/pkg/auth"
+	"gopkg.hrry.dev/homelab/pkg/db"
+	"gopkg.hrry.dev/homelab/pkg/email"
+	"gopkg.hrry.dev/homelab/pkg/invite"
+	"gopkg.hrry.dev/homelab/pkg/log"
+	"gopkg.hrry.dev/homelab/pkg/web"
 )
 
 var (
@@ -60,14 +61,16 @@ func main() {
 	var (
 		port = "8080"
 		// cookieDomain = getenv("API_TOKEN_COOKIE_DOMAIN", "hrry.local")
-		cookieDomain = getenv("API_TOKEN_COOKIE_DOMAIN", "localhost:3000")
-		env          []string
-		e            = echo.New()
+		cookieDomain  = getenv("API_TOKEN_COOKIE_DOMAIN", "localhost:3000")
+		env           []string
+		e             = echo.New()
+		runMigrations bool
 	)
 	flag.StringVarP(&port, "port", "p", port, "the port to run the server on")
 	flag.StringArrayVar(&env, "env", env, "environment files")
 	flag.StringVar(&cookieDomain, "token-cookie-domain", cookieDomain, "domain for cookies")
 	flag.BoolVarP(&app.Debug, "debug", "d", app.Debug, "run the app in debug mode")
+	flag.BoolVar(&runMigrations, "run-migrations", runMigrations, "run database migrations")
 	flag.Parse()
 
 	logger.SetFormatter(&logrus.JSONFormatter{TimestampFormat: time.RFC3339})
@@ -84,6 +87,23 @@ func main() {
 	if app.Debug {
 		// auth.Expiration = time.Second * 30
 		logger.SetLevel(logrus.DebugLevel)
+	}
+
+	if runMigrations {
+		dbURL, err := db.ConnectURL()
+		if err != nil {
+			logger.Fatal(err)
+		}
+		m, err := migrations.Get("api", dbURL)
+		if err != nil {
+			logger.Fatal(err)
+		}
+		migrations.SetLogger(m, logger)
+		if err = m.Up(); err != nil {
+			logger.Fatal(err)
+		}
+		logger.Info("migrations finished")
+		return
 	}
 
 	echo.NotFoundHandler = NotFoundHandler()
