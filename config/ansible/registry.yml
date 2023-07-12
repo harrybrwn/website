@@ -1,54 +1,91 @@
-- hosts: localhost
+- hosts: laptop
+  become: true
+  vars_files:
+    # ansible become password in vault encrypted vars file
+    - vars/become-password.yml
+  vars:
+    registry_cert_dir: '/etc/docker/registry/certs'
   roles:
-    # - { role: link_local, become: false, delegate_to: localhost, run_once: true }
     - role: registry/certificates
-      become: false
-      delegate_to: localhost
-      run_once: true
       vars:
         register_k3s_vars: true
-        registry_cert_dir: ./registry
         common_name: registry server cert
         subject_alt_name:
+          - "DNS:cr.hrry.dev"
+          - "DNS:registry.hrry.dev"
+          - "DNS:*.lab.hrry.dev"
           - "DNS:localhost"
           - "IP:127.0.0.1"
-          # - "IP:{{ link_local_ip }}"  # set in link_local role
-          - "IP:169.254.158.18"
-          # - "IP:{{ registry_ip }}"
+          - "IP:10.0.0.11"
+
   tasks:
+    - name: Copy cert to local dir
+      fetch:
+        src: "{{ registry_cert_dir }}/registry-ca.crt"
+        dest: registry-ca.crt
+        flat: true
+    -
+      fetch:
+        src: "{{ registry_cert_dir }}/{{ item }}"
+        dest: "registry/{{ item }}"
+        flat: true
+      loop: ['registry-ca.crt', 'registry-server.key', 'registry-server.crt']
+
+    - name: Copy cert to docker dir
+      block:
+      - name: Create Cert Dir
+        file:
+          state: directory
+          path: "/etc/docker/certs.d/{{item}}"
+        loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+      - copy:
+          src: "{{ registry_cert_dir }}/registry-ca.crt"
+          dest: "/etc/docker/certs.d/{{item}}/ca.crt"
+          owner: root
+          group: root
+          mode: '0640'
+          backup: false
+          remote_src: yes
+          validate: openssl x509 -noout -in %s
+        loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+
     - name: Configure local registry
       block:
-        - name: Create htpasswd file on localhost
-          community.general.htpasswd:
-            path: ./registry/.htpasswd
-            name: "{{ registry_username }}"
-            password: "{{ registry_password }}"
-            state: present
-            crypt_scheme: bcrypt
+        - name: install docker-py
+          apt:
+            package:
+            - python3-docker
+        - name: Check if htpasswd file exists
+          stat:
+            path: /etc/docker/registry/htpasswd
+          register: htpasswd_stat
+          failed_when: not htpasswd_stat.stat.exists
         - name: Start registry
           community.docker.docker_container:
-            name: stg-registry
+            name: registry
             image: registry:2
             state: started
-            restart_policy: on-failure
+            restart: true
+            restart_policy: unless-stopped
             ports:
               - "5000:5000"
             volumes:
-              - "{{ playbook_dir }}/registry:/opt/registry"
+              - "{{ registry_cert_dir }}:/opt/registry"
+              - "/etc/docker/registry/htpasswd:/var/lib/registry/htpasswd"
+              - "registry:/var/lib/registry"
             env:
               REGISTRY_HTTP_TLS_CERTIFICATE: /opt/registry/registry-server.crt
               REGISTRY_HTTP_TLS_KEY: /opt/registry/registry-server.key
               REGISTRY_HTTP_ADDR: ':5000'
               REGISTRY_HTTP_HTTP2_DISABLED: 'false'
               REGISTRY_AUTH: htpasswd
-              REGISTRY_AUTH_HTPASSWD_PATH: /run/secrets/registry-htpasswd-file
-              REGISTRY_AUTH_HTPASSWD_REALM: registry.harybrwn.com
+              REGISTRY_AUTH_HTPASSWD_PATH: /var/lib/registry/htpasswd
+              REGISTRY_AUTH_HTPASSWD_REALM: cr.lab.hrry.dev
               REGISTRY_LOG_LEVEL: debug
               REGISTRY_LOG_FORMAT: json
             comparisons:
               env: strict
               volumes: strict
               image: strict
-      delegate_to: localhost
-      run_once: true
-      become: false
+      # delegate_to: localhost
+      # become: true

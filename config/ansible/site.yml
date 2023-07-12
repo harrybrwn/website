@@ -66,7 +66,7 @@
         - {path: /root/.secrets}
     - name: Install docker root ca.
       copy:
-        src: ../docker-root-ca.pem
+        src: ../registry-ca.crt
         dest: '/etc/docker/certs.d/{{ container_registry }}/ca.crt'
         owner: root
         group: root
@@ -169,6 +169,25 @@
       weekday: '*'
       hour: '12'
 
+
+- name: Setup Registry
+  hosts: k3s_cluster
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars/become-password.yml
+    - vars/registry.yml # we need password bt should be overwriting certs and keys
+  roles:
+    - role: k3s/registry
+      vars:
+        registry_ca_contents: "{{ lookup('file', './registry/registry-ca.crt') }}"
+        registry_key_contents: "{{ lookup('file', './registry/registry-server.key') }}"
+        registry_cert_contents: "{{ lookup('file', './registry/registry-server.crt') }}"
+        registry: '10.0.0.11:5000'
+        registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
+        registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
+        registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+
 - name: Setup All k3s Cluster Nodes
   hosts: k3s_cluster
   become: true
@@ -180,12 +199,6 @@
     - k3s/prereq
     - k3s/download
     - k3s/raspberrypi
-    - role: k3s/registry
-      vars:
-        registry: '10.0.0.11:5000'
-        registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
-        registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
-        registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
     - k3s/config
 
 - name: Configure k3s Master Nodes
@@ -208,3 +221,16 @@
     - vars/become-password.yml
   roles:
     - k3s/worker
+
+- name: Restart all K3S Nodes
+  hosts: k3s_cluster
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/become-password.yml
+  tasks:
+    - name: Restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
+        enabled: yes

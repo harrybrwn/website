@@ -45,14 +45,40 @@
         csr_content: "{{ ca_csr.csr }}"
         provider: selfsigned
 
-    - name: Check whether server cert key exists
+    - name: Check if Server Certificate exists
+      stat:
+        path: "{{ registry_cert_dir }}/registry-server.crt"
+      register: reg_certificate_exists
+    - name: Read existing certificate if exists
+      slurp:
+        src: "{{ registry_cert_dir }}/registry-server.crt"
+      when: reg_certificate_exists.stat.exists
+      register: certificate
+    - name: Get Cert Data
+      community.crypto.x509_certificate_info:
+        content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists else omit }}"
+      register: existing_srv_cert_info
+      when: reg_certificate_exists.stat.exists
+    - name: Check if Server Certificate exists
+      stat: { path: "{{ registry_cert_dir }}/registry-server.crt" }
+      register: reg_certificate_exists
+
+    - name: Check if Server Key exists
       stat:
         path: "{{ registry_cert_dir }}/registry-server.key"
       register: server_key_exists
+    - name: Delete Key if cert expired
+      file:
+        state: absent
+        path: "{{ registry_cert_dir }}/registry-server.key"
+      when: server_key_exists.stat.exists and existing_srv_cert_info.expired
     - name: Create Server key
       community.crypto.openssl_privatekey:
         path: "{{ registry_cert_dir }}/registry-server.key"
-      when: not server_key_exists.stat.exists or create_ca_key.changed
+      when: >
+        (not server_key_exists.stat.exists or
+         existing_srv_cert_info.expired or
+         create_ca_key.changed)
       register: create_server_key
     - name: Create Server CSR
       register: server_csr
@@ -63,18 +89,10 @@
         key_usage: [ digitalSignature, nonRepudiation, keyEncipherment ]
         basic_constraints: [ 'CA:FALSE' ]
 
-    - name: Check whether the Server Certificate exists
-      stat:
-        path: "{{ registry_cert_dir }}/registry-server.crt"
-      register: reg_certificate_exists
-    - name: Read existing certificate if exists
-      slurp:
-        src: "{{ registry_cert_dir }}/registry-server.crt"
-      when: reg_certificate_exists.stat.exists
-      register: certificate
     - name: Sign Server Certificate
       community.crypto.x509_certificate_pipe:
-        content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists else omit }}"
+        # Add the slurped content if the certificate file exists and its not expired
+        content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists and not existing_srv_cert_info.expired else omit }}"
         csr_content: "{{ server_csr.csr }}"
         privatekey_path: "{{ registry_cert_dir }}/registry-server.key"
         provider: ownca
@@ -85,9 +103,13 @@
         ownca_not_before: "+0s"
       register: certificate
 
-    - name: Write certificate file
+    - name: Write New Server Certificate file
+      # Write the newly created file only if the file doesn't already exist the
+      # cert is expired or it has changed.
       when: >
         (not reg_certificate_exists.stat.exists or
+         existing_srv_cert_info.expired or
+         certificate.changed or
          create_server_key.changed or
          create_ca_key.changed)
       copy:
@@ -109,7 +131,6 @@
             registry_ca_contents: "{{ registry_ca_contents_slurp.content | b64decode }}"
             registry_key_contents: "{{ registry_key_contents_slurp.content | b64decode }}"
             registry_cert_contents: "{{ certificate.certificate }}"
-
       when: register_k3s_vars is defined and register_k3s_vars
 
     - name: Cleanup Local variables
@@ -121,5 +142,5 @@
         server_csr: null
         ca_key_exists: null
   # Run the whole block on localhost
-  delegate_to: localhost
-  run_once: true
+  #delegate_to: localhost
+  #run_once: true

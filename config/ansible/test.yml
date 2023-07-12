@@ -1,0 +1,8 @@
+- hosts: localhost
+  become: false
+  vars:
+    registry_cert_dir: './test-certs'
+  roles:
+    - registry/slurp-certificates
+  tasks:
+    - debug: { var: registry_server_cert_slurp }
