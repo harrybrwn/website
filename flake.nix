@@ -58,8 +58,8 @@
               name = name;
               subPackages = [ "./cmd/${name}" ];
               src = ./.;
-              # vendorSha256 = "sha256-3EFmgfzddlRJCrFYgO35iipcKlYMG/uAU4wX2T/f0kQ=";
-              vendorSha256 = pkgs.lib.fakeSha256;
+              #vendorSha256 = pkgs.lib.fakeSha256;
+              vendorSha256 = "sha256-3EFmgfzddlRJCrFYgO35iipcKlYMG/uAU4wX2T/f0kQ=";
               preBuild = "go generate ./...";
               doCheck = false;
               nativeBuildInputs = [ mockgen ];
@@ -111,13 +111,13 @@
               kubernetes-helm # helm
               kube3d # k3d
               k9s
-              kubeseal  # kubernetes secrets encryption
+              kubeseal # kubernetes secrets encryption
               #ansible  # there are special cases where this doesn't work
               #ansible-lint
               postgresql
               vault
               # Dev tools
-              bmake  # for Makefiles
+              bmake # for Makefiles
               rust-analyzer
               golangci-lint
               yamllint

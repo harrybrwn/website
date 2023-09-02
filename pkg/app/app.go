@@ -7,6 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+
 	"gopkg.hrry.dev/homelab/pkg/app/chat"
 	"gopkg.hrry.dev/homelab/pkg/log"
 )

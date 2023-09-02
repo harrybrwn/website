@@ -29,7 +29,9 @@ struct Package<'a> {
 #[derive(Clone)]
 enum RepoKind {
     Git,
+    #[allow(unused)]
     Subversion,
+    #[allow(unused)]
     Bazaar,
 }
 

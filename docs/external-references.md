@@ -4,6 +4,12 @@ title: External References
 
 Just a few resources that I find helpful.
 
+## Homelab
+
+- [raspberry pi kubernetes](https://rpi4cluster.com/)
+- [k8s homelab](https://github.com/khuedoan/homelab) that also has [docs here](https://homelab.khuedoan.com/)
+- [k8s homelap](https://github.com/Michaelpalacce/HomeLab)
+
 ## Kubernetes
 
 - [object definitions and api reference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/)

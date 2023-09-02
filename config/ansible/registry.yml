@@ -72,6 +72,7 @@
             volumes:
               - "{{ registry_cert_dir }}:/opt/registry"
               - "/etc/docker/registry/htpasswd:/var/lib/registry/htpasswd"
+              # this volume was created externally I think
               - "registry:/var/lib/registry"
             env:
               REGISTRY_HTTP_TLS_CERTIFICATE: /opt/registry/registry-server.crt

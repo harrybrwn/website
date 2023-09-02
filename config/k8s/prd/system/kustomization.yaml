@@ -5,6 +5,7 @@ resources:
   - ../../common/helm-charts
   - ../../system/secrets
   - ../../system/cert-manager
+  - ../../system/reloader
   - ../../system/traefik-extras
   - ../../common/storage/nfs
   - cert-manager-values.yml

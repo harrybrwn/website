@@ -153,6 +153,7 @@
       apt:
         package:
           - nfs-kernel-server
+          - samba
   roles:
     - nfs
   tasks:
@@ -165,10 +166,9 @@
     cron:
       name: 'data backups'
       job: rsync -avAR --delete /exports/nfs /opt/hrry.dev/backups/$(date +\%F)/
-      #weekday: '0,3,5' # sunday, wednesday, friday
-      weekday: '*'
-      hour: '12'
-
+      weekday: '0,4' # sunday, thursday
+      minute: '0'
+      hour: '0'
 
 - name: Setup Registry
   hosts: k3s_cluster

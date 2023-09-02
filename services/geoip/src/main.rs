@@ -16,9 +16,9 @@ mod s3;
 #[cfg(test)]
 mod tests;
 
-use geoip::{GeoDB, GeoLoc, GeoError, ErrorResponse};
+use geoip::{ErrorResponse, GeoDB, GeoError, GeoLoc};
 use ip::ClientIP;
-use locale::{Locales};
+use locale::Locales;
 use logging::new_logger;
 use s3::open_from_s3;
 

@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/name: nginx
     app.kubernetes.io/component: gateway-proxy
     app.kubernetes.io/part-of: hrry.me
+  annotations:
+    reloader.stakater.com/reload: "harrybrwn-com-tls,hrry-me-tls,hrry-dev-tls"
 spec:
   selector:
     matchLabels:

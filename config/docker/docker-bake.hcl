@@ -134,7 +134,7 @@ target "base-service" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
         GO_VERSION     = GO_VERSION
-        RUST_VERSION   = "1.69.0"
+        RUST_VERSION   = "1.71.1"
     }
 }
 
@@ -181,6 +181,12 @@ target "go-geoip" {
 target "geoip-rs" {
     target   = "geoip-rs"
     tags     = tags("", "geoip", []) // publish to dockerhub
+    inherits = ["base-service"]
+}
+
+target "lnsmol" {
+    target   = "lnsmol"
+    tags     = tags("", "lnsmol", []) // publish to dockerhub
     inherits = ["base-service"]
 }
 
@@ -357,11 +363,12 @@ target "wait" {
 group "rust" {
     targets = [
         for i in [
-            68,
-            69,
-            70,
+            "68-0",
+            "69-0",
+            "70-0",
+            "71-1",
         ]:
-        "rust_1-${i}-0"
+        "rust_1-${i}"
     ]
 }
 
@@ -400,6 +407,12 @@ target "rust_1-70-0" {
     inherits = ["rust-base"]
     tags = rust_tags("1.70.0", true)
     args = {RUST_VERSION = "1.70.0"}
+}
+
+target "rust_1-71-1" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.71.1", true)
+    args = {RUST_VERSION = "1.71.1"}
 }
 
 #

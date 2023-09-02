@@ -43,7 +43,7 @@ for file in "${ENV_FILES[@]}"; do
   source "$file"
 done
 
-docker-compose exec                  \
+docker compose exec                  \
   -e REDISCLI_AUTH="$REDIS_PASSWORD" \
   redis redis-cli  \
   -h "${REDIS_HOST:-localhost}" \

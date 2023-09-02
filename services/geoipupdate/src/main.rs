@@ -1,5 +1,4 @@
-use std::io::Error;
-use std::io::ErrorKind;
+use std::io::{Error, ErrorKind};
 use std::str::FromStr;
 
 use aws_sdk_s3::config::Region;
@@ -227,7 +226,10 @@ impl Downloader {
         match self.client.request(req).await {
             Ok(res) => {
                 if !res.status().is_success() {
-                    return Err(Error::new(ErrorKind::Other, format!("couldn't find {edition}")));
+                    return Err(Error::new(
+                        ErrorKind::Other,
+                        format!("couldn't find {edition}"),
+                    ));
                 }
                 let (parts, body) = res.into_parts();
                 let l: Option<usize> = parts
@@ -240,7 +242,12 @@ impl Downloader {
                     .get("x-database-md5")
                     .and_then(|h| Some(String::from(h.to_str().unwrap_or(""))))
                     .unwrap_or(String::new());
-                Ok(Blob { length: l, body, md5, edition })
+                Ok(Blob {
+                    length: l,
+                    body,
+                    md5,
+                    edition,
+                })
             }
             Err(e) => Err(Error::new(ErrorKind::Other, e.to_string())),
         }
@@ -300,7 +307,7 @@ async fn main() {
                 for o in objects {
                     println!("{o:?}");
                 }
-            },
+            }
             Err(e) => println!("Error getting bucket location: {e}"),
         }
         return;

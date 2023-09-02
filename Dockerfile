@@ -4,7 +4,7 @@ ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
 ARG GO_VERSION=1.18-alpine
-ARG RUST_VERSION=1.69.0
+ARG RUST_VERSION=1.71.1
 
 #
 # Frontend Build
@@ -22,13 +22,13 @@ RUN --mount=type=cache,id=npm-${TARGETPLATFORM},target=/root/.npm \
 RUN git clone --depth 1 --branch v1.1.2 \
     https://github.com/harrybrwn/hextris.git /opt/hextris && \
     rm -rf \
-       /opt/hextris/.git       \
-       /opt/hextris/CNAME      \
-       /opt/hextris/README.md  \
-       /opt/hextris/.gitignore \
-       /opt/hextris/.github && \
+    /opt/hextris/.git       \
+    /opt/hextris/CNAME      \
+    /opt/hextris/README.md  \
+    /opt/hextris/.gitignore \
+    /opt/hextris/.github && \
     git clone --depth 1 --branch 2.3.3 \
-        https://github.com/Joxit/docker-registry-ui.git /opt/docker-registry-ui
+    https://github.com/Joxit/docker-registry-ui.git /opt/docker-registry-ui
 # Cache dependancies
 WORKDIR /opt/harrybrwn
 COPY ./package.json ./yarn.lock tsconfig.json /opt/harrybrwn/
@@ -226,11 +226,12 @@ COPY Cargo.toml Cargo.lock ./
 COPY services/geoip services/geoip
 COPY services/geoipupdate services/geoipupdate
 COPY services/gopkg services/gopkg
+COPY services/lnsmol services/lnsmol
 COPY cmd/foreman cmd/foreman
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
-	cargo fetch && \
-	mkdir -p .cargo && \
-	# Vendor for arm builds so they can find the custom assembly in the ring crate
+    cargo fetch && \
+    mkdir -p .cargo && \
+    # Vendor for arm builds so they can find the custom assembly in the ring crate
     cargo vendor 2>/dev/null >> .cargo/config.toml
 COPY services services
 COPY cmd/foreman cmd/foreman
@@ -240,13 +241,18 @@ ENV CARGO_TARGET_DIR=/opt/hrry.me/target/${TARGETPLATFORM}
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
     --mount=type=cache,target=/opt/hrry.me/target/${TARGETPLATFORM} \
     export TARGET="$(rust-target)" && \
-	cargo build --release --target "${TARGET}"
+    cargo build --release --target "${TARGET}"
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
     --mount=type=cache,target=/opt/hrry.me/target/${TARGETPLATFORM} \
     export TARGET="$(rust-target)" && \
-	mv "target/${TARGETPLATFORM}/${TARGET}/release/geoip" /usr/local/bin/ && \
-	mv "target/${TARGETPLATFORM}/${TARGET}/release/geoipupdate" /usr/local/bin/ && \
-	mv "target/${TARGETPLATFORM}/${TARGET}/release/foreman" /usr/local/bin/
+    for exe in \
+        geoip \
+        geoipupdate \
+        lnsmol \
+        foreman; \
+    do \
+        mv "target/${TARGETPLATFORM}/${TARGET}/release/${exe}" /usr/local/bin; \
+    done
 
 #######################
 # geoipupdate
@@ -254,7 +260,7 @@ RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry 
 FROM alpine:${ALPINE_VERSION} as geoipupdate
 RUN apk -U add ca-certificates openssl && rm -rf /var/cache/apk
 COPY --from=rust-builder /usr/local/bin/geoipupdate /usr/bin/
-CMD [ "geoipupdate" ]
+ENTRYPOINT [ "geoipupdate" ]
 
 #######################
 # geoip
@@ -262,7 +268,15 @@ CMD [ "geoipupdate" ]
 FROM alpine:${ALPINE_VERSION} as geoip-rs
 RUN apk -U add ca-certificates && rm -rf /var/cache/apk
 COPY --from=rust-builder /usr/local/bin/geoip /usr/bin/
-CMD [ "geoip" ]
+ENTRYPOINT [ "geoip" ]
+
+#######################
+# lnsmol
+#######################
+FROM alpine:${ALPINE_VERSION} as lnsmol
+RUN apk -U add ca-certificates && rm -rf /var/cache/apk
+COPY --from=rust-builder /usr/local/bin/lnsmol /usr/bin/
+ENTRYPOINT [ "lnsmol" ]
 
 #
 # mkdocs
@@ -321,9 +335,9 @@ WORKDIR /opt/harrybrwn/test
 RUN apt update && \
     apt upgrade -yq && \
     apt install -yq \
-        curl netcat build-essential \
-        libffi-dev libpq-dev python3-dev \
-        vim less && \
+    curl netcat build-essential \
+    libffi-dev libpq-dev python3-dev \
+    vim less && \
     pip install --user --upgrade pip && \
     pip install poetry==$POETRY_VERSION && \
     echo "alias l='ls -lA --group-directories-first --color=always'" >> /root/.bashrc
@@ -363,15 +377,15 @@ ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 ARG MC_VERSION=RELEASE.2023-05-04T18-10-16Z
 RUN \
-	case "${TARGETPLATFORM}" in \
-      linux/amd64) \
-        wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION} && \
-        wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION}.sha256sum \
-        ;; \
-      linux/arm/v7) \
-        wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION} && \
-        wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION}.sha256sum \
-        ;;  \
+    case "${TARGETPLATFORM}" in \
+    linux/amd64) \
+    wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION} && \
+    wget -q https://dl.min.io/client/mc/release/linux-amd64/mc.${MC_VERSION}.sha256sum \
+    ;; \
+    linux/arm/v7) \
+    wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION} && \
+    wget -q https://dl.min.io/client/mc/release/linux-arm/mc.${MC_VERSION}.sha256sum \
+    ;;  \
     esac && \
     # https://github.com/gliderlabs/docker-alpine/issues/174
     sed -i 's/ /  /g;' mc.${MC_VERSION}.sha256sum && \
