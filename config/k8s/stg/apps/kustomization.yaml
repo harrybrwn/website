@@ -12,6 +12,7 @@ resources:
   - ../../app/vanity-imports
   - ../../common/secrets/stg
   - geoip
+  - ../../app/lnsmol
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/grafana:latest

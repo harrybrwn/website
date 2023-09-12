@@ -33,7 +33,7 @@ jobs:
         GIT_BRANCH: ${{ github.ref_name }}
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
       run: docker buildx bake --file config/docker/docker-bake.hcl rust --push
-    - name: Push GeoIP Images
+    - name: Push Public Images
       env:
         GIT_COMMIT: ${{ github.sha }}
         GIT_BRANCH: ${{ github.ref_name }}
@@ -41,5 +41,7 @@ jobs:
       run: |
         docker buildx bake --file config/docker/docker-bake.hcl --push \
           geoip-rs    \
+          lnsmol      \
           geoipupdate \
           geoipupdate-go
+

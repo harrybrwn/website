@@ -1,0 +1,20 @@
+{{ if .HasExternalPorts -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Name }}
+spec:
+  selector:
+    app: {{ .Name }}
+  ports:
+    {{- range .Ports }}
+    - name: {{ .Type }}
+      {{- if ne .ExternalPort 0 }}
+      port: {{ .ExternalPort }}
+      {{- end }}
+      targetPort: {{ .Type }}
+    {{- end }}
+{{ end -}}
+{{- /* vim: ts=2 sw=2 sts=2 ft=gotmpl */ -}}
+

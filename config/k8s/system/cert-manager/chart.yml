@@ -10,6 +10,7 @@ spec:
   version: "v1.9.1"
   repo: https://charts.jetstack.io
   targetNamespace: cert-manager
+  # TODO add the full prometheus-stack and enable the servicemonitor
   valuesContent: |-
     enabled: true
     namespace: cert-manager
@@ -17,4 +18,4 @@ spec:
     prometheus:
       enabled: true
       servicemonitor:
-        enabled: true
+        enabled: false

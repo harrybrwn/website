@@ -13,16 +13,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/obalunenko/getenv"
-	"github.com/obalunenko/getenv/option"
-	"github.com/sirupsen/logrus"
-	flag "github.com/spf13/pflag"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go/logging"
-
+	"github.com/obalunenko/getenv"
+	"github.com/obalunenko/getenv/option"
+	"github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"

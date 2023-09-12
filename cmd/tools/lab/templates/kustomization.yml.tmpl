@@ -1,0 +1,9 @@
+{{- define "kustomization.yml" -}}
+---
+resources:
+  - deployment.yml
+  - configmap.yml
+  - secret.yml
+  - service.yml
+{{- end -}}
+{{ template "kustomization.yml" . }}

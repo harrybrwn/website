@@ -2,7 +2,7 @@
   description = "hrry.me homelab monorepo";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    # nixpkgs.url = "nixpkgs/nixos-unstable";
     utils.url = "github:numtide/flake-utils";
     gomod2nix = {
       url = "github:tweag/gomod2nix";
@@ -52,7 +52,7 @@
           pkgs = nixpkgsFor.${system};
           naersk' = pkgs.callPackage naersk { };
           mockgen = import ./config/nix/mockgen.nix { inherit pkgs; };
-          buildGo = name: overrides: pkgs.buildGoModule
+          buildGo = name: overrides: pkgs.buildGo121Module
             ({
               inherit version;
               name = name;
@@ -72,7 +72,13 @@
           };
           tools = pkgs.buildEnv {
             name = "tools";
-            paths = with self.packages.${system}; [ mockgen kubeval mc provision ];
+            paths = with self.packages.${system}; [
+              mockgen
+              kubeval
+              mc
+              provision
+              lab
+            ];
           };
           geoip = naersk'.buildPackage rec {
             inherit version;
@@ -82,6 +88,13 @@
           };
           api = buildGo "api" { };
           provision = buildGo "provision" { };
+          lab = pkgs.buildGo121Module {
+            inherit version;
+            name = "lab";
+            src = ./cmd/tools/lab;
+            vendorSha256 = "sha256-0NNidY4wQs9YGDvGNH2NuS0LdBVdHT8AknwNwo5AMO0=";
+            doCheck = false;
+          };
           inherit mockgen;
           kubeval = pkgs.callPackage ./config/nix/kubeval.nix { };
           mc = pkgs.callPackage ./config/nix/mc.nix { buildGoModule = pkgs.buildGo119Module; };
@@ -95,7 +108,7 @@
         let
           pkgs = nixpkgsFor.${system};
           rust = getRust pkgs;
-          go = pkgs.go_1_20;
+          go = pkgs.go_1_21;
         in
         {
 
@@ -103,7 +116,9 @@
             buildInputs = with pkgs; [
               # Languages
               go
-              rust
+              #rust
+              rustc
+              cargo
               nodejs
               # Infrastructure
               kubectl
@@ -123,6 +138,7 @@
               yamllint
               kube-linter
               operator-sdk # sdk for k8s operators
+              rustfmt
               # Shell utilities
               git
               jq # json query
@@ -159,6 +175,9 @@
               export ANSIBLE_INVENTORY="$(pwd)/config/ansible/inventory.yml"
               export ANSIBLE_VAULT_PASSWORD_FILE="$(pwd)/config/ansible/vault-password.txt"
               export LANG=C.UTF-8
+
+              # For rust-analyzer 'hover' tooltips to work.
+              export RUST_SRC_PATH=${pkgs.rustPlatform.rustLibSrc}
             '';
           };
         });

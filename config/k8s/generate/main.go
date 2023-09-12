@@ -41,6 +41,7 @@ type AppConfig struct {
 	Size      Size
 	Args      []string
 	Namespace string
+	Config    map[string]string
 
 	SkipPrometheus bool `json:"skip_prometheus"`
 }
@@ -237,6 +238,20 @@ func (c *AppConfig) service() corev1.Service {
 	}
 }
 
+func (c *AppConfig) configmap() corev1.ConfigMap {
+	return corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      c.Name + "-env",
+			Namespace: c.ns(),
+		},
+		Data: c.Config,
+	}
+}
+
 type Config struct {
 	GlobalAppSettings `json:",inline"`
 	Apps              []*AppConfig
@@ -274,6 +289,37 @@ func main() {
 		log.Fatal(err)
 	}
 	config.InitDefaults()
+	for _, app := range config.Apps {
+		app.InitDefaults(&config.GlobalAppSettings)
+		if app.Port == 0 {
+			log.Fatal("no port")
+		}
+	}
+
+	if out == "-" {
+		o := os.Stdout
+		for _, app := range config.Apps {
+			app.InitDefaults(&config.GlobalAppSettings)
+			deploy := app.deployment(&config.GlobalAppSettings)
+			svc := app.service()
+			cm := app.configmap()
+			for _, err = range []error{
+				eat(o.Write([]byte("---\n"))),
+				serializer.Encode(&deploy, o),
+				eat(o.Write([]byte("---\n"))),
+				serializer.Encode(&svc, o),
+				eat(o.Write([]byte("---\n"))),
+				serializer.Encode(&cm, o),
+			} {
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+		return
+	} else {
+
+	}
 
 	for _, conf := range config.Apps {
 		if conf.Name == "" {
@@ -304,7 +350,7 @@ func main() {
 			defer f.Close()
 			output = f
 		}
-		output.Write([]byte("---"))
+		output.Write([]byte("---\n"))
 		err = serializer.Encode(&deploy, output)
 		if err != nil {
 			log.Fatal(err)
@@ -324,7 +370,7 @@ func main() {
 			defer f.Close()
 			output = f
 		}
-		output.Write([]byte("---"))
+		output.Write([]byte("---\n"))
 		err = serializer.Encode(&service, output)
 		if err != nil {
 			log.Fatal(err)
@@ -335,3 +381,5 @@ func main() {
 func asPtr[T any](v T) *T {
 	return &v
 }
+
+func eat[T any](_ T, err error) error { return err }

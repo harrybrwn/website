@@ -6,6 +6,7 @@ resources:
   - system
   - infra
   - apps
+  - ../common/sendgrid
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/s3

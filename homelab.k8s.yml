@@ -1,0 +1,55 @@
+images:
+  user: harrybrwn
+
+resources:
+  large:
+    limits:
+      memory: 512Mi
+      cpu: 250m
+
+apps:
+  lnsmol:
+    args: [server]
+    size: med
+    ports:
+    - type: http
+      port: 8088
+    config:
+      HOST: '0.0.0.0'
+      PORT: '8088'
+      REDIS_HOST: 'redis'
+      REDIS_DB: '6'
+      SERVER_WORKERS: '6'
+      SERVER_DOMAIN: 'l.hrry.me'
+      SERVER_URL_PREFIX: '/'
+    secrets: { REDIS_PASSWORD: 'testbed01' }
+    scale:
+      from: 1
+      to: 2
+      when:
+        cpu: .60
+
+  gopkg:
+    skip: true
+    size: small
+    ports:
+      - type: http
+        port: 8085
+    config:
+      PORT: '8085'
+
+  _geoip:
+    skip: true
+    namespace: geoip
+    image: { registry: 10.0.0.11:5000 }
+    size: lg
+    ports:
+      - type: http
+        port: 8084
+        external_port: 8084
+    extra_resources:
+      - geoipupdate.yml
+      - rbac.yml
+    extra_labels:
+      geoip.hrry.me/managed: 'true'
+

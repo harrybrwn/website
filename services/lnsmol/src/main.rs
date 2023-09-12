@@ -21,9 +21,9 @@ struct Cli {
     port: u16,
     #[arg(long, default_value_t = 6, env)]
     redis_db: i64,
-    #[arg(long, default_value = "127.0.0.1")]
+    #[arg(long, env, default_value = "127.0.0.1")]
     redis_host: String,
-    #[arg(long, default_value_t = 6379)]
+    #[arg(long, env, default_value_t = 6379)]
     redis_port: u16,
     #[arg(long, env)]
     redis_username: Option<String>,
@@ -36,17 +36,18 @@ struct Cli {
 #[derive(Args, Debug)]
 struct Server {
     /// Number of worker threads
-    #[arg(short, long, default_value_t = 6)]
+    #[arg(short, long, default_value_t = 6, env = "SERVER_WORKERS")]
     workers: usize,
     /// URL Prefix to serve all requests from.
-    #[arg(long, default_value = "l")]
+    #[arg(long, default_value = "l", env = "SERVER_URL_PREFIX")]
     url_prefix: String,
     /// The domain name that this server will receive requests on.
-    #[arg(long, default_value = "localhost")]
+    #[arg(long, default_value = "localhost", env = "SERVER_DOMAIN")]
     domain: String,
 }
 
 #[derive(Subcommand, Debug)]
+#[command(author = "")]
 enum CliCommands {
     /// Run the web server
     Server(Server),
@@ -178,10 +179,10 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
         .build()
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
     let rd = args.redis()?;
-    rd.get_connection().map_err(|_| {
+    rd.get_connection().map_err(|e| {
         io::Error::new(
             io::ErrorKind::ConnectionRefused,
-            "could not connect to redis",
+            format!("could not connect to redis: {}", e),
         )
     })?;
     let store = link::Store::new(server.domain.clone(), rd);

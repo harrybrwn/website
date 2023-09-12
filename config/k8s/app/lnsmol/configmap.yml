@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  HOST: 0.0.0.0
+  PORT: "8088"
+  REDIS_DB: "6"
+  REDIS_HOST: redis
+  SERVER_DOMAIN: l.hrry.me
+  SERVER_URL_PREFIX: /
+  SERVER_WORKERS: "6"
+kind: ConfigMap
+metadata:
+  name: lnsmol-env

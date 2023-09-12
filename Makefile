@@ -88,6 +88,8 @@ tools: scripts
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 	go build -trimpath -ldflags "-s -w" -o bin/mail ./cmd/tools/mail
+	(cd cmd/tools/lab && \
+		go build -trimpath -ldflags "-s -w" -o ../../../bin/lab .)
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 
 .PHONY: tools scripts

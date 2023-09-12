@@ -1,0 +1,6 @@
+resources:
+  - service.yml
+  - configmap.yml
+  - secret.yml
+  - deployment.yml
+  - hpa.yml

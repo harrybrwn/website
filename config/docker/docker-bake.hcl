@@ -60,9 +60,11 @@ group "services" {
         "hooks",
         "backups",
         "geoip",
+        "lnsmol",
         "legacy-site",
         "vanity-imports",
         "outline",
+        "gopkg",
     ]
 }
 
@@ -187,6 +189,12 @@ target "geoip-rs" {
 target "lnsmol" {
     target   = "lnsmol"
     tags     = tags("", "lnsmol", []) // publish to dockerhub
+    inherits = ["base-service"]
+}
+
+target "gopkg" {
+    target   = "gopkg-rs"
+    tags     = tags("", "gopkg", []) // publish to dockerhub
     inherits = ["base-service"]
 }
 

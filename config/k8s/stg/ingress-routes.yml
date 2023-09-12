@@ -109,6 +109,10 @@ spec:
         kind: Service
         port: http
         scheme: http
+  - match: Host(`l.stg.hrry.me`)
+    kind: Rule
+    services:
+        - { name: lnsmol, kind: Service, port: http, scheme: http }
   tls:
     # Use an existing secret
     secretName: hrry-me-tls

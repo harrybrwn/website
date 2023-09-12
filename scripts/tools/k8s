@@ -8,43 +8,44 @@ SELF_SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 readonly K3D_CONFIG=config/k8s/k3d.yml
 declare -r SELF_SCRIPT_NAME
 declare -r HOSTNAMES=(
-	# Bases
-	hrry.local
-	harrybrwn.local
-	# Infra
-	s3.hrry.local
-	auth.hrry.local
-	cr.hrry.local
-	registry.hrry.local
-	# Apps
-	s3-console.hrry.local
-  s3.console.hrry.local
-	api.hrry.local
-	grafana.hrry.local
-	wiki.hrry.local
-	gopkg.hrry.local
-	files.hrry.local
-	ip.hrry.local
-	hooks.hrry.local
-  mastodon.hrry.local
-  1k.hrry.local
-	# Crazy ones
-	hrry.me-local
-	hrry.dev-local
-	hrry.lol-local
-	s3.hrry.dev-local
-	auth.hrry.dev-local
-	cr.hrry.dev-local
-	cr.hrry.io-local
-	registry.hrry.dev-local
-	s3-console.hrry.dev-local
-	grafana.hrry.dev-local
-	wiki.hrry.me-local
-	1k.hrry.me-local
-	api.hrry.me-local
-	gopkg.hrry.dev-local
-	files.hrry.dev-local
-	ip.hrry.dev-local
+    # Bases
+    hrry.local
+    harrybrwn.local
+    # Infra
+    s3.hrry.local
+    auth.hrry.local
+    cr.hrry.local
+    registry.hrry.local
+    # Apps
+    s3-console.hrry.local
+    s3.console.hrry.local
+    api.hrry.local
+    grafana.hrry.local
+    wiki.hrry.local
+    gopkg.hrry.local
+    files.hrry.local
+    ip.hrry.local
+    l.hrry.local
+    hooks.hrry.local
+    mastodon.hrry.local
+    1k.hrry.local
+    # Crazy ones
+    hrry.me-local
+    hrry.dev-local
+    hrry.lol-local
+    s3.hrry.dev-local
+    auth.hrry.dev-local
+    cr.hrry.dev-local
+    cr.hrry.io-local
+    registry.hrry.dev-local
+    s3-console.hrry.dev-local
+    grafana.hrry.dev-local
+    wiki.hrry.me-local
+    1k.hrry.me-local
+    api.hrry.me-local
+    gopkg.hrry.dev-local
+    files.hrry.dev-local
+    ip.hrry.dev-local
 )
 
 get-ingress-ip() {
@@ -52,57 +53,57 @@ get-ingress-ip() {
   if [ -n "${SUDO_USER:-}" ]; then
     conf="/home/${SUDO_USER}/.kube/config"
   fi
-	KUBECONFIG="${conf}" kubectl --namespace 'kube-system' get services \
-		--no-headers \
-		--field-selector metadata.name=traefik \
-		--output json \
-		| jq -r '.items[0].status.loadBalancer.ingress[0].ip'
+    KUBECONFIG="${conf}" kubectl --namespace 'kube-system' get services \
+        --no-headers \
+        --field-selector metadata.name=traefik \
+        --output json \
+        | jq -r '.items[0].status.loadBalancer.ingress[0].ip'
 }
 
 etc-hosts() {
-	local ingress_ip
+    local ingress_ip
   ingress_ip="$(get-ingress-ip)"
-	for name in "${HOSTNAMES[@]}"; do
-		if grep -qP "^[A-Za-z0-9]+?[\t ]+${name}$" /etc/hosts; then
-			sudo sed -Ei "s/^(([0-9]{1,3}\.?){4}|localhost)[ \t]+(${name})/${ingress_ip}	${name}/" /etc/hosts
-		else
-		 	echo "adding ${name}"
-			echo "${ingress_ip}	${name}" | sudo tee -a /etc/hosts > /dev/null
-		fi
-	done
+    for name in "${HOSTNAMES[@]}"; do
+        if grep -qP "^[A-Za-z0-9]+?[\t ]+${name}$" /etc/hosts; then
+            sudo sed -Ei "s/^(([0-9]{1,3}\.?){4}|localhost)[ \t]+(${name})/${ingress_ip}    ${name}/" /etc/hosts
+        else
+            echo "adding ${name}"
+            echo "${ingress_ip} ${name}" | sudo tee -a /etc/hosts > /dev/null
+        fi
+    done
 }
 
 get-sudo() {
-	echo "Command requires sudo."
-	echo "$ sudo -v"
-	sudo -v
+    echo "Command requires sudo."
+    echo "$ sudo -v"
+    sudo -v
 }
 
 usage() {
-	if [ "${1:-}" != "short" ]; then
-		echo "A helper tool for setting up a local kubernetes cluster using k3d and"
-		echo "configuring the development environment."
-		echo
-	fi
-	echo "Usage"
-	echo "  ${SELF_SCRIPT_NAME} [...flags] [command]"
-	echo
-	echo "Commands"
-	echo "  load     load an image into the hosts containers"
-	echo "  ip       print the ip if the local cluster"
-	echo "  test     test if the local cluster is running"
-	echo
-	echo "Flags"
-	echo "  -h --help         print help message"
-	echo "     --etc-hosts    automatically configure /etc/hosts with local domains and current running ingress ip"
-	echo "  -b --build        build and load docker images"
+    if [ "${1:-}" != "short" ]; then
+        echo "A helper tool for setting up a local kubernetes cluster using k3d and"
+        echo "configuring the development environment."
+        echo
+    fi
+    echo "Usage"
+    echo "  ${SELF_SCRIPT_NAME} [...flags] [command]"
+    echo
+    echo "Commands"
+    echo "  load     load an image into the hosts containers"
+    echo "  ip       print the ip if the local cluster"
+    echo "  test     test if the local cluster is running"
+    echo
+    echo "Flags"
+    echo "  -h --help         print help message"
+    echo "     --etc-hosts    automatically configure /etc/hosts with local domains and current running ingress ip"
+    echo "  -b --build        build and load docker images"
 }
 
 if [ $# -eq 0 ]; then
-	error k8s "Error: no arguments"
-	echo
-	usage short
-	exit 1
+    error k8s "Error: no arguments"
+    echo
+    usage short
+    exit 1
 fi
 
 args=()
@@ -110,78 +111,78 @@ QUIET=false
 ENV=dev
 
 while [ $# -gt 0 ]; do
-	case $1 in
-		-h|--help)
-			usage
-			shift
-			exit 0
-			;;
-		-q|--quiet)
-		 	shift
-			QUIET=true
-			;;
-		-env|--env)
-			ENV="$2"
-			shift 2
-			;;
-		--ip)
-			get-ingress-ip
-			shift
-			exit 0
-			;;
-		--etc-hosts)
-		 	get-sudo
-			etc-hosts
-			shift
-			;;
-		*)
-			args+=("$1")
-			shift
-		;;
-	esac
+    case $1 in
+        -h|--help)
+            usage
+            shift
+            exit 0
+            ;;
+        -q|--quiet)
+            shift
+            QUIET=true
+            ;;
+        -env|--env)
+            ENV="$2"
+            shift 2
+            ;;
+        --ip)
+            get-ingress-ip
+            shift
+            exit 0
+            ;;
+        --etc-hosts)
+            get-sudo
+            etc-hosts
+            shift
+            ;;
+        *)
+            args+=("$1")
+            shift
+        ;;
+    esac
 done
 
 if ! $QUIET; then
-	info k8s "Using k8s context \"$(kubectl config current-context)\"" >&2
+    info k8s "Using k8s context \"$(kubectl config current-context)\"" >&2
 fi
 
 set -- "${args[@]}"
 for arg in "${args[@]}"; do
-	shift
+    shift
   case "${arg}" in
     up)
-			info k8s "starting..."
+            info k8s "starting..."
       ;;
-		load)
-			readarray -t images < <(list-images "$@")
-			existing_images=()
-			for i in "${images[@]}"; do
-				if docker image inspect "$i" > /dev/null 2>&1; then
-					existing_images+=("$i")
-				else
-					warn k8s "Warning: skipping image \"$i\""
-				fi
-			done
-			if ! $QUIET; then
-				for i in "${images[@]}"; do info k8s "found image '$i'"; done
-				info k8s "Loading images"
-			fi
-			k3d image load \
-				--cluster "$(k3d_cluster_name "${K3D_CONFIG}")" \
-				"${existing_images[@]}"
-			break
-			;;
-		ip)
-			get-ingress-ip
-			;;
+        load)
+            readarray -t images < <(list-images "$@")
+            existing_images=()
+            for i in "${images[@]}"; do
+                if docker image inspect "$i" > /dev/null 2>&1; then
+                    existing_images+=("$i")
+                else
+                    warn k8s "Warning: skipping image \"$i\""
+                fi
+            done
+            if ! $QUIET; then
+                for i in "${images[@]}"; do info k8s "found image '$i'"; done
+                info k8s "Loading images"
+            fi
+            k3d image load \
+                --cluster "$(k3d_cluster_name "${K3D_CONFIG}")" \
+                "${existing_images[@]}"
+            break
+            ;;
+        ip)
+            get-ingress-ip
+            ;;
     test)
-			name="$(k3d_cluster_name "${K3D_CONFIG}")"
+            name="$(k3d_cluster_name "${K3D_CONFIG}")"
       if k3d_running "$name"; then
         info k8s running
-				exit 0
+                exit 0
       else
         warn k8s not running
-				exit 1
+                exit 1
       fi
       ;;
     *)

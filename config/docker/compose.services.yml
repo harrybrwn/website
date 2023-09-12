@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  lnsmol:
+    image: harrybrwn/lnsmol:${VERSION:-latest}
+    build:
+      context: .
+      target: lnsmol
+      args:
+        - ALPINE_VERSION=3.17.0
+        - RUST_VERSION=1.71.1
+    environment:
+      PORT: '8088'
+      HOST: '0.0.0.0'
+      SERVER_DOMAIN: 'l.hrry.local'
+      SERVER_URL_PREFIX: '/'
+      REDIS_HOST: 'redis'
+      REDIS_DB: '6'
+      REDIS_PASSWORD: 'testbed01'
+    ports:
+      - "8088:8088"
+    networks:
+      backend:
+        aliases:
+          - lnsmol.default.svc.cluster.local
+          - lnsmol.lnsmol.svc.cluster.local
+
+  gopkg:
+    image: harrybrwn/gopkg:${VERSION:-latest}
+    build:
+      context: .
+      target: gopkg
+      args:
+        - ALPINE_VERSION=3.17.0
+        - RUST_VERSION=1.71.1
+    networks:
+      backend:
+        aliases:
+          - gopkg.default.svc.cluster.local
+

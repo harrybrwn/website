@@ -96,10 +96,10 @@ async fn index<'a>(
 #[derive(clap::Parser, Debug)]
 pub(crate) struct Cli {
     /// Server host
-    #[arg(long, short = 'H', default_value = "0.0.0.0", env = "HOST")]
+    #[arg(long, short = 'H', default_value = "0.0.0.0", env)]
     host: String,
     /// Server port
-    #[arg(short, long, default_value_t = 8080, env = "PORT")]
+    #[arg(short, long, default_value_t = 8080, env)]
     port: u16,
     /// Concurrent workers
     #[arg(short, long, default_value_t = 4)]

@@ -36,6 +36,7 @@ resource "cloudflare_record" "hrry_me_dns" {
     "wiki",
     "1k",
     "api",
+    "l",
   ])
   name    = each.key
   value   = var.gateway_ip

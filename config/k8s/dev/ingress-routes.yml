@@ -102,6 +102,24 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
+  name: hrry-me-routes
+spec:
+  entryPoints: [websecure]
+  routes:
+    - match: Host(`l.hrry.local`) || Host(`l.hrry.me-local`)
+      kind: Rule
+      services:
+      - name: lnsmol
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    secretName: hrry-me-tls
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
   name: harrybrwn-com-routes
 spec:
   routes:

@@ -16,6 +16,10 @@ version: "3.8"
 #   - https://github.com/logseq/logseq/issues/12
 #   - https://docs.logseq.com/#/page/Contents
 
+include:
+  - path: config/docker/compose.services.yml
+    project_directory: .
+
 services:
   db:
     image: ${REGISTRY}/harrybrwn/postgres:${VERSION:-latest}

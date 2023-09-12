@@ -10,3 +10,10 @@ apps:
   port: 8083
   size: sml
   skip_prometheus: true
+- name: lnsmol
+  image:
+    tag: latest
+    repo: harrybrwn
+  size: small
+  args: [server]
+  port: 8088

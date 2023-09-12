@@ -203,7 +203,8 @@ elif ${USE_K8s}; then
 
   info bootstrap "Starting helm charts"
   #do_kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
-  do_kubectl apply -k config/k8s/common/crds
+  #do_kubectl apply -k config/k8s/common/crds
+  do_kubectl apply -k config/k8s/dev/system
   #do_kubectl apply -k config/k8s/common/helm-charts # get the CRDs first
   #wait_for_k8s_cert_manager # wait for cert manager to start...
   do_kubectl apply -k config/k8s/dev | grep -Ev 'unchanged$'
