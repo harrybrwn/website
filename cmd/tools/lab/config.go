@@ -186,11 +186,7 @@ type ResourceProfile interface {
 	Requests(size Size) (corev1.ResourceList, error)
 }
 
-type ResourceSizesConfig struct {
-	Large  *resourcesConfig
-	Medium *resourcesConfig
-	Small  *resourcesConfig
-}
+type ResourceSizesConfig map[string]*resourcesConfig
 
 type resourcesConfig struct {
 	Limits   *resourceSettings `json:"limits" yaml:"limits"`
@@ -202,34 +198,26 @@ type resourceSettings struct {
 	CPU    string `json:"cpu" yaml:"cpu"`
 }
 
-func (r *ResourceSizesConfig) Limits(size Size) (corev1.ResourceList, error) {
-	var (
-		err   error
-		dflts defaultResourceProfile
-		conf  *resourceSettings
-	)
-	switch size {
-	case SizeBig:
-		if r.Large == nil {
-			return dflts.Limits(size)
-		}
-		conf = r.Large.Limits
-	case SizeMed:
-		if r.Medium == nil {
-			return dflts.Limits(size)
-		}
-		conf = r.Medium.Limits
-	case SizeSml:
-		if r.Small == nil {
-			return dflts.Limits(size)
-		}
-		conf = r.Small.Limits
-	default:
-		return nil, errors.New("unknown size")
-	}
-	if conf == nil {
+func (r ResourceSizesConfig) Limits(size Size) (corev1.ResourceList, error) {
+	var dflts defaultResourceProfile
+	c := r.conf(size)
+	if c == nil || c.Limits == nil {
 		return dflts.Limits(size)
 	}
+	return resourceSizesConfigResourceList(c.Limits)
+}
+
+func (r ResourceSizesConfig) Requests(size Size) (corev1.ResourceList, error) {
+	var dflts defaultResourceProfile
+	c := r.conf(size)
+	if c == nil || c.Requests == nil {
+		return dflts.Requests(size)
+	}
+	return resourceSizesConfigResourceList(c.Requests)
+}
+
+func resourceSizesConfigResourceList(conf *resourceSettings) (corev1.ResourceList, error) {
+	var err error
 	res := make(corev1.ResourceList, 2)
 	res[corev1.ResourceMemory], err = resource.ParseQuantity(conf.Memory)
 	if err != nil {
@@ -242,42 +230,30 @@ func (r *ResourceSizesConfig) Limits(size Size) (corev1.ResourceList, error) {
 	return res, nil
 }
 
-func (r *ResourceSizesConfig) Requests(size Size) (corev1.ResourceList, error) {
-	var (
-		err   error
-		dflts defaultResourceProfile
-		conf  *resourceSettings
-	)
+func (r ResourceSizesConfig) conf(size Size) (c *resourcesConfig) {
+	var ok bool
 	switch size {
 	case SizeBig:
-		if r.Large == nil {
-			return dflts.Requests(size)
+		for _, k := range []string{"big", "large", "lg", "l", "b"} {
+			c, ok = r[k]
+			if ok {
+				break
+			}
 		}
-		conf = r.Large.Requests
 	case SizeMed:
-		if r.Medium == nil {
-			return dflts.Requests(size)
+		for _, k := range []string{"medium", "med", "m"} {
+			c, ok = r[k]
+			if ok {
+				break
+			}
 		}
-		conf = r.Medium.Requests
 	case SizeSml:
-		if r.Small == nil {
-			return dflts.Requests(size)
+		for _, k := range []string{"small", "sml", "sm", "s"} {
+			c, ok = r[k]
+			if ok {
+				break
+			}
 		}
-		conf = r.Small.Requests
-	default:
-		return nil, errors.New("unknown size")
 	}
-	if conf == nil {
-		return dflts.Requests(size)
-	}
-	res := make(corev1.ResourceList, 2)
-	res[corev1.ResourceMemory], err = resource.ParseQuantity(conf.Memory)
-	if err != nil {
-		return nil, err
-	}
-	res[corev1.ResourceCPU], err = resource.ParseQuantity(conf.CPU)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
+	return c
 }

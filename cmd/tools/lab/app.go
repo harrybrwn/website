@@ -215,7 +215,7 @@ func (a *App) servicePorts() []corev1.ServicePort {
 }
 
 type KustomizeConfig struct {
-	Resources    []string `json:"resources,omitempty"`
+	Resources    []string `json:"resources"`
 	CommonLabels []string `json:"commonLabels,omitempty" yaml:"commonLabels"`
 	Images       []struct {
 		Name    string
@@ -278,6 +278,8 @@ func (a *App) deployment() *appsv1.Deployment {
 									Name: a.ConfigMapName,
 								},
 							},
+						},
+						{
 							SecretRef: &corev1.SecretEnvSource{
 								LocalObjectReference: corev1.LocalObjectReference{
 									Name: a.SecretName,

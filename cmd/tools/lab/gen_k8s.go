@@ -11,11 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
-
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -29,7 +27,6 @@ func NewGenK8sCmd() *cobra.Command {
 		useK8sAPI  = false
 		stdout     = false
 		force      = false
-		templates  *template.Template
 		config     K8sGenConfig
 	)
 	c := cobra.Command{
@@ -37,7 +34,6 @@ func NewGenK8sCmd() *cobra.Command {
 		Short: "Generate kubernetes manifests",
 
 		PersistentPreRunE: func(*cobra.Command, []string) error {
-			templates = template.New("k8s").Funcs(templateFuncs)
 			f, err := os.Open(configFile)
 			if err != nil {
 				return err
@@ -49,10 +45,6 @@ func NewGenK8sCmd() *cobra.Command {
 			}
 			config.Calc()
 			err = config.Validate()
-			if err != nil {
-				return err
-			}
-			templates, err = templates.ParseFS(tmpls, "templates/*")
 			if err != nil {
 				return err
 			}
