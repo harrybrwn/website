@@ -1,0 +1,67 @@
+- name: Configure Router
+  become: false
+  gather_facts: false
+  hosts: router
+  vars_files:
+    - ../vars/router-password.yml
+  module_defaults:
+    community.routeros.api: &ros_auth
+      hostname: "{{ ansible_host }}"
+      username: "{{ router_username }}"
+      password: "{{ router_password }}"
+    community.routeros.api_modify: *ros_auth
+    community.routeros.api_find_and_modify: *ros_auth
+  tasks:
+    # - name: Copy Nat Rules Script
+    #   command: {cmd: scp -o PasswordAuthentication=no -o PubkeyAuthentication=yes -o PubkeyAcceptedKeyTypes=+ssh-rsa files/nat-rules.rsc admin@router.lan:disk1}
+    #   delegate_to: localhost
+
+    - name: Add Nat Rules
+      community.routeros.api_modify:
+        ensure_order: true
+        handle_absent_entries: remove
+        handle_entries_content: remove_as_much_as_possible
+        path: ip firewall nat
+        data:
+          # Outgoing traffic
+          - action: masquerade
+            chain: srcnat
+            comment: "defconf: masquerade"
+            ipsec-policy: out,none
+            out-interface-list: WAN
+          # - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 80, dst-port: 80 }
+          # - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 443, dst-port: 443 }
+          - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # Postgres
+          #- action: dst-nat
+          #  chain: dstnat
+          #  in-interface-list: WAN
+          #  protocol: tcp
+          #  to-addresses: 10.0.0.13
+          #  to-ports: 5432
+          #  dst-port: 5432
+
+    # - name: Allow Only Cloudflare Traffic
+    #   community.routeros.api_find_and_modify:
+    #     path: ip firewall filter
+    #     find:
+    #       in-interface-list: WAN
+    #       dst-
+
+    # - name: Get example - ip address print
+    #   community.routeros.api:
+    #     path: "ip address"
+    #     cmd: print
+    #   register: ipaddrd_printout
+    # - name: Dump "Get example" output
+    #   ansible.builtin.debug: { msg: '{{ ipaddrd_printout }}' }
+

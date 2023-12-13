@@ -1,8 +1,17 @@
-- hosts: localhost
-  become: false
-  vars:
-    registry_cert_dir: './test-certs'
-  roles:
-    - registry/slurp-certificates
+# - hosts: localhost
+#   become: false
+#   vars:
+#     registry_cert_dir: './test-certs'
+#   roles:
+#     - registry/slurp-certificates
+#   tasks:
+#     - debug: { var: registry_server_cert_slurp }
+
+- hosts: lenovo
+  become: true
+  gather_facts: false
+  vars_files:
+    - vars/become-password.yml
+    - vars/postgres.yml
   tasks:
-    - debug: { var: registry_server_cert_slurp }
+    - debug: var=ansible_host

@@ -1,16 +1,16 @@
+- name: Configure Router
+  ansible.builtin.import_playbook: playbooks/router.yml
+
 - hosts: prod
   become: true
   become_method: sudo
-
   vars_files:
     # ansible become password in vault encrypted vars file
     - vars/become-password.yml
     - vars/cloudflare-api-credentials.yml
     - vars/registry.yml
-
   vars:
     registry: '10.0.0.11:5000'
-
   handlers:
     - name: reboot
       reboot:
@@ -20,15 +20,12 @@
         pre_reboot_delay: 0
         post_reboot_delay: 30
         test_command: whoami
-
   pre_tasks:
   - name: Update apt cache
     apt:
       update_cache: true
-
   roles:
   - docker
-
   tasks:
     - name: Install dependencies.
       apt:
@@ -40,6 +37,7 @@
           - nfs-common
           - open-iscsi  # for longhorn on k8s
           - util-linux  # for longhorn on k8s
+          - python3-docker # for controlling docker via ansible
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
 
     - name: Create NFS mount points.
@@ -118,6 +116,7 @@
   gather_facts: false
   vars_files:
     - vars/become-password.yml
+    - vars/postgres.yml
   vars:
     nfs_package_name: nfs-kernel-server
     nfs_service_name: nfs-kernel-server
@@ -147,7 +146,6 @@
         user: nobody
       - path: /exports/nfs/hrry.dev/storage/loki
       - path: /exports/nfs/hrry.dev/storage/filestash
-
   pre_tasks:
     - name: Install NFS Server
       apt:
@@ -156,6 +154,13 @@
           - samba
   roles:
     - nfs
+
+  module_defaults:
+    community.postgresql.postgresql_user: &pg_auth
+      host: "{{ ansible_host }}"
+      login_password: '{{ postgres_password }}'
+    community.postgresql.postgresql_privs: *pg_auth
+    community.postgresql.postgresql_db: *pg_auth
   tasks:
   - name: Create backups storage location.
     file:
@@ -169,6 +174,9 @@
       weekday: '0,4' # sunday, thursday
       minute: '0'
       hour: '0'
+
+- name: Configure PostgreSQL
+  ansible.builtin.import_playbook: playbooks/postgres.yml
 
 - name: Setup Registry
   hosts: k3s_cluster
