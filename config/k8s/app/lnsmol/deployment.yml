@@ -22,7 +22,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: lnsmol-env
-              secretRef:
+            - secretRef:
                 name: lnsmol-env
           image: harrybrwn/lnsmol:latest
           imagePullPolicy: Always
@@ -32,8 +32,8 @@ spec:
               name: http
           resources:
             limits:
+              cpu: 250m
+              memory: 533Mi
+            requests:
               cpu: 100m
               memory: 256Mi
-            requests:
-              cpu: 50m
-              memory: 128Mi

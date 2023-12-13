@@ -8,9 +8,10 @@ use actix_web::{
 };
 use askama::Template;
 use clap::{Args, Parser as CliParser, Subcommand};
+use redis::ConnectionInfo;
 use serde_derive::{Deserialize, Serialize};
-use std::io;
 use std::path;
+use std::{io, net::IpAddr};
 
 #[derive(CliParser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -72,8 +73,23 @@ enum CliCommands {
 
 impl Cli {
     fn redis(&self) -> Result<redis::Client, io::Error> {
+        let addr = match dns_lookup::lookup_host(&self.redis_host) {
+            Ok(addrs) => {
+                if addrs.len() == 0 {
+                    log::warn!("dns lookup failed on {}", self.redis_host);
+                    self.redis_host.clone()
+                } else {
+                    addrs[0].to_string()
+                }
+            }
+            Err(e) => {
+                log::warn!("dns lookup failed on {}: {}", self.redis_host, e);
+                self.redis_host.clone()
+            }
+        };
         let client = match redis::Client::open(redis::ConnectionInfo {
-            addr: redis::ConnectionAddr::Tcp(self.redis_host.clone(), self.redis_port),
+            // addr: redis::ConnectionAddr::Tcp(self.redis_host.clone(), self.redis_port),
+            addr: redis::ConnectionAddr::Tcp(addr, self.redis_port),
             redis: redis::RedisConnectionInfo {
                 db: self.redis_db,
                 username: self.redis_username.clone(),
@@ -89,8 +105,8 @@ impl Cli {
 
 enum Accept {
     None,
-    Json,
     PlainText,
+    Json,
     Html,
 }
 
@@ -168,6 +184,14 @@ async fn link_del(
     Ok(HttpResponse::Ok().finish())
 }
 
+fn log_connection_info(info: &ConnectionInfo) {
+    log::info!(
+        "connecting to redis addr={} db={}",
+        info.addr.to_string(),
+        info.redis.db
+    );
+}
+
 async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
     use actix_web::{App, HttpServer};
 
@@ -179,6 +203,7 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
         .build()
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
     let rd = args.redis()?;
+    log_connection_info(rd.get_connection_info());
     rd.get_connection().map_err(|e| {
         io::Error::new(
             io::ErrorKind::ConnectionRefused,
@@ -272,4 +297,16 @@ mod main_tests {
 
     #[actix_web::test]
     async fn test_put() {}
+
+    fn resolve() {}
+
+    #[test]
+    fn test_dns_lookup() {
+        use dns_lookup::lookup_host;
+        use std::net::{SocketAddr, ToSocketAddrs};
+        let h = lookup_host("localhost").unwrap();
+        println!("{:?}", h);
+        // let addrs = "localhost".to_socket_addrs().unwrap();
+        // println!("{:?}", addrs);
+    }
 }

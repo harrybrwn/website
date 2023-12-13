@@ -11,20 +11,14 @@ resources:
   - ../../app/legacy-site
   - ../../app/vanity-imports
   - ../../common/secrets/prd
-  # - ../../app/lnsmol
+  - ../../app/lnsmol
+  - geoip
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/grafana:latest
     newTag: '9.5.1'
 
 patches:
-  - target:
-      kind: CronJob
-      name: geoipupdate
-    patch: |
-      - op: replace
-        path: /spec/jobTemplate/spec/template/spec/containers/0/args/0
-        value: "--env=prd"
   - target: { kind: Deployment, name: nginx }
     path: patches/nginx-affinity.yml
   - target: { kind: Deployment, name: grafana }
@@ -53,13 +47,9 @@ secretGenerator:
   - name: outline-env
     behavior: replace
     envs: [env/outline.env]
-  - name: geoip-env-secrets
-    behavior: create
-    envs: [env/geoip-secrets.env]
-    options: { disableNameSuffixHash: true }
-  # - name: lnsmol-env
-  #   behavior: replace
-  #   envs: [env/lnsmol.env]
+  - name: lnsmol-env
+    behavior: replace
+    envs: [env/lnsmol.env]
 
 configMapGenerator:
   - name: environment-config
@@ -114,13 +104,6 @@ configMapGenerator:
     behavior: merge
     literals:
       - API_TOKEN_COOKIE_DOMAIN=hrry.me
-  - name: geoip-env-config
-    behavior: create
-    literals:
-      - GEOIP_CITY_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-City.mmdb
-      - GEOIP_ASN_FILE=s3://s3:9000/geoip/2023-04-27/GeoLite2-ASN.mmdb
-    options:
-      disableNameSuffixHash: true
   - name: lnsmol-env
     behavior: merge
     literals:

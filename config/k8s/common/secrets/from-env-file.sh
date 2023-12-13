@@ -55,11 +55,11 @@ DRY=false
 KS_NAMESPACE="default"
 
 while [ $# -gt 0 ]; do
-	case "$1" in
-		-env|--env)
-			ENV="$2"
-			shift 2
-			;;
+  case "$1" in
+    -env|--env)
+      ENV="$2"
+      shift 2
+      ;;
 		-name|--name)
 			NAME="$2"
 			shift 2
@@ -120,11 +120,12 @@ if [ -f "${ENV}/${NAME}.yml" ]; then
 	echo "[error]: sealed secret \"${ENV}/${NAME}.yml\" already exists, delete it to move forward"
 	exit 1
 fi
+echo "namespace: ${KS_NAMESPACE}"
 
 if $DRY; then
 	create "${FILE}" "${NAME}" --namespace "${KS_NAMESPACE}"
 	echo "---"
-	create "${FILE}" "${NAME}" --namespace | kseal --namespace "${KS_NAMESPACE}"
+	create "${FILE}" "${NAME}" --namespace "${KS_NAMESPACE}" | kseal --namespace "${KS_NAMESPACE}"
 else
 	create "${FILE}" "${NAME}" --namespace "${KS_NAMESPACE}" \
 	| kseal \

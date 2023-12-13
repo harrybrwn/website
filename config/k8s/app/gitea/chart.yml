@@ -1,0 +1,25 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: gitea
+  namespace: kube-system
+spec:
+  name: gitea
+  chart: gitea
+  version: ""
+  repo: https://dl.gitea.com/charts/
+  valuesContent: |-
+    gitea:
+      admin:
+        existingSecret: gitea-admin-credentials
+      oauth:
+        - name: OAuth
+          existingSecret: gitea-oauth
+    redis-cluster:
+      enabled: false
+    postgres-ha:
+      enabled: false
+    postgres:
+      enabled: false
+

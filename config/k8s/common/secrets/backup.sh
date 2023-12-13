@@ -67,10 +67,17 @@ if [ ! -d "${ENV}" ]; then
 	mkdir "${ENV}"
 fi
 
-readonly current_key_yaml="$(kubectl get secret \
-	-n "${CONTROLLER_NAMESPACE}" \
-	-l sealedsecrets.bitnami.com/sealed-secrets-key \
+readonly current_key_yaml="$(kubectl get secret                    \
+	-n "${CONTROLLER_NAMESPACE}"                                   \
+	--selector sealedsecrets.bitnami.com/sealed-secrets-key=active \
+    --field-selector 'type=kubernetes.io/tls'                      \
+    --sort-by '{.metadata.creationTimestamp}'                      \
 	-o yaml)"
+# readonly current_key_json="$(kubectl get secret                    \
+# 	-n "${CONTROLLER_NAMESPACE}"                                   \
+# 	--selector sealedsecrets.bitnami.com/sealed-secrets-key=active \
+#     --sort-by '{.metadata.creationTimestamp}'                      \
+# 	-o 'jsonpath={.items[-1]}')"
 
 readonly nkeys="$(echo -n "$current_key_yaml" | yq -r '.items | length')"
 if [ ${nkeys} -eq 0 ]; then
@@ -78,13 +85,14 @@ if [ ${nkeys} -eq 0 ]; then
 	exit 1
 fi
 
-readonly BACKUP_FILE="${ENV}/seal-key.backup.yml"
+readonly date="$(date '+%FT%T%z')"
+readonly BACKUP_FILE="${ENV}/seal-key.backup.${date}.yml"
 
-readonly cur_key="$(echo "${current_key_yaml}" | yq -r '.items[0].data."tls.key"')"
-readonly cur_crt="$(echo "${current_key_yaml}" | yq -r '.items[0].data."tls.crt"')"
+readonly cur_key="$(echo "${current_key_yaml}" | yq -r '.items[-1].data."tls.key"')"
+readonly cur_crt="$(echo "${current_key_yaml}" | yq -r '.items[-1].data."tls.crt"')"
 if [ -f "${BACKUP_FILE}" ]; then
-	old_key="$(cat "${BACKUP_FILE}" | yq -r '.items[0].data."tls.key"')"
-	old_crt="$(cat "${BACKUP_FILE}" | yq -r '.items[0].data."tls.crt"')"
+	old_key="$(cat "${BACKUP_FILE}" | yq -r '.items[-1].data."tls.key"')"
+	old_crt="$(cat "${BACKUP_FILE}" | yq -r '.items[-1].data."tls.crt"')"
 else
 	old_key=''
 	old_crt=''
@@ -99,10 +107,14 @@ elif [ "${cur_crt}" = "${old_crt}" ]; then
 else
 	echo "Writing seal key to disk"
 	if $DRY; then
-		echo "Dry run finished."
-		exit 0
+      echo "Writing to:"
+      echo "  ${BACKUP_FILE}"
+      echo "  ${ENV}/seal.${date}.key"
+      echo "  ${ENV}/seal.${date}.crt"
+      echo "Dry run finished."
+      exit 0
 	fi
 	echo "${current_key_yaml}" > "${BACKUP_FILE}"
-	echo -n "${current_key_yaml}" | yq -r '.items[0].data."tls.key"' | base64 -d > "${ENV}/seal.key"
-	echo -n "${current_key_yaml}" | yq -r '.items[0].data."tls.crt"' | base64 -d > "${ENV}/seal.crt"
+	echo -n "${current_key_yaml}" | yq -r '.items[-1].data."tls.key"' | base64 -d > "${ENV}/seal.${date}.key"
+	echo -n "${current_key_yaml}" | yq -r '.items[-1].data."tls.crt"' | base64 -d > "${ENV}/seal.${date}.crt"
 fi

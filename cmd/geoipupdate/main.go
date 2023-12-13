@@ -29,6 +29,24 @@ import (
 
 var Debug bool
 
+type Flags struct {
+	mode          string
+	bucket        string
+	baseDir       string
+	namespace     string
+	labelSelector string
+	podName       string
+	env           string
+}
+
+func (f *Flags) init() {
+	f.mode = "file"
+	f.bucket = "geoip"
+	f.baseDir = "/opt/geoip"
+	f.env = "dev"
+	f.namespace = readNamespaceOr("default")
+}
+
 func main() {
 	var (
 		config = Config{
@@ -39,16 +57,18 @@ func main() {
 				option.WithSeparator(","),
 			),
 		}
-		ctx       = context.Background()
-		bucket    = "geoip"
-		baseDir   = "/opt/geoip"
-		modeFlag  = "file"
-		env       = "dev"
-		namespace = readNamespaceOr("default")
-		logger    = logrus.New()
-
+		ctx                    = context.Background()
+		bucket                 = "geoip"
+		baseDir                = "/opt/geoip"
+		modeFlag               = "file"
+		env                    = "dev"
+		namespace              = readNamespaceOr("default")
 		labelSelector, podName string
+
+		logger = logrus.New()
+		flags  Flags
 	)
+	flags.init()
 	flag.IntVar(&config.AccountID, "account-id", config.AccountID, "")
 	flag.StringArrayVar(&config.EditionIDs, "edition", config.EditionIDs, "")
 	flag.StringVar(&config.LicenseKey, "license-key", config.LicenseKey, "")
@@ -123,7 +143,7 @@ func main() {
 		close(errs)
 	}()
 	for _, ed := range config.EditionIDs {
-		childCtx, done := context.WithTimeout(ctx, time.Minute)
+		childCtx, done := context.WithTimeout(ctx, 10*time.Minute)
 		go func(ctx context.Context, ed string) {
 			defer wg.Done()
 			defer done()

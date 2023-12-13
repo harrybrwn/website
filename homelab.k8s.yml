@@ -4,13 +4,14 @@ images:
 resources:
   large:
     limits:
-      memory: 512Mi
+      #memory: 512Mi
+      memory: 533Mi # only for testing, change later
       cpu: 250m
 
 apps:
   lnsmol:
     args: [server]
-    size: med
+    size: large
     ports:
     - type: http
       port: 8088

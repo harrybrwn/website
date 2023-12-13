@@ -55,7 +55,7 @@ spec:
   - match: Host(`ip.hrry.dev`) && !Path(`/metrics`)
     kind: Rule
     services:
-    - { name: geoip, kind: Service, port: http, scheme: http }
+    - { name: geoip, namespace: geoip, kind: Service, port: http, scheme: http }
   - match: Host(`files.hrry.dev`)
     kind: Rule
     services:

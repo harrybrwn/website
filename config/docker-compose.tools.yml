@@ -19,7 +19,7 @@ services:
         platforms:
           - linux/amd64
     volumes:
-      - ${SSH_AUTH_SOCK}:/run/ssh.sock
+      - ${SSH_AUTH_SOCK}:/ssh.sock
       # - ./config:/home/ansible/config
       - .:/home/ansible/hrry.me
       # So I can copy the kubeconfig after setting up a new cluster
@@ -27,9 +27,9 @@ services:
       - ${HOME}/.aws:/home/ansible/.aws
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /home/ansible/hrry.me
-    network_mode: host # needs to be able to communicate with link-local addresses
+    # network_mode: host # needs to be able to communicate with link-local addresses
     environment:
-      - SSH_AUTH_SOCK=/run/ssh.sock
+      - SSH_AUTH_SOCK=/ssh.sock
       - ANSIBLE_CONFIG=/home/ansible/hrry.me/config/ansible/ansible.cfg
       - ANSIBLE_HOST_KEY_CHECKING=False
       - ANSIBLE_VAULT_PASSWORD_FILE=~/hrry.me/config/ansible/vault-password.txt

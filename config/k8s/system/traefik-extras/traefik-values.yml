@@ -18,6 +18,7 @@ spec:
       - "--log.format=json"
       - "--log.level=DEBUG"
       - "--metrics.prometheus=true"
+      - "--providers.kubernetescrd.allowCrossNamespace=true"
     service:
       spec:
         # Use "Local" to forward client ip addresses correctly
@@ -25,6 +26,22 @@ spec:
     podAnnotations:
       prometheus.io/port: "8082"
       prometheus.io/scrape: "true"
+    deployment:
+      # Deploy one instance to each node so that they can all accept connections
+      kind: DaemonSet
+
+    #affinity:
+    #  nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      # My router is only pointed toward the control-plan/master node
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: "node-role.kubernetes.io/control-plane"
+    #          operator: In
+    #          values: ["true"]
+    #        - key: "node-role.kubernetes.io/master"
+    #          operator: In
+    #          values: ["true"]
 
     # service:
     #   enabled: false

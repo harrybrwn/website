@@ -18,4 +18,4 @@ add action=dst-nat chain=dstnat dst-port=25565 in-interface-list=WAN protocol=tc
 		log=yes                      \
 		log-prefix=drop-no-cf        \
 		comment="Drop dstnat packets not from cloudflare: $port";
-}
+};

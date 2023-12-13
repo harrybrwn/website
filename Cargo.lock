@@ -1169,6 +1169,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "dns-lookup"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5766087c2235fec47fafa4cfecc81e494ee679d0fd4a59887ea0919bfb0e4fc"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "socket2 0.5.3",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "duration-str"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1808,6 +1820,7 @@ dependencies = [
  "actix-web-prom",
  "askama",
  "clap",
+ "dns-lookup",
  "duration-str",
  "env_logger",
  "hyper",

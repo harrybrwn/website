@@ -17,3 +17,5 @@ import (
 /// Files needed by the api
 //go :generate cp build/harrybrwn.com/invite/index.html cmd/api/invite.html
 //go:generate cp frontend/legacy/public/pub.asc cmd/api/
+
+//go:generate gpg --output cmd/api/pub.asc --yes --armor --export 056BB3A269A76794

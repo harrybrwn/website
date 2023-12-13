@@ -1,0 +1,17 @@
+resources:
+  - chart.yml
+
+secretGenerator:
+  []
+  # - name: gitea-admin-credentials
+  #   behavior: create
+  #   literals:
+  #     - username=admin
+  #     - password=testbed01
+  #     - email=admin@gitea.default.svc.cluster.local
+  # - name: gitea-oauth
+  #   behavior: create
+  #   literals:
+  #     - key=test-key01
+  #     - secret=test-secret01
+

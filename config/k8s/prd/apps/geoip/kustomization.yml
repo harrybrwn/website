@@ -1,0 +1,43 @@
+namespace: geoip
+
+resources:
+  - ../../../app/geoip
+  - geoip-init-job.yml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+patches:
+  - target:
+      kind: CronJob
+      name: geoipupdate
+    patch: |
+      - op: replace
+        path: /spec/jobTemplate/spec/template/spec/containers/0/args/0
+        value: "--env=prd"
+      - op: replace
+        path: /spec/schedule
+        value: "0 11 1,15 * *" # twice a month at 11am
+
+secretGenerator:
+  # Read-Write access to S3
+  - name: geoip-rw-env-secrets
+    behavior: create
+    envs: [geoip-rw-secrets.env]
+    options: { disableNameSuffixHash: true }
+  # Read-Only access to S3
+  - name: geoip-env-secrets
+    behavior: create
+    envs: [geoip-ro-secrets.env]
+
+configMapGenerator:
+  - name: geoipupdate-env-config
+    behavior: create
+    literals:
+      - AWS_ENDPOINT_URL=http://s3.default.svc.cluster.local:9000
+  - name: geoip-env-config
+    behavior: create
+    literals:
+      - GEOIP_CITY_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-ASN.mmdb
+    options: { disableNameSuffixHash: true }

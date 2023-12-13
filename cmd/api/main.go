@@ -21,6 +21,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
+
 	"gopkg.hrry.dev/homelab/db/migrations"
 	"gopkg.hrry.dev/homelab/files"
 	frontend "gopkg.hrry.dev/homelab/frontend/legacy"
