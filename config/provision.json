@@ -296,6 +296,10 @@
       {
         "Name": "mastodon",
         "Owner": "mastodon"
+      },
+      {
+        "Name": "prometheus",
+        "Owner": "prometheus"
       }
     ],
     "migrations": {

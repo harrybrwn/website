@@ -103,6 +103,17 @@
             "mastodon": ["CONNECT"]
           }
         }
+      },
+      {
+        "Name": "prometheus",
+        "Password": "testbed07",
+        "Grants": {
+          "Database": {
+            "prometheus": ["CONNECT"],
+            "postgres": ["CONNECT"]
+          },
+          "Roles": ["pg_monitor"]
+        }
       }
     ],
     "Databases": []
