@@ -5,3 +5,40 @@ resources:
   - configmap.yml
   - hpa.yml
   - init-job.yml
+  - servicemonitor.yml
+
+patches:
+  - target:
+      kind: ConfigMap
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value:
+          app.kubernetes.io/name: hydra
+          app.kubernetes.io/part-of: hydra
+          app.kubernetes.io/component: auth
+  - target:
+      name: hydra-env
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value:
+          app.kubernetes.io/name: hydra
+          app.kubernetes.io/part-of: hydra
+          app.kubernetes.io/component: auth
+  - target:
+      name: hydra-init
+    patch: |-
+      - op: add
+        path: /metadata/labels
+        value:
+          app.kubernetes.io/name: hydra
+          app.kubernetes.io/part-of: hydra
+          app.kubernetes.io/component: auth
+  - target:
+      kind: ServiceMonitor
+      labelSelector: app.kubernetes.io/name=hydra
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack

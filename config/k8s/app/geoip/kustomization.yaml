@@ -6,3 +6,6 @@ resources:
   - service.yml
   - rbac.yml
   - geoipupdate.yml
+  - aws-iam-secret.yml
+  - configmap.yml
+  - secret.yml

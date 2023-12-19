@@ -12,6 +12,7 @@ resources:
   - ../../app/vanity-imports
   - ../../app/mastodon
   - ../../app/lnsmol
+  - ../../app/geoip
   - mastodon-values.yml
 
 patches:
@@ -55,8 +56,8 @@ secretGenerator:
       # - DATABASE_URL=
       # - REDIS_URL=redis://:testbed01
       # - REDIS_PASSWORD=
-  - name: geoip-env-secrets
-    behavior: create
+  - name: geoip-env
+    behavior: replace
     literals:
       - AWS_ACCESS_KEY_ID=root
       - AWS_SECRET_ACCESS_KEY=minio-testbed001
@@ -110,8 +111,8 @@ configMapGenerator:
     behavior: merge
     literals:
       - API_TOKEN_COOKIE_DOMAIN=hrry.me-local
-  - name: geoip-env-config
-    behavior: create
+  - name: geoip-env
+    behavior: replace
     literals:
       - GEOIP_CITY_FILE=s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
       - GEOIP_ASN_FILE=s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb

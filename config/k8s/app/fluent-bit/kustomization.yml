@@ -5,6 +5,8 @@ resources:
   - daemonset.yml
   - configmap.yml
   - rbac.yml
+  - service.yml
+  - servicemonitor.yml
 
 configMapGenerator:
   - name: fluent-bit

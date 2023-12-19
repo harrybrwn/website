@@ -3,3 +3,4 @@ resources:
   - service.yml
   - secrets.yml
   - configmap.yml
+  - servicemonitor.yml

@@ -9,4 +9,7 @@ data:
   SERVER_WORKERS: "6"
 kind: ConfigMap
 metadata:
+  labels:
+    app.kubernetes.io/name: lnsmol
+    app.kubernetes.io/part-of: lnsmol
   name: lnsmol-env

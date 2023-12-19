@@ -19,6 +19,5 @@ resources:
   - grafana
   - fluent-bit
   - loki
-  - prometheus  # only contains prometheus exporters
   - outline
   - registry

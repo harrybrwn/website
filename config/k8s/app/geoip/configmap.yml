@@ -1,0 +1,13 @@
+apiVersion: v1
+data:
+  #GEOIP_CITY_FILE: s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-City.mmdb
+  #GEOIP_ASN_FILE: s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-ASN.mmdb
+  GEOIP_PORT: '8084'
+  S3_ALLOW_INSECURE: 'true'
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: geoip
+    app.kubernetes.io/part-of: geoip
+    geoip.hrry.me/managed: "true"
+  name: geoip-env

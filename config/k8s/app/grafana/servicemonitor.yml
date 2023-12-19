@@ -1,0 +1,25 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: grafana
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: grafana
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  endpoints:
+    - port: http
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: false
+        serverName: hrry.dev
+        #ca:
+        #  secret:
+        #    name: letsencrypt-prd
+        #    key: tls.crt
+  attachMetadata:
+    node: true

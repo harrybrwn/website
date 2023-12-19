@@ -2,7 +2,7 @@ commonLabels:
   environment: prd
 
 resources:
-  - ../../common/helm-charts
+  - ../../system/prometheus
   - ../../system/secrets
   - ../../system/cert-manager
   - ../../system/reloader

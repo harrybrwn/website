@@ -17,6 +17,10 @@ resources:
 images:
   - name: 10.0.0.11:5000/harrybrwn/grafana:latest
     newTag: '9.5.1'
+  - name: minio/console:v0.20.1
+    newTag: v0.20.1
+  - name: 10.0.0.11:5000/harrybrwn/s3:RELEASE.2022-05-23T18-45-11Z.fips
+    newTag: RELEASE.2022-05-23T18-45-11Z.fips
 
 patches:
   - target: { kind: Deployment, name: nginx }
@@ -27,6 +31,12 @@ patches:
     path: patches/filestash-affinity.yml
   - target: { kind: PersistentVolumeClaim, name: filestash-data-pvc }
     path: patches/filestash-pvc.yml
+  - target:
+      kind: ServiceMonitor
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack
 
 secretGenerator:
   - name: jwt-secrets

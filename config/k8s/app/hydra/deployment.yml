@@ -4,6 +4,10 @@ metadata:
   name: hydra
   annotations:
     hrry.me/has-init: 'true'
+  labels:
+    app.kubernetes.io/name: hydra
+    app.kubernetes.io/part-of: hydra
+    app.kubernetes.io/component: auth
 spec:
   selector:
     matchLabels:

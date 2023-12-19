@@ -14,3 +14,10 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/imagePullPolicy
         value: Always
+
+secretGenerator:
+  - name: postgres-monitoring
+    namespace: prometheus
+    behavior: create
+    envs: [env/postgres-monitoring.env]
+    options: { disableNameSuffixHash: true }

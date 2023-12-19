@@ -2,6 +2,10 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: hydra
+  labels:
+    app.kubernetes.io/name: hydra
+    app.kubernetes.io/part-of: hydra
+    app.kubernetes.io/component: auth
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

@@ -27,21 +27,22 @@ spec:
       prometheus.io/port: "8082"
       prometheus.io/scrape: "true"
     deployment:
+      kind: Deployment
       # Deploy one instance to each node so that they can all accept connections
-      kind: DaemonSet
+      #kind: DaemonSet
 
-    #affinity:
-    #  nodeAffinity:
-    #    requiredDuringSchedulingIgnoredDuringExecution:
-    #      # My router is only pointed toward the control-plan/master node
-    #      nodeSelectorTerms:
-    #      - matchExpressions:
-    #        - key: "node-role.kubernetes.io/control-plane"
-    #          operator: In
-    #          values: ["true"]
-    #        - key: "node-role.kubernetes.io/master"
-    #          operator: In
-    #          values: ["true"]
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          # My router is only pointed toward the control-plan/master node
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: In
+              values: ["true"]
+            - key: "node-role.kubernetes.io/master"
+              operator: In
+              values: ["true"]
 
     # service:
     #   enabled: false

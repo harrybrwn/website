@@ -59,6 +59,27 @@ patches:
     path: patches/loki-pvc.yml
   - target: { kind: StatefulSet, name: redis }
     path: patches/redis-pvc.yml
+  - target:
+      kind: ServiceMonitor
+      labelSelector: app.kubernetes.io/name=minio,app.kubernetes.io/component=object-storage
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack
+  - target:
+      kind: ServiceMonitor
+      labelSelector: app.kubernetes.io/name=loki
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack
+  - target:
+      kind: ServiceMonitor
+      labelSelector: app.kubernetes.io/name=fluent-bit
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack
 
 secretGenerator:
   - name: db-env-secrets

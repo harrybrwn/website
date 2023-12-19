@@ -5,3 +5,4 @@ resources:
   - s3/service.yml
   - s3/configmap.yml
   - s3/statefulset.yml
+  - s3/servicemonitor.yml

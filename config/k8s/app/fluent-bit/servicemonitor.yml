@@ -1,0 +1,18 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fluent-bit
+  labels:
+    app.kubernetes.io/name: fluent-bit
+    app.kubernetes.io/component: logging
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fluent-bit
+  endpoints:
+    - path: /api/v1/metrics/prometheus
+      port: http
+  attachMetadata:
+    node: true

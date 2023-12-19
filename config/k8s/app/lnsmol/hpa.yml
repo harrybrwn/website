@@ -1,6 +1,9 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  labels:
+    app.kubernetes.io/name: lnsmol
+    app.kubernetes.io/part-of: lnsmol
   name: lnsmol
 spec:
   maxReplicas: 2

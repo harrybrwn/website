@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: geoip
+  namespace: geoip
+  labels:
+    app.kubernetes.io/name: geoip
+    app.kubernetes.io/part-of: geoip
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: geoip
+  namespaceSelector:
+    matchNames:
+      - geoip
+  endpoints:
+    - port: http
+  attachMetadata:
+    node: true

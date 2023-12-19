@@ -1,0 +1,42 @@
+# See https://min.io/docs/minio/linux/operations/monitoring/collect-minio-metrics-using-prometheus.html
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio-node
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio-node
+    app.kubernetes.io/component: object-storage
+spec:
+  jobLabel: app.kubernetes.io/instance
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/component: object-storage
+  endpoints:
+    - path: /minio/v2/metrics/node
+      port: s3-api
+  attachMetadata:
+    node: true
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio-cluster
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/instance: minio-cluster
+    app.kubernetes.io/component: object-storage
+spec:
+  jobLabel: app.kubernetes.io/instance
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/component: object-storage
+  endpoints:
+    - path: /minio/v2/metrics/cluster
+      port: s3-api
+  attachMetadata:
+    node: true

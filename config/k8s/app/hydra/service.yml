@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hydra
+  labels:
+    app.kubernetes.io/name: hydra
+    app.kubernetes.io/part-of: hydra
+    app.kubernetes.io/component: auth
 spec:
   selector:
     app: hydra

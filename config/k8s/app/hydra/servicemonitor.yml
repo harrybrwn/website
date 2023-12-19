@@ -1,0 +1,20 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hydra
+  labels:
+    app.kubernetes.io/name: hydra
+    app.kubernetes.io/part-of: hydra
+    app.kubernetes.io/component: auth
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hydra
+      app.kubernetes.io/part-of: hydra
+  endpoints:
+    - path: /metrics/prometheus
+      port: hydra-admin
+  attachMetadata:
+    node: true

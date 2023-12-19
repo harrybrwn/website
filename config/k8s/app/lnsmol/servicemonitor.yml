@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: lnsmol
+  labels:
+    app.kubernetes.io/name: lnsmol
+    app.kubernetes.io/part-of: lnsmol
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: lnsmol
+  endpoints:
+    - port: http
+      path: /metrics
+  attachMetadata:
+    node: true
