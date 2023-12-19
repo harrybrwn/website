@@ -1,0 +1,12 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: prometheus-postgres-exporter
+  namespace: kube-system
+spec:
+  name: prometheus-postgres-exporter
+  chart: prometheus-postgres-exporter
+  version: 5.3.0
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: prometheus

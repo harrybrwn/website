@@ -1,0 +1,26 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: prometheus-nginx-exporter
+  namespace: kube-system
+spec:
+  # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-nginx-exporter/values.yaml
+  valuesContent: |-
+    image:
+      repository: nginx/nginx-prometheus-exporter
+      pullPolicy: IfNotPresent
+      # if not set appVersion field from Chart.yaml is used
+      tag: ""
+    namespaceOverride: prometheus
+    nginxServer: http://prometheus:1d414708232df0e2cad6a277135b210b8bd8e41ccc31a9a6d0e935fa595b62b3@nginx.default.svc.cluster.local/stub_status
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: prometheus-stack
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    nginx:
+      enabled: false
+

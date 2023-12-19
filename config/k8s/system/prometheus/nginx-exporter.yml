@@ -1,0 +1,13 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: prometheus-nginx-exporter
+  namespace: kube-system
+spec:
+  name: prometheus-nginx-exporter
+  chart: prometheus-nginx-exporter
+  version: 0.2.0
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: prometheus
+
