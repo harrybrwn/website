@@ -1,0 +1,32 @@
+{{- if gt (len .Ports) 0 -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Name }}
+  {{- if .Namespace }}
+  namespace: {{ .Namespace }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ .Name }}
+    app.kubernetes.io/part-of: {{ .Name }}
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Name }}
+  {{- if and .Namespace (ne .Namespace "default") }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Namespace }}
+  {{- end }}
+  endpoints:
+    {{ $metricsPath := .MetricsPath -}}
+    {{ range .Ports -}}
+    - port: {{ .Type }}
+      {{- if $metricsPath }}
+      path: {{ $metricsPath }}
+      {{- end }}
+    {{- end }}
+  attachMetadata:
+    node: true
+{{- end }}

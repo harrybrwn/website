@@ -80,6 +80,12 @@ patches:
       - op: add
         path: /metadata/labels/release
         value: prometheus-stack
+  - target:
+      kind: PodMonitor
+    patch: |-
+      - op: add
+        path: /metadata/labels/release
+        value: prometheus-stack
 
 secretGenerator:
   - name: db-env-secrets

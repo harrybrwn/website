@@ -9,3 +9,4 @@ resources:
   - aws-iam-secret.yml
   - configmap.yml
   - secret.yml
+  - servicemonitor.yml

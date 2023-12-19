@@ -9,16 +9,16 @@ import (
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/lib/pq"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
-	"gopkg.hrry.dev/homelab/pkg/provision"
-
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/aws_s3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/golang-migrate/migrate/v4/source/github"
+	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+
+	"gopkg.hrry.dev/homelab/pkg/provision"
 )
 
 func NewMigrateCmd(cli *Cli) *cobra.Command {

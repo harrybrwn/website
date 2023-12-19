@@ -6,11 +6,13 @@ provider "grafana" {
 resource "grafana_data_source" "prometheus" {
   type               = "prometheus"
   name               = "Prometheus"
-  url                = "http://prometheus.prometheus.svc.cluster.local:9090"
+  url                = "http://prometheus-stack-kube-prom-prometheus.prometheus.svc.cluster.local:9090"
   basic_auth_enabled = false
   json_data_encoded = jsonencode({
-    httpMethod   = "POST"
-    manageAlerts = true
+    httpMethod    = "POST"
+    manageAlerts  = true
+    defaultEditor = "builder" # (builder|code)
+    #disableMetricsLookup = false
   })
 }
 
@@ -120,7 +122,7 @@ module "k8s_alerts" {
       duration    = "0s"
       dashboard   = { uid = grafana_dashboard.kubernetes.uid, panel_id = 0 }
       query       = <<EOT
-        sum by (node, pod, container, service) (
+        sum by (nodename, pod, container, service) (
           changes(kube_pod_container_status_restarts_total{}[1m])
         )
       EOT

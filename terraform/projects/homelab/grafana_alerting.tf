@@ -115,8 +115,8 @@ module "node_alerts" {
         duration    = "5m"
         query       = <<EOT
             (
-              node_memory_MemTotal_bytes{node="${node.name}"} -
-              node_memory_MemAvailable_bytes{node="${node.name}"}
+              node_memory_MemTotal_bytes{nodename="${node.name}"} -
+              node_memory_MemAvailable_bytes{nodename="${node.name}"}
             ) / node_memory_MemTotal_bytes
         EOT
         condition = {
@@ -136,7 +136,7 @@ module "node_alerts" {
         duration    = "5m"
         query       = <<EOT
             avg without (cpu) (
-              rate(node_cpu_seconds_total{mode="user", node="${node.name}"}[1m]) * 100
+              rate(node_cpu_seconds_total{mode="user", nodename="${node.name}"}[1m]) * 100
             )
         EOT
         condition = {
@@ -164,8 +164,8 @@ module "node_disk_usage" {
       summary  = "Disk usage > 80%"
       query    = <<EOT
         100 - (
-          (node_filesystem_avail_bytes{mountpoint="/", node="${node.name}"} * 100)
-          / node_filesystem_size_bytes{mountpoint="/", node="${node.name}"}
+          (node_filesystem_avail_bytes{mountpoint="/", nodename="${node.name}"} * 100)
+          / node_filesystem_size_bytes{mountpoint="/", nodename="${node.name}"}
         )
       EOT
       duration = "0s"
@@ -176,3 +176,6 @@ module "node_disk_usage" {
     }
   ]
 }
+
+#sum by (mode) (rate(pg_locks_count{}[1m]))
+#avg by (usename, state) (rate(pg_stat_activity_count{}[1m]))

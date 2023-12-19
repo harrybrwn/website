@@ -9,6 +9,8 @@ metadata:
 spec:
   selector:
     app: fluent-bit
+  type: ClusterIP
+  clusterIP: None
   ports:
     - port: 2020
       targetPort: http

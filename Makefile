@@ -83,16 +83,19 @@ scripts:
 		ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 	done
 
-tools: scripts
+tools: scripts bin/lab
 	@mkdir -p bin
 	go build -trimpath -ldflags "-s -w" -o bin/provision ./cmd/provision
 	go build -trimpath -ldflags "-s -w" -o bin/user-gen ./cmd/tools/user-gen
 	go build -trimpath -ldflags "-s -w" -o bin/mail ./cmd/tools/mail
-	(cd cmd/tools/lab && \
-		go build -trimpath -ldflags "-s -w" -o ../../../bin/lab .)
 	docker compose -f config/docker-compose.tools.yml --project-directory $(shell pwd) build ansible
 
 .PHONY: tools scripts
+
+bin/lab: $(shell find ./cmd/tools/lab -type f)
+	@mkdir -p bin
+	(cd cmd/tools/lab && \
+		go build -trimpath -ldflags "-s -w" -o ../../../bin/lab .)
 
 # https://dev.maxmind.com/geoip/updating-databases?lang=en
 geoip:

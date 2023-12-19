@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strconv"
+	"log"
+	"maps"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	autoscale "k8s.io/api/autoscaling/v2"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -31,20 +32,16 @@ type App struct {
 	ConfigMapName   string            `json:"configmap_name" yaml:"configmap_name"`
 	SecretName      string            `json:"secret_name" yaml:"secret_name"`
 	ExtraResources  []string          `json:"extra_resources" yaml:"extra_resources"`
-	ExtraLabels     map[string]string `json:"extra_labels" yaml:"extra_labels"`
-	ResourceProfile ResourceProfile   `json:"-" yaml:"-"`
+	ExtraLabels     map[string]string `json:"labels" yaml:"labels"`
+	MetricsPath     string            `json:"metrics_path" yaml:"metrics_path"`
 	Skip            bool
+	ResourceProfile ResourceProfile `json:"-" yaml:"-"`
 }
 
 type Port struct {
 	Type         string
 	Port         uint16
 	ExternalPort uint16 `yaml:"external_port"`
-}
-
-type Resource struct {
-	CPU    string
-	Memory string
 }
 
 type AppScale struct {
@@ -58,11 +55,8 @@ type ScaleWhen struct {
 	Memory float32
 }
 
-func (r *Resource) Validate() error { return nil }
-
 type Resources struct {
-	Limits   *Resource
-	Requests *Resource
+	Limits, Requests *ResourceSettings
 }
 
 func (rs *Resources) Validate() (err error) {
@@ -101,7 +95,14 @@ func (a *App) Calc(c *K8sGenConfig) {
 		a.Image.Tag = "latest"
 	}
 	if a.ResourceProfile == nil && c != nil {
-		a.ResourceProfile = &c.Resources
+		resources := ResourceSizeOrRaw{
+			Sizes: c.Resources,
+		}
+		if a.Resources != nil {
+			resources.LimitSettings = a.Resources.Limits
+			resources.RequestSettings = a.Resources.Requests
+		}
+		a.ResourceProfile = &resources
 	}
 	for i := range a.Ports {
 		if a.Ports[i].ExternalPort == 0 {
@@ -111,6 +112,14 @@ func (a *App) Calc(c *K8sGenConfig) {
 			case "https":
 				a.Ports[i].ExternalPort = 443
 			}
+		}
+	}
+	if a.Scale != nil {
+		// it the upper and lower bounds are the same then we don't need an
+		// autoscaler. also check the deployment replicas number.
+		if a.Scale.From == a.Scale.To && (a.Replicas == 0 || a.Replicas == a.Scale.From) {
+			a.Replicas = a.Scale.From
+			a.Scale = nil
 		}
 	}
 }
@@ -150,6 +159,25 @@ func (a *App) HasExternalPorts() bool {
 	return false
 }
 
+func (a *App) envFrom() []corev1.EnvFromSource {
+	return []corev1.EnvFromSource{
+		{
+			ConfigMapRef: &corev1.ConfigMapEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: a.ConfigMapName,
+				},
+			},
+		},
+		{
+			SecretRef: &corev1.SecretEnvSource{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: a.SecretName,
+				},
+			},
+		},
+	}
+}
+
 type K8sManifest uint8
 
 const (
@@ -160,6 +188,7 @@ const (
 	ConfigMap
 	Namespace
 	HorizontalPodAutoscaler
+	ServiceMonitor
 )
 
 func (m K8sManifest) Filename() string {
@@ -178,12 +207,20 @@ func (m K8sManifest) Filename() string {
 		return "kustomization.yml"
 	case HorizontalPodAutoscaler:
 		return "hpa.yml"
+	case ServiceMonitor:
+		return "servicemonitor.yml"
 	default:
 		panic(fmt.Sprintf("unknown k8s manifest: %d", m))
 	}
 }
 
 const AppLabel = "app"
+
+const (
+	K8sLabelName      = "app.kubernetes.io/name"
+	K8sLabelPartOf    = "app.kubernetes.io/part-of"
+	K8sLabelManagedBy = "app.kubernetes.io/managed-by"
+)
 
 func (a *App) containerPorts() []corev1.ContainerPort {
 	ports := make([]corev1.ContainerPort, len(a.Ports))
@@ -214,6 +251,7 @@ func (a *App) servicePorts() []corev1.ServicePort {
 	return ports
 }
 
+// Depricated: use sigs.k8s.io/kustomize/api/types.Kustomization
 type KustomizeConfig struct {
 	Resources    []string `json:"resources"`
 	CommonLabels []string `json:"commonLabels,omitempty" yaml:"commonLabels"`
@@ -228,31 +266,37 @@ type KustomizeConfig struct {
 }
 
 func (a *App) deployResources() corev1.ResourceRequirements {
-	lim, _ := a.ResourceProfile.Limits(a.Size)
-	req, _ := a.ResourceProfile.Requests(a.Size)
+	lim, err := a.ResourceProfile.Limits(a.Size)
+	if err != nil {
+		log.Printf("[warn]: %q", err)
+	}
+	req, err := a.ResourceProfile.Requests(a.Size)
+	if err != nil {
+		log.Printf("[warn]: %q", err)
+	}
 	return corev1.ResourceRequirements{
 		Limits:   lim,
 		Requests: req,
 	}
 }
 
+func (a *App) commonLabels() map[string]string {
+	return map[string]string{
+		K8sLabelName:   a.Name,
+		K8sLabelPartOf: a.Name,
+		// K8sLabelManagedBy: "gopkgs.hrry.dev.lab",
+	}
+}
+
 func (a *App) deployment() *appsv1.Deployment {
 	annotations := map[string]string{} // pod annotations
-	for _, port := range a.Ports {
-		if port.Type == "http" {
-			annotations["prometheus.io/scrape"] = "true"
-			annotations["prometheus.io/port"] = strconv.Itoa(int(port.ExternalPort))
-			break
-		}
-	}
 	if a.SkipPrometheus {
 		annotations = nil
 	}
-	labels := make(map[string]string, len(a.ExtraLabels)+1)
+	labels := make(map[string]string, len(a.ExtraLabels)+4)
 	labels[AppLabel] = a.Name
-	for k, v := range a.ExtraLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, a.commonLabels())
+	maps.Copy(labels, a.ExtraLabels)
 
 	spec := appsv1.DeploymentSpec{
 		Selector: &metav1.LabelSelector{
@@ -271,22 +315,7 @@ func (a *App) deployment() *appsv1.Deployment {
 					Args:            a.Args,
 					Ports:           a.containerPorts(),
 					Resources:       a.deployResources(),
-					EnvFrom: []corev1.EnvFromSource{
-						{
-							ConfigMapRef: &corev1.ConfigMapEnvSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: a.ConfigMapName,
-								},
-							},
-						},
-						{
-							SecretRef: &corev1.SecretEnvSource{
-								LocalObjectReference: corev1.LocalObjectReference{
-									Name: a.SecretName,
-								},
-							},
-						},
-					},
+					EnvFrom:         a.envFrom(),
 				}},
 			},
 		},
@@ -303,7 +332,7 @@ func (a *App) deployment() *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              a.Name,
 			Namespace:         a.Namespace,
-			Labels:            labels,
+			Labels:            without(labels, AppLabel),
 			CreationTimestamp: metav1.Time{Time: time.Time{}},
 		},
 		Spec: spec,
@@ -319,6 +348,7 @@ func (a *App) service() *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.Name,
 			Namespace: a.Namespace,
+			Labels:    merge(a.commonLabels(), a.ExtraLabels),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{AppLabel: a.Name},
@@ -329,13 +359,11 @@ func (a *App) service() *corev1.Service {
 
 func (a *App) configmap() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "ConfigMap"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.ConfigMapName,
 			Namespace: a.Namespace,
+			Labels:    merge(a.commonLabels(), a.ExtraLabels),
 		},
 		Data: a.Config,
 	}
@@ -347,13 +375,11 @@ func (a *App) secret() *corev1.Secret {
 		data[k] = []byte(v)
 	}
 	return &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Secret",
-		},
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Secret"},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.SecretName,
 			Namespace: a.Namespace,
+			Labels:    merge(a.commonLabels(), a.ExtraLabels),
 		},
 		Type: corev1.SecretTypeOpaque,
 		Data: data,
@@ -365,18 +391,19 @@ func (a *App) namespaceResource() *corev1.Namespace {
 		return nil
 	}
 	return &corev1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Namespace",
-		},
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: a.Namespace,
+			Name:   a.Namespace,
+			Labels: a.commonLabels(),
 		},
 	}
 }
 
 func (a *App) hpa() *autoscale.HorizontalPodAutoscaler {
 	if a.Scale == nil {
+		return nil
+	}
+	if a.Scale.From == 1 && a.Scale.To == 1 {
 		return nil
 	}
 
@@ -414,6 +441,7 @@ func (a *App) hpa() *autoscale.HorizontalPodAutoscaler {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      a.Name,
 			Namespace: a.Namespace,
+			Labels:    merge(a.commonLabels(), a.ExtraLabels),
 		},
 		Spec: autoscale.HorizontalPodAutoscalerSpec{
 			MinReplicas: &a.Scale.From,
@@ -435,7 +463,7 @@ func (a *App) manifests() map[K8sManifest]any {
 		Secret:     a.secret(),
 		Deployment: a.deployment(),
 	}
-	if len(a.Namespace) > 0 {
+	if len(a.Namespace) > 0 && strings.ToLower(a.Namespace) != "default" {
 		m[Namespace] = a.namespaceResource()
 	}
 	if a.Scale != nil {
@@ -451,7 +479,7 @@ func (a *App) resources() []any {
 		a.service(),
 		a.deployment(),
 	}
-	if len(a.Namespace) > 0 {
+	if len(a.Namespace) > 0 && strings.ToLower(a.Namespace) != "default" {
 		r = append(r, a.namespaceResource())
 	}
 	if a.Scale != nil {
@@ -460,50 +488,26 @@ func (a *App) resources() []any {
 	return r
 }
 
-type defaultResourceProfile struct{}
-
-func (d defaultResourceProfile) Limits(size Size) (corev1.ResourceList, error) {
-	return d.doit(size, d.lim)
+type KV[V any] struct {
+	Key string
+	Val V
 }
 
-func (d defaultResourceProfile) Requests(size Size) (corev1.ResourceList, error) {
-	return d.doit(size, d.req)
+func without[T any](m map[string]T, k string) map[string]T {
+	res := make(map[string]T, len(m))
+	maps.Copy(res, m)
+	delete(res, k)
+	return res
 }
 
-func (defaultResourceProfile) doit(size Size, fn func(Size) (string, int64)) (corev1.ResourceList, error) {
-	mem, cpu := fn(size)
-	return corev1.ResourceList{
-		corev1.ResourceMemory: resource.MustParse(mem),
-		corev1.ResourceCPU:    *resource.NewMilliQuantity(cpu, resource.BinarySI),
-	}, nil
-}
-
-func (defaultResourceProfile) lim(size Size) (string, int64) {
-	switch size {
-	case SizeBig:
-		return "512Mi", 250
-	case SizeMed:
-		return "256Mi", 100
-	case SizeSml:
-		return "128Mi", 50
-	case SizeUnknown:
-		fallthrough
-	default:
-		return "", 0
+func with[T any](m map[string]T, kvs ...KV[T]) map[string]T {
+	for _, kv := range kvs {
+		m[kv.Key] = kv.Val
 	}
+	return m
 }
 
-func (defaultResourceProfile) req(size Size) (string, int64) {
-	switch size {
-	case SizeBig:
-		return "256Mi", 100
-	case SizeMed:
-		return "128Mi", 50
-	case SizeSml:
-		return "64Mi", 10
-	case SizeUnknown:
-		fallthrough
-	default:
-		return "", 0
-	}
+func merge[T any](m map[string]T, from map[string]T) map[string]T {
+	maps.Copy(m, from)
+	return m
 }

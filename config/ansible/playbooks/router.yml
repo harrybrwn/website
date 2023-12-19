@@ -29,18 +29,26 @@
             comment: "defconf: masquerade"
             ipsec-policy: out,none
             out-interface-list: WAN
-          # - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 80, dst-port: 80 }
-          # - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 443, dst-port: 443 }
-          - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 80, dst-port: 80 }
+          - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 443, dst-port: 443 }
+          # Round-Robbin between all nodes
+          #- { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          #- { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          #- { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          #- { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          #- { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+
+          # Round-Robbin with Only my amd64 machines
+          #- { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          #- { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          #- { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+
           # Postgres
           #- action: dst-nat
           #  chain: dstnat

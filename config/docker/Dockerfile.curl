@@ -3,4 +3,5 @@ FROM alpine:${ALPINE_VERSION}
 RUN apk update && apk upgrade && \
 	apk add -l -U \
 		curl \
+        bind-tools \
 		jq

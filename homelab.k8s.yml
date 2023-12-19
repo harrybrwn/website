@@ -4,14 +4,14 @@ images:
 resources:
   large:
     limits:
-      #memory: 512Mi
-      memory: 533Mi # only for testing, change later
+      memory: 512Mi
       cpu: 250m
 
 apps:
   lnsmol:
     args: [server]
     size: large
+    namespace: null
     ports:
     - type: http
       port: 8088
@@ -24,6 +24,7 @@ apps:
       SERVER_DOMAIN: 'l.hrry.me'
       SERVER_URL_PREFIX: '/'
     secrets: { REDIS_PASSWORD: 'testbed01' }
+    metrics_path: /metrics
     scale:
       from: 1
       to: 2
@@ -40,10 +41,17 @@ apps:
       PORT: '8085'
 
   _geoip:
-    skip: true
+    # skip: true
     namespace: geoip
-    image: { registry: 10.0.0.11:5000 }
-    size: lg
+    size: medium
+    replicas: 1
+    resources:
+      requests:
+        memory: 200Mi
+        cpu: 20m
+      limits:
+        memory: 256Mi
+        cpu: 25m
     ports:
       - type: http
         port: 8084
@@ -51,6 +59,15 @@ apps:
     extra_resources:
       - geoipupdate.yml
       - rbac.yml
-    extra_labels:
+      - aws-iam-secret.yml
+    labels:
       geoip.hrry.me/managed: 'true'
+    config:
+      GEOIP_PORT: '8084'
+      S3_ALLOW_INSECURE: 'true'
+      GEOIP_CITY_FILE: s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
+      GEOIP_ASN_FILE: s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb
+    secrets:
+      AWS_ACCESS_KEY_ID: ''
+      AWS_SECRET_ACCESS_KEY: ''
 

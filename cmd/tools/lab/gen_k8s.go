@@ -10,11 +10,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
+	kustomize "sigs.k8s.io/kustomize/api/types"
 )
 
 //go:embed templates/*
@@ -100,12 +103,26 @@ func (kg *K8sGenerator) WriteTo(w io.Writer) (int64, error) {
 	enc := yaml.NewEncoder(&buf)
 	defer enc.Close()
 	enc.SetIndent(2)
+	templs, err := templates()
+	if err != nil {
+		return 0, err
+	}
 	for _, app := range kg.config.Apps {
 		if app.Skip {
 			continue
 		}
 		for _, obj := range app.resources() {
 			err := encodeYamlWithEncoder(enc, obj)
+			if err != nil {
+				return 0, err
+			}
+		}
+		if !app.SkipPrometheus {
+			_, err = buf.WriteString("---\n")
+			if err != nil {
+				return 0, err
+			}
+			err = templs.ExecuteTemplate(&buf, ServiceMonitor.Filename()+".tmpl", app)
 			if err != nil {
 				return 0, err
 			}
@@ -165,7 +182,7 @@ func (kg *K8sGenerator) SaveTree() error {
 func (kg *K8sGenerator) genTree(name string, app *App) error {
 	stdout := os.Stdout
 	manifests := app.manifests()
-	kustomize := &KustomizeConfig{Resources: app.ExtraResources[:]}
+	kustomize := &kustomize.Kustomization{Resources: app.ExtraResources[:]}
 	dir := filepath.Join(kg.dir, name)
 	err := os.Mkdir(dir, 0755)
 	if err != nil {
@@ -173,9 +190,20 @@ func (kg *K8sGenerator) genTree(name string, app *App) error {
 			return fmt.Errorf("failed to create app directory: %w", err)
 		}
 	}
-	manifests[Kustomization] = kustomize
+	templs, err := templates()
+	if err != nil {
+		return err
+	}
+
+	if (app.Namespace == "" || app.Namespace == "default") && exists(filepath.Join(dir, Namespace.Filename())) {
+		err = os.Remove(filepath.Join(dir, Namespace.Filename()))
+		if err != nil {
+			return err
+		}
+	}
 
 	for n, manifest := range manifests {
+		kustomize.Resources = append(kustomize.Resources, n.Filename())
 		filename := filepath.Join(dir, n.Filename())
 		if exists(filename) && !kg.force {
 			fmt.Fprintf(stdout, "already exists: %q\n", filename)
@@ -195,11 +223,33 @@ func (kg *K8sGenerator) genTree(name string, app *App) error {
 		if err = file.Close(); err != nil {
 			return err
 		}
-		if n != Kustomization {
-			kustomize.Resources = append(kustomize.Resources, n.Filename())
-		}
 	}
 
+	// Generate from templates
+	templateManifests := []K8sManifest{}
+	if !app.SkipPrometheus {
+		templateManifests = append(templateManifests, ServiceMonitor)
+	}
+	for _, ktype := range templateManifests {
+		filename := filepath.Join(dir, ktype.Filename())
+		file, err := os.OpenFile(filename, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		err = templs.ExecuteTemplate(file, ktype.Filename()+".tmpl", app)
+		if err != nil {
+			_ = file.Close()
+			return err
+		}
+		if err = file.Close(); err != nil {
+			return err
+		}
+		kustomize.Resources = append(kustomize.Resources, ktype.Filename())
+	}
+	return kg.createKustomization(stdout, dir, kustomize)
+}
+
+func (kg *K8sGenerator) createKustomization(stdout io.Writer, dir string, k *kustomize.Kustomization) error {
 	filename := filepath.Join(dir, Kustomization.Filename())
 	if exists(filename) && !kg.force {
 		fmt.Fprintf(stdout, "already exists: %q\n", filename)
@@ -210,11 +260,16 @@ func (kg *K8sGenerator) genTree(name string, app *App) error {
 		return err
 	}
 	defer file.Close()
-	err = encodeYaml(&kustomize, file)
+	sort.Strings(k.Resources)
+	err = encodeYaml(k, file)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func templates() (*template.Template, error) {
+	return template.New("").Funcs(templateFuncs).ParseFS(tmpls, "templates/*")
 }
 
 func exists(name string) bool {
