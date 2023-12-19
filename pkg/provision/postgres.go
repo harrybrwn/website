@@ -82,6 +82,7 @@ type DBUser struct {
 		Database map[string][]string `hcl:"database"`
 		// Map of table name to grants
 		Table map[string][]string `hcl:"table"`
+		Roles []string            `hcl:"roles"`
 	} `hcl:"grants,block"`
 }
 
@@ -181,6 +182,12 @@ func (db *DBConfig) Provision(ctx context.Context) error {
 				if err != nil {
 					return err
 				}
+			}
+		}
+		for _, role := range user.Grants.Roles {
+			_, err = d.ExecContext(ctx, fmt.Sprintf(`GRANT %s TO %s`, role, user.Name))
+			if err != nil {
+				return err
 			}
 		}
 	}
