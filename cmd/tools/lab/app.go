@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -221,6 +222,16 @@ const (
 	K8sLabelPartOf    = "app.kubernetes.io/part-of"
 	K8sLabelManagedBy = "app.kubernetes.io/managed-by"
 )
+
+func (a *App) CheckExtraResources(dir string) error {
+	for _, r := range a.ExtraResources {
+		f := filepath.Join(dir, r)
+		if !exists(f) {
+			return fmt.Errorf("extra resource %q does not exist", f)
+		}
+	}
+	return nil
+}
 
 func (a *App) containerPorts() []corev1.ContainerPort {
 	ports := make([]corev1.ContainerPort, len(a.Ports))

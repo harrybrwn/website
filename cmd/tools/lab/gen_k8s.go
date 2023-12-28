@@ -181,8 +181,6 @@ func (kg *K8sGenerator) SaveTree() error {
 
 func (kg *K8sGenerator) genTree(name string, app *App) error {
 	stdout := os.Stdout
-	manifests := app.manifests()
-	kustomize := &kustomize.Kustomization{Resources: app.ExtraResources[:]}
 	dir := filepath.Join(kg.dir, name)
 	err := os.Mkdir(dir, 0755)
 	if err != nil {
@@ -190,9 +188,18 @@ func (kg *K8sGenerator) genTree(name string, app *App) error {
 			return fmt.Errorf("failed to create app directory: %w", err)
 		}
 	}
+	err = app.CheckExtraResources(dir)
+	if err != nil {
+		return err
+	}
 	templs, err := templates()
 	if err != nil {
 		return err
+	}
+	manifests := app.manifests()
+	kustomize := &kustomize.Kustomization{
+		Namespace: app.Namespace,
+		Resources: app.ExtraResources[:],
 	}
 
 	if (app.Namespace == "" || app.Namespace == "default") && exists(filepath.Join(dir, Namespace.Filename())) {
