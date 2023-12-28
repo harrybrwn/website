@@ -1,0 +1,16 @@
+
+[req]
+x509_extensions = v3_req
+distinguished_name = req_distinguished_name
+days = 365
+default_md = sha256
+
+[req_distinguished_name]
+# commonName = "saml.hrry.local"
+# OU = "development"
+# O = "hrry.dev Security"
+
+[v3_req]
+authorityKeyIdentifier = keyid:issuer
+basicConstraints = CA:FALSE
+subjectKeyIdentifier=hash

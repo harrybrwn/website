@@ -31,7 +31,7 @@ terraform.tfvars
 *.tfstate.backup
 config/provision.prod.json
 config/user-gen.env
-/config/pki/
+/config/pki/certs/
 /config/docker/buildkit-config.toml
 /config/registry/htpasswd
 /bin/

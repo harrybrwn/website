@@ -245,13 +245,19 @@ RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry 
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
     --mount=type=cache,target=/opt/hrry.me/target/${TARGETPLATFORM} \
     export TARGET="$(rust-target)" && \
+    ls -la "target" && \
+    ls -la "target/${TARGETPLATFORM}" && \
+    # ls -la "target/${TARGETPLATFORM}/release" && \
+    # ls -la "target/${TARGETPLATFORM}/${TARGET}" && \
+    # ls -la "target/${TARGETPLATFORM}/${TARGET}/release/" && \
     for exe in \
         geoip \
         geoipupdate \
         lnsmol \
+        gopkg \
         foreman; \
     do \
-        mv "target/${TARGETPLATFORM}/${TARGET}/release/${exe}" /usr/local/bin; \
+        mv "target/${TARGETPLATFORM}/${TARGET}/release/${exe}" /usr/local/bin/; \
     done
 
 #######################
@@ -277,6 +283,14 @@ FROM alpine:${ALPINE_VERSION} as lnsmol
 RUN apk -U add ca-certificates && rm -rf /var/cache/apk
 COPY --from=rust-builder /usr/local/bin/lnsmol /usr/bin/
 ENTRYPOINT [ "lnsmol" ]
+
+#######################
+# gopkg
+#######################
+FROM alpine:${ALPINE_VERSION} as gopkg-rs
+RUN apk -U add ca-certificates && rm -rf /var/cache/apk
+COPY --from=rust-builder /usr/local/bin/gopkg /usr/bin/
+ENTRYPOINT [ "gopkg" ]
 
 #
 # mkdocs

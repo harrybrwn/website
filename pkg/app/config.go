@@ -32,10 +32,13 @@ func SendgridClient() *sendgrid.Client {
 	return sendgrid.NewSendClient(key)
 }
 
-func getenv(key, defaultValue string) string {
+func getenv(key string, defaultValue ...string) string {
 	v, ok := os.LookupEnv(key)
 	if !ok {
-		return defaultValue
+		if len(defaultValue) > 0 {
+			return defaultValue[0]
+		}
+		return ""
 	}
 	return v
 }

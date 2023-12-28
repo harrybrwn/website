@@ -38,6 +38,18 @@ func init() {
 	}
 }
 
+type Config struct {
+	Logger       *log.Logger
+	Debug        bool
+	Domain       string
+	CookieDomain string
+	SAMLDomain   string
+}
+
+func NewConfig() *Config {
+	return &Config{}
+}
+
 func SetLogger(l *logrus.Logger) {
 	logger = l
 	chat.SetLogger(l)

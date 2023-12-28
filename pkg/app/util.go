@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
 	"gopkg.hrry.dev/homelab/pkg/log"
 )
 
