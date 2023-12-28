@@ -1,0 +1,23 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app.kubernetes.io/name: geoip
+    app.kubernetes.io/part-of: geoip
+    geoip.hrry.me/managed: "true"
+  name: geoip
+  namespace: geoip
+spec:
+  maxReplicas: 2
+  metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 60
+          type: Utilization
+      type: Resource
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: geoip

@@ -5,3 +5,4 @@ metadata:
     app.kubernetes.io/name: geoip
     app.kubernetes.io/part-of: geoip
   name: geoip
+spec: {}

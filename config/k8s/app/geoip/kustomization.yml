@@ -1,12 +1,12 @@
 namespace: geoip
-
 resources:
-  - namespace.yml
-  - deployment.yml
-  - service.yml
-  - rbac.yml
-  - geoipupdate.yml
   - aws-iam-secret.yml
   - configmap.yml
+  - deployment.yml
+  - geoipupdate.yml
+  - hpa.yml
+  - namespace.yml
+  - rbac.yml
   - secret.yml
+  - service.yml
   - servicemonitor.yml

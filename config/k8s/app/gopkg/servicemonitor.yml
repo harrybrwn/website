@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gopkg
+  labels:
+    app.kubernetes.io/name: gopkg
+    app.kubernetes.io/part-of: gopkg
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gopkg
+  endpoints:
+    - port: http
+  attachMetadata:
+    node: true

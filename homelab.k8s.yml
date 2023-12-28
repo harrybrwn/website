@@ -11,7 +11,6 @@ apps:
   lnsmol:
     args: [server]
     size: large
-    namespace: null
     ports:
     - type: http
       port: 8088
@@ -23,7 +22,8 @@ apps:
       SERVER_WORKERS: '6'
       SERVER_DOMAIN: 'l.hrry.me'
       SERVER_URL_PREFIX: '/'
-    secrets: { REDIS_PASSWORD: 'testbed01' }
+    secrets:
+      REDIS_PASSWORD: 'testbed01'
     metrics_path: /metrics
     scale:
       from: 1
@@ -31,20 +31,8 @@ apps:
       when:
         cpu: .60
 
-  gopkg:
-    skip: true
-    size: small
-    ports:
-      - type: http
-        port: 8085
-    config:
-      PORT: '8085'
-
-  _geoip:
-    # skip: true
+  geoip:
     namespace: geoip
-    size: medium
-    replicas: 1
     resources:
       requests:
         memory: 200Mi
@@ -68,6 +56,19 @@ apps:
       GEOIP_CITY_FILE: s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
       GEOIP_ASN_FILE: s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb
     secrets:
-      AWS_ACCESS_KEY_ID: ''
-      AWS_SECRET_ACCESS_KEY: ''
+      AWS_ACCESS_KEY_ID: 'root'
+      AWS_SECRET_ACCESS_KEY: 'minio-testbed001'
+    scale:
+      from: 1
+      to: 2
+      when:
+        cpu: .60
+
+  gopkg:
+    size: small
+    ports:
+      - type: http
+        port: 8085
+    config:
+      PORT: '8085'
 

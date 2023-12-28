@@ -8,22 +8,41 @@ spec:
     enabled: true
     namespace: cert-manager
     installCRDs: true
+    prometheus:
+      enabled: false
+      servicemonitor:
+        enabled: false
+        labels:
+          release: prometheus-stack
+      podmonitor:
+        enabled: false
+        labels:
+          release: prometheus-stack
     resources:
-      limits:
+      requests:
         cpu: 50m
         memory: 64Mi
     webhook:
       resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
         limits:
           cpu: 50m
           memory: 64Mi
     cainjector:
       resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 150m
+          memory: 256Mi
+    startupapicheck:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
         limits:
           cpu: 50m
           memory: 64Mi
-    startupapicheck:
-      resources:
-        limits:
-          cpu: 50m
-          memory: 32Mi

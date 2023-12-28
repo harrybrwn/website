@@ -4,11 +4,10 @@ metadata:
   labels:
     app.kubernetes.io/name: geoip
     app.kubernetes.io/part-of: geoip
-    geoip.hrry.me/managed: 'true'
+    geoip.hrry.me/managed: "true"
   name: geoip
   namespace: geoip
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: geoip
@@ -18,22 +17,24 @@ spec:
         app: geoip
         app.kubernetes.io/name: geoip
         app.kubernetes.io/part-of: geoip
-        geoip.hrry.me/managed: 'true'
+        geoip.hrry.me/managed: "true"
     spec:
       containers:
-      - envFrom:
-          - secretRef:
-              name: geoip-env
-          - configMapRef:
-              name: geoip-env
-        image: harrybrwn/geoip:latest
-        imagePullPolicy: Always
-        name: geoip
-        ports:
-        - containerPort: 8084
-          name: http
-        resources:
-          limits:
-            # Loads GeoLite2 database into memory
-            memory: "256Mi"
-            cpu: "25m"
+        - envFrom:
+            - configMapRef:
+                name: geoip-env
+            - secretRef:
+                name: geoip-env
+          image: harrybrwn/geoip:latest
+          imagePullPolicy: Always
+          name: geoip
+          ports:
+            - containerPort: 8084
+              name: http
+          resources:
+            limits:
+              cpu: 25m
+              memory: 256Mi
+            requests:
+              cpu: 20m
+              memory: 200Mi

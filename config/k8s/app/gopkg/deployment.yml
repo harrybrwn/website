@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: gopkg
+    app.kubernetes.io/part-of: gopkg
+  name: gopkg
+spec:
+  selector:
+    matchLabels:
+      app: gopkg
+  template:
+    metadata:
+      labels:
+        app: gopkg
+        app.kubernetes.io/name: gopkg
+        app.kubernetes.io/part-of: gopkg
+    spec:
+      containers:
+        - envFrom:
+            - configMapRef:
+                name: gopkg-env
+            - secretRef:
+                name: gopkg-env
+          image: harrybrwn/gopkg:latest
+          imagePullPolicy: Always
+          name: gopkg
+          ports:
+            - containerPort: 8085
+              name: http
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 64Mi

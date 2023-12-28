@@ -22,12 +22,14 @@ patches:
 secretGenerator:
   # Read-Write access to S3
   - name: geoip-rw-env-secrets
-    behavior: merge
+    behavior: replace
+    namespace: geoip
     envs: [geoip-rw-secrets.env]
     options: { disableNameSuffixHash: true }
   # Read-Only access to S3
   - name: geoip-env
     behavior: replace
+    namespace: geoip
     envs: [geoip-ro-secrets.env]
 
 configMapGenerator:
@@ -37,7 +39,9 @@ configMapGenerator:
       - AWS_ENDPOINT_URL=http://s3.default.svc.cluster.local:9000
   - name: geoip-env
     behavior: merge
+    namespace: geoip
     literals:
       - GEOIP_CITY_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-City.mmdb
       - GEOIP_ASN_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-ASN.mmdb
-    options: { disableNameSuffixHash: true }
+    options:
+      disableNameSuffixHash: true
