@@ -1,0 +1,62 @@
+---
+- name: OpenVPN | Add Clients | Check Variables.
+  ansible.builtin.debug:
+    msg: "Variable check: openvpn_valid_clients must be defined"
+  failed_when: openvpn_valid_clients is not defined
+
+- name: OpenVPN | Revoke Client | Set variables
+  ansible.builtin.include_vars: ../../install/defaults/main.yml
+
+- name: OpenVPN | Sync Clients | Find default server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ ansible_hostname }}"
+  when: openvpn_server_common_name_manual is not defined
+- name: OpenVPN | Sync Clients | Find manual server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_manual }}"
+  when: openvpn_server_common_name_manual is defined
+
+- name: OpenVPN | Sync Clients | Get clients that are currently valid
+  ansible.builtin.shell: awk '/^V\s/' {{ openvpn_path_pki }}/index.txt | awk -F 'CN=' '{print $NF}' | awk -F '/' '{print $1}'
+  register: currently_valid_clients_out
+  changed_when: false
+
+- name: OpenVPN | Sync Clients | Get list of desired valid clients
+  ansible.builtin.set_fact:
+    valid_clients_names: "{{ openvpn_valid_clients | map(attribute='name') | list }}"
+
+- name: OpenVPN | Sync Clients | Set facts
+  ansible.builtin.set_fact:
+    currently_valid_clients: "{{ currently_valid_clients_out.stdout.splitlines() }}"
+    desired_valid_clients: "{{ valid_clients_names }} + [ 'server@' + openvpn_server_common_name ]"
+    clients_to_revoke: []
+    clients_to_add: []
+
+- name: OpenVPN | Sync Clients | Sync clients that will be revoked
+  ansible.builtin.set_fact:
+    clients_to_revoke: "{{ currently_valid_clients | difference(desired_valid_clients) }}"
+
+- name: OpenVPN | Sync Clients | Sync clients that will be added
+  ansible.builtin.set_fact:
+    clients_to_add: "{{ desired_valid_clients | difference(currently_valid_clients) }}"
+
+- name: OpenVPN | Sync Clients | Ask user if we should proceed
+  ansible.builtin.pause:
+    prompt: "We will add {{ clients_to_add }} and we will revoke {{ clients_to_revoke }}. Press 'Y' or 'y' to proceed"
+  when: prompt_before_syncing_clients
+  register: sync_prompt
+
+- name: OpenVPN | Sync Clients | Abort if user does not want to proceed
+  ansible.builtin.fail:
+    msg: "Aborted due to user input!"
+  when: prompt_before_syncing_clients and sync_prompt.user_input not in ["Y", "y"]
+
+- name: OpenVPN | Sync Clients | Add clients
+  ansible.builtin.include_role:
+    name: add_clients
+  when: clients_to_add | length
+
+- name: OpenVPN | Sync Clients | Revoke clients
+  ansible.builtin.include_role:
+    name: revoke_clients
+  when: clients_to_revoke | length

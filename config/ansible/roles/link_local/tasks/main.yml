@@ -1,8 +1,11 @@
-- name: Find localhost's link local address
-  shell: ip --json address show scope link to 169.254.0.0/16
+- name: LinkLocal | Find localhost's link local address
+  ansible.builtin.command:
+    cmd: ip --json address show scope link to 169.254.0.0/16
   register: link_local_addr_cmd
+  changed_when: false
 
-- ansible.builtin.fail:
+- name: LinkLocal | Variable Check
+  ansible.builtin.fail:
     msg: "Could not find link local address"
   when: >
     (
@@ -12,5 +15,6 @@
       ((link_local_addr_cmd.stdout | from_json)[0].addr_info | length) == 0
     )
 
-- set_fact:
+- name: LinkLocal | Set variables
+  ansible.builtin.set_fact:
     link_local_ip: "{{ (link_local_addr_cmd.stdout | from_json)[0].addr_info[0].local }}"

@@ -7,11 +7,32 @@
 #   tasks:
 #     - debug: { var: registry_server_cert_slurp }
 
-- hosts: lenovo
-  become: true
-  gather_facts: false
-  vars_files:
-    - vars/become-password.yml
-    - vars/postgres.yml
+# - hosts: lenovo
+#   become: true
+#   gather_facts: false
+#   vars_files:
+#     - vars/become-password.yml
+#     - vars/postgres.yml
+#   tasks:
+#     - debug: var=ansible_host
+
+- name: Test
+  hosts: localhost
+  become: false
+  gather_facts: true
   tasks:
-    - debug: var=ansible_host
+    # - debug: var=ansible_facts
+    - ansible.builtin.assert:
+        that:
+          # - _variable_name is defined
+          - ansible_hostname is defined
+        quiet: false
+    - name: Debug Info
+      ansible.builtin.debug:
+        msg:
+          - "{{ openvpn_instances | default('') }}"
+          - "inventory hostname: {{ inventory_hostname }}"
+          - "ansible hostname:   {{ ansible_hostname }}"
+          - "ansible host:       {{ ansible_host }}"
+          - "inventory_dir:      {{ inventory_dir | default('') }}"
+          - "playbook dir:       {{ playbook_dir | default('') }}"

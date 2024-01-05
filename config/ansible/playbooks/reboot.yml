@@ -1,4 +1,5 @@
-- hosts: prod
+- name: Reboot everything
+  hosts: prod
   become: true
   gather_facts: false
   vars_files:
@@ -6,7 +7,7 @@
     - ../vars/become-password.yml
   tasks:
     - name: reboot
-      reboot:
+      ansible.builtin.reboot:
         msg: "Rebooted by Ansible"
         connect_timeout: 5
         reboot_timeout: 600

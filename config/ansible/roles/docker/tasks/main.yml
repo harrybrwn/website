@@ -1,10 +1,10 @@
-- name: Check Variables.
-  debug:
+- name: Docker | Check Variables.
+  ansible.builtin.debug:
     msg: gather_facts is required.
   failed_when: ansible_facts is not defined
 
-- name: Installation deps
-  apt:
+- name: Docker | Installation deps
+  ansible.builtin.apt:
     package:
       - ca-certificates
       - curl
@@ -12,14 +12,14 @@
       - lsb-release
   when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
 
-- name: Add docker apt source.
+- name: Docker | Add docker apt source.
   args:
     executable: /bin/bash
-  shell: |
+  ansible.builtin.shell: |
     set -eu -o pipefail
     key=/etc/apt/keyrings/docker.gpg
     list=/etc/apt/sources.list.d/docker.list
-    url='https://download.docker.com/linux/{{ ansible_distribution | lower}}'
+    url='https://download.docker.com/linux/{{ ansible_distribution | lower }}'
     source_line="deb [arch=$(dpkg --print-architecture) signed-by=${key}] ${url} $(lsb_release -cs) stable"
     if [ -f "${key}" -a -f "${list}" ] && grep "${source_line}" "${list}" 2>&1 > /dev/null; then
       echo ''
@@ -40,8 +40,8 @@
   register: docker_apt_source
   changed_when: docker_apt_source.stdout == "changed"
 
-- name: Install docker.
-  apt:
+- name: Docker | Install docker.
+  ansible.builtin.apt:
     update_cache: true  # update cache because we just added a repo
     package:
       - docker-ce
@@ -51,8 +51,8 @@
   when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
   notify: docker group
 
-- name: Install custom libseccomp2 version.
-  apt:
+- name: Docker | Install custom libseccomp2 version.
+  ansible.builtin.apt:
     deb: http://http.us.debian.org/debian/pool/main/libs/libseccomp/libseccomp2_2.5.4-1+b3_armhf.deb
   when: |
     ansible_facts.architecture == "armv7l" and

@@ -1,6 +1,6 @@
 ---
-- name: Disable services
-  systemd:
+- name: K3S | Stop | Disable services
+  ansible.builtin.systemd:
     name: k3s
     state: stopped
-    enabled: no
+    enabled: false

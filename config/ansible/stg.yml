@@ -6,11 +6,11 @@
     - vars/registry.yml
   pre_tasks:
     - name: Update apt cache
-      apt:
+      ansible.builtin.apt:
         update_cache: true
         upgrade: true
     - name: Install longhorn dependencies
-      apt:
+      ansible.builtin.apt:
         package:
           - open-iscsi  # for longhorn on k8s
           - util-linux  # for longhorn on k8s
@@ -27,7 +27,7 @@
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
 
 
-- name: k3s leader
+- name: K3S Leader
   hosts: k3s_master
   gather_facts: false
   become: true
@@ -61,7 +61,7 @@
         k3s_config_name: hrry-stg
 
 
-- name: k3s worker
+- name: K3S Worker
   hosts: k3s_workers
   become: true
   gather_facts: false

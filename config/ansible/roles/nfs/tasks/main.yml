@@ -1,22 +1,22 @@
-- name: Check nfs package name variable
-  debug:
+- name: NFS | Check nfs package name variable
+  ansible.builtin.debug:
     msg: nfs_package_name is required.
   failed_when: nfs_package_name is not defined
-- name: Check nfs service name variable
-  debug:
+- name: NFS | Check nfs service name variable
+  ansible.builtin.debug:
     msg: nfs_service_name is required.
   failed_when: nfs_service_name is not defined
-- name: Check nfs exports variable
-  debug:
+- name: NFS | Check nfs exports variable
+  ansible.builtin.debug:
     msg: nfs_exports is required.
   failed_when: nfs_exports is not defined
 
-- name: Install server
-  apt:
+- name: NFS | Install server
+  ansible.builtin.apt:
     package:
       - "{{ nfs_package_name }}"
 
-- name: Start service.
+- name: NFS | Start service.
   ansible.builtin.systemd:
     state: started
     name: "{{ nfs_service_name }}"
@@ -26,14 +26,14 @@
     - rpcbind.service
     - rpcbind.socket
 
-- name: Create export directories.
+- name: NFS | Create export directories.
   ansible.builtin.file:
     path: "{{ item.path }}"
     mode: '0755'
     state: directory
   loop: "{{ nfs_exports }}"
 
-- name: Create extra NFS directories in an exported directory.
+- name: NFS | Create extra NFS directories in an exported directory.
   ansible.builtin.file:
     path: "{{ item.path }}"
     mode: '0755'
@@ -46,9 +46,9 @@
   when: nfs_extra_dirs is defined
   become: true
 
-- name: Add NFS exports file.
+- name: NFS | Add NFS exports file.
   ansible.builtin.template:
-    src: ../templates/exports.j2
+    src: exports.j2
     dest: /etc/exports
     mode: '0644'
     backup: false

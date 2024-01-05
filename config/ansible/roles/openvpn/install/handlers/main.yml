@@ -1,0 +1,12 @@
+---
+- name: clear history
+  ansible.builtin.shell: cat /dev/null > ~/.bash_history && history -c
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: start openvpn
+  ansible.builtin.service:
+    name: "openvpn@{{ item.proto }}-{{ item.port }}.service"
+    state: started
+  with_items: "{{ openvpn_instances }}"

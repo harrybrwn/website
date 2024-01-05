@@ -1,4 +1,5 @@
-- hosts: lenovo
+- name: Create and Configure a PostgresQL instance
+  hosts: lenovo
   become: true
   gather_facts: false
   vars_files:
@@ -13,78 +14,74 @@
     community.postgresql.postgresql_db: *pg_auth
     community.postgresql.postgresql_query: *pg_auth
   tasks:
-  - name: Install docker-py
-    apt:
-      package:
-      - python3-docker
-      - python3-psycopg2
-  - ansible.builtin.file:
-      state: absent
-      path: /opt/postgres/data
-  - name: Created PostgreSQL Container
-    community.docker.docker_container:
-      name: postgres
-      image: postgres:16
-      state: started
-      restart_policy: unless-stopped
-      restart: true
-      ports: "5432:5432"
-      volumes:
-        # - /var/lib/postgresql/data/:/var/lib/postgresql/data/
-        - /opt/postgres/data/:/var/lib/postgresql/data/
-      env:
-        POSTGRES_PASSWORD: '{{ postgres_password }}'
-      comparisons:
-        env: strict
-        volumes: strict
-        image: strict
-    register: postgres_container
-  - name: Wait for Startup
-    wait_for:
-      host: '{{ ansible_host }}'
-      port: 5432
-  - name: Create Users
-    community.postgresql.postgresql_user:
-      state: present
-      name: '{{ item.username }}'
-      password: '{{ item.password }}'
-    loop: '{{ postgres_users }}'
-    loop_control:
-      label: "{{ item.username }}"
-  - name: Create Databases
-    community.postgresql.postgresql_db:
-      name: '{{ item.username }}'
-      owner: '{{ item.username }}'
-    loop: '{{ postgres_users }}'
-    loop_control: { label: "{{ item.username }}" }
+    - name: Install docker-py
+      ansible.builtin.apt:
+        package:
+          - python3-docker
+          - python3-psycopg2
+    - name: Created PostgreSQL Container
+      community.docker.docker_container:
+        name: postgres
+        image: postgres:16
+        state: started
+        restart_policy: unless-stopped
+        restart: true
+        ports: "5432:5432"
+        volumes:
+          # - /var/lib/postgresql/data/:/var/lib/postgresql/data/
+          - /opt/postgres/data/:/var/lib/postgresql/data/
+        env:
+          POSTGRES_PASSWORD: '{{ postgres_password }}'
+        comparisons:
+          env: strict
+          volumes: strict
+          image: strict
+      register: postgres_container
+    - name: Wait for Startup
+      ansible.builtin.wait_for:
+        host: '{{ ansible_host }}'
+        port: 5432
+    - name: Create Users
+      community.postgresql.postgresql_user:
+        state: present
+        name: '{{ item.username }}'
+        password: '{{ item.password }}'
+      loop: '{{ postgres_users }}'
+      loop_control:
+        label: "{{ item.username }}"
+    - name: Create Databases
+      community.postgresql.postgresql_db:
+        name: '{{ item.username }}'
+        owner: '{{ item.username }}'
+      loop: '{{ postgres_users }}'
+      loop_control: { label: "{{ item.username }}" }
 
-  - name: Another Database
-    community.postgresql.postgresql_db:
-      name: 'clerk'
-      owner: 'harry'
+    - name: Another Database
+      community.postgresql.postgresql_db:
+        name: 'clerk'
+        owner: 'harry'
 
-  - name: Revoke Connect from public
-    community.postgresql.postgresql_query:
-      query: 'REVOKE CONNECT ON DATABASE {{ item.username }} FROM PUBLIC;'
-      db: postgres
-    loop: '{{ postgres_users }}'
-    loop_control: { label: "{{ item.username }}" }
+    - name: Revoke Connect from public
+      community.postgresql.postgresql_query:
+        query: 'REVOKE CONNECT ON DATABASE {{ item.username }} FROM PUBLIC;'
+        db: postgres
+      loop: '{{ postgres_users }}'
+      loop_control: { label: "{{ item.username }}" }
 
-  # - name: Set Permissions
-  #   community.postgresql.postgresql_privs:
-  #     database: '{{ item.username }}'
-  #     privs: CREATE
-  #     # privs: SELECT,INSERT,UPDATE
-  #     # type: table
-  #     type: database
-  #     # objs: table,squence
-  #     # obj: '{{ item.username }}'
-  #     roles: '{{ item.username }}'
-  #     # roles: PUBLIC
-  #     # target_roles: '{{ item.username }}'
-  #     #user: '{{ item.username }}'
-  #     # grant_option: true
-  #     state: "absent"
-  #   loop: '{{ postgres_users }}'
-  #   loop_control: { label: "{{ item.username }}" }
-
+    # - name: Set Permissions
+    #   community.postgresql.postgresql_privs:
+    #     database: '{{ item.username }}'
+    #     privs: CREATE
+    #     # privs: SELECT,INSERT,UPDATE
+    #     # type: table
+    #     type: database
+    #     # objs: table,squence
+    #     # obj: '{{ item.username }}'
+    #     roles: '{{ item.username }}'
+    #     # roles: PUBLIC
+    #     # target_roles: '{{ item.username }}'
+    #     #user: '{{ item.username }}'
+    #     # grant_option: true
+    #     state: "absent"
+    #   loop: '{{ postgres_users }}'
+    #   loop_control: { label: "{{ item.username }}" }

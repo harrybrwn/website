@@ -25,8 +25,9 @@ RUN apt-get install -yq \
         netcat   \
         curl
 RUN pip install \
-        ansible==9.0.1 \
-        ansible-core==2.16.0
+        ansible==9.0.1       \
+        ansible-core==2.16.0 \
+        ansible-lint
 
 RUN mkdir -p /usr/local/bin && \
     curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \

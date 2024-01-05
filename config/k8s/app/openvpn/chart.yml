@@ -1,0 +1,11 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: openvpn-as
+  namespace: kube-system
+spec:
+  name: openvpn-as
+  chart: openvpn-as
+  version: 0.1.9
+  repo: https://charts.stenic.io/

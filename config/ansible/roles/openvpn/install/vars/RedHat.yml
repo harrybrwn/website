@@ -1,0 +1,7 @@
+---
+package_name_words: words
+path_dict: /usr/share/dict/words
+os_family_specific_pre:
+  - epel-release
+  - yum-cron
+  - yum-utils

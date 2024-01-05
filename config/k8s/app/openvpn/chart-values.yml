@@ -1,0 +1,12 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: openvpn-as
+  namespace: kube-system
+spec:
+  # Values Example:
+  # https://github.com/stenic/helm-charts/blob/master/charts/openvpn-as/values.yaml
+  valuesContent: |-
+    openvpn:
+      timezone: America/Los_Angeles

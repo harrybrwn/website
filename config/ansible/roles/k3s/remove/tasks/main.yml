@@ -1,21 +1,22 @@
-- name: Disable services
-  systemd:
+- name: K3S | Remove | Disable services
+  ansible.builtin.systemd:
     name: "{{ item }}"
     state: stopped
-    enabled: no
+    enabled: false
   failed_when: false
   with_items:
     - k3s
     - k3s-node
 
-- name: pkill -9 -f "k3s/data/[^/]+/bin/containerd-shim-runc"
+- name: K3S | Remove | pkill -9 -f "k3s/data/[^/]+/bin/containerd-shim-runc"
   register: pkill_containerd_shim_runc
-  command: pkill -9 -f "k3s/data/[^/]+/bin/containerd-shim-runc"
+  ansible.builtin.command:
+    cmd: pkill -9 -f "k3s/data/[^/]+/bin/containerd-shim-runc"
   changed_when: "pkill_containerd_shim_runc.rc == 0"
   failed_when: false
 
-- name: Umount k3s filesystems
-  include_tasks: unmount_with_children.yml
+- name: K3S | Remove | Umount k3s filesystems
+  ansible.builtin.include_tasks: unmount_with_children.yml
   with_items:
     - /run/k3s
     - /var/lib/kubelet
@@ -24,8 +25,8 @@
   loop_control:
     loop_var: mounted_fs
 
-- name: Remove service files, binaries and data
-  file:
+- name: K3S | Remove | Remove service files, binaries and data
+  ansible.builtin.file:
     name: "{{ item }}"
     state: absent
   with_items:
@@ -36,12 +37,12 @@
     - /var/lib/kubelet
     - /var/lib/rancher/k3s
 
-- name: daemon_reload
-  systemd:
-    daemon_reload: yes
+- name: K3S | Remove | daemon_reload
+  ansible.builtin.systemd:
+    daemon_reload: true
 
-- name: reboot
-  reboot:
+- name: K3S | Remove | reboot
+  ansible.builtin.reboot:
     msg: "Rebooted by ansible after removing k3s"
     connect_timeout: 5
     reboot_timeout: 600

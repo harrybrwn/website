@@ -1,12 +1,12 @@
 - name: Create base directory
-  file:
+  ansible.builtin.file:
     path: "/etc/rancher"
     state: directory
     mode: '0755'
     group: root
     owner: root
 - name: Create config directory
-  file:
+  ansible.builtin.file:
     path: "/etc/rancher/k3s"
     state: directory
     mode: '0755'
@@ -14,11 +14,11 @@
     owner: root
 
 - name: Write config file
-  template:
+  ansible.builtin.template:
     src: "k3s-config.yml.j2"
     dest: /etc/rancher/k3s/config.yaml
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   when: k3s_config is defined
   notify: reload systemd

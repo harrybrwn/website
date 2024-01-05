@@ -13,7 +13,7 @@
     - { role: ../roles/k3s/remove }
   tasks:
     - name: Remove registry CA cert
-      file:
+      ansible.builtin.file:
         state: absent
         path: "{{ item }}"
       with_items:

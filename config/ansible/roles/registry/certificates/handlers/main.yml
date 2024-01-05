@@ -1,0 +1,6 @@
+- name: create ca cert
+  community.crypto.x509_certificate:
+    path: "{{ registry_cert_dir }}/registry-ca.crt"
+    privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
+    csr_content: "{{ ca_csr.csr }}"
+    provider: selfsigned

@@ -1,14 +1,14 @@
-- name: Copy K3s service file
-  template:
+- name: K3S | Worker | Copy K3s service file
+  ansible.builtin.template:
     src: "k3s.service.j2"
     dest: "{{ systemd_dir }}/k3s.service"
     owner: root
     group: root
-    mode: 0755
+    mode: "0755"
 
-- name: Enable and check K3s service
-  systemd:
+- name: K3S | Worker | Enable and check K3s service
+  ansible.builtin.systemd:
     name: k3s
-    daemon_reload: yes
+    daemon_reload: true
     state: restarted
-    enabled: yes
+    enabled: true

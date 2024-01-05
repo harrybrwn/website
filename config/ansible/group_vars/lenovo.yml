@@ -1,0 +1,7 @@
+openvpn_instances:
+  - proto: udp
+    port: 1194
+    mask: "192.168.69.0 255.255.255.0"
+    cidr: "192.168.69.0/24"
+    server_extra_options: ['push "route 172.16.0.0 255.240.0.0"']
+    client_extra_options: []

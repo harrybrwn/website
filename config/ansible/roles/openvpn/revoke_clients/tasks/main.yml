@@ -1,0 +1,28 @@
+---
+- name: OpenVPN | Revoke Client | Set variables
+  ansible.builtin.include_vars: ../../install/defaults/main.yml
+
+- name: OpenVPN | Sync Clients | Find default server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ ansible_hostname }}"
+  when: openvpn_server_common_name_manual is not defined
+- name: OpenVPN | Sync Clients | Find manual server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_manual }}"
+  when: openvpn_server_common_name_manual is defined
+
+- name: OpenVPN | Revoke Client | Revoke access
+  ansible.builtin.expect:
+    command: ./easyrsa revoke "{{ item }}"
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"
+  no_log: false
+  with_items: "{{ clients_to_revoke }}"
+
+- name: OpenVPN | Revoke Client | Rebuild CRL
+  ansible.builtin.expect:
+    command: ./easyrsa gen-crl
+    responses:
+      'Enter pass phrase for .*?:$': "{{ ca_password }}"
+    chdir: "{{ openvpn_path_easyrsa }}"

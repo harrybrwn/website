@@ -19,7 +19,9 @@ all:
     systemd_dir: /etc/systemd/system
 
   hosts:
-    laptop: { ansible_host: 10.0.0.11, ansible_ssh_user: harry }
+    laptop:
+      ansible_host: 10.0.0.11
+      ansible_ssh_user: harry
     lenovo:
       ansible_host: 10.0.0.13
       ansible_ssh_user: harry
@@ -27,6 +29,32 @@ all:
         node-label:
           - hrry.me/env=prd
           - hrry.me/node-size=big
+      # openvpn_path: "/opt/openvpn-as"
+      openvpn_path: "/etc/openvpn"
+      openvpn_instances:
+        - proto: udp
+          port: 1194
+          mask: "192.168.2.0 255.255.255.0"
+          cidr: "192.168.2.0/24"
+          # mask: "10.0.0.0 255.255.255.0"
+          # cidr: "10.0.0.0/24"
+          server_extra_options: ['push "route 172.16.0.0 255.240.0.0"']
+          # server_extra_options: []
+          client_extra_options: []
+      openvpn_valid_clients:
+        - name: mikrotik
+          ccd: ['iroute 172.16.0.0 255.240.0.0']
+        - name: harry
+      load_iptables_rules: true
+      easyrsa_dn_mode_cn_only: false
+      openvpn_server_remote_host: "{{ ansible_host }}"
+      openvpn_key_country: US
+      openvpn_key_org: hrry.me
+      openvpn_key_email: 'admin@hrry.me'
+      openvpn_key_ou: homelab
+      # Changed for mikrotik compatibility
+      # openvpn_cipher: "AES-128-CBC"
+      # openvpn_auth_digest: "SHA1"
     rpi1: { ansible_host: 10.0.0.21 }
     rpi2: { ansible_host: 10.0.0.22 }
     rpi3: { ansible_host: 10.0.0.23, nfs_server: false }

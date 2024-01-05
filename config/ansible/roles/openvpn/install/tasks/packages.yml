@@ -1,0 +1,47 @@
+---
+- name: OpenVPN | package | Ensure APT cache is up to date
+  ansible.builtin.apt:
+    update_cache: true
+  changed_when: false
+  when: ansible_os_family == "Debian"
+- name: "OpenVPN | package | Install OS specific packages: {{ ansible_os_family }}"
+  ansible.builtin.package:
+    name: "{{ item }}"
+  with_items: "{{ os_family_specific_pre }}"
+  register: install_specific_result
+  until: install_specific_result is success
+  retries: 5
+  delay: 5
+
+- name: OpenVPN | package | Add debian backports
+  ansible.builtin.apt_repository:
+    repo: 'deb http://ftp.debian.org/debian {{ ansible_lsb.codename }}-backports main'
+    state: present
+    update_cache: true
+  when: ansible_distribution in ['Debian']
+
+- name: OpenVPN | package | Upgrade systemd on debian
+  ansible.builtin.apt:
+    name: systemd
+    state: latest
+    default_release: "{{ ansible_lsb.codename }}-backports"
+  when: ansible_distribution in ['Debian']
+  tags:
+    # Need latest, systemd v215 is really old and a pain to support alongside newer versions
+    - skip_ansible_lint
+
+- name: OpenVPN | package | Install required packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+  with_items: "{{ required_packages }}"
+  register: install_required_result
+  until: install_required_result is success
+  retries: 5
+  delay: 5
+  tags:
+    - skip_ansible_lint
+
+- name: OpenVPN | package | Install pexpect via pip
+  ansible.builtin.pip:
+    name: "pexpect"
+    version: "3.3"

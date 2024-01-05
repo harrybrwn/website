@@ -12,13 +12,13 @@
     k3s_master: dell-amd
     k3s_config:
       node-label:
-      - hrry.me/env=stg
-      - hrry.me/node-size=big
+        - hrry.me/env=stg
+        - hrry.me/node-size=big
   pre_tasks:
-  - name: Update apt cache
-    apt:
-      update_cache: true
-      upgrade: true
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
   roles:
     - role: k3s/prereq
     - role: k3s/download

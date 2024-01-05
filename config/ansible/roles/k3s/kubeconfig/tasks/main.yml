@@ -1,24 +1,29 @@
 - name: Grab k3s kubeconfig content
-  slurp:
+  ansible.builtin.slurp:
     path: ~{{ ansible_user }}/.kube/config
   register: kubeconfig
 
 - name: Copy the data to local machine
-  copy:
+  ansible.builtin.copy:
     content: "{{ kubeconfig.content | b64decode }}"
     dest: "~/.kube/k3s-{{ k3s_master_ip }}"
+    mode: "0600"
   delegate_to: localhost
   become: false
   run_once: true
 
 - name: Merge in new config
+  delegate_to: localhost
+  become: false
+  run_once: true
   block:
     - name: Create .kube directory
-      file:
+      ansible.builtin.file:
         path: ~/.kube
         state: directory
+        mode: "0750"
     - name: Replace 'default' for the config name
-      shell:
+      ansible.builtin.shell:
         executable: /usr/bin/bash
         cmd: |
           set -eu
@@ -28,8 +33,11 @@
             -e 's/user:[ ]*default/user: {{ k3s_config_name }}/g;'       \
             ~/.kube/k3s-{{ k3s_master_ip }}
             kubectl --kubeconfig ~/.kube/k3s-{{ k3s_master_ip }} config use-context {{ k3s_config_name }}
+      # register: k3s_kubeconfig_switch_config
+      # failed_when: k3s_kubeconfig_switch_config.rc != 0
+      changed_when: false
     - name: Merge with the current config
-      shell:
+      ansible.builtin.shell:
         executable: /usr/bin/bash
         cmd: |
           set -eu
@@ -40,20 +48,21 @@
           export KUBECONFIG
           kubectl config view --flatten --raw > "${HOME}/.kube/_tmp_config"
           rm -f "${HOME}/.kube/config"
-      register: out
+      # register: k3s_kubeconfig_flatten
+      # failed_when: k3s_kubeconfig_flatten.rc != 0
+      changed_when: false
     - name: Replace config with the new merged config
-      shell:
+      ansible.builtin.shell:
         executable: /usr/bin/bash
         cmd: |
           set -eu
           mv "${HOME}/.kube/_tmp_config" "${HOME}/.kube/config"
           chmod 0600 ${HOME}/.kube/config
+      changed_when: false
     - name: Set to current-context
-      shell:
+      ansible.builtin.shell:
         executable: /usr/bin/bash
         cmd: |
           export KUBECONFIG=${HOME}/.kube/config
           kubectl config use-context {{ k3s_config_name }}
-  delegate_to: localhost
-  become: false
-  run_once: true
+      changed_when: false

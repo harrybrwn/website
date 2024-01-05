@@ -1,9 +1,10 @@
 - name: Configure Router
   ansible.builtin.import_playbook: playbooks/router.yml
 
-- hosts: prod
+- name: Basic Config
+  hosts: prod
   become: true
-  become_method: sudo
+  become_method: ansible.builtin.sudo
   vars_files:
     # ansible become password in vault encrypted vars file
     - vars/become-password.yml
@@ -13,7 +14,7 @@
     registry: '10.0.0.11:5000'
   handlers:
     - name: reboot
-      reboot:
+      ansible.builtin.reboot:
         msg: "Rebooted by ansible"
         connect_timeout: 5
         reboot_timeout: 600
@@ -21,14 +22,14 @@
         post_reboot_delay: 30
         test_command: whoami
   pre_tasks:
-  - name: Update apt cache
-    apt:
-      update_cache: true
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
   roles:
-  - docker
+    - docker
   tasks:
     - name: Install dependencies.
-      apt:
+      ansible.builtin.apt:
         package:
           # Install the nfs server package for all hosts because docker will not run
           # an nfs server if the nfs kernel module is not loaded onto the host.
@@ -41,7 +42,7 @@
       when: ansible_facts['os_family'] == "Debian" and ansible_facts['pkg_mgr'] == "apt"
 
     - name: Create NFS mount points.
-      file:
+      ansible.builtin.file:
         path: /mnt/nfs/hrry.dev
         mode: '0755'
         state: directory
@@ -51,7 +52,7 @@
         name: America/Los_Angeles
 
     - name: Create docker certs dirs.
-      file:
+      ansible.builtin.file:
         path: "{{ item.path }}"
         owner: root
         group: root
@@ -63,7 +64,7 @@
         - {path: /etc/docker/registry}
         - {path: /root/.secrets}
     - name: Install docker root ca.
-      copy:
+      ansible.builtin.copy:
         src: ../registry-ca.crt
         dest: '/etc/docker/certs.d/{{ container_registry }}/ca.crt'
         owner: root
@@ -92,26 +93,28 @@
         mode: '0644'
       become: false
 
-- hosts: laptop
+- name: Cloudflare API Key
+  hosts: laptop
   become: true
   gather_facts: false
   vars_files:
     - vars/become-password.yml
     - vars/cloudflare-api-credentials.yml
   tasks:
-  - name: Install cloudflare dns plugin for certbot
-    pip:
-      name: certbot-dns-cloudflare==1.27.0
-  - name: add cloudflare api key config file
-    template:
-      src: templates/harrybrwn-cloudflare.ini.j2
-      dest: /root/.secrets/harrybrwn-cloudflare.ini
-      owner: root
-      group: root
-      mode: '0644'
-      backup: false
+    - name: Install cloudflare dns plugin for certbot
+      ansible.builtin.pip:
+        name: certbot-dns-cloudflare==1.27.0
+    - name: Add cloudflare api key config file
+      ansible.builtin.template:
+        src: templates/harrybrwn-cloudflare.ini.j2
+        dest: /root/.secrets/harrybrwn-cloudflare.ini
+        owner: root
+        group: root
+        mode: '0644'
+        backup: false
 
-- hosts: lenovo
+- name: NFS Config
+  hosts: lenovo
   become: true
   gather_facts: false
   vars_files:
@@ -148,7 +151,7 @@
       - path: /exports/nfs/hrry.dev/storage/filestash
   pre_tasks:
     - name: Install NFS Server
-      apt:
+      ansible.builtin.apt:
         package:
           - nfs-kernel-server
           - samba
@@ -162,18 +165,18 @@
     community.postgresql.postgresql_privs: *pg_auth
     community.postgresql.postgresql_db: *pg_auth
   tasks:
-  - name: Create backups storage location.
-    file:
-      path: "/opt/hrry.dev/backups"
-      mode: '0755'
-      state: directory
-  - name: Install backups cron job.
-    cron:
-      name: 'data backups'
-      job: rsync -avAR --delete /exports/nfs /opt/hrry.dev/backups/$(date +\%F)/
-      weekday: '0,4' # sunday, thursday
-      minute: '0'
-      hour: '0'
+    - name: Create backups storage location.
+      ansible.builtin.file:
+        path: "/opt/hrry.dev/backups"
+        mode: '0755'
+        state: directory
+    - name: Install backups cron job.
+      ansible.builtin.cron:
+        name: 'data backups'
+        job: rsync -avAR --delete /exports/nfs /opt/hrry.dev/backups/$(date +\%F)/
+        weekday: '0,4' # sunday, thursday
+        minute: '0'
+        hour: '0'
 
 - name: Configure PostgreSQL
   ansible.builtin.import_playbook: playbooks/postgres.yml
@@ -230,15 +233,15 @@
   roles:
     - k3s/worker
 
-- name: Restart all K3S Nodes
-  hosts: k3s_cluster
-  become: true
-  gather_facts: false
-  vars_files:
-    - vars/become-password.yml
-  tasks:
-    - name: Restart k3s
-      ansible.builtin.systemd:
-        name: k3s
-        state: restarted
-        enabled: yes
+# - name: Restart all K3S Nodes
+#   hosts: k3s_cluster
+#   become: true
+#   gather_facts: false
+#   vars_files:
+#     - vars/become-password.yml
+#   tasks:
+#     - name: Restart k3s
+#       ansible.builtin.systemd:
+#         name: k3s
+#         state: restarted
+#         enabled: true

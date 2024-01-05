@@ -1,0 +1,12 @@
+- name: Create and Configure OpenVPN
+  hosts: lenovo
+  become: true
+  vars_files:
+    # ansible become password in vault encrypted vars file
+    - ../vars/become-password.yml
+    - ../vars/openvpn.yml
+  vars:
+    local_creds_folder: "{{ playbook_dir }}/../ovpn_creds/{{ ansible_hostname }}"
+  roles:
+    - role: openvpn/install
+    # - role: openvpn/add_clients

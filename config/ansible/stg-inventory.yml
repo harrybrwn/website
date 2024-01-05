@@ -9,7 +9,7 @@ all:
   hosts:
     dell-amd:
       ansible_ssh_user: harry
-      #ansible_host: 169.254.158.18  # link local address
+      # ansible_host: 169.254.158.18  # link local address
       ansible_host: 10.0.0.12
     yoga920:
       ansible_ssh_user: harry

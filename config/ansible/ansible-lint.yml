@@ -1,0 +1,45 @@
+---
+profile: null
+use_default_rules: true
+max_block_depth: 20
+
+skip_list:
+  - name[casing]
+  - role-name[path]
+  - risky-shell-pipe
+
+exclude_paths:
+  - config/ansible/test.yml
+  - .git
+  - .github
+  - .vscode
+  - cmd
+  - frontend
+  - config/k8s
+  - config/docker
+  - config/env
+  - config/grafana
+  - config/helm
+  - config/hydra
+  - config/logging
+  - config/nginx
+  - config/nix
+  - config/nomad
+  - config/pki
+  - config/redis
+  - config/registry
+  - config/vault
+  - config/docker-compose*.yml
+  - config/yamllint.yml
+  - db
+  - docs
+  - files
+  - pkg
+  - scripts
+  - services
+  - terraform
+  - test
+  - homelab.k8s.yml
+  - docker-compose.yml
+  - result
+  - node_modules

@@ -12,9 +12,16 @@
     community.routeros.api_modify: *ros_auth
     community.routeros.api_find_and_modify: *ros_auth
   tasks:
-    # - name: Copy Nat Rules Script
-    #   command: {cmd: scp -o PasswordAuthentication=no -o PubkeyAuthentication=yes -o PubkeyAcceptedKeyTypes=+ssh-rsa files/nat-rules.rsc admin@router.lan:disk1}
-    #   delegate_to: localhost
+    - name: Copy Nat Rules Script
+      ansible.builtin.command:
+        cmd: >
+          scp -o PasswordAuthentication=no
+              -o PubkeyAuthentication=yes
+              -o PubkeyAcceptedKeyTypes=+ssh-rsa
+            files/nat-rules.rsc
+            admin@router.lan:disk1
+      delegate_to: localhost
+      changed_when: true
 
     - name: Add Nat Rules
       community.routeros.api_modify:
@@ -23,40 +30,51 @@
         handle_entries_content: remove_as_much_as_possible
         path: ip firewall nat
         data:
-          # Outgoing traffic
+          # For forwarding outgoing traffic.
           - action: masquerade
             chain: srcnat
             comment: "defconf: masquerade"
             ipsec-policy: out,none
             out-interface-list: WAN
-          - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 80, dst-port: 80 }
-          - { action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-addresses: 10.0.0.11, to-ports: 443, dst-port: 443 }
+          - action: dst-nat
+            chain: dstnat
+            in-interface-list: WAN
+            protocol: tcp
+            to-addresses: 10.0.0.11
+            to-ports: 80
+            dst-port: 80
+          - action: dst-nat
+            chain: dstnat
+            in-interface-list: WAN
+            protocol: tcp
+            to-addresses: 10.0.0.11
+            to-ports: 443
+            dst-port: 443
           # Round-Robbin between all nodes
-          #- { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          #- { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          #- { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          #- { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          #- { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-
+          # - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '5,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # - { nth: '5,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # - { nth: '5,3', to-addresses: 10.0.0.21, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # - { nth: '5,4', to-addresses: 10.0.0.22, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # - { nth: '5,5', to-addresses: 10.0.0.23, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
           # Round-Robbin with Only my amd64 machines
-          #- { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
-          #- { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-          #- { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
-
+          # - { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 80, dst-port: 80 }
+          # - { nth: '2,1', to-addresses: 10.0.0.11, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
+          # - { nth: '2,2', to-addresses: 10.0.0.13, action: dst-nat, chain: dstnat, in-interface-list: WAN, protocol: tcp, to-ports: 443, dst-port: 443 }
           # Postgres
-          #- action: dst-nat
-          #  chain: dstnat
-          #  in-interface-list: WAN
-          #  protocol: tcp
-          #  to-addresses: 10.0.0.13
-          #  to-ports: 5432
-          #  dst-port: 5432
+          # - action: dst-nat
+          #   chain: dstnat
+          #   in-interface-list: WAN
+          #   protocol: tcp
+          #   to-addresses: 10.0.0.13
+          #   to-ports: 5432
+          #   dst-port: 5432
+      changed_when: false
 
     # - name: Allow Only Cloudflare Traffic
     #   community.routeros.api_find_and_modify:
@@ -72,4 +90,3 @@
     #   register: ipaddrd_printout
     # - name: Dump "Get example" output
     #   ansible.builtin.debug: { msg: '{{ ipaddrd_printout }}' }
-

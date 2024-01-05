@@ -1,0 +1,16 @@
+---
+- name: OpenVPN | Add Clients | Set variables
+  ansible.builtin.include_vars: ../../install/defaults/main.yml
+
+- name: OpenVPN | Add Clients | Find default server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ ansible_hostname }}"
+  when: openvpn_server_common_name_manual is not defined
+- name: OpenVPN | Add Clients | Find manual server common name
+  ansible.builtin.set_fact:
+    openvpn_server_common_name: "{{ openvpn_server_common_name_manual }}"
+  when: openvpn_server_common_name_manual is defined
+
+- name: OpenVPN | Add Clients | Add clients and generate keys
+  ansible.builtin.include_tasks: add_gen_key.yml
+  when: clients_to_add is defined

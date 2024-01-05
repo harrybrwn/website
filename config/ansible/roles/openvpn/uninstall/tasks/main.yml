@@ -1,0 +1,28 @@
+---
+- name: OpenVPN | uninstall | Remove APT packages
+  ansible.builtin.apt:
+    state: absent
+    name:
+      - openvpn
+      - "{{ package_name_words }}"
+  when: ansible_os_family == "Debian"
+- name: OpenVPN | uninstall | Remove APT packages
+  ansible.builtin.package:
+    state: absent
+    name: "{{ item }}"
+  with_items:
+    - openvpn
+    - "{{ package_name_words }}"
+  when: ansible_os_family != "Debian"
+
+- name: OpenVPN | uninstall | Disable systemd service
+  ansible.builtin.service:
+    name: "openvpn@{{ item.proto }}-{{ item.port }}.service"
+    enabled: false
+  with_items: "{{ openvpn_instances }}"
+
+- name: OpenVPN | uninstall | Stop systemd service
+  ansible.builtin.service:
+    name: "openvpn@{{ item.proto }}-{{ item.port }}.service"
+    state: stopped
+  with_items: "{{ openvpn_instances }}"

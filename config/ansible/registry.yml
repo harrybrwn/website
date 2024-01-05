@@ -1,4 +1,5 @@
-- hosts: laptop
+- name: Create docker image registry
+  hosts: laptop
   become: true
   vars_files:
     # ansible become password in vault encrypted vars file
@@ -20,12 +21,12 @@
 
   tasks:
     - name: Copy cert to local dir
-      fetch:
+      ansible.builtin.fetch:
         src: "{{ registry_cert_dir }}/registry-ca.crt"
         dest: registry-ca.crt
         flat: true
-    -
-      fetch:
+    - name: Get files
+      ansible.builtin.fetch:
         src: "{{ registry_cert_dir }}/{{ item }}"
         dest: "registry/{{ item }}"
         flat: true
@@ -33,30 +34,32 @@
 
     - name: Copy cert to docker dir
       block:
-      - name: Create Cert Dir
-        file:
-          state: directory
-          path: "/etc/docker/certs.d/{{item}}"
-        loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
-      - copy:
-          src: "{{ registry_cert_dir }}/registry-ca.crt"
-          dest: "/etc/docker/certs.d/{{item}}/ca.crt"
-          owner: root
-          group: root
-          mode: '0640'
-          backup: false
-          remote_src: yes
-          validate: openssl x509 -noout -in %s
-        loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+        - name: Create Cert Dir
+          ansible.builtin.file:
+            state: directory
+            path: "/etc/docker/certs.d/{{ item }}"
+            mode: "0644"
+          loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+        - name: Copy CA Cert
+          ansible.builtin.copy:
+            src: "{{ registry_cert_dir }}/registry-ca.crt"
+            dest: "/etc/docker/certs.d/{{ item }}/ca.crt"
+            owner: root
+            group: root
+            mode: '0640'
+            backup: false
+            remote_src: true
+            validate: openssl x509 -noout -in %s
+          loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
 
     - name: Configure local registry
       block:
         - name: install docker-py
-          apt:
+          ansible.builtin.apt:
             package:
-            - python3-docker
+              - python3-docker
         - name: Check if htpasswd file exists
-          stat:
+          ansible.builtin.stat:
             path: /etc/docker/registry/htpasswd
           register: htpasswd_stat
           failed_when: not htpasswd_stat.stat.exists

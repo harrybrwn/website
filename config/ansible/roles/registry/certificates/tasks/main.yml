@@ -1,29 +1,32 @@
-- name: Create Keys and Issue Certificates
+- name: Registry | Certificates | Create Keys and Issue Certificates
   block:
-    - name: Check Variables
-      fail:
+    - name: Registry | Certificates | Check Variables
+      ansible.builtin.fail:
         msg: "'registry_cert_dir', 'common_name', and 'subject_alt_name' are required variables"
       when: >-
         (registry_cert_dir is not defined and
         common_name is not defined and
         subject_alt_name is not defined)
 
-    - name: Create Cert Dir
-      file:
+    - name: Registry | Certificates | Create Cert Dir
+      ansible.builtin.file:
         state: directory
         path: "{{ registry_cert_dir }}"
+        mode: "0755"
 
-    - name: Check whether CA cert key exists
-      stat:
+    - name: Registry | Certificates | Check whether CA cert key exists
+      ansible.builtin.stat:
         path: "{{ registry_cert_dir }}/registry-ca.key"
       register: ca_key_exists
-    - name: Create CA key
+    - name: Registry | Certificates | Create CA key
       when: not ca_key_exists.stat.exists
       community.crypto.openssl_privatekey:
         path: "{{ registry_cert_dir }}/registry-ca.key"
       register: create_ca_key
+      notify:
+        - create ca cert # create a ca certificate when the key changes
 
-    - name: Create CA CSR
+    - name: Registry | Certificates | Create CA CSR
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
         common_name: docker registry ca
@@ -37,42 +40,42 @@
           - cRLSign
         key_usage_critical: true
       register: ca_csr
-    - name: Create CA Cert
-      when: create_ca_key.changed
-      community.crypto.x509_certificate:
-        path: "{{ registry_cert_dir }}/registry-ca.crt"
-        privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
-        csr_content: "{{ ca_csr.csr }}"
-        provider: selfsigned
+    # - name: Registry | Certificates | Create CA Cert
+    #   when: create_ca_key.changed
+    #   community.crypto.x509_certificate:
+    #     path: "{{ registry_cert_dir }}/registry-ca.crt"
+    #     privatekey_path: "{{ registry_cert_dir }}/registry-ca.key"
+    #     csr_content: "{{ ca_csr.csr }}"
+    #     provider: selfsigned
 
-    - name: Check if Server Certificate exists
-      stat:
+    - name: Registry | Certificates | Check if Server Certificate exists
+      ansible.builtin.stat:
         path: "{{ registry_cert_dir }}/registry-server.crt"
       register: reg_certificate_exists
-    - name: Read existing certificate if exists
-      slurp:
+    - name: Registry | Certificates | Read existing certificate if exists
+      ansible.builtin.slurp:
         src: "{{ registry_cert_dir }}/registry-server.crt"
       when: reg_certificate_exists.stat.exists
       register: certificate
-    - name: Get Cert Data
+    - name: Registry | Certificates | Get Cert Data
       community.crypto.x509_certificate_info:
         content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists else omit }}"
       register: existing_srv_cert_info
       when: reg_certificate_exists.stat.exists
-    - name: Check if Server Certificate exists
-      stat: { path: "{{ registry_cert_dir }}/registry-server.crt" }
+    - name: Registry | Certificates | Check if Server Certificate exists
+      ansible.builtin.stat: { path: "{{ registry_cert_dir }}/registry-server.crt" }
       register: reg_certificate_exists
 
-    - name: Check if Server Key exists
-      stat:
+    - name: Registry | Certificates | Check if Server Key exists
+      ansible.builtin.stat:
         path: "{{ registry_cert_dir }}/registry-server.key"
       register: server_key_exists
-    - name: Delete Key if cert expired
-      file:
+    - name: Registry | Certificates | Delete Key if cert expired
+      ansible.builtin.file:
         state: absent
         path: "{{ registry_cert_dir }}/registry-server.key"
       when: server_key_exists.stat.exists and existing_srv_cert_info.expired
-    - name: Create Server key
+    - name: Registry | Certificates | Create Server key
       community.crypto.openssl_privatekey:
         path: "{{ registry_cert_dir }}/registry-server.key"
       when: >
@@ -80,16 +83,16 @@
          existing_srv_cert_info.expired or
          create_ca_key.changed)
       register: create_server_key
-    - name: Create Server CSR
+    - name: Registry | Certificates | Create Server CSR
       register: server_csr
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ registry_cert_dir }}/registry-server.key"
         common_name: "{{ common_name }}"
         subject_alt_name: "{{ subject_alt_name }}"
-        key_usage: [ digitalSignature, nonRepudiation, keyEncipherment ]
-        basic_constraints: [ 'CA:FALSE' ]
+        key_usage: [digitalSignature, nonRepudiation, keyEncipherment]
+        basic_constraints: ['CA:FALSE']
 
-    - name: Sign Server Certificate
+    - name: Registry | Certificates | Sign Server Certificate
       community.crypto.x509_certificate_pipe:
         # Add the slurped content if the certificate file exists and its not expired
         content: "{{ (certificate.content | b64decode) if reg_certificate_exists.stat.exists and not existing_srv_cert_info.expired else omit }}"
@@ -103,7 +106,7 @@
         ownca_not_before: "+0s"
       register: certificate
 
-    - name: Write New Server Certificate file
+    - name: Registry | Certificates | Write New Server Certificate file
       # Write the newly created file only if the file doesn't already exist the
       # cert is expired or it has changed.
       when: >
@@ -112,29 +115,30 @@
          certificate.changed or
          create_server_key.changed or
          create_ca_key.changed)
-      copy:
+      ansible.builtin.copy:
         dest: "{{ registry_cert_dir }}/registry-server.crt"
         content: "{{ certificate.certificate }}"
+        mode: preserve
 
-    - name: Set Variables for k3s/registry role
+    - name: Registry | Certificates | Set Variables for k3s/registry role
+      when: register_k3s_vars is defined and register_k3s_vars
       block:
-        - name: Read CA certificate
-          slurp:
+        - name: Registry | Certificates | Read CA certificate
+          ansible.builtin.slurp:
             src: "{{ registry_cert_dir }}/registry-ca.crt"
           register: registry_ca_contents_slurp
-        - name: Read Cert Key
-          slurp:
+        - name: Registry | Certificates | Read Cert Key
+          ansible.builtin.slurp:
             src: "{{ registry_cert_dir }}/registry-server.key"
           register: registry_key_contents_slurp
-        - name: Set k3s registry variables
-          set_fact:
+        - name: Registry | Certificates | Set k3s registry variables
+          ansible.builtin.set_fact:
             registry_ca_contents: "{{ registry_ca_contents_slurp.content | b64decode }}"
             registry_key_contents: "{{ registry_key_contents_slurp.content | b64decode }}"
             registry_cert_contents: "{{ certificate.certificate }}"
-      when: register_k3s_vars is defined and register_k3s_vars
 
-    - name: Cleanup Local variables
-      set_fact:
+    - name: Registry | Certificates | Cleanup Local variables
+      ansible.builtin.set_fact:
         # unset internal variables
         certificate: null
         reg_certificate_exists: null
@@ -142,5 +146,5 @@
         server_csr: null
         ca_key_exists: null
   # Run the whole block on localhost
-  #delegate_to: localhost
-  #run_once: true
+  # delegate_to: localhost
+  # run_once: true
