@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-http = "3.5.1"
+actix-service = "2.0.2"
 actix-web = "4.3.1"
 actix-web-prom = "0.7.0"
 clap = { version = "4.4.0", features = ["derive", "env"] }

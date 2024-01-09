@@ -1,4 +1,8 @@
+use actix_service::ServiceFactory;
+use actix_web::body::{EitherBody, MessageBody};
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_web_prom::StreamLog;
 use clap::Parser;
 use serde_derive::Serialize;
 use std::error;
@@ -106,6 +110,38 @@ pub(crate) struct Cli {
     workers: usize,
 }
 
+fn add_prometheus<B, T>(
+    app: App<T>,
+    prometheus: actix_web_prom::PrometheusMetrics,
+) -> App<
+    impl ServiceFactory<
+        ServiceRequest,
+        Config = (),
+        Response = ServiceResponse<EitherBody<StreamLog<B>, StreamLog<std::string::String>>>,
+        Error = actix_web::Error,
+        InitError = (),
+    >,
+>
+where
+    B: MessageBody + 'static,
+    T: ServiceFactory<
+            ServiceRequest,
+            Config = (),
+            Response = ServiceResponse<B>,
+            Error = actix_web::Error,
+            InitError = (),
+        > + 'static,
+{
+    app
+        // The prometheus client will record hits to the '/metrics' endpoint
+        // as hits to '/{some_variable}' if these is no route for /metrics. Must
+        // be added before all other routes.
+        .service(web::resource("/metrics").to(HttpResponse::Ok))
+        .wrap(prometheus)
+        //.wrap(logging::AutoLog::new(log.clone()))
+        .wrap(actix_web::middleware::NormalizePath::trim())
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), io::Error> {
     std::env::set_var("RUST_LOG", "debug");
@@ -129,15 +165,8 @@ async fn main() -> Result<(), io::Error> {
     };
 
     HttpServer::new(move || {
-        let app = App::new()
-            // The prometheus client will record hits to the '/metrics' endpoint
-            // as hits to '/{some_variable}' if these is no route for /metrics. Must
-            // be added before all other routes.
-            .service(web::resource("/metrics").to(HttpResponse::Ok))
-            .wrap(prometheus.clone())
-            //.wrap(logging::AutoLog::new(log.clone()))
-            .wrap(actix_web::middleware::NormalizePath::trim());
-        app.app_data(web::Data::new(tt.clone()))
+        add_prometheus(App::new(), prometheus.clone())
+            .app_data(web::Data::new(tt.clone()))
             .app_data(web::Data::new(data.clone()))
             .service(web::resource("/{path:.*}").route(web::get().to(index)))
     })

@@ -12,16 +12,16 @@
     community.routeros.api_modify: *ros_auth
     community.routeros.api_find_and_modify: *ros_auth
   tasks:
-    - name: Copy Nat Rules Script
-      ansible.builtin.command:
-        cmd: >
-          scp -o PasswordAuthentication=no
-              -o PubkeyAuthentication=yes
-              -o PubkeyAcceptedKeyTypes=+ssh-rsa
-            files/nat-rules.rsc
-            admin@router.lan:disk1
-      delegate_to: localhost
-      changed_when: true
+    # - name: Copy Nat Rules Script
+    #   ansible.builtin.command:
+    #     cmd: >
+    #       scp -o PasswordAuthentication=no
+    #           -o PubkeyAuthentication=yes
+    #           -o PubkeyAcceptedKeyTypes=+ssh-rsa
+    #         files/nat-rules.rsc
+    #         admin@router.lan:disk1
+    #   delegate_to: localhost
+    #   changed_when: true
 
     - name: Add Nat Rules
       community.routeros.api_modify:

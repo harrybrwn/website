@@ -70,13 +70,16 @@ lint-rs:
 lint-yml:
 	yamllint -c config/yamllint.yml .
 
+lint-ansible:
+	bin/ansible-lint -c config/ansible/ansible-lint.yml
+
 scripts:
 	@mkdir -p bin
 	ln -sf ../scripts/functional.sh bin/functional
-	ln -sf ../scripts/tools/hydra bin/hydra
-	ln -sf ../scripts/tools/bake bin/bake
-	ln -sf ../scripts/tools/k8s bin/k8s
-	ln -sf ../scripts/tools/tootctl bin/tootctl
+	@for s in hydra bake k8s tootctl; do \
+		echo ln -sf "../scripts/tools/$$s" "bin/$$s"; \
+		ln -sf "../scripts/tools/$$s" "bin/$$s"; \
+	done
 	ln -sf ../scripts/infra/ansible bin/ansible
 	@for s in playbook inventory config galaxy test pull console connection vault lint; do \
 		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
@@ -102,6 +105,7 @@ geoip:
 	scripts/data/geoipupdate.sh
 
 .PHONY: run clean deep-clean test-go test-ts
+.PHONY: lint-go lint-sh lint-rs lint-yml lint-ansible
 
 k8s:
 	make -C config/k8s all

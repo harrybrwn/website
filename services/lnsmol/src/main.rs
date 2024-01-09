@@ -10,8 +10,10 @@ use askama::Template;
 use clap::{Args, Parser as CliParser, Subcommand};
 use redis::ConnectionInfo;
 use serde_derive::{Deserialize, Serialize};
+use std::io;
 use std::path;
-use std::{io, net::IpAddr};
+
+use actixutil_headers::Accept;
 
 #[derive(CliParser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -103,37 +105,6 @@ impl Cli {
     }
 }
 
-enum Accept {
-    None,
-    PlainText,
-    Json,
-    Html,
-}
-
-impl FromRequest for Accept {
-    type Error = io::Error;
-    type Future = std::pin::Pin<Box<dyn core::future::Future<Output = Result<Self, Self::Error>>>>;
-
-    fn from_request(req: &HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
-        let acc = match req.headers().get(header::ACCEPT) {
-            None => Ok(Self::None),
-            Some(val) => match val.to_str() {
-                Ok(v) => Ok(if v.starts_with("application/json") {
-                    Self::Json
-                } else if v.starts_with("text/plain") {
-                    Self::PlainText
-                } else if v.starts_with("text/html") {
-                    Self::Html
-                } else {
-                    Self::None
-                }),
-                Err(e) => Err(io::Error::new(io::ErrorKind::NotFound, e)),
-            },
-        };
-        Box::pin(async move { acc })
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 struct LinkResponse {
     url: String,
@@ -154,7 +125,7 @@ async fn link_create_post(
 ) -> actix_web::Result<HttpResponse> {
     let id = store.create(&req).await?;
     Ok(match accept {
-        Accept::None | Accept::PlainText => HttpResponse::Ok().body(id),
+        Accept::None | Accept::Any | Accept::PlainText => HttpResponse::Ok().body(id),
         Accept::Json => HttpResponse::Ok().json(LinkResponse { url: req.url, id }),
         Accept::Html => {
             let tmpl = NewLinkTemplate { id, url: req.url };
@@ -163,6 +134,7 @@ async fn link_create_post(
                 Ok(contents) => HttpResponse::Ok().content_type("text/html").body(contents),
             }
         }
+        _ => HttpResponse::BadRequest().body("bad accept header"),
     })
 }
 

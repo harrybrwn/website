@@ -4,5 +4,7 @@ members = [
     "services/geoipupdate",
     "services/gopkg",
     "services/lnsmol",
+    "lib/rust/actixutil-headers",
+    "lib/rust/mime",
     "cmd/foreman",
 ]
