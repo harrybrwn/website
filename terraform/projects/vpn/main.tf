@@ -19,10 +19,12 @@ locals {
   # https://instances.vantage.sh/?region=us-west-2&selected=t4g.micro
   instance_type = "t4g.micro" # 1GiB, 2vcpu burst, 5 Gib net
   # instance_type = "t3a.nano"
+  #ami = "ami-008fe2fc65df48dac"
+  ami = "ami-0dca369228f3b2ce7" # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
 }
 
 provider "aws" {
-  profile = "default"
+  profile = "terraform"
   region  = lookup(local.region_mapping, local.region_name)
 }
 
@@ -47,7 +49,7 @@ module "vpn" {
   storage_path        = local.ovpn_storage_path
   vpc_id              = aws_vpc.vpc.id
   public_subnet_id    = aws_subnet.public.id
-  ami                 = "ami-0dca369228f3b2ce7" # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
+  ami                 = local.ami
   instance_type       = local.instance_type
   key_name            = aws_key_pair.key.key_name
   ssh_user            = "ubuntu"
