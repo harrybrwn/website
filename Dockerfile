@@ -228,13 +228,12 @@ COPY services/geoipupdate services/geoipupdate
 COPY services/gopkg services/gopkg
 COPY services/lnsmol services/lnsmol
 COPY cmd/foreman cmd/foreman
+COPY lib/rust lib/rust
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
     cargo fetch && \
     mkdir -p .cargo && \
     # Vendor for arm builds so they can find the custom assembly in the ring crate
     cargo vendor 2>/dev/null >> .cargo/config.toml
-COPY services services
-COPY cmd/foreman cmd/foreman
 ENV CARGO_INCREMENTAL=1
 ENV CARGO_CACHE_RUSTC_INFO=1
 ENV CARGO_TARGET_DIR=/opt/hrry.me/target/${TARGETPLATFORM}
@@ -324,6 +323,7 @@ COPY --from=mkdocs /opt/hrry.me/build/docs.hrry.dev /var/www/docs.hrry.dev
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
 COPY frontend/1k /var/www/1k.hrry.me
+#COPY frontend/mike /var/www/mike.hrry.me
 
 #
 # Registry UI
