@@ -140,7 +140,7 @@ list() {
         \)                 \
         -not -path './node_modules' $e
       ;;
-    rust)
+    rs|rust)
       # shellcheck disable=SC2086
       find .              \
         -type f           \

@@ -55,10 +55,8 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          path: ./lab
       - name: Build NGINX
-        uses: ./lab/.github/actions/nginx
+        uses: ./.github/actions/nginx
         with:
           version: 1.25.3
           image: harrybrwn/nginx

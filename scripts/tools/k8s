@@ -29,6 +29,7 @@ declare -r HOSTNAMES=(
     hooks.hrry.local
     mastodon.hrry.local
     1k.hrry.local
+    mike.hrry.local
     # Crazy ones
     hrry.me-local
     hrry.dev-local
@@ -42,6 +43,7 @@ declare -r HOSTNAMES=(
     grafana.hrry.dev-local
     wiki.hrry.me-local
     1k.hrry.me-local
+    mike.hrry.me-local
     api.hrry.me-local
     gopkg.hrry.dev-local
     files.hrry.dev-local

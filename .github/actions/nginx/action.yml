@@ -13,6 +13,10 @@ inputs:
     description: List of modules to include in the build.
     required: false
     default: geoip geoip2 headers-more opentracing otel ndk encrypted-session
+  platforms:
+    description: Docker image build target platforms
+    required: true
+    default: linux/amd64,linux/arm64,linux/arm/v7
 
 runs:
   using: "composite"
@@ -33,24 +37,30 @@ runs:
       with:
         repository: nginxinc/docker-nginx
         ref: ${{ inputs.version }}
+        path: /tmp/docker-nginx
     - name: Build Basic Image
       run: |
         docker buildx build \
           --file mainline/alpine-slim/Dockerfile \
+          --platforms linux/amd64,linux/arm64,linux/arm/v7 \
           --tag "${{ inputs.image }}:latest-basic" \
           --tag "${{ inputs.image }}:${{ inputs.version }}-basic" \
           --push \
           ./mainline/alpine-slim
       shell: bash
+      working-directory: /tmp/docker-nginx
     - name: Build Modules Image
       run: |
         docker buildx build \
           --build-arg "ENABLED_MODULES=${{ inputs.modules }}" \
           --build-arg "NGINX_FROM_IMAGE=nginx:${{ inputs.version }}-alpine" \
           --file modules/Dockerfile.alpine \
+          --platforms linux/amd64,linux/arm64,linux/arm/v7 \
           --tag "${{ inputs.image }}:latest" \
           --tag "${{ inputs.image }}:${{ inputs.version }}" \
           --tag "${{ inputs.image }}:${{ inputs.version }}-alpine" \
+          --tag "${{ inputs.image }}:${{ github.sha }}" \
           --push \
         ./modules
       shell: bash
+      working-directory: /tmp/docker-nginx
