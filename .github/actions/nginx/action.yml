@@ -42,7 +42,7 @@ runs:
       run: |
         docker buildx build \
           --file mainline/alpine-slim/Dockerfile \
-          --platforms linux/amd64,linux/arm64,linux/arm/v7 \
+          --platform linux/amd64,linux/arm64,linux/arm/v7 \
           --tag "${{ inputs.image }}:latest-basic" \
           --tag "${{ inputs.image }}:${{ inputs.version }}-basic" \
           --push \
@@ -55,7 +55,7 @@ runs:
           --build-arg "ENABLED_MODULES=${{ inputs.modules }}" \
           --build-arg "NGINX_FROM_IMAGE=nginx:${{ inputs.version }}-alpine" \
           --file modules/Dockerfile.alpine \
-          --platforms linux/amd64,linux/arm64,linux/arm/v7 \
+          --platform linux/amd64,linux/arm64,linux/arm/v7 \
           --tag "${{ inputs.image }}:latest" \
           --tag "${{ inputs.image }}:${{ inputs.version }}" \
           --tag "${{ inputs.image }}:${{ inputs.version }}-alpine" \
