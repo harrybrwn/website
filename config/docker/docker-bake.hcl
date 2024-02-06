@@ -427,7 +427,7 @@ target "rust_1-71-1" {
 target "rust_1-75-0" {
     inherits = ["rust-base"]
     tags = rust_tags("1.75.0", true)
-    args = {RUST_VERSION = "1.75.0"}
+    args = {RUST_VERSION = "1.75.0", RUST_BASE = "alpine3.18"}
 }
 
 #
