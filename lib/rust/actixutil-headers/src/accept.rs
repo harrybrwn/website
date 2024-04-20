@@ -49,7 +49,8 @@ where
     T: Into<MimeItem> + Clone,
 {
     fn from(v: &[T]) -> Self {
-        Self::from_iter(v.into_iter().map(|v| v.clone()))
+        // Self::from_iter(v.into_iter().map(|v| v.clone()))
+        Self::from_iter(v.iter().map(|v| v.clone()))
     }
 }
 
@@ -70,6 +71,7 @@ where
 }
 
 impl Accept {
+    #[allow(clippy::len_zero)]
     pub fn empty(&self) -> bool {
         self.0.len() > 0
     }
@@ -80,7 +82,7 @@ impl Accept {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     #[inline]

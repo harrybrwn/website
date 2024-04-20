@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      @-moz-keyframes spin {
+        100% { -moz-transform: rotate(360deg); }
+      }
+      @-webkit-keyframes spin {
+        100% { -webkit-transform: rotate(360deg); }
+      }
+      @keyframes spin {
+        100% {
+          -webkit-transform: rotate(360deg);
+          transform:rotate(360deg);
+        }
+      }
+      #mike {
+        width: 100%;
+        hight: 100%;
+        -webkit-animation:spin 2s linear infinite;
+        -moz-animation:spin 2s linear infinite;
+        animation:spin 2s linear infinite;
+        z-index: 0;
+      }
+      h1 {
+        margin-right: auto;
+        margin-left: auto;
+        max-width: 750px;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Mike is watching</h1>
+    <img id="mike" src="mike.png" />
+  </body>
+</html>

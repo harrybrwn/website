@@ -8,7 +8,7 @@ Just a few resources that I find helpful.
 
 - [raspberry pi kubernetes](https://rpi4cluster.com/)
 - [k8s homelab](https://github.com/khuedoan/homelab) that also has [docs here](https://homelab.khuedoan.com/)
-- [k8s homelap](https://github.com/Michaelpalacce/HomeLab)
+- [k8s homelab](https://github.com/Michaelpalacce/HomeLab)
 
 ## Kubernetes
 

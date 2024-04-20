@@ -24,6 +24,7 @@ spec:
       initContainers:
       - name: migrate
         image: oryd/hydra:v1.11.8
+        #image: oryd/hydra:v2.2.0
         imagePullPolicy: Always
         args: ["migrate", "sql", "-e", "-y"]
         envFrom:
@@ -31,6 +32,7 @@ spec:
       containers:
       - name: hydra
         image: oryd/hydra:v1.11.8
+        #image: oryd/hydra:v2.2.0
         imagePullPolicy: Always
         args: ["serve", "all", "--config=/etc/hydra/hydra.yml"]
         envFrom:

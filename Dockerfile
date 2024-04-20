@@ -303,7 +303,7 @@ RUN mkdocs build
 #####################
 # Webserver Frontend
 #####################
-FROM nginx:${NGINX_VERSION} as nginx
+FROM harrybrwn/nginx:${NGINX_VERSION} as nginx
 ENV REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
 RUN --mount=type=cache,id=nginx-apk,target=/var/cache/apk \
     apk update && \
@@ -323,7 +323,7 @@ COPY --from=mkdocs /opt/hrry.me/build/docs.hrry.dev /var/www/docs.hrry.dev
 COPY config/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 COPY config/nginx/ /etc/nginx/
 COPY frontend/1k /var/www/1k.hrry.me
-#COPY frontend/mike /var/www/mike.hrry.me
+COPY frontend/mike /var/www/mike.hrry.me
 
 #
 # Registry UI

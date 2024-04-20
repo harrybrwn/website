@@ -376,6 +376,7 @@ group "rust" {
             "70-0",
             "71-1",
             "75-0",
+            "77-2",
         ]:
         "rust_1-${i}"
     ]
@@ -428,6 +429,12 @@ target "rust_1-75-0" {
     inherits = ["rust-base"]
     tags = rust_tags("1.75.0", true)
     args = {RUST_VERSION = "1.75.0", RUST_BASE = "alpine3.18"}
+}
+
+target "rust_1-77-2" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.77.2", true)
+    args = {RUST_VERSION = "1.77.2", RUST_BASE = "alpine3.18"}
 }
 
 #
