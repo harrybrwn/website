@@ -294,7 +294,7 @@ ENTRYPOINT [ "gopkg" ]
 #
 # mkdocs
 #
-FROM squidfunk/mkdocs-material:9.1.13 as mkdocs
+FROM squidfunk/mkdocs-material:9.5.18 as mkdocs
 WORKDIR /opt/hrry.me/
 COPY mkdocs.yml ./
 COPY docs/ docs/

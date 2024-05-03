@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ocis:
     image: owncloud/ocis:${OCIS_DOCKER_TAG:-latest}

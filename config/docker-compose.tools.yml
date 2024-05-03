@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   provision:
     image: ${REGISTRY}/harrybrwn/provision:${VERSION:-latest}

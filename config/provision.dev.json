@@ -114,6 +114,15 @@
           },
           "Roles": ["pg_monitor"]
         }
+      },
+      {
+        "Name": "bk",
+        "Password": "testbed08",
+        "Grants": {
+          "Database": {
+              "bk": ["CONNECT"]
+          }
+        }
       }
     ],
     "Databases": []

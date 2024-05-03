@@ -1,5 +1,3 @@
-version: "3.8"
-
 configs:
   fluent-bit.conf:
     file: ./config/logging/fluent-bit/fluent-bit.conf
