@@ -415,26 +415,32 @@ target "rust_1-68-0" {
 
 target "rust_1-70-0" {
     inherits = ["rust-base"]
-    tags = rust_tags("1.70.0", true)
+    tags = rust_tags("1.70.0", false)
     args = {RUST_VERSION = "1.70.0"}
 }
 
 target "rust_1-71-1" {
     inherits = ["rust-base"]
-    tags = rust_tags("1.71.1", true)
+    tags = rust_tags("1.71.1", false)
     args = {RUST_VERSION = "1.71.1"}
 }
 
 target "rust_1-75-0" {
     inherits = ["rust-base"]
-    tags = rust_tags("1.75.0", true)
+    tags = rust_tags("1.75.0", false)
     args = {RUST_VERSION = "1.75.0", RUST_BASE = "alpine3.18"}
 }
 
 target "rust_1-77-2" {
     inherits = ["rust-base"]
-    tags = rust_tags("1.77.2", true)
+    tags = rust_tags("1.77.2", false)
     args = {RUST_VERSION = "1.77.2", RUST_BASE = "alpine3.18"}
+}
+
+target "rust_1-78-0" {
+    inherits = ["rust-base"]
+    tags = rust_tags("1.78.0", true)
+    args = {RUST_VERSION = "1.78.0", RUST_BASE = "alpine3.18"}
 }
 
 #
