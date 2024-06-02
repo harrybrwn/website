@@ -7,6 +7,12 @@ variable "storage_path" {
   default = "openvpn"
 }
 
+variable "users" {
+  type        = list(string)
+  default     = []
+  description = "A list of users that will get their own vpn client configurations"
+}
+
 /* Networking Variables */
 
 variable "vpc_id" {

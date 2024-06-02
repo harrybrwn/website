@@ -17,3 +17,28 @@ resource "cloudflare_zone_dnssec" "h3y_sh_dnssec" {
 #   ttl     = 60
 #   zone_id = cloudflare_zone.h3y_sh.id
 # }
+
+resource "cloudflare_email_routing_settings" "h3y" {
+  zone_id = cloudflare_zone.h3y_sh.id
+  enabled = "true"
+}
+
+resource "cloudflare_email_routing_rule" "h3y" {
+  for_each = toset(concat(
+    [
+      "br3ie_+twitch0", # my twitch account lol
+    ],
+  ))
+  zone_id = cloudflare_zone.h3y_sh.id
+  enabled = true
+  name    = "cf email route ${each.key}"
+  matcher {
+    type  = "literal"
+    field = "to"
+    value = "${each.key}@h3y.sh"
+  }
+  action {
+    type  = "forward"
+    value = [var.destination_email]
+  }
+}

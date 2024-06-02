@@ -1,6 +1,7 @@
 locals {
   tags = {
-    Name = "${var.project_name}-vpn"
+    Name        = "${var.project_name}"
+    Provisioner = "Terraform"
   }
   template_path      = "/var/tmp/vpn"
   admin_user         = "openvpn"
@@ -26,24 +27,27 @@ resource "aws_security_group" "vpn" {
   tags   = local.tags
 
   ingress {
-    from_port   = 1194
-    to_port     = 1194
-    protocol    = "udp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port        = 1194
+    to_port          = 1194
+    protocol         = "udp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   ingress {
-    from_port   = var.ssh_port
-    to_port     = var.ssh_port
-    protocol    = "tcp"
-    cidr_blocks = [var.ssh_cidr]
+    from_port        = var.ssh_port
+    to_port          = var.ssh_port
+    protocol         = "tcp"
+    cidr_blocks      = [var.ssh_cidr]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = -1
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port        = 0
+    to_port          = 0
+    protocol         = -1
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -51,6 +55,7 @@ resource "aws_instance" "vpn" {
   ami                    = var.ami
   instance_type          = var.instance_type
   subnet_id              = var.public_subnet_id
+  ipv6_address_count     = 1
   key_name               = var.key_name
   vpc_security_group_ids = concat([aws_security_group.vpn.id], var.vpc_security_group_ids)
   # We want to allow the destination address to not match the instance since
@@ -91,6 +96,10 @@ resource "null_resource" "provision_openvpn" {
       "sudo hostnamectl set-hostname ${aws_instance.vpn.tags["Name"]}",
       "rm -rf ${local.template_path}",
       "mkdir -p ${local.template_path}",
+      "echo 'net.ipv6.conf.all.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv6.conf.default.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+      "echo 'net.ipv6.conf.lo.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+      "sudo sysctl -p",
     ]
   }
 }
@@ -118,8 +127,8 @@ resource "null_resource" "openvpn_install" {
     content = templatefile(
       format("%s/%s", path.module, "templates/install.sh.tpl"),
       {
-        public_ip = aws_eip.vpn_ip.public_ip
-        client    = local.admin_user
+        #public_ip = aws_eip.vpn_ip.public_ip
+        client = local.admin_user
       }
     )
   }
@@ -138,10 +147,8 @@ resource "null_resource" "openvpn_adduser" {
     port        = format("%d", var.ssh_port)
     private_key = var.private_key_openssh
     host        = aws_eip.vpn_ip.public_ip
-    # users       = [
-    #   local.admin_user,
-    # ]
-    user = local.admin_user
+    users       = join(" ", concat([local.admin_user], var.users))
+    #user = local.admin_user
   }
 
   depends_on = [null_resource.openvpn_install]
@@ -160,7 +167,7 @@ resource "null_resource" "openvpn_adduser" {
       # TODO add support for multiple users
       format("%s/%s", path.module, "templates/update_user.sh.tpl"),
       {
-        client = local.admin_user
+        client = self.triggers.users
       }
     )
   }
@@ -172,9 +179,9 @@ resource "null_resource" "openvpn_adduser" {
       format("%s %s", "sudo ", local.update_user_script),
       format(
         "sudo cp %s /home/${var.ssh_user}/",
-        #join(" ", [for u in self.triggers.users : "/root/${u}.ovpn" ])
-        "/root/${self.triggers.user}.ovpn"
-      )
+        join(" ", [for u in concat([local.admin_user], var.users) : "/root/${u}.ovpn"])
+      ),
+      "sudo sysctl -p", # again just to be sure
     ]
   }
 }
@@ -198,6 +205,7 @@ resource "null_resource" "openvpn_download_configurations" {
     port        = format("%d", var.ssh_port)
     private_key = local_file.private_key_file.filename
     host        = aws_eip.vpn_ip.public_ip
+    users       = join(" ", concat([local.admin_user], var.users))
   }
 
   depends_on = [
@@ -212,6 +220,27 @@ resource "null_resource" "openvpn_download_configurations" {
     scp -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
       -i ${self.triggers.private_key} ${self.triggers.user}@${self.triggers.host}:/home/${self.triggers.user}/*.ovpn ${local.ovpn_config_path}/;
-EOT
+    EOT
+  }
+}
+
+resource "null_resource" "remove_configurations" {
+  triggers = {
+    user        = var.ssh_user
+    port        = format("%d", var.ssh_port)
+    private_key = local_file.private_key_file.filename
+    host        = aws_eip.vpn_ip.public_ip
+    users       = join(" ", concat([local.admin_user], var.users))
+    config_path = local.ovpn_config_path
+  }
+  depends_on = [
+    null_resource.openvpn_adduser,
+    aws_eip.vpn_ip,
+    local_file.private_key_file,
+  ]
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "rm -rf ${self.triggers.config_path}/"
   }
 }

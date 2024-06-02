@@ -46,6 +46,7 @@ resource "aws_key_pair" "key" {
 module "vpn" {
   source              = "../../modules/aws/vpn"
   project_name        = local.name
+  users               = ["harry-ovpn"]
   storage_path        = local.ovpn_storage_path
   vpc_id              = aws_vpc.vpc.id
   public_subnet_id    = aws_subnet.public.id

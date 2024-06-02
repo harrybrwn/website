@@ -6,8 +6,9 @@ terraform {
     }
     # https://registry.terraform.io/providers/cloudflare/cloudflare/latest/docs
     cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 3.31.0"
+      source = "cloudflare/cloudflare"
+      # version = "~> 3.31.0"
+      version = "~> 4.34.0"
     }
     github = {
       source  = "integrations/github"
