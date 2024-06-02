@@ -192,6 +192,12 @@ target "lnsmol" {
     inherits = ["base-service"]
 }
 
+target "bk" {
+    target   = "bk"
+    tags     = tags("", "bk", []) // publish to dockerhub
+    inherits = ["base-service"]
+}
+
 target "gopkg" {
     target   = "gopkg-rs"
     tags     = tags("", "gopkg", []) // publish to dockerhub

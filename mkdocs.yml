@@ -11,14 +11,14 @@ site_dir: build/docs.hrry.dev
 theme:
   name: material
   palette:
-    # dark
+    # light
     - scheme: default
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-2  # moon
         name: Switch to dark mode
-    # red
+    # dark
     - scheme: slate
       primary: indigo
       accent: indigo

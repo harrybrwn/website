@@ -43,6 +43,7 @@ jobs:
           geoip-rs    \
           lnsmol      \
           geoipupdate \
+          bk          \
           geoipupdate-go
 
   nginx:
@@ -58,6 +59,7 @@ jobs:
       - name: Build NGINX
         uses: ./.github/actions/nginx
         with:
-          version: 1.25.4
+          version: 1.25.5
           image: harrybrwn/nginx
+          ref: 29d5001c15e7a2c7b34402c35254cc55199f8cc8
 

@@ -291,6 +291,14 @@ RUN apk -U add ca-certificates && rm -rf /var/cache/apk
 COPY --from=rust-builder /usr/local/bin/gopkg /usr/bin/
 ENTRYPOINT [ "gopkg" ]
 
+#######################
+# bk
+#######################
+FROM alpine:${ALPINE_VERSION} as bk
+RUN apk -U add ca-certificates && rm -rf /var/cache/apk
+COPY --from=rust-builder /usr/local/bin/bk /usr/bin/
+ENTRYPOINT [ "bk" ]
+
 #
 # mkdocs
 #

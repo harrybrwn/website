@@ -14,6 +14,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/spf13/cobra"
+
 	"gopkg.hrry.dev/homelab/pkg/log"
 	"gopkg.hrry.dev/homelab/pkg/provision"
 )
@@ -36,6 +37,7 @@ func NewRootCmd() *cobra.Command {
 		extraPolicies []string
 		envFile       string
 		cli           Cli
+		skipS3        = false
 	)
 	if exists(".env") {
 		godotenv.Load(".env")
@@ -56,11 +58,13 @@ func NewRootCmd() *cobra.Command {
 			cli.config.DB.Defaults()
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			ctx := cmd.Context()
-			err := cli.config.S3.Provision(ctx, logger, cli.admin, cli.client)
-			if err != nil {
-				return err
+			if !skipS3 {
+				err = cli.config.S3.Provision(ctx, logger, cli.admin, cli.client)
+				if err != nil {
+					return err
+				}
 			}
 			err = cli.config.DB.Provision(ctx)
 			if err != nil {
@@ -95,13 +99,24 @@ func NewRootCmd() *cobra.Command {
 	)
 	flg := c.PersistentFlags()
 	flg.StringArrayVarP(&configFiles, "config", "c", configFiles, "specify the config file")
-	flg.StringArrayVar(&extraPolicies, "extra-policy", extraPolicies, "add extra AWS Access policies from a json file")
+	flg.StringArrayVar(
+		&extraPolicies,
+		"extra-policy",
+		extraPolicies,
+		"add extra AWS Access policies from a json file",
+	)
 	flg.StringVar(&cli.config.S3.AccessKey, "s3-access-key", "", "access key for s3 object storage")
 	flg.StringVar(&cli.config.S3.SecretKey, "s3-secret-key", "", "secret key for s3 object storage")
-	flg.StringVar(&cli.config.S3.Endpoint, "s3-endpoint", os.Getenv("S3_ENDPOINT"), "endpoint for s3 object storage")
+	flg.StringVar(
+		&cli.config.S3.Endpoint,
+		"s3-endpoint",
+		os.Getenv("S3_ENDPOINT"),
+		"endpoint for s3 object storage",
+	)
 	flg.StringVar(&envFile, "env-file", "", "load environment variables from a file")
 	flg.StringVar(&cli.config.DB.Host, "db-host", "", "database host")
 	flg.StringVar(&cli.config.DB.Port, "db-port", "", "database port")
+	c.Flags().BoolVar(&skipS3, "skip-s3", skipS3, "skip running the provision step for s3")
 	return c
 }
 

@@ -68,7 +68,12 @@
         {
           default = pkgs.buildEnv {
             name = "hrry.me";
-            paths = with self.packages.${system}; [ tools freeradius api geoip ];
+            paths = with self.packages.${system}; [
+              tools
+              freeradius
+              api
+              geoip
+            ];
           };
           tools = pkgs.buildEnv {
             name = "tools";
@@ -77,7 +82,7 @@
               kubeval
               mc
               provision
-              lab
+              # lab
             ];
           };
           geoip = naersk'.buildPackage rec {

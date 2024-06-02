@@ -1,5 +1,3 @@
-version: "3.8"
-
 # TODO
 # - [ ] https://github.com/AppFlowy-IO/appflowy
 # - [ ] https://www.appflowy.io/
@@ -100,7 +98,7 @@ services:
       target: nginx
       args:
         - REGISTRY_UI_ROOT=/var/www/registry.hrry.dev
-        - NGINX_VERSION=1.25.5-alpine
+        - NGINX_VERSION=1.25.3-alpine
       tags:
         - ${REGISTRY}/harrybrwn/nginx:latest
         - ${REGISTRY}/harrybrwn/nginx:1.23.3-alpine

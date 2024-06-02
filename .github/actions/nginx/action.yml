@@ -5,6 +5,9 @@ inputs:
   version:
     description: Nginx version tag.
     required: true
+  ref:
+    description: Git ref to use when pulling https://github.com/nginxinc/docker-nginx
+    required: true
   image:
     description: Docker image name.
     required: true
@@ -36,7 +39,7 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: nginxinc/docker-nginx
-        ref: ${{ inputs.version }}
+        ref: ${{ inputs.ref }}
         path: ./build/docker-nginx
     - name: Build Modules Image
       run: |

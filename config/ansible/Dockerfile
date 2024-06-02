@@ -1,7 +1,7 @@
 #
 # Ansible
 #
-FROM ubuntu:latest as ansible
+FROM ubuntu:22.04 as ansible
 ENV TZ="America/Los_Angeles" DEBIAN_FRONTEND=noninteractive
 RUN yes | unminimize
 RUN apt-get update && \
@@ -22,7 +22,7 @@ RUN apt-get install -yq \
         git      \
         vim      \
         dnsutils \
-        netcat   \
+        netcat \
         curl
 RUN pip install \
         ansible==9.0.1       \
@@ -42,7 +42,7 @@ RUN mkdir -p /usr/local/bin && \
         ansible
 RUN --mount=type=ssh \
     mkdir /home/ansible/.ssh && \
-    ssh-keyscan 10.0.0.1 >> /home/ansible/.ssh/known_hosts && \
+    # ssh-keyscan 10.0.0.1 >> /home/ansible/.ssh/known_hosts && \
     echo '10.0.0.1 ssh-rsa AAAAB3NzaC1yc2EAAAABAwAAAQEAmiNE3hZ1Iiis4WYTnc183jvYTKqfYv5KRxZsWzxayugOn2r7IZpuJ23X5biRcXc8ldSDdO4Gv1xplf9FQVERJCRwRX2CnhBC/k4Vf+M2JQDCKCgXyfMWjtYT5PSgpnH+SwE7Uw1HkMceJiuxGHl+pdoHlZOyt9eIBh3rjF1GpqA+6e8mNYhpcom7XXQRvaMilyjvZGbhuBkInJCy1PgXqNkst83WUxSZhSrGbvlvEIPqZsn6pyxVXKiROv6uO+Bsro3XoJs2WO3QaYDUKy2lbHK2YcufegIPtIOOZ6mQXaVXEdwJ9Ah0jfAuWslSjqrAWLrYbX/JOvWhvmylfyVFew==' >> /home/ansible/.ssh/known_hosts && \
     echo 'router.lan ssh-rsa AAAAB3NzaC1yc2EAAAABAwAAAQEAmiNE3hZ1Iiis4WYTnc183jvYTKqfYv5KRxZsWzxayugOn2r7IZpuJ23X5biRcXc8ldSDdO4Gv1xplf9FQVERJCRwRX2CnhBC/k4Vf+M2JQDCKCgXyfMWjtYT5PSgpnH+SwE7Uw1HkMceJiuxGHl+pdoHlZOyt9eIBh3rjF1GpqA+6e8mNYhpcom7XXQRvaMilyjvZGbhuBkInJCy1PgXqNkst83WUxSZhSrGbvlvEIPqZsn6pyxVXKiROv6uO+Bsro3XoJs2WO3QaYDUKy2lbHK2YcufegIPtIOOZ6mQXaVXEdwJ9Ah0jfAuWslSjqrAWLrYbX/JOvWhvmylfyVFew==' >> /home/ansible/.ssh/known_hosts
 RUN \
