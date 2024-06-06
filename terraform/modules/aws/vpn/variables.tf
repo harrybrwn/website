@@ -23,6 +23,12 @@ variable "public_subnet_id" {
   type = string
 }
 
+variable "ipv6" {
+  type        = bool
+  default     = false
+  description = "Set to 'true' to enable ipv6 networking."
+}
+
 /* Instance Variables */
 
 variable "ami" {

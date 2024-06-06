@@ -31,7 +31,7 @@ resource "aws_security_group" "vpn" {
     to_port          = 1194
     protocol         = "udp"
     cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    ipv6_cidr_blocks = var.ipv6 ? ["::/0"] : []
   }
 
   ingress {
@@ -39,7 +39,7 @@ resource "aws_security_group" "vpn" {
     to_port          = var.ssh_port
     protocol         = "tcp"
     cidr_blocks      = [var.ssh_cidr]
-    ipv6_cidr_blocks = ["::/0"]
+    ipv6_cidr_blocks = var.ipv6 ? ["::/0"] : []
   }
 
   egress {
@@ -47,7 +47,7 @@ resource "aws_security_group" "vpn" {
     to_port          = 0
     protocol         = -1
     cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    ipv6_cidr_blocks = var.ipv6 ? ["::/0"] : []
   }
 }
 
@@ -55,7 +55,7 @@ resource "aws_instance" "vpn" {
   ami                    = var.ami
   instance_type          = var.instance_type
   subnet_id              = var.public_subnet_id
-  ipv6_address_count     = 1
+  ipv6_address_count     = var.ipv6 ? 1 : 0
   key_name               = var.key_name
   vpc_security_group_ids = concat([aws_security_group.vpn.id], var.vpc_security_group_ids)
   # We want to allow the destination address to not match the instance since
@@ -90,17 +90,22 @@ resource "null_resource" "provision_openvpn" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get -y update",
-      "sudo apt-get install -y curl vim git libltdl7 python3 python3-pip python software-properties-common unattended-upgrades",
-      "sudo hostnamectl set-hostname ${aws_instance.vpn.tags["Name"]}",
-      "rm -rf ${local.template_path}",
-      "mkdir -p ${local.template_path}",
-      "echo 'net.ipv6.conf.all.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
-      "echo 'net.ipv6.conf.default.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
-      "echo 'net.ipv6.conf.lo.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
-      "sudo sysctl -p",
-    ]
+    inline = concat(
+      [
+        "sudo apt-get -y update",
+        "sudo apt-get install -y curl vim git libltdl7 python3 python3-pip python software-properties-common unattended-upgrades",
+        "sudo hostnamectl set-hostname ${aws_instance.vpn.tags["Name"]}",
+        "rm -rf ${local.template_path}",
+        "mkdir -p ${local.template_path}",
+      ],
+      # if 'ipv6' is false then disable ipv6 on the machine
+      var.ipv6 == false ? [
+        "echo 'net.ipv6.conf.all.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+        "echo 'net.ipv6.conf.default.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+        "echo 'net.ipv6.conf.lo.disable_ipv6 = 1' | sudo tee -a /etc/sysctl.conf",
+        "sudo sysctl -p",
+      ] : []
+    )
   }
 }
 
@@ -127,8 +132,8 @@ resource "null_resource" "openvpn_install" {
     content = templatefile(
       format("%s/%s", path.module, "templates/install.sh.tpl"),
       {
-        #public_ip = aws_eip.vpn_ip.public_ip
-        client = local.admin_user
+        public_ip = aws_eip.vpn_ip.public_ip
+        client    = local.admin_user
       }
     )
   }

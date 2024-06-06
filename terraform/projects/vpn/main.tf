@@ -4,7 +4,20 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 4.16"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.34.0"
+    }
   }
+}
+
+provider "aws" {
+  profile = "terraform"
+  region  = lookup(local.region_mapping, local.region_name)
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_token
 }
 
 locals {
@@ -22,15 +35,6 @@ locals {
   #ami = "ami-008fe2fc65df48dac"
   ami = "ami-0dca369228f3b2ce7" # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
 }
-
-provider "aws" {
-  profile = "terraform"
-  region  = lookup(local.region_mapping, local.region_name)
-}
-
-# module "ubuntu" {
-#   source = "../../modules/aws/ubuntu_ami"
-# }
 
 module "key" {
   source   = "../../modules/ssh-key"
@@ -56,6 +60,19 @@ module "vpn" {
   ssh_user            = "ubuntu"
   public_key_openssh  = module.key.public_key
   private_key_openssh = module.key.private_key
+}
+
+data "cloudflare_zone" "hrry_dev" {
+  name = "hrry.dev"
+}
+
+resource "cloudflare_record" "vpn" {
+  zone_id = data.cloudflare_zone.hrry_dev.id
+  type    = "A"
+  name    = "vpn"
+  value   = module.vpn.public_ip
+  proxied = false
+  ttl     = 60
 }
 
 output "ip" {

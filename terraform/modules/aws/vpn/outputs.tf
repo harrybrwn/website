@@ -7,7 +7,7 @@ output "ipv4" {
 }
 
 output "ipv6" {
-  value = element(aws_instance.vpn.ipv6_addresses, 0)
+  value = var.ipv6 ? element(aws_instance.vpn.ipv6_addresses, 0) : ""
 }
 
 output "config_file" {

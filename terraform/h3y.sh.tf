@@ -27,6 +27,8 @@ resource "cloudflare_email_routing_rule" "h3y" {
   for_each = toset(concat(
     [
       "br3ie_+twitch0", # my twitch account lol
+      "oof",
+      "private",
     ],
   ))
   zone_id = cloudflare_zone.h3y_sh.id
@@ -35,7 +37,7 @@ resource "cloudflare_email_routing_rule" "h3y" {
   matcher {
     type  = "literal"
     field = "to"
-    value = "${each.key}@h3y.sh"
+    value = "${each.key}@${cloudflare_zone.h3y_sh.zone}"
   }
   action {
     type  = "forward"
