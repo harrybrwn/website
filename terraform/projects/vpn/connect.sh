@@ -6,7 +6,7 @@ echo '$ sudo -v'
 sudo -v
 CONF="${1:-}"
 if [ -z "${CONF}" ]; then
-  CONF="$(terraform output --raw config)"
+  CONF="$(tofu output --raw config)"
 fi
 
 echo "Disabling IPv6"

@@ -40,14 +40,20 @@ export PROTOCOL_CHOICE=1
 # Approve IP automatically (y/n)
 export APPROVE_IP=y
 
-if [[ -z "${public_ip}" ]]; then
+if [[ -n "${public_ip}" ]]; then
   export IP="${public_ip}"
 fi
 
-sudo AUTO_INSTALL=y \
-    APPROVE_INSTALL=y \
-    IPV6_SUPPORT=n \
-    CLIENT=${client} \
-    ./openvpn-install.sh
+sudo \
+  AUTO_INSTALL=y             \
+  APPROVE_INSTALL=y          \
+  APPROVE_IP="$APPROVE_IP"   \
+  IPV6_SUPPORT=n             \
+  PORT_CHOICE="$PORT_CHOICE" \
+  CLIENT=${client}           \
+  PROTOCOL_CHOICE="$PROTOCOL_CHOICE" \
+  DNS="$DNS"   \
+  PASS="$PASS" \
+  ./openvpn-install.sh
 
 # vim: ft=sh

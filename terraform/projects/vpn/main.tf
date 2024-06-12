@@ -1,4 +1,10 @@
 terraform {
+  backend "s3" {
+    bucket         = "hrryhomelab"
+    key            = "infra/projects/vpn.tfstate"
+    region         = "us-west-2"
+    dynamodb_table = "infra"
+  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
