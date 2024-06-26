@@ -200,6 +200,11 @@ elif ${USE_K8s}; then
   do_kubectl -n kube-system wait pods -l 'k8s-app=kube-dns' --for=condition=Ready
   do_kubectl -n kube-system wait pods -l 'k8s-app=metrics-server' --for=condition=Ready
   wait_for_traefik
+  kubeoutput="$(kubectl kustomize config/k8s/dev 2>&1)"
+  if [ $? -ne 0 ]; then
+    error bootstrap "kustomize failed: ${kubeoutput}"
+    exit 1
+  fi
 
   info bootstrap "Starting helm charts"
   #do_kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'

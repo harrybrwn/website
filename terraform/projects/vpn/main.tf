@@ -66,6 +66,7 @@ module "vpn" {
   ssh_user            = "ubuntu"
   public_key_openssh  = module.key.public_key
   private_key_openssh = module.key.private_key
+  ipv6                = true
 }
 
 data "cloudflare_zone" "hrry_dev" {

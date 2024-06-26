@@ -29,6 +29,7 @@ resource "cloudflare_email_routing_rule" "h3y" {
       "br3ie_+twitch0", # my twitch account lol
       "oof",
       "private",
+      "me",
     ],
   ))
   zone_id = cloudflare_zone.h3y_sh.id

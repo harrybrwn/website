@@ -1,0 +1,9 @@
+customCommandJob:
+  extraVolumeMounts:
+    - name: extra-files
+      mountPath: /mnt/extras
+  extraVolumes:
+    - name: extra-files
+      configMap:
+        name: extra-files-cm
+

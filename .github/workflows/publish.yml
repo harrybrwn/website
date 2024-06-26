@@ -59,7 +59,7 @@ jobs:
       - name: Build NGINX
         uses: ./.github/actions/nginx
         with:
-          version: 1.25.5
+          version: 1.27.0
           image: harrybrwn/nginx
-          ref: 29d5001c15e7a2c7b34402c35254cc55199f8cc8
+          ref: b5e83108e52bfb4aeea4cb533285e58792a2bd40
 

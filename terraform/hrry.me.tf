@@ -35,6 +35,7 @@ resource "cloudflare_record" "hrry_me_dns" {
   for_each = toset([
     "wiki",
     "1k",
+    "mike",
     "api",
     "l",
   ])

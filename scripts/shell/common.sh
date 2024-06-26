@@ -43,7 +43,7 @@ error() {
 list-images() {
 	blob="$(docker buildx bake \
 		--file config/docker/docker-bake.hcl \
-		--print 2>&1 \
+		--print 2>/dev/null \
 		| jq -r '.target[] | .tags[]' \
 		| sort \
 		| uniq \

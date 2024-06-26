@@ -19,6 +19,9 @@ fi
 sudo nmcli connection import type openvpn file "${CONF}"
 #sudo nmcli connection modify "${NAME}" ipv4.dns '10.0.0.1' # Set correct router IP (this may change)
 sudo nmcli connection modify "${NAME}" ipv6.method 'disabled' # disable ipv6
+sudo sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sudo sysctl -w net.ipv6.conf.default.disable_ipv6=1
+sudo sysctl -p
 sudo systemctl restart NetworkManager.service
 
 echo "Config imported. You may need to change the DNS settings!"
