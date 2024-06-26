@@ -56,14 +56,15 @@ runs:
         ./modules
       shell: bash
       working-directory: ./build/docker-nginx
-    - name: Build Basic Image
-      run: |
-        docker buildx build \
-          --file mainline/alpine-slim/Dockerfile \
-          --platform linux/amd64,linux/arm/v7 \
-          --tag "${{ inputs.image }}:latest-basic" \
-          --tag "${{ inputs.image }}:${{ inputs.version }}-basic" \
-          --push \
-          ./mainline/alpine-slim
-      shell: bash
-      working-directory: ./build/docker-nginx
+
+    # - name: Build Basic Image
+    #   run: |
+    #     docker buildx build \
+    #       --file mainline/alpine-slim/Dockerfile \
+    #       --platform linux/amd64,linux/arm/v7 \
+    #       --tag "${{ inputs.image }}:latest-basic" \
+    #       --tag "${{ inputs.image }}:${{ inputs.version }}-basic" \
+    #       --push \
+    #       ./mainline/alpine-slim
+    #   shell: bash
+    #   working-directory: ./build/docker-nginx

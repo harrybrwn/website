@@ -10,7 +10,24 @@ env:
   DOCKER_BUILDKIT: '1'
 
 jobs:
-  publish-rust:
+  nginx:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: harrybrwn
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build NGINX
+        uses: ./.github/actions/nginx
+        with:
+          version: 1.27.0
+          image: harrybrwn/nginx
+          ref: b5e83108e52bfb4aeea4cb533285e58792a2bd40
+
+  rust:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout
@@ -45,21 +62,3 @@ jobs:
           geoipupdate \
           bk          \
           geoipupdate-go
-
-  nginx:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Docker Login
-        uses: docker/login-action@v3
-        with:
-          username: harrybrwn
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Build NGINX
-        uses: ./.github/actions/nginx
-        with:
-          version: 1.27.0
-          image: harrybrwn/nginx
-          ref: b5e83108e52bfb4aeea4cb533285e58792a2bd40
-
