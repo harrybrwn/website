@@ -23,7 +23,7 @@ jobs:
       - name: Build NGINX
         uses: ./.github/actions/nginx
         with:
-          version: 1.27.1
+          version: 1.27.0
           image: harrybrwn/nginx
           # Update from https://github.com/nginxinc/docker-nginx
           ref: 94a27ac42d45670d941a55334d89e80760f7cc8e
