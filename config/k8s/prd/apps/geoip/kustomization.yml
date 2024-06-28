@@ -36,12 +36,12 @@ configMapGenerator:
   - name: geoipupdate-env-config
     behavior: create
     literals:
-      - AWS_ENDPOINT_URL=http://s3.default.svc.cluster.local:9000
+      - AWS_ENDPOINT_URL=http://minio.minio.svc.cluster.local:9000
   - name: geoip-env
     behavior: merge
     namespace: geoip
     literals:
-      - GEOIP_CITY_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-City.mmdb
-      - GEOIP_ASN_FILE=s3://s3.default.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-ASN.mmdb
+      - GEOIP_CITY_FILE=s3://minio.minio.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-City.mmdb
+      - GEOIP_ASN_FILE=s3://minio.minio.svc.cluster.local:9000/geoip/prd/latest/GeoLite2-ASN.mmdb
     options:
       disableNameSuffixHash: true

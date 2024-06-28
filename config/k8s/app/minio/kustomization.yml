@@ -1,8 +1,22 @@
 resources:
-  - console/service.yml
-  - console/secret.yml
-  - console/deployment.yml
+  # - console/service.yml
+  # - console/deployment.yml
+  - s3/secret.yml
   - s3/service.yml
   - s3/configmap.yml
   - s3/statefulset.yml
   - s3/servicemonitor.yml
+
+  - namespace.yml
+  - chart.yml
+
+configMapGenerator:
+  - name: minio-policies
+    namespace: minio
+    behavior: create
+    files:
+      - bucket-policies/outline-bucket-access.json
+      - bucket-policies/static-files.json
+    options:
+      disableNameSuffixHash: true
+

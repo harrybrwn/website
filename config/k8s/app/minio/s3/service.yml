@@ -13,3 +13,20 @@ spec:
   - port: 9000
     targetPort: s3-api
     name: s3-api
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  labels:
+    app.kubernetes.io/name: minio-console
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: minio
+spec:
+  selector:
+    app: s3
+  ports:
+  - port: 80
+    targetPort: console
+    name: http

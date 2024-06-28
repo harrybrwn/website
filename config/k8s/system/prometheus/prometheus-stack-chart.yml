@@ -17,6 +17,18 @@ spec:
       prometheusSpec:
         ingress:
           enabled: false
+
+        # When looking for ServiceMonitor objects, don't use any labels
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        serviceMonitorSelector: {}
+        serviceMonitorNamespaceSelector: {}
+        podMonitorSelector: {}
+        podMonitorNamespaceSelector: {}
+
         additionalScrapeConfigs:
           - job_name: 'kubernetes-nodes'
             scheme: https

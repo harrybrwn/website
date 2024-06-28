@@ -23,12 +23,12 @@ fi
 export KUBECONFIG="/home/${SUDO_USER:-}/.kube/config"
 
 if [ -z "$*" ]; then
-  kubectl port-forward svc/nginx 443:443 80:80 &
-  kubectl port-forward svc/s3 9000:9000 &
-  kubectl port-forward svc/db 5432:5432 &
-  kubectl port-forward svc/grafana 3000:3000 &
-  kubectl port-forward svc/redis 6379:6379 &
-  kubectl port-forward svc/geoip 8084:8084 &
+  kubectl -n default port-forward svc/nginx 443:443 80:80 &
+  kubectl -n minio   port-forward svc/minio 9000:9000 &
+  kubectl -n default port-forward svc/db 5432:5432 &
+  kubectl -n default port-forward svc/grafana 3000:3000 &
+  kubectl -n default port-forward svc/redis 6379:6379 &
+  kubectl -n default port-forward svc/geoip 8084:8084 &
 else
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,7 +40,8 @@ else
         kubectl port-forward svc/db 5432:5432 &
         ;;
       s3|minio)
-        kubectl port-forward svc/s3 9000:9000 &
+        #kubectl port-forward svc/s3 9000:9000 &
+        kubectl -n minio port-forward svc/minio 9000:9000 &
         ;;
       redis)
         kubectl port-forward svc/redis 6379:6379 &

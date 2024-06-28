@@ -23,9 +23,10 @@ jobs:
       - name: Build NGINX
         uses: ./.github/actions/nginx
         with:
-          version: 1.27.0
+          version: 1.27.1
           image: harrybrwn/nginx
-          ref: b5e83108e52bfb4aeea4cb533285e58792a2bd40
+          # Update from https://github.com/nginxinc/docker-nginx
+          ref: 94a27ac42d45670d941a55334d89e80760f7cc8e
 
   rust:
     runs-on: ubuntu-22.04

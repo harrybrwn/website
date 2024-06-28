@@ -59,33 +59,14 @@ patches:
     path: patches/loki-pvc.yml
   - target: { kind: StatefulSet, name: redis }
     path: patches/redis-pvc.yml
+
   - target:
-      kind: ServiceMonitor
+      kind: HelmChart
       labelSelector: app.kubernetes.io/name=minio,app.kubernetes.io/component=object-storage
     patch: |-
       - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack
-  - target:
-      kind: ServiceMonitor
-      labelSelector: app.kubernetes.io/name=loki
-    patch: |-
-      - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack
-  - target:
-      kind: ServiceMonitor
-      labelSelector: app.kubernetes.io/name=fluent-bit
-    patch: |-
-      - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack
-  - target:
-      kind: PodMonitor
-    patch: |-
-      - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack
+        path: /spec/set/environment.MINIO_BROWSER_REDIRECT_URL
+        value: http://s3-console.hrry.dev
 
 secretGenerator:
   - name: db-env-secrets
@@ -94,12 +75,53 @@ secretGenerator:
   - name: redis-secrets
     behavior: replace
     envs: [env/redis.env]
+
   - name: minio-env-secrets
     behavior: create
     envs: [env/minio-s3.env]
-  - name: minio-console-env
-    behavior: replace
-    envs: [env/minio-console.env]
+  #- name: minio-console-env
+  #  behavior: replace
+  #  envs: [env/minio-console.env]
+
+  - name: minio-root-user
+    namespace: minio
+    behavior: create
+    envs: [env/minio-root-user.env]
+    options: { disableNameSuffixHash: true }
+  - name: minio-env
+    envs:
+      - env/minio-pbkdf.env
+    namespace: minio
+    behavior: create
+    options: { disableNameSuffixHash: true }
+  - &minio-user
+    namespace: minio
+    behavior: create
+    options: { disableNameSuffixHash: true }
+    name: minio-user-loki
+    envs: [env/minio-users/loki.env]
+  - <<: *minio-user
+    name: minio-user-registry
+    envs: [env/minio-users/registry.env]
+  - <<: *minio-user
+    name: minio-user-backups
+    envs: [env/minio-users/backups.env]
+  - <<: *minio-user
+    name: minio-user-files
+    envs: [env/minio-users/files.env]
+  - <<: *minio-user
+    name: minio-user-outline
+    envs: [env/minio-users/outline.env]
+  - <<: *minio-user
+    name: minio-user-geoipupdate
+    envs: [env/minio-users/geoipupdate.env]
+  - <<: *minio-user
+    name: minio-user-github-actions
+    envs: [env/minio-users/github-actions.env]
+  # - <<: *minio-user
+  #   name: minio-user-mastodon
+  #   envs: [env/minio-users/mastodon.env]
+
   - name: hydra-env
     behavior: replace
     envs: [env/hydra.env]
@@ -108,10 +130,10 @@ secretGenerator:
     envs: [env/loki.env]
 
 configMapGenerator:
-  - name: minio-env-config
-    behavior: merge
-    literals:
-      - MINIO_BROWSER_REDIRECT_URL=http://s3-console.hrry.dev
+  # - name: minio-env-config
+  #   behavior: merge
+  #   literals:
+  #     - MINIO_BROWSER_REDIRECT_URL=http://s3-console.hrry.dev
   - name: hydra-env
     behavior: merge
     literals:
@@ -122,3 +144,4 @@ configMapGenerator:
       - URLS_CONSENT=https://hrry.me/login/
       - URLS_ERROR=https://hrry.me/oidc-error
       - URLS_LOGOUT=https://hrry.me/logout
+

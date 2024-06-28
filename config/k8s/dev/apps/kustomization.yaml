@@ -57,7 +57,7 @@ secretGenerator:
       # - REDIS_URL=redis://:testbed01
       # - REDIS_PASSWORD=
   - name: geoip-env
-    behavior: replace
+    behavior: create
     literals:
       - AWS_ACCESS_KEY_ID=root
       - AWS_SECRET_ACCESS_KEY=minio-testbed001
@@ -112,7 +112,7 @@ configMapGenerator:
     literals:
       - API_TOKEN_COOKIE_DOMAIN=hrry.me-local
   - name: geoip-env
-    behavior: replace
+    behavior: create
     literals:
       - GEOIP_CITY_FILE=s3://s3:9000/geoip/latest/GeoLite2-City.mmdb
       - GEOIP_ASN_FILE=s3://s3:9000/geoip/latest/GeoLite2-ASN.mmdb

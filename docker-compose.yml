@@ -358,6 +358,7 @@ services:
       backend:
         aliases:
           - s3.default.svc.cluster.local
+          - minio.minio.svc.cluster.local
       hrry.me:
     healthcheck:
       test: ["CMD", "curl", "-fI", "http://localhost:9000/minio/health/cluster"]

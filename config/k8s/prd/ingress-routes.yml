@@ -11,6 +11,7 @@ spec:
       HostSNI(`hrry.me`)
       || HostSNI(`api.hrry.me`)
       || HostSNI(`1k.hrry.me`)
+      || HostSNI(`mike.hrry.me`)
       || HostSNI(`s3.hrry.dev`)
       || HostSNI(`harrybrwn.com`)
       || HostSNI(`hextris.harrybrwn.com`)

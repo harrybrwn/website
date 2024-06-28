@@ -10,8 +10,10 @@ resources:
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/s3
-    newName: 10.0.0.11:5000/harrybrwn/s3
-    newTag: latest
+    #newName: 10.0.0.11:5000/harrybrwn/s3
+    #newTag: latest
+    newName: minio/minio
+    newTag: RELEASE.2024-06-11T03-13-30Z.fips
   - name: 10.0.0.11:5000/harrybrwn/fluent-bit
     newTag: latest
   - name: 10.0.0.11:5000/harrybrwn/loki

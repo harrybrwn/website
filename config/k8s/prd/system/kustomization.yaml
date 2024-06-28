@@ -15,14 +15,3 @@ patches:
       kind: Deployment
       name: nfs-client-provisioner
     path: nfs-provisioner.yml
-  # Remove this when we add a prometheus operator
-  - target:
-      kind: HelmChart
-      name: cert-manager
-    patch: |-
-      - op: replace
-        path: /spec/valuesContent
-        value: |-
-          enabled: true
-          namespace: cert-manager
-          installCRDs: true

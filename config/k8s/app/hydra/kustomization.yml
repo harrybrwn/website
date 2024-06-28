@@ -35,10 +35,3 @@ patches:
           app.kubernetes.io/name: hydra
           app.kubernetes.io/part-of: hydra
           app.kubernetes.io/component: auth
-  - target:
-      kind: ServiceMonitor
-      labelSelector: app.kubernetes.io/name=hydra
-    patch: |-
-      - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack

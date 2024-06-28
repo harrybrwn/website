@@ -9,15 +9,11 @@ spec:
     namespace: cert-manager
     installCRDs: true
     prometheus:
-      enabled: false
+      enabled: true
       servicemonitor:
-        enabled: false
-        labels:
-          release: prometheus-stack
+        enabled: true
       podmonitor:
-        enabled: false
-        labels:
-          release: prometheus-stack
+        enabled: true
     resources:
       requests:
         cpu: 50m

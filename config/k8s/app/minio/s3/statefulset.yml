@@ -20,16 +20,22 @@ spec:
       containers:
       - name: s3
         image: 10.0.0.11:5000/harrybrwn/s3:RELEASE.2022-05-23T18-45-11Z.fips
+        # image: minio/minio:RELEASE.2024-06-11T03-13-30Z.fips
         command:
           - minio
           - server
+          - --console-address
+          - ":9001"
           - /data
         ports:
           - containerPort: 9000
             name: s3-api
+          - containerPort: 9001
+            name: console
         envFrom:
           - configMapRef: { name: minio-env-config }
           - secretRef: { name: minio-env-secrets }
+          - secretRef: { name: minio-console-env }
         volumeMounts:
           - name: data
             mountPath: /data

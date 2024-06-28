@@ -31,12 +31,6 @@ patches:
     path: patches/filestash-affinity.yml
   - target: { kind: PersistentVolumeClaim, name: filestash-data-pvc }
     path: patches/filestash-pvc.yml
-  - target:
-      kind: ServiceMonitor
-    patch: |-
-      - op: add
-        path: /metadata/labels/release
-        value: prometheus-stack
 
 secretGenerator:
   - name: jwt-secrets

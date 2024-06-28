@@ -10,10 +10,10 @@ data:
   HB_MC_ALIAS_NAME: hrry
   HB_MC_ALIAS_URL: http://s3:9000
   MINIO_SERVER_URL: http://s3:9000
+  MINIO_BROWSER_REDIRECT_URL: http://s3-console.hrry.local
   MINIO_PROMETHEUS_AUTH_TYPE: public
   MINIO_PROMETHEUS_URL: http://prometheus.prometheus.svc.cluster.local:9090
   MINIO_PROMETHEUS_JOB_ID: minio-cluster
-  MINIO_BROWSER_REDIRECT_URL: http://s3-console.hrry.local
   MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY: 'on'
   MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY: http://hooks:8889/hooks/minio/logs
   MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY: 'on'
