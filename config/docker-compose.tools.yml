@@ -23,6 +23,7 @@ services:
       # So I can copy the kubeconfig after setting up a new cluster
       - ${HOME}/.kube:/home/ansible/.kube
       - ${HOME}/.aws:/home/ansible/.aws
+      - ${HOME}/.ssh/known_hosts:/home/ansible/.ssh/known_hosts:ro
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /home/ansible/hrry.me
     # network_mode: host # needs to be able to communicate with link-local addresses

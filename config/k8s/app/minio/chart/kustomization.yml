@@ -1,0 +1,48 @@
+# resources:
+#   - chart.yml
+
+# secretGenerator:
+#   # - name: minio-root-user
+#   #   namespace: minio
+#   #   behavior: create
+#   #   literals:
+#   #     - rootUser=root
+#   #     - rootPassword=testbed0
+#   #   options: { disableNameSuffixHash: true }
+#   - name: minio-env
+#     namespace: minio
+#     behavior: create
+#     options: { disableNameSuffixHash: true }
+#     literals:
+#       - CONSOLE_PBKDF_PASSPHRASE=c786af9c178ee450c56f2e30f0d52aa6
+#       - CONSOLE_PBKDF_SALT=1f7b852bbe3058f57cf1cabfa8173b1e
+
+  # # Users
+  # - &user
+  #   name: minio-user-loki
+  #   literals: [secret-key=minio-testbed001]
+  #   namespace: minio
+  #   behavior: create
+  #   options: { disableNameSuffixHash: true }
+  # - <<: *user
+  #   name: minio-user-registry
+  #   literals: [secret-key=minio-testbed001]
+  # - <<: *user
+  #   name: minio-user-backups
+  #   literals: [secret-key=minio-testbed001]
+  # - <<: *user
+  #   name: minio-user-files
+  #   literals: [secret-key=minio-testbed001]
+  # - <<: *user
+  #   name: minio-user-outline
+  #   literals: [secret-key=minio-testbed001]
+  # - <<: *user
+  #   name: minio-user-geoipupdate
+  #   literals: [secret-key=minio-testbed001]
+  # # - <<: *user
+  # #   name: minio-user-mastodon
+  # #   literals: [secret-key=minio-testbed001]
+  # # - <<: *user
+  # #   name: minio-user-github-actions
+  # #   literals: [secret-key=minio-testbed001]
+

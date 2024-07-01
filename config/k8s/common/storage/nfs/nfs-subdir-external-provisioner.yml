@@ -5,6 +5,7 @@ metadata:
 parameters:
   archiveOnDelete: "false"
 provisioner: k8s-sigs.io/nfs-subdir-external-provisioner
+reclaimPolicy: Delete
 ---
 apiVersion: v1
 kind: ServiceAccount

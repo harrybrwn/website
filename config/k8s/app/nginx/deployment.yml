@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: 10.0.0.11:5000/harrybrwn/nginx:1.25.3
+          image: 10.0.0.11:5000/harrybrwn/nginx:1.27.0
           imagePullPolicy: Always
           resources:
             limits:
