@@ -10,9 +10,12 @@ all:
         - logs=true
         - s3=true
     # k3s stuff
-    k3s_version: v1.26.3+k3s1
+    k3s_version: v1.30.2+k3s1
     k3s_server_location: /var/lib/rancher/k3s
     k3s_master_ip: "{{ hostvars[groups['k3s_master'][0]]['ansible_host'] }}"
+    k3s_extra_server_args:
+      - --disable
+      - traefik
     k3s_config:
       node-label:
         - hrry.me/env=prd
@@ -22,9 +25,11 @@ all:
     laptop:
       ansible_host: 10.0.0.11
       ansible_ssh_user: harry
+      mac_address: 00:24:9B:29:EF:11
     lenovo:
       ansible_host: 10.0.0.13
       ansible_ssh_user: harry
+      mac_address: EC:A8:6B:38:07:5F
       k3s_config:
         node-label:
           - hrry.me/env=prd
@@ -55,12 +60,13 @@ all:
       # Changed for mikrotik compatibility
       # openvpn_cipher: "AES-128-CBC"
       # openvpn_auth_digest: "SHA1"
-    rpi1: { ansible_host: 10.0.0.21 }
+    rpi1: { ansible_host: 10.0.0.21, mac_address: 'DC:A6:32:A7:40:F4' }
     rpi2: { ansible_host: 10.0.0.22 }
     rpi3: { ansible_host: 10.0.0.23, nfs_server: false }
     rpi0: { ansible_host: 10.0.0.40, ansible_ssh_user: pi }
     router:
-      ansible_host: router.lan
+      #ansible_host: router.lan
+      ansible_host: 10.0.0.1
       ansible_ssh_user: admin
       ansible_connection: ansible.netcommon.network_cli
       ansible_network_os: community.routeros.routeros

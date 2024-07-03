@@ -6,8 +6,6 @@ metadata:
   namespace: kube-system
 spec:
   valuesContent: |-
-    globalArguments:
-      - "--global.checknewversion"
     additionalArguments:
       - "--accesslog"
       - "--accesslog.format=json"
@@ -23,9 +21,6 @@ spec:
       spec:
         # Use "Local" to forward client ip addresses correctly
         externalTrafficPolicy: Local
-    podAnnotations:
-      prometheus.io/port: "8082"
-      prometheus.io/scrape: "true"
     deployment:
       kind: Deployment
       # Deploy one instance to each node so that they can all accept connections
@@ -44,8 +39,6 @@ spec:
               operator: In
               values: ["true"]
 
-    # service:
-    #   enabled: false
     # hostNetwork: true
     # securityContext:
     #   capabilities:

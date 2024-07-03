@@ -1,0 +1,7 @@
+---
+- name: K3S | Restart
+  ansible.builtin.systemd:
+    name: k3s
+    state: restarted
+    enabled: true
+

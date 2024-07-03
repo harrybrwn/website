@@ -5,7 +5,6 @@ metadata:
   name: budibase
   namespace: kube-system
 spec:
-  name: budibase
   chart: budibase
   version: "2.13.20"
   repo: https://budibase.github.io/budibase/

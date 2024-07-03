@@ -51,6 +51,35 @@
             remote_src: true
             validate: openssl x509 -noout -in %s
           loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+    # - name: Copy cert to local
+    #   block:
+    #     - name: Download cert
+    #       ansible.builtin.fetch:
+    #         src: "{{ registry_cert_dir }}/registry-ca.crt"
+    #         dest: "/tmp/registry-ca.crt"
+    #     - name: Create Cert Dir
+    #       ansible.builtin.file:
+    #         state: directory
+    #         path: "/etc/docker/certs.d/{{ item }}"
+    #         mode: "0644"
+    #       loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+    #       delegate_to: localhost
+    #       become: true
+    #     - name: Copy CA Cert
+    #       ansible.builtin.copy:
+    #         src: "/tmp/registry-ca.crt"
+    #         dest: "/etc/docker/certs.d/{{ item }}/ca.crt"
+    #         owner: root
+    #         group: root
+    #         mode: '0640'
+    #         backup: false
+    #         remote_src: true
+    #         validate: openssl x509 -noout -in %s
+    #       loop: ['10.0.0.11:5000', 'cr.lab.hrry.dev', 'cr.lab.hrry.dev:5000']
+    #       delegate_to: localhost
+    #       become: true
+    #   delegate_to: localhost
+    #   become: true
 
     - name: Configure local registry
       block:

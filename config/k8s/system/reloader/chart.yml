@@ -3,11 +3,11 @@ apiVersion: helm.cattle.io/v1
 kind: HelmChart
 metadata:
   name: reloader
+  namespace: kube-system
 spec:
-  name: reloader
   chart: reloader
-  version: v1.0.31
-  repo: https://stakater.github.io/stakater-charts
+  version: v1.0.115
+  repo: 'https://stakater.github.io/stakater-charts'
   targetNamespace: kube-system
   valuesContent: |-
     namespaceSelector: default,prometheus

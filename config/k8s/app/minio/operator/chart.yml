@@ -5,7 +5,6 @@ metadata:
   name: minio-operator
   namespace: kube-system
 spec:
-  name: minio-operator
   chart: minio-operator
   version: ""
   repo: https://operator.min.io

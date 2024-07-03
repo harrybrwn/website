@@ -5,7 +5,6 @@ metadata:
   name: longhorn
   namespace: kube-system
 spec:
-  name: longhorn
   chart: longhorn
   version: '1.4.0'
   repo: https://charts.longhorn.io

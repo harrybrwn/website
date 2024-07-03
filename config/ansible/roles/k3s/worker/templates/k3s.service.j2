@@ -7,7 +7,13 @@ After=network-online.target
 Type=notify
 ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
-ExecStart=/usr/local/bin/k3s agent --server https://{{ k3s_master_ip }}:6443 --token {{ hostvars[groups['k3s_master'][0]]['token'] }} {{ extra_agent_args | default("") }}
+{% set token = hostvars[groups['k3s_master'][0]]['token'] %}
+ExecStart=/usr/local/bin/k3s agent --server https://{{ k3s_master_ip }}:6443 --token {{ token }}{{ " " }}
+{%- if k3s_extra_agent_args.__class__.__name__ == "list" -%}
+    {{ k3s_extra_agent_args | join(" ") }}
+{% else %}
+    {{ k3s_extra_agent_args }}
+{% endif -%}
 KillMode=process
 Delegate=yes
 # Having non-zero Limit*s causes performance problems due to accounting overhead

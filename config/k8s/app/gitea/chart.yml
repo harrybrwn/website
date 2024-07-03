@@ -5,7 +5,6 @@ metadata:
   name: gitea
   namespace: kube-system
 spec:
-  name: gitea
   chart: gitea
   version: ""
   repo: https://dl.gitea.com/charts/

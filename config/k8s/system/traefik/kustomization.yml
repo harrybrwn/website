@@ -1,0 +1,15 @@
+# https://github.com/traefik/traefik-helm-chart/blob/v25.0.0/traefik/values.yaml
+
+resources:
+  - https://github.com/traefik/traefik-helm-chart/traefik/crds?ref=v25.0.0
+  - chart.yml
+
+patches:
+  - target:
+      kind: HelmChart
+      name: traefik
+    patch: |-
+      - op: add
+        path: /spec/version
+        value: v25.0.0
+

@@ -5,7 +5,6 @@ metadata:
   name: mastodon
   namespace: kube-system
 spec:
-  name: mastodon
   chart: mastodon
   version: "4.0.0"
   repo: https://helm.hrry.dev

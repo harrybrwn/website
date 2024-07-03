@@ -11,7 +11,6 @@ metadata:
   name: rook-operator
   namespace: kube-system
 spec:
-  name: rook-ceph
   chart: rook-ceph
   version: "v1.11.5"
   repo: https://charts.rook.io/release
@@ -24,7 +23,6 @@ metadata:
   name: rook-ceph-cluster
   namespace: kube-system
 spec:
-  name: rook-ceph-cluster
   chart: rook-ceph-cluster
   version: "v1.11.5"
   repo: https://charts.rook.io/release

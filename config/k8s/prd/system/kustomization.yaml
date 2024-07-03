@@ -6,6 +6,7 @@ resources:
   - ../../system/secrets
   - ../../system/cert-manager
   - ../../system/reloader
+  - ../../system/traefik
   - ../../system/traefik-extras
   - ../../common/storage/nfs
   - cert-manager-values.yml

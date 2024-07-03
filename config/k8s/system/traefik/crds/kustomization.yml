@@ -1,0 +1,2 @@
+resources:
+  - https://github.com/traefik/traefik-helm-chart/traefik/crds?ref=v25.0.0

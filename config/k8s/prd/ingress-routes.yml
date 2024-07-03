@@ -22,6 +22,9 @@ spec:
   - match: >-
       HostSNI(`grafana.hrry.dev`)
       || HostSNI(`grafana.lab.hrry.dev`)
+    middlewares:
+    - name: ipsec-pub
+      namespace: default
     services:
     - name: grafana
       port: http
@@ -63,6 +66,8 @@ spec:
     - { name: filestash, kind: Service, port: http, scheme: http }
   - match: Host(`gopkg.hrry.dev`) && !Path(`/metrics`)
     kind: Rule
+    middlewares:
+    - { name: ipsec-pub, namespace: default } # block selected ips
     services:
     - { name: vanity-imports, kind: Service, port: http, scheme: http }
   - match: Host(`auth.hrry.dev`)
@@ -70,12 +75,27 @@ spec:
     middlewares:
       - name: handle-not-found
       - name: set-forwarded-proto-https
+      - { name: ipsec-pub, namespace: default } # block selected ips
     services:
     - { name: hydra, kind: Service, port: hydra-public, scheme: http }
   - match: Host(`s3-console.hrry.dev`)
     kind: Rule
+    middlewares:
+    - name: ipsec-prv
+      namespace: default # block all public ips
     services:
-    - { name: minio-console, kind: Service, port: http, scheme: http }
+    - { name: minio-console, namespace: default, kind: Service, port: http, scheme: http }
+  - match: Host(`s3.lab.hrry.dev`)
+    kind: Rule
+    middlewares:
+    - name: ipsec-prv
+      namespace: default # block all public ips
+    services:
+      - kind: Service
+        name: minio-console
+        namespace: minio
+        port: http
+        scheme: http
   tls:
     # Use an existing secret
     secretName: hrry-dev-tls
@@ -137,3 +157,85 @@ spec:
   headers:
     customRequestHeaders:
       X-Fowarded-Proto: "https"
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ipsec-pub
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 127.0.0.1/32
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      # Cloudflare IPs (https://www.cloudflare.com/ips-v4)
+      - 173.245.48.0/20
+      - 103.21.244.0/22
+      - 103.22.200.0/22
+      - 103.31.4.0/22
+      - 141.101.64.0/18
+      - 108.162.192.0/18
+      - 190.93.240.0/20
+      - 188.114.96.0/20
+      - 197.234.240.0/22
+      - 198.41.128.0/17
+      - 162.158.0.0/15
+      - 104.16.0.0/13
+      - 104.24.0.0/14
+      - 172.64.0.0/13
+      - 131.0.72.0/22
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ipsec-prv
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 127.0.0.1/32
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+---
+apiVersion: traefik.io/v1alpha1
+kind: MiddlewareTCP
+metadata:
+  name: ipsec-pub
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 127.0.0.1/32
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      # Cloudflare IPs (https://www.cloudflare.com/ips-v4)
+      - 173.245.48.0/20
+      - 103.21.244.0/22
+      - 103.22.200.0/22
+      - 103.31.4.0/22
+      - 141.101.64.0/18
+      - 108.162.192.0/18
+      - 190.93.240.0/20
+      - 188.114.96.0/20
+      - 197.234.240.0/22
+      - 198.41.128.0/17
+      - 162.158.0.0/15
+      - 104.16.0.0/13
+      - 104.24.0.0/14
+      - 172.64.0.0/13
+      - 131.0.72.0/22
+---
+apiVersion: traefik.io/v1alpha1
+kind: MiddlewareTCP
+metadata:
+  name: ipsec-prv
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 127.0.0.1/32
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+

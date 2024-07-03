@@ -1,1 +1,2 @@
+k3s_extra_agent_args: ''
 systemd_dir: /etc/systemd/system

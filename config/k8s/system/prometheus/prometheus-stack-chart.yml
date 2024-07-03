@@ -5,7 +5,6 @@ metadata:
   name: prometheus-stack
   namespace: kube-system
 spec:
-  name: kube-prometheus-stack
   chart: kube-prometheus-stack
   version: 45.25.0
   repo: https://prometheus-community.github.io/helm-charts

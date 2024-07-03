@@ -1,0 +1,56 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  chart: traefik
+  repo: "https://traefik.github.io/charts"
+  version: v25.0.0
+  set:
+    global.systemDefaultRegistry: "%{SYSTEM_DEFAULT_REGISTRY_RAW}%"
+    # image.tag: "2.11.0"
+    image.tag: "2.10.7"
+  valuesContent: |-
+    deployment:
+      kind: Deployment
+      # Deploy one instance to each node so that they can all accept connections
+      #kind: DaemonSet
+      podAnnotations:
+        prometheus.io/port: "8082"
+        prometheus.io/scrape: "true"
+    providers:
+      kubernetesIngress:
+        publishedService:
+          enabled: true
+    priorityClassName: "system-cluster-critical"
+    image:
+      repository: "rancher/mirrored-library-traefik"
+      tag: "2.10.7"
+    tolerations:
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    service:
+      ipFamilyPolicy: "PreferDualStack"
+      spec:
+        # Use "Local" to forward client ip addresses correctly
+        externalTrafficPolicy: Local
+    additionalArguments:
+      - "--accesslog"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.headers.names.X-Forwarded-For"
+      - "--accesslog.fields.headers.names.Host"
+      - "--accesslog.fields.headers.names.Cf-Connecting-Ip"
+      - "--log"
+      - "--log.format=json"
+      - "--log.level=DEBUG"
+      - "--metrics.prometheus=true"
+      - "--providers.kubernetescrd=true"
+      - "--providers.kubernetescrd.allowCrossNamespace=true"
