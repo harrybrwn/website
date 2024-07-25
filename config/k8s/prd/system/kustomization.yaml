@@ -16,3 +16,13 @@ patches:
       kind: Deployment
       name: nfs-client-provisioner
     path: nfs-provisioner.yml
+
+secretGenerator: []
+  # # Provides:
+  # # AWS_ACCESS_KEY_ID=...
+  # # AWS_SECRET_ACCESS_KEY=...
+  # # AWS_ENDPOINTS=https://<...>.r2.cloudflarestorage.com
+  # - name: longhorn-r2-backup
+  #   namespace: longhorn-system
+  #   envs: [env/longhorn-backup.env]
+  #   options: { disableNameSuffixHash: true }

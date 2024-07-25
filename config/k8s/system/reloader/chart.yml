@@ -6,8 +6,13 @@ metadata:
   namespace: kube-system
 spec:
   chart: reloader
-  version: v1.0.115
+  version: 1.0.115
   repo: 'https://stakater.github.io/stakater-charts'
   targetNamespace: kube-system
   valuesContent: |-
-    namespaceSelector: default,prometheus
+    reloader:
+      watchGlobally: true
+      logFormat: json
+      autoReloadAll: false
+      reloadStrategy: default # default|env-vars|annotations
+

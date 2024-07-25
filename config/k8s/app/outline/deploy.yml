@@ -5,6 +5,7 @@ metadata:
   annotations:
     # Used to alter init container with kustomize
     hrry.me/has-init: 'true'
+    reloader.stakater.com/auto: "true"
 spec:
   selector:
     matchLabels:

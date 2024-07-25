@@ -6,6 +6,30 @@ metadata:
   namespace: kube-system
 spec:
   chart: longhorn
-  version: '1.4.0'
-  repo: https://charts.longhorn.io
+  version: '1.6.2'
+  repo: "https://charts.longhorn.io"
   targetNamespace: longhorn-system
+  # For backups look at https://github.com/longhorn/longhorn/discussions/8087
+  valuesContent: |-
+    annotations:
+      reloader.stakater.com/auto: "true"
+
+    networkPolicies:
+      enabled: true
+      # "k3s", "rke2", "rke1"
+      type: "k3s"
+
+    persistence:
+      defaultClass: false
+
+    defaultSettings:
+      #backupTarget: AWS
+      backupTarget: "s3://homelab-backup@auto/longhorn/"
+      backupTargetCredentialSecret: longhorn-r2-backup
+
+    longhornManager:
+      log:
+        format: json
+    metrics:
+      serviceMonitor:
+        enabled: true

@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   selector:
     matchLabels:
@@ -13,7 +15,7 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: 10.0.0.11:5000/harrybrwn/grafana:latest
+          image: "10.0.0.11:5000/harrybrwn/grafana:latest"
           imagePullPolicy: Always
           resources:
             requests:

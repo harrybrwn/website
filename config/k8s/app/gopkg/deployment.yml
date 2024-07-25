@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: gopkg-env
+    secret.reloader.stakater.com/reload: gopkg-env
   labels:
     app.kubernetes.io/name: gopkg
     app.kubernetes.io/part-of: gopkg

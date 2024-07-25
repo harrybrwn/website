@@ -11,6 +11,7 @@ spec:
       kind: Rule
       middlewares:
         - name: private-ip-only
+          namespace: longhorn-system
       services:
         - name: longhorn-frontend
           kind: Service

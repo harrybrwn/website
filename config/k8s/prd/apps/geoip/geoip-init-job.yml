@@ -4,12 +4,14 @@ kind: Job
 metadata:
   name: geoip-init
   namespace: geoip
+  # annotations:
+  #   geoip.hrry.me/date: "Wed 03 Jul 2024 11:18:08 AM PDT"
 spec:
   template:
     spec:
       containers:
       - name: geoip-init-geoipupdate
-        image: harrybrwn/geoipupdate-go:latest
+        image: "harrybrwn/geoipupdate-go:latest"
         imagePullPolicy: Always
         args:
           - '--env=prd'

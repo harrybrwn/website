@@ -4,6 +4,7 @@ metadata:
   name: hydra
   annotations:
     hrry.me/has-init: 'true'
+    reloader.stakater.com/auto: "true"
   labels:
     app.kubernetes.io/name: hydra
     app.kubernetes.io/part-of: hydra

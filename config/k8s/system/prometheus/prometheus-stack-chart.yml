@@ -16,6 +16,9 @@ spec:
       prometheusSpec:
         ingress:
           enabled: false
+        podMetadata:
+          annotations:
+            reloader.stakater.com/auto: "true"
 
         # When looking for ServiceMonitor objects, don't use any labels
         serviceMonitorSelectorNilUsesHelmValues: false

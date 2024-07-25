@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: geoip-env
+    secret.reloader.stakater.com/reload: geoip-env
   labels:
     app.kubernetes.io/name: geoip
     app.kubernetes.io/part-of: geoip

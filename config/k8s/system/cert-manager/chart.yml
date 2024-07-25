@@ -6,8 +6,7 @@ metadata:
   namespace: kube-system
 spec:
   chart: cert-manager
-  version: "v1.9.1"
-  # version: "v1.15.0"
+  version: "v1.15.0"
   repo: 'https://charts.jetstack.io'
   targetNamespace: cert-manager
   # TODO add the full prometheus-stack and enable the servicemonitor

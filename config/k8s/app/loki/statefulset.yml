@@ -8,6 +8,8 @@ metadata:
     app.kubernetes.io/name: loki
     app.kubernetes.io/component: database
     app.kubernetes.io/part-of: loki
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   selector:
     matchLabels:

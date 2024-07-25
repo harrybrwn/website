@@ -17,4 +17,5 @@ configMapGenerator:
       - config/custom-parsers.conf
       - config/kubernetes.conf
       - config/systemd.conf
+      - config/output.conf
       - config/node-exporter.conf

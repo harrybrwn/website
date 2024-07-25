@@ -6,6 +6,8 @@ metadata:
     app.kubernetes.io/name: fluent-bit
     app.kubernetes.io/component: sidecar
     app.kubernetes.io/part-of: hrry.me
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   selector:
     matchLabels:
@@ -22,9 +24,11 @@ spec:
         prometheus.io/path: '/api/v1/metrics/prometheus'
     spec:
       serviceAccountName: fluent-bit
+      securityContext:
+        runAsUser: 0
       containers:
       - name: fluent-bit
-        image: 10.0.0.11:5000/harrybrwn/fluent-bit:1.9.10
+        image: "10.0.0.11:5000/harrybrwn/fluent-bit:3.0.4"
         imagePullPolicy: Always
         resources:
           limits:
@@ -33,6 +37,11 @@ spec:
           requests:
             memory: "32Mi"
             cpu: "75m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsUser: 0
+          runAsNonRoot: false
         ports:
         - name: tcp
           containerPort: 24224
@@ -49,9 +58,13 @@ spec:
         - name: var-lib-docker-containers
           mountPath: /var/lib/docker/containers
           readOnly: true
-        - { name: config,   mountPath: /fluent-bit/etc }
-        - { name: proc,     mountPath: /mnt/proc/, readOnly: true }
-        - { name: sys,      mountPath: /mnt/sys/,  readOnly: true }
+        - name: run-log-journal
+          mountPath: /run/log/journal
+          readOnly: true
+        - { name: config,    mountPath: /fluent-bit/etc }
+        - { name: proc,      mountPath: /mnt/proc/, readOnly: true }
+        - { name: sys,       mountPath: /mnt/sys/,  readOnly: true }
+        - { name: machineid, mountPath: /etc/machine-id, readOnly: true }
       volumes:
       - name: var-log
         hostPath:
@@ -59,6 +72,13 @@ spec:
       - name: var-lib-docker-containers
         hostPath:
           path: /var/lib/docker/containers
+      - name: run-log-journal
+        hostPath:
+          path: /run/log/journal
+      - name: machineid
+        hostPath:
+          path: /etc/machine-id
+          type: File
       - { name: proc, hostPath: { path: /proc } }
       - { name: sys, hostPath: { path: /sys } }
       - name: config

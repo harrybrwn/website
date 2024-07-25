@@ -1,6 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    configmap.reloader.stakater.com/reload: lnsmol-env
+    secret.reloader.stakater.com/reload: lnsmol-env
   labels:
     app.kubernetes.io/name: lnsmol
     app.kubernetes.io/part-of: lnsmol
