@@ -9,3 +9,28 @@ spec:
   version: 5.3.0
   repo: https://prometheus-community.github.io/helm-charts
   targetNamespace: prometheus
+  set: {}
+  # https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-postgres-exporter
+  valuesContent: |-
+    namespaceOverride: prometheus
+    config:
+      logLevel: info
+      logFormat: json
+      datasource:
+        host: db.default.svc.cluster.local
+        userSecret:
+          name: postgres-monitoring
+          key: username
+        passwordSecret:
+          name: postgres-monitoring
+          key: password
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: prometheus-stack
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    prometheusRule:
+      enabled: false

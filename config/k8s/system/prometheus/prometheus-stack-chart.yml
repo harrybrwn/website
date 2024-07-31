@@ -9,6 +9,8 @@ spec:
   version: 45.25.0
   repo: https://prometheus-community.github.io/helm-charts
   targetNamespace: prometheus
+  set: {}
+  #   namespaceOverride: prometheus
   # https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
   valuesContent: |
     namespaceOverride: prometheus

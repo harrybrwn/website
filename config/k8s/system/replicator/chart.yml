@@ -1,0 +1,14 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: replicator
+  namespace: kube-system
+spec:
+  chart: kubernetes-replicator
+  version: 2.10.0
+  repo: https://helm.mittwald.de
+  targetNamespace: utilities
+  createNamespace: true
+  valuesContent: |-
+    fullnameOverride: replicator

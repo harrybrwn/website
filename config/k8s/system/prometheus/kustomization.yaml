@@ -2,6 +2,6 @@ resources:
   - namespace.yml
   - prometheus-stack-chart.yml
   - nginx-exporter.yml
-  - nginx-exporter-values.yml
+  # - nginx-exporter-values.yml
   - postgres-exporter.yml
-  - postgres-exporter-values.yml
+  # - postgres-exporter-values.yml

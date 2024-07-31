@@ -1,0 +1,5 @@
+resources:
+  # - https://github.com/mariadb-operator/mariadb-operator/deploy/charts/mariadb-operator/crds/crds.yaml
+  # - https://github.com/mariadb-operator/mariadb-operator/deploy/charts/mariadb-operator/crds/crds.yaml?ref=helm-chart-0.29.0
+  # - https://github.com/mariadb-operator/mariadb-operator/blob/main/deploy/crds/crds.yaml
+  - https://raw.githubusercontent.com/mariadb-operator/mariadb-operator/helm-chart-0.29.0/deploy/crds/crds.yaml

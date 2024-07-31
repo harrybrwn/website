@@ -1,0 +1,39 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: mariadb-operator
+  namespace: kube-system
+spec:
+  chart: mariadb-operator
+  version: 0.29.0
+  repo: https://helm.mariadb.com/mariadb-operator
+  targetNamespace: mariadb
+  valuesContent: |-
+    fullnameOverride: "mariadb-operator"
+    logLevel: INFO
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+    webhook:
+      cert:
+        certManager:
+          enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+      tolerations:
+      - { key: "arch", operator: "Equal", value: "arm64", effect: "NoSchedule" }
+
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+    tolerations:
+    - { key: "arch", operator: "Equal", value: "arm64", effect: "NoSchedule" }
