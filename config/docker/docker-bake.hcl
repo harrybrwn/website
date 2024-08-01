@@ -21,11 +21,15 @@ variable "ALPINE_VERSION"   { default = "3.17.0" }
 variable "GO_VERSION"       { default = "1.18-alpine" }
 variable "POSTGRES_VERSION" { default = "13.6" }
 variable "REDIS_VERSION"    { default = "6.2.6" }
-variable "NGINX_VERSION"    { default = "1.25.3" }
+variable "NGINX_VERSION"    { default = "1.27.0" }
 variable "LOKI_VERSION"     { default = "2.5.0" }
 variable "GRAFANA_VERSION"  { default = "9.5.1" }
-variable "MINIO_VERSION"    { default = "RELEASE.2022-05-23T18-45-11Z.fips" }
 variable "NOMAD_VERSION"    { default = "1.3.5" }
+variable "MC_VERSION"       { default = "RELEASE.2024-06-10T16-44-15Z.fips" }
+variable "MINIO_VERSION"    {
+    #default = "RELEASE.2022-05-23T18-45-11Z.fips"
+    default = "RELEASE.2024-06-11T03-13-30Z.fips"
+}
 
 variable "POSTGRES_BASE"    { default = "alpine" }
 variable "REDIS_BASE"       { default = "alpine" }
@@ -90,6 +94,14 @@ group "tools" {
         "geoipupdate",
         "ansible",
         "curl",
+    ]
+}
+
+group "fluentbit" {
+    targets = [
+        "fluent-bit-1_9_10",
+        "fluent-bit-3_0_4",
+        "fluent-bit-2_0_14",
     ]
 }
 
@@ -239,15 +251,36 @@ target "postgres" {
     inherits = ["base-service"]
 }
 
-target "fluentbit" {
+################
+## Fluent Bit ##
+################
+
+target "fluent-bit-base" {
     dockerfile = "config/docker/Dockerfile.fluentbit"
-    args = {
-        FLUENTBIT_VERSION = FLUENTBIT_VERSION
-        #FLUENTBIT_VERSION = "${FLUENTBIT_VERSION}-debug"
-    }
-    tags = tags(REGISTRY, "fluent-bit", [FLUENTBIT_VERSION])
     inherits = ["base-service"]
 }
+
+target "fluent-bit-1_9_10" {
+    args = { FLUENTBIT_VERSION = "1.9.10" }
+    tags = tags(REGISTRY, "fluent-bit", ["1.9.10"])
+    inherits = ["fluent-bit-base"]
+}
+
+target "fluent-bit-2_0_14" {
+    args = { FLUENTBIT_VERSION = "2.0.14" }
+    tags = tags(REGISTRY, "fluent-bit", ["2.0.14"])
+    inherits = ["fluent-bit-base"]
+}
+
+target "fluent-bit-3_0_4" {
+    args = { FLUENTBIT_VERSION = "3.0.4" }
+    tags = tags(REGISTRY, "fluent-bit", ["3.0.4"])
+    inherits = ["fluent-bit-base"]
+}
+
+###############
+##  Grafana  ##
+###############
 
 target "grafana" {
     dockerfile = "config/grafana/Dockerfile"
@@ -257,6 +290,10 @@ target "grafana" {
     tags = tags(REGISTRY, "grafana", [GRAFANA_VERSION])
     inherits = ["base-service"]
 }
+
+##############
+##   Loki   ##
+##############
 
 target "loki" {
     dockerfile = "config/docker/Dockerfile.loki"
@@ -282,7 +319,8 @@ target "s3" {
     dockerfile = "docker/minio/Dockerfile"
     args = {
         MINIO_VERSION = MINIO_VERSION
-        MC_VERSION = "RELEASE.2022-05-09T04-08-26Z.fips"
+        #MC_VERSION = "RELEASE.2022-05-09T04-08-26Z.fips"
+        MC_VERSION = MC_VERSION
     }
     labels = labels()
     tags = tags(REGISTRY, "s3", [MINIO_VERSION])
@@ -343,7 +381,7 @@ target "curl" {
 
 target "provision" {
     target = "provision"
-    tags = tags(REGISTRY, "provision", [])
+    tags = tags("", "provision", [])
     inherits = ["base-service"]
 }
 

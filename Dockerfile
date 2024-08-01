@@ -3,7 +3,8 @@
 ARG ALPINE_VERSION=3.14
 ARG NGINX_VERSION=1.23.3-alpine
 ARG NODE_VERSION=16.13.1-alpine
-ARG GO_VERSION=1.18-alpine
+# ARG GO_VERSION=1.18-alpine
+ARG GO_VERSION=1.22-alpine
 ARG RUST_VERSION=1.71.1
 
 #
@@ -227,7 +228,6 @@ COPY services/geoip services/geoip
 COPY services/geoipupdate services/geoipupdate
 COPY services/gopkg services/gopkg
 COPY services/lnsmol services/lnsmol
-COPY cmd/foreman cmd/foreman
 COPY lib/rust lib/rust
 RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry \
     cargo fetch && \
@@ -254,7 +254,6 @@ RUN --mount=type=cache,target=/usr/local/multi-cargo/${TARGETPLATFORM}/registry 
         geoipupdate \
         lnsmol \
         gopkg \
-        foreman; \
     do \
         mv "target/${TARGETPLATFORM}/${TARGET}/release/${exe}" /usr/local/bin/; \
     done

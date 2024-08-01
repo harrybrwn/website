@@ -30,13 +30,15 @@ type App struct {
 	Config          map[string]string
 	Secrets         map[string]string
 	SkipPrometheus  bool              `json:"skip_prometheus" yaml:"skip_prometheus"`
-	ConfigMapName   string            `json:"configmap_name" yaml:"configmap_name"`
-	SecretName      string            `json:"secret_name" yaml:"secret_name"`
+	ConfigMapName   string            `json:"configmap_name"  yaml:"configmap_name"`
+	SecretName      string            `json:"secret_name"     yaml:"secret_name"`
 	ExtraResources  []string          `json:"extra_resources" yaml:"extra_resources"`
-	ExtraLabels     map[string]string `json:"labels" yaml:"labels"`
-	MetricsPath     string            `json:"metrics_path" yaml:"metrics_path"`
+	ExtraLabels     map[string]string `json:"labels"          yaml:"labels"`
+	MetricsPath     string            `json:"metrics_path"    yaml:"metrics_path"`
 	Skip            bool
-	ResourceProfile ResourceProfile `json:"-" yaml:"-"`
+	ResourceProfile ResourceProfile `json:"-"               yaml:"-"`
+
+	reloader bool `json:"-"`
 }
 
 type Port struct {
@@ -123,6 +125,7 @@ func (a *App) Calc(c *K8sGenConfig) {
 			a.Scale = nil
 		}
 	}
+	a.reloader = c.Reloader
 }
 
 func (a *App) Validate() (err error) {
@@ -265,7 +268,7 @@ func (a *App) servicePorts() []corev1.ServicePort {
 // Depricated: use sigs.k8s.io/kustomize/api/types.Kustomization
 type KustomizeConfig struct {
 	Resources    []string `json:"resources"`
-	CommonLabels []string `json:"commonLabels,omitempty" yaml:"commonLabels"`
+	CommonLabels []string `json:"commonLabels,omitempty"       yaml:"commonLabels"`
 	Images       []struct {
 		Name    string
 		NewName string `json:"newName"`
@@ -301,8 +304,9 @@ func (a *App) commonLabels() map[string]string {
 
 func (a *App) deployment() *appsv1.Deployment {
 	annotations := map[string]string{} // pod annotations
-	if a.SkipPrometheus {
-		annotations = nil
+	if a.reloader {
+		annotations["configmap.reloader.stakater.com/reload"] = a.ConfigMapName
+		annotations["secret.reloader.stakater.com/reload"] = a.SecretName
 	}
 	labels := make(map[string]string, len(a.ExtraLabels)+4)
 	labels[AppLabel] = a.Name
@@ -315,8 +319,7 @@ func (a *App) deployment() *appsv1.Deployment {
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels:      labels,
-				Annotations: annotations,
+				Labels: labels,
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{{
@@ -343,6 +346,7 @@ func (a *App) deployment() *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              a.Name,
 			Namespace:         a.Namespace,
+			Annotations:       annotations,
 			Labels:            without(labels, AppLabel),
 			CreationTimestamp: metav1.Time{Time: time.Time{}},
 		},

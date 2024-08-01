@@ -13,11 +13,12 @@ RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
 RUN apt-get install -yq \
         # ansible          \
         # ansible-lint     \
-        python3-pip \
-        python3-paramiko \
-        python3-boto3    \
-        python3-docker   \
+        python3-pip         \
+        python3-paramiko    \
+        python3-boto3       \
+        python3-docker      \
         python3-librouteros \
+        python3-pymysql     \
         yamllint \
         git      \
         vim      \

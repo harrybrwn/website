@@ -1,3 +1,5 @@
+# Use anisble! See config/ansible/playbooks/router.yml
+
 # Port forwarding rules for http and https
 :local destination 10.0.0.11;
 /ip firewall nat

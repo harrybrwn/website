@@ -18,6 +18,7 @@ type Configurable interface {
 
 type K8sGenConfig struct {
 	Images    ImagesConfig `json:"images"`
+	Reloader  bool         `json:"reloader"`
 	Resources ResourceSizesConfig
 	Apps      map[string]*App
 }

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 disk="disk1"
-names="cloudflare-address-list.rsc port-forwarding.rsc"
+names="cloudflare-address-list.rsc port-forwarding.rsc setup.rsc"
 
 scripts=""
 for name in $names; do
@@ -24,4 +24,4 @@ done
 # shellcheck disable=SC2086
 scp $scripts "admin@router.lan:$disk"
 # shellcheck disable=SC2086
-echo $init | ssh admin@router.lan
+echo $init | ssh -T admin@router.lan

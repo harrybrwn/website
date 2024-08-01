@@ -58,8 +58,8 @@ jobs:
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
       run: |
         docker buildx bake --file config/docker/docker-bake.hcl --push \
-          geoip-rs    \
-          lnsmol      \
-          geoipupdate \
-          bk          \
-          geoipupdate-go
+          geoip-rs       \
+          lnsmol         \
+          geoipupdate    \
+          geoipupdate-go \
+          provision

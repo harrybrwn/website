@@ -28,7 +28,7 @@ uninstall_cert() {
 	if certutil -L -d "${CERTDB}" -n "${cert_name}" > /dev/null 2>&1; then
 		certutil -D -d "${CERTDB}" -n "${cert_name}"
 	else
-		echo "could not find certificate installation \"${cert_name}\""
+    warn certs "Warning: could not find certificate installation \"${cert_name}\""
 	fi
 }
 
@@ -248,13 +248,14 @@ fi
 uninstall_cert "${LOCAL_CERT_NAME}" || true
 
 if $INSTALL; then
+  info certs "Loading \"${CA_CRT}\""
 	load_cert "${LOCAL_CERT_NAME}" "${CA_CRT}"
 	# sudo cp "${CA_CRT}" /usr/local/share/ca-certificates/harrybrwn.crt
 	# sudo update-ca-certificates --fresh
+  exit 0
 fi
 
 K8S="config/k8s/dev/certs"
 CERTS="${PKI}/certs"
-rm -rf "${K8S}" && mkdir -p "${K8S}"
-
-cp ${CERTS}/* "${K8S}"
+# rm -rf "${K8S}" && mkdir -p "${K8S}"
+# cp ${CERTS}/* "${K8S}"

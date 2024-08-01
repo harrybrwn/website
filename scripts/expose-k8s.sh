@@ -39,6 +39,9 @@ else
       db|postgres)
         kubectl port-forward svc/db 5432:5432 &
         ;;
+      mysql|mariadb)
+        kustctl -n wordpress port-forward svc/mariadb 3306:3306 &
+        ;;
       s3|minio)
         #kubectl port-forward svc/s3 9000:9000 &
         kubectl -n minio port-forward svc/minio 9000:9000 &

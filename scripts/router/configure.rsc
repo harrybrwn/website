@@ -63,6 +63,7 @@
   lease add address=10.0.0.21 mac-address=DC:A6:32:A7:40:F4 server=defconf
   lease add address=10.0.0.22 mac-address=DC:A6:32:A7:40:91 server=defconf
   lease add address=10.0.0.23 mac-address=DC:A6:32:A6:D0:5F server=defconf
+  lease add address=10.0.0.8  mac-address=00:E0:4C:68:00:EC server=defconf
 }
 
 # Cloudflare address list

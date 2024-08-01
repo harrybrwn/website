@@ -8,12 +8,15 @@ insert_final_newline = true
 
 [*.go]
 tab_width    = 4
+indent_size  = 4
 indent_style = tab
 
 [*.rs]
 tab_width    = 4
+indent_size  = 4
 indent_style = space
 
 [*.sql]
 tab_width    = 2
+indent_size  = 2
 indent_style = space

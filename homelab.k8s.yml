@@ -1,6 +1,8 @@
 images:
   user: harrybrwn
 
+reloader: true
+
 resources:
   large:
     limits:
