@@ -1,0 +1,24 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb
+  namespace: wordpress
+spec:
+  rootPasswordSecretKeyRef:
+    name: mariadb-root
+    key: password
+    generate: true
+
+  database: wordpress
+  username: mariadb
+  passwordSecretKeyRef:
+    name: mariadb-password
+    key: password
+    generate: true
+
+  storage:
+    # size: 3Gi
+    ephemeral: true
+  metrics:
+    enabled: false

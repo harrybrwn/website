@@ -84,7 +84,16 @@ spec:
     - name: ipsec-prv
       namespace: default # block all public ips
     services:
-    - { name: minio-console, namespace: default, kind: Service, port: http, scheme: http }
+    # - name: minio-console
+    #   namespace: default
+    #   kind: Service
+    #   port: http
+    #   scheme: http
+    - name: minio-console
+      namespace: minio
+      kind: Service
+      port: http
+      scheme: http
   - match: Host(`s3.lab.hrry.dev`)
     kind: Rule
     middlewares:

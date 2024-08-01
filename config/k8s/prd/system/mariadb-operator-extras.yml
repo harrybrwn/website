@@ -1,0 +1,23 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: mariadb-operator
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    webhook:
+      resources:
+        requests:
+          cpu: 2m
+          memory: 25Mi
+        limits:
+          cpu: 8m
+          memory: 32Mi
+    resources:
+      requests:
+        cpu: 10m
+        memory: 76Mi
+      limits:
+        cpu: 25m
+        memory: 128Mi

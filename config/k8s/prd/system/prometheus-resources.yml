@@ -1,0 +1,41 @@
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: prometheus-stack
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        # limits:
+        #   cpu: 200m
+        #   memory: 128Mi
+    prometheus:
+      prometheusSpec:
+        resources:
+          requests:
+            cpu: 128m
+            memory: 1024Mi
+          limits:
+            cpu: 512m
+            memory: 2048Mi
+    kube-state-metrics:
+      resources:
+        requests:
+          cpu: 20m
+          memory: 64Mi
+        limits:
+          cpu: 150m
+          memory: 156Mi
+    prometheus-node-exporter:
+      resources:
+        requests:
+          cpu: 8m
+          memory: 15Mi
+        limits:
+          cpu: 25m
+          memory: 32Mi

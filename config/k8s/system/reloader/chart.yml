@@ -17,4 +17,3 @@ spec:
       logFormat: json
       autoReloadAll: false
       reloadStrategy: default # default|env-vars|annotations
-

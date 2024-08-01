@@ -1,0 +1,21 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  # NOTE:
+  # Then name and namespace must match the HelmChart which means you can only
+  # have one HelmChartConfig.
+  #
+  # See https://github.com/k3s-io/helm-controller/issues/180
+  namespace: kube-system
+  name: reloader
+spec:
+  valuesContent: |-
+    reloader:
+      deployment:
+        resources:
+          requests:
+            cpu: 20m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi

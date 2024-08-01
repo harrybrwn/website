@@ -6,10 +6,17 @@ resources:
   - ../../system/secrets
   - ../../system/cert-manager
   - ../../system/reloader
+  - ../../system/replicator
   - ../../system/traefik
   - ../../system/traefik-extras
+  - ../../system/wordpress-operator
+  - ../../system/mariadb-operator
   - ../../common/storage/nfs
   - cert-manager-values.yml
+  - prometheus-resources.yml
+  - mariadb-operator-extras.yml
+  - reloader-extras.yml
+  - replicator-extras.yml
 
 patches:
   - target:

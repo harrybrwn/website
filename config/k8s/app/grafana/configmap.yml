@@ -32,9 +32,9 @@ data:
         version: 1
         editable: true
         isDefault: true
-      - name: prometheus
+      - name: prometheus (builtin)
         type: prometheus
-        url: http://prometheus.prometheus.svc.cluster.local:9090
+        url: http://prometheus-stack-kube-prom.prometheus.svc.cluster.local:9090
         access: proxy
         basicAuth: false
         orgId: 1

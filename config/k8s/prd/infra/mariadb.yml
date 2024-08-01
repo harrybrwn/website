@@ -1,0 +1,52 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb
+  namespace: wordpress
+spec:
+  port: 3306
+
+  rootPasswordSecretKeyRef:
+    name: mariadb-root
+    key: password
+    generate: false
+
+  database: wordpress
+  username: mariadb
+  passwordSecretKeyRef:
+    name: mariadb-password
+    key: password
+    generate: true
+
+  myCnf: |
+    [mariadb]
+    bind-address=*
+    default_storage_engine=InnoDB
+    binlog_format=row
+    innodb_autoinc_lock_mode=2
+    innodb_buffer_pool_size=1024M
+    max_allowed_packet=256M
+
+  storage:
+    size: 3Gi
+    # ephemeral: true
+  metrics:
+    enabled: false
+  resources:
+    requests:
+      cpu: 20m
+      memory: 256Mi
+    limits:
+      cpu: 100m
+      memory: 512Mi
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+          - { key: "hrry.me/database-host", operator: In, values: ["true"] }
+  tolerations:
+  - { key: "arch", operator: "Equal", value: "arm64", effect: "NoSchedule" }
+  - { key: "hrry.me/database-host", operator: Equal, value: "true", effect: "NoSchedule" }

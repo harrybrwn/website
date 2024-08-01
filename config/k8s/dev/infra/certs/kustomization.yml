@@ -1,0 +1,17 @@
+secretGenerator:
+  # CA for self-signed issuer
+  - name: hrry-root-ca
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    files:
+      - tls.crt=ca.crt
+      - tls.key=ca.key
+  - name: cluster-issuer-root-ca
+    namespace: cert-manager
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    files:
+      - tls.crt=ca.crt
+      - tls.key=ca.key

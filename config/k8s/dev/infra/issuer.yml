@@ -6,3 +6,13 @@ metadata:
 spec:
   ca:
     secretName: hrry-root-ca
+
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  namespace: cert-manager
+spec:
+  ca:
+    secretName: cluster-issuer-root-ca

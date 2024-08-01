@@ -9,8 +9,9 @@ resources:
   - ../../app/fluent-bit
   - ../../app/hydra
   - ../files/oauth2
-  - issuer.yml
   - ../../common/certificates
+  - issuer.yml
+  - mariadb.yml
 
 patches:
   - target:
@@ -20,6 +21,12 @@ patches:
       - { op: add, path: /spec/commonName, value: 'hrry.me' }
       - { op: add, path: /spec/dnsNames/0, value: 'hrry.me' }
       - { op: add, path: /spec/dnsNames/1, value: '*.hrry.me' }
+      - op: add
+        path: /spec/secretTemplate
+        value:
+          annotations:
+            replicator.v1.mittwald.de/replication-allowed: "true"
+            replicator.v1.mittwald.de/replication-allowed-namespaces: ".*"
   - target:
       kind: Certificate
       name: hrry-dev-tls
@@ -59,7 +66,13 @@ patches:
     path: patches/loki-pvc.yml
   - target: { kind: StatefulSet, name: redis }
     path: patches/redis-pvc.yml
-
+  - target: { kind: Secret, name: minio-user-wordpress }
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          replicator.v1.mittwald.de/replication-allowed: "true"
+          replicator.v1.mittwald.de/replication-allowed-namespaces: ".*"
   - target:
       kind: HelmChart
       labelSelector: app.kubernetes.io/name=minio,app.kubernetes.io/component=object-storage
@@ -121,6 +134,9 @@ secretGenerator:
   # - <<: *minio-user
   #   name: minio-user-mastodon
   #   envs: [env/minio-users/mastodon.env]
+  - <<: *minio-user
+    name: minio-user-wordpress
+    envs: [env/minio-users/wordpress.env]
 
   - name: hydra-env
     behavior: replace
@@ -128,6 +144,11 @@ secretGenerator:
   - name: loki
     behavior: replace
     envs: [env/loki.env]
+  - name: mariadb-root
+    behavior: create
+    namespace: wordpress
+    envs: [env/mariadb-root.env]
+    options: { disableNameSuffixHash: true }
 
 configMapGenerator:
   # - name: minio-env-config

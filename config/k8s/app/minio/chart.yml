@@ -148,6 +148,24 @@ spec:
             resources: ["arn:aws:s3:::frontend"]
             conditions:
               - StringEquals: '"s3:prefix": ["latest", "dev", "git:*"]'
+      - name: wordpress
+        statements:
+          - effect: Allow
+            principal:
+              AWS: ["*"]
+            actions: ["s3:GetBucketLocation", "s3:ListBucket"]
+            resources: ["arn:aws:s3:::wordpress"]
+          - effect: Allow
+            principal:
+              AWS: ["*"]
+            actions:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:DeleteObject"
+              - "s3:ListMultipartUploadParts"
+              - "s3:AbortMultipartUpload"
+            resources:
+              - "arn:aws:s3:::wordpress/*"
 
     users:
       - accessKey: loki
@@ -181,6 +199,10 @@ spec:
       # - accessKey: mastodon
       #   existingSecretKey: secret-key
       #   existingSecret: minio-user-mastodon
+      - accessKey: wordpress
+        existingSecretKey: secret-key
+        existingSecret: minio-user-wordpress
+        policy: wordpress
 
     buckets:
       - name: geoip
@@ -195,6 +217,8 @@ spec:
       - name: frontend
         policy: private
       - name: data
+      - name: wordpress
+        policy: private
 
     customCommands:
       # set bucket policy to 'outline-bucket-access'
@@ -252,4 +276,3 @@ spec:
         operator: "Equal"
         value: "arm64"
         effect: "NoSchedule"
-

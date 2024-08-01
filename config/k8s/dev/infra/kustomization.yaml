@@ -11,6 +11,7 @@ resources:
   - ../files/clients
   - issuer.yml
   - certificates.yml
+  - mariadb.yml
 
 patches:
   # Make sure all the certificates have the correct issuer
@@ -20,10 +21,50 @@ patches:
       - op: replace
         path: /spec/issuerRef/name
         value: ca-issuer
+      - op: replace
+        path: /spec/issuerRef/kind
+        value: ClusterIssuer
+  - target:
+      kind: HelmChart
+      name: minio
+    patch: |-
+      - { op: add, value: local-path, path: /spec/set/persistence.storageClass }
+  - target:
+      kind: DaemonSet
+      name: fluent-bit
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/volumeMounts/6
+      - op: remove
+        path: /spec/template/spec/volumes/3
+  - target: { kind: Deployment }
+    patch: |-
+      - { op: add, value: IfNotPresent, path: /spec/template/spec/containers/0/imagePullPolicy }
+  - target: { kind: StatefulSet }
+    patch: |-
+      - { op: add, value: IfNotPresent, path: /spec/template/spec/containers/0/imagePullPolicy }
+  - target: { kind: DaemonSet }
+    patch: |-
+      - { op: add, value: IfNotPresent, path: /spec/template/spec/containers/0/imagePullPolicy }
+  - target: { kind: Job }
+    patch: |-
+      - { op: add, value: IfNotPresent, path: /spec/template/spec/containers/0/imagePullPolicy }
+  - target:
+      annotationSelector: hrry.me/has-init=true
+    patch: |-
+      - { op: add, value: IfNotPresent, path: /spec/template/spec/initContainers/0/imagePullPolicy }
 
 secretGenerator:
   # CA for self-signed issuer
   - name: hrry-root-ca
+    behavior: create
+    options:
+      disableNameSuffixHash: true
+    files:
+      - tls.crt=certs/ca.crt
+      - tls.key=certs/ca.key
+  - name: cluster-issuer-root-ca
+    namespace: cert-manager
     behavior: create
     options:
       disableNameSuffixHash: true
@@ -60,3 +101,22 @@ configMapGenerator:
       - MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/logs
       - MINIO_AUDIT_WEBHOOK_ENABLE_PRIMARY=on
       - MINIO_AUDIT_WEBHOOK_ENDPOINT_PRIMARY=http://hooks:8889/hooks/minio/audit
+
+images:
+  - name: 10.0.0.11:5000/harrybrwn/s3
+    newName: minio/minio
+    newTag: RELEASE.2024-06-11T03-13-30Z.fips
+  - name: 10.0.0.11:5000/harrybrwn/fluent-bit
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/loki
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/redis
+    newTag: latest
+  - name: 10.0.0.11:5000/harrybrwn/postgres
+    newTag: latest
+  # For the hydra init container
+  - name: 10.0.0.11:5000/harrybrwn/curl
+    newTag: latest
+  - name: harrybrwn/curl
+    newTag: latest
+

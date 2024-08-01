@@ -1,0 +1,23 @@
+# https://kubernetes.io/docs/concepts/workloads/pods/
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "dev"
+  namespace: default
+  labels:
+    app: "dev"
+  annotations:
+    kubectl.kubernetes.io/default-container: dev
+spec:
+  containers:
+  - name: dev
+    image: harrybrwn/curl:latest
+    command: ['tail', '-f', '/dev/null']
+    resources:
+      limits:
+        cpu: 200m
+        memory: 500Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+  restartPolicy: Always

@@ -2,6 +2,28 @@ commonLabels:
   environment: dev
 
 resources:
-  - ../../common/helm-charts
+  - ../../system/prometheus
+  - ../../system/reloader
   - ../../system/secrets
   - ../../system/cert-manager
+  - ../../system/mariadb-operator
+  - ../../system/wordpress-operator
+
+patches:
+  - target: { kind: HelmChart, name: prometheus-stack }
+    patch: |-
+      - op: add
+        path: /spec/set/prometheus-node-exporter.hostRootFsMount.enabled
+        value: 'false'
+  - target: { kind: HelmChart, name: prometheus-nginx-exporter }
+    patch: |-
+      - { op: add, value: '0', path: /spec/set/replicaCount }
+
+secretGenerator:
+  - name: postgres-monitoring
+    namespace: prometheus
+    behavior: create
+    literals:
+      - username=prometheus
+      - password=testlab01
+    options: { disableNameSuffixHash: true }

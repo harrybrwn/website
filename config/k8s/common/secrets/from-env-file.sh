@@ -116,7 +116,7 @@ if [ -z "${NAME}" ]; then
 	NAME="$(basename "${FILE}" .env)"
 fi
 
-if [ -f "${ENV}/${NAME}.yml" ]; then
+if [ -f "${ENV}/${NAME}-${KS_NAMESPACE}.yml" ]; then
 	echo "[error]: sealed secret \"${ENV}/${NAME}.yml\" already exists, delete it to move forward"
 	exit 1
 fi
@@ -130,5 +130,5 @@ else
 	create "${FILE}" "${NAME}" --namespace "${KS_NAMESPACE}" \
 	| kseal \
 			--namespace "${KS_NAMESPACE}" \
-			--sealed-secret-file "${ENV}/${NAME}.yml"
+			--sealed-secret-file "${ENV}/${NAME}-${KS_NAMESPACE}.yml"
 fi

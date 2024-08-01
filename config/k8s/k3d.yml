@@ -5,6 +5,13 @@ metadata:
 servers: 1 # control plane nodes
 agents: 3  # worker nodes
 image: docker.io/rancher/k3s:v1.24.4-k3s1
+ports:
+  - port: 80:80 # same as `--port '80:80@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
+  - port: 443:443 # same as `--port '443:443@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
 volumes:
   - volume: k8s-dev-data:/opt/hrry.me
     # https://k3d.io/v5.4.6/design/concepts/#nodefilters
@@ -22,3 +29,7 @@ options:
       - label: hrry.me/node-size=big
         nodeFilters:
           - server:*
+      - label: hrry.me/database-host=true
+        nodeFilters: [all]
+      - label: hrry.me/wordpress=true
+        nodeFilters: [all]
