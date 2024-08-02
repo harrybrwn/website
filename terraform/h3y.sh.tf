@@ -15,6 +15,7 @@ resource "cloudflare_zone_dnssec" "h3y_sh_dnssec" {
 #   type    = "A"
 #   proxied = false
 #   ttl     = 60
+#   comment = "Created by terraform."
 #   zone_id = cloudflare_zone.h3y_sh.id
 # }
 
@@ -30,6 +31,8 @@ resource "cloudflare_email_routing_rule" "h3y" {
       "oof",
       "private",
       "me",
+      "x+h6n",
+      "patreon",
     ],
   ))
   zone_id = cloudflare_zone.h3y_sh.id

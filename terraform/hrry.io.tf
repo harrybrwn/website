@@ -35,6 +35,7 @@ resource "cloudflare_record" "hrry_io_dns" {
   type    = "CNAME"
   proxied = true
   ttl     = 1
+  comment = "Created by terraform."
   zone_id = cloudflare_zone.hrry_io.id
 }
 
@@ -44,5 +45,6 @@ resource "cloudflare_record" "hrry_io_github_pages" {
   type    = "CNAME"
   proxied = false
   ttl     = 120
+  comment = "Created by terraform."
   zone_id = cloudflare_zone.hrry_io.id
 }

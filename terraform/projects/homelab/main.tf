@@ -22,18 +22,25 @@ locals {
 
 resource "cloudflare_record" "hrry_dev_local_dns" {
   for_each = merge(
-    [for d in ["grafana.lab", "s3.lab"] :
-      { for i, ip in local.local_ips :
+    [
+      for d in [
+        "grafana.lab",
+        "s3.lab",
+      ] :
+      {
+        for i, ip in local.local_ips :
         "${d}-${i}" => {
           domain  = d
           address = ip
         }
-    }]...
+      }
+    ]...
   )
   name    = each.value.domain
   value   = each.value.address
   type    = "A"
   proxied = false
   ttl     = 120
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_dev
 }

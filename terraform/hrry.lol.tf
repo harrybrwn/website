@@ -4,6 +4,7 @@ resource "cloudflare_record" "minecraft_server" {
   type    = "A"
   proxied = false
   ttl     = 120 # seconds
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_lol
 }
 
@@ -13,5 +14,6 @@ resource "cloudflare_record" "minecraft_server_local" {
   type    = "A"
   proxied = false
   ttl     = 120 # seconds
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_lol
 }

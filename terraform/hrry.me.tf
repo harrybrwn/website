@@ -19,6 +19,7 @@ resource "cloudflare_record" "netlify" {
   value   = "apex-loadbalancer.netlify.com"
   proxied = false
   ttl     = 60
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_me
 }
 
@@ -28,6 +29,7 @@ resource "cloudflare_record" "netlify_www" {
   value   = "apex-loadbalancer.netlify.com"
   proxied = false
   ttl     = 60
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_me
 }
 
@@ -38,12 +40,14 @@ resource "cloudflare_record" "hrry_me_dns" {
     "mike",
     "api",
     "l",
+    "blog",
   ])
   name    = each.key
   value   = var.gateway_ip
   type    = "A"
   proxied = true
   ttl     = 1
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_me
 }
 
@@ -58,6 +62,7 @@ resource "cloudflare_record" "hrry_me_dns_staging" {
   type    = "A"
   proxied = false
   ttl     = 60
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_me
 }
 
@@ -115,5 +120,6 @@ resource "cloudflare_record" "gh_pages_domain_verify" {
   value   = var.gh_pages_domain_verify_codes.hrry_me
   proxied = false
   ttl     = 1 # auth ttl
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_me
 }

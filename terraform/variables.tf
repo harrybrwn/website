@@ -25,6 +25,11 @@ variable "gateway_ip" {
   type        = string
 }
 
+variable "private_gateway_ip" {
+  description = "Private IP address of the main gateway."
+  type        = string
+}
+
 variable "staging_ip" {
   description = "Local IP address of staging environment's gateway machine."
   type        = string

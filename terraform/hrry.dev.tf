@@ -5,8 +5,6 @@ resource "cloudflare_record" "hrry_dev_dns" {
     "hooks",
     "ip",
     "grafana",
-    "s3-console",
-    "s3",
     "auth",
   ])
   name    = each.key
@@ -14,6 +12,22 @@ resource "cloudflare_record" "hrry_dev_dns" {
   type    = "CNAME"
   proxied = true
   ttl     = 1 # proxied records require ttl of 1
+  comment = "Created by terraform."
+  zone_id = local.zones.hrry_dev
+}
+
+resource "cloudflare_record" "hrry_dev_private" {
+  for_each = toset([
+    "s3-console",
+    "console.s3",
+    "s3",
+  ])
+  name    = each.key
+  value   = var.private_gateway_ip
+  type    = "A"
+  proxied = false
+  ttl     = 60
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_dev
 }
 
@@ -28,5 +42,12 @@ resource "cloudflare_record" "hrry_dev_dns_staging" {
   type    = "A"
   proxied = false
   ttl     = 3600
+  comment = "Created by terraform."
   zone_id = local.zones.hrry_dev
 }
+
+# resource "cloudflare_r2_bucket" "apt" {
+#   name       = "apt"
+#   location   = "wnam"
+#   account_id = var.cf_account_id
+# }
