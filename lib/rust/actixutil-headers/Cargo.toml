@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 actix-web = "4.3.1"
 mime = { version = "0.1.0", path = "../mime" }
+futures-core = "0.3.30"

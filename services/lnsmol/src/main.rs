@@ -2,9 +2,8 @@ mod client;
 mod link;
 
 use actix_web::{
-    http::header,
     web::{self, Json},
-    FromRequest, HttpRequest, HttpResponse,
+    HttpResponse,
 };
 use askama::Template;
 use clap::{Args, Parser as CliParser, Subcommand};
@@ -71,13 +70,14 @@ enum CliCommands {
         #[arg()]
         id: String,
     },
+    List,
 }
 
 impl Cli {
     fn redis(&self) -> Result<redis::Client, io::Error> {
         let addr = match dns_lookup::lookup_host(&self.redis_host) {
             Ok(addrs) => {
-                if addrs.len() == 0 {
+                if addrs.is_empty() {
                     log::warn!("dns lookup failed on {}", self.redis_host);
                     self.redis_host.clone()
                 } else {
@@ -112,8 +112,15 @@ struct LinkResponse {
 }
 
 #[derive(Template)]
-#[template(path = "new.html")]
+#[template(path = "create.html")]
+struct CreateLinkTemplate {
+    title: String,
+}
+
+#[derive(Template)]
+#[template(path = "link.html")]
 struct NewLinkTemplate {
+    title: String,
     id: String,
     url: String,
 }
@@ -124,17 +131,47 @@ async fn link_create_post(
     accept: Accept,
 ) -> actix_web::Result<HttpResponse> {
     let id = store.create(&req).await?;
+    log::info!(accept = format!("{:?}", accept); "run handler for {id}");
     Ok(match accept {
         Accept::None | Accept::Any | Accept::PlainText => HttpResponse::Ok().body(id),
         Accept::Json => HttpResponse::Ok().json(LinkResponse { url: req.url, id }),
         Accept::Html => {
-            let tmpl = NewLinkTemplate { id, url: req.url };
+            let tmpl = NewLinkTemplate {
+                title: "New Link".into(),
+                id,
+                url: req.url,
+            };
             match tmpl.render() {
                 Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
                 Ok(contents) => HttpResponse::Ok().content_type("text/html").body(contents),
             }
         }
         _ => HttpResponse::BadRequest().body("bad accept header"),
+    })
+}
+
+async fn link_create_form(
+    store: web::Data<link::Store>,
+    web::Form(form): web::Form<link::CreateRequest>,
+    accept: Accept,
+) -> actix_web::Result<NewLinkTemplate> {
+    let id = store.create(&form).await?;
+    log::info!(accept = format!("{:?}", accept); "run handler for {id}");
+    let tmpl = NewLinkTemplate {
+        title: "New Link".into(),
+        id,
+        url: form.url,
+    };
+    Ok(tmpl)
+}
+
+async fn create_link_page() -> actix_web::Result<HttpResponse> {
+    let tmpl = CreateLinkTemplate {
+        title: "New Link".into(),
+    };
+    Ok(match tmpl.render() {
+        Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
+        Ok(contents) => HttpResponse::Ok().content_type("text/html").body(contents),
     })
 }
 
@@ -189,7 +226,7 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
         path.push(server.url_prefix.clone());
     }
 
-    log::info!("starting server at {}:{}", args.host, args.port);
+    log::info!(prefix = path.to_str().unwrap(); "starting server at {}:{}", args.host, args.port);
     HttpServer::new(move || {
         let prefix = path.to_str().unwrap();
         log::info!("using url prefix \"{prefix}\"");
@@ -203,14 +240,15 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
         app.app_data(web::Data::new(store.clone()))
             .wrap(actix_web::middleware::Logger::default())
             .route(prefix, web::post().to(link_create_post))
+            .route(prefix, web::get().to(create_link_page))
+            .route(
+                path.join("new").to_str().unwrap(),
+                web::post().to(link_create_form),
+            )
             .service(
-                web::resource(
-                    path::PathBuf::from_iter(&[prefix, "{id}"])
-                        .to_str()
-                        .unwrap(),
-                )
-                .route(web::get().to(link_get))
-                .route(web::delete().to(link_del)),
+                web::resource(path.join("{id}").to_str().unwrap())
+                    .route(web::get().to(link_get))
+                    .route(web::delete().to(link_del)),
             )
     })
     .workers(server.workers)
@@ -245,12 +283,34 @@ async fn main() -> Result<(), io::Error> {
         CliCommands::Get { id } => {
             let client = client::Client::new(client_url);
             let (loc, status) = client.get(id.clone()).await?;
-            println!("status:   {}", status);
+            println!(
+                "status:   {} {:?}",
+                status.as_str(),
+                status.canonical_reason().unwrap_or("unknown status code")
+            );
             println!("location: {}", loc);
         }
         CliCommands::Del { id } => {
             let client = client::Client::new(client_url);
             client.del(id.clone()).await?;
+        }
+        CliCommands::List => {
+            let rd = args.redis()?;
+            log_connection_info(rd.get_connection_info());
+            rd.get_connection().map_err(|e| {
+                io::Error::new(
+                    io::ErrorKind::ConnectionRefused,
+                    format!("could not connect to redis: {}", e),
+                )
+            })?;
+            let store = link::Store::new(String::new(), rd);
+            let links = store
+                .list()
+                .await
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+            for l in links {
+                println!("{} -> {} {:?}", l.key, l.link.url, l.expires);
+            }
         }
     };
     Ok(())
@@ -270,12 +330,9 @@ mod main_tests {
     #[actix_web::test]
     async fn test_put() {}
 
-    fn resolve() {}
-
     #[test]
     fn test_dns_lookup() {
         use dns_lookup::lookup_host;
-        use std::net::{SocketAddr, ToSocketAddrs};
         let h = lookup_host("localhost").unwrap();
         println!("{:?}", h);
         // let addrs = "localhost".to_socket_addrs().unwrap();

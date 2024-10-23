@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::io::{Error, ErrorKind};
 use std::str::FromStr;
 
@@ -126,7 +128,7 @@ struct S3Writer {
 }
 
 impl S3Writer {
-    fn write<T>(&self, path: T) -> std::io::Result<bool>
+    fn write<T>(&self, _path: T) -> std::io::Result<bool>
     where
         T: AsRef<std::path::Path>,
     {
@@ -256,7 +258,7 @@ impl Downloader {
     fn db_request(&self, edition: &str) -> Result<hyper::Request<hyper::Body>, Error> {
         let pb: std::path::PathBuf = ["/geoip/databases", edition, "update"].iter().collect();
         let Some(path) = pb.to_str() else {
-            return Err(Error::new(ErrorKind::Other, "failed to build uri path"))
+            return Err(Error::new(ErrorKind::Other, "failed to build uri path"));
         };
         let uri = match hyper::Uri::builder()
             .scheme("https")

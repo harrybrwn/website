@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{%- block body %}
+    <h1>Create New Link</h1>
+    <form action="/l/new" method="POST">
+      <input type="url" id="url" name="url" />
+      <!-- <input type="date" id="expires" name="expires" /> -->
+      <input type="number" id="expires" name="expires" />
+      <input type="submit" />
+    </form>
+{% endblock -%}

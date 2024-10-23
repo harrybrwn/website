@@ -19,8 +19,9 @@ struct LanguageQuery {
     lang: String,
 }
 
-#[derive(Debug, Clone, Default)]
-pub(crate) struct Language(pub String);
+#[allow(dead_code)]
+#[derive(Default)]
+pub(crate) struct Language(pub(crate) String);
 
 impl FromRequest for Language {
     type Error = io::Error;

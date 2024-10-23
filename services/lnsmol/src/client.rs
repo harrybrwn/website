@@ -1,3 +1,4 @@
+use hyper::StatusCode;
 use std::io::{self, Error, ErrorKind};
 use url::Url;
 
@@ -48,7 +49,7 @@ impl Client {
         Ok(l.id)
     }
 
-    pub(crate) async fn get(&self, id: String) -> Result<(String, u16), io::Error> {
+    pub(crate) async fn get(&self, id: String) -> Result<(String, StatusCode), io::Error> {
         let mut base = self.base.clone();
         if let Ok(mut path) = base.path_segments_mut() {
             path.push(&id);
@@ -77,7 +78,7 @@ impl Client {
                 "no location header in response",
             )),
         }?;
-        Ok((loc, parts.status.as_u16()))
+        Ok((loc, parts.status))
     }
 
     pub(crate) async fn del(&self, id: String) -> Result<(), io::Error> {

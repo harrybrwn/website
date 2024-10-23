@@ -1,10 +1,22 @@
 [workspace]
+resolver = "2"
 members = [
+    "services/bk",
     "services/geoip",
     "services/geoipupdate",
     "services/gopkg",
     "services/lnsmol",
     "lib/rust/actixutil-headers",
+    "lib/rust/actix-request-logger",
     "lib/rust/mime",
-    "cmd/foreman",
+    "lib/rust/flog",
+    "lib/rust/actix-request-logger",
+    "lib/rust/flog",
 ]
+
+[workspace.dependencies]
+clap = { version = "4.4.0", features = ["derive", "env"] }
+log = { version = "0.4.21", features = ["std", "kv_unstable_serde"] }
+flog = { path = "./lib/rust/flog" }
+actix-request-logger = { version = "0.1.0", path = "./lib/rust/actix-request-logger" }
+actixutil-headers = { version = "0.0.1", path = "./lib/rust/actixutil-headers" }

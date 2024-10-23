@@ -18,10 +18,9 @@
         color: #88f;
       }
     </style>
+    <title>{{ title }}</title>
   </head>
   <body>
-    <h1>New Link</h1>
-    <p>{{ id }}</p>
-    <a href="{{ url }}">{{ url }}</a>
+    {%- block body %}{% endblock -%}
   </body>
 </html>

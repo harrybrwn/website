@@ -1,4 +1,5 @@
 use redis::aio;
+use serde::de;
 use url::Url;
 
 use actix_web::error::{
@@ -19,6 +20,7 @@ pub(crate) struct CreateRequest {
     /// URL of the link being created.
     pub(crate) url: String,
     /// Number of seconds the link will live.
+    #[serde(default, deserialize_with = "deserialize_option_ignore_error")]
     pub(crate) expires: Option<u64>,
     /// Number of times a link can be accessed before self destructing.
     pub(crate) access_limit: Option<u32>,
@@ -30,6 +32,13 @@ pub(crate) struct Link {
     pub(crate) url: String,
     /// Number of accesses left before a link is deleted.
     pub(crate) accesses: Option<u32>,
+}
+
+#[derive(Debug)]
+pub(crate) struct LinkInfo {
+    pub(crate) link: Link,
+    pub(crate) key: String,
+    pub(crate) expires: Option<u64>,
 }
 
 #[inline]
@@ -119,4 +128,51 @@ impl Store {
             .map_err(ErrorInternalServerError)?;
         Ok(())
     }
+
+    pub(crate) async fn list(&self) -> Result<Vec<LinkInfo>, Error> {
+        let mut keys = Vec::new();
+        {
+            let mut conn = self.conn().await?;
+            let mut keys_iter: redis::AsyncIter<String> = redis::cmd("SCAN")
+                .cursor_arg(0)
+                .arg("MATCH")
+                .arg("link:*")
+                .clone() // not sure why I need this but I do
+                .iter_async(&mut conn)
+                .await
+                .map_err(ErrorInternalServerError)?;
+            while let Some(key) = keys_iter.next_item().await {
+                keys.push(key);
+            }
+        }
+
+        let mut results = Vec::new();
+        {
+            let mut conn = self.conn().await?;
+            let mut res: redis::AsyncIter<String> = redis::Cmd::mget(&keys)
+                .iter_async(&mut conn)
+                .await
+                .map_err(ErrorInternalServerError)?;
+            let mut i = 0;
+            while let Some(item) = res.next_item().await {
+                let link: Link = serde_json::from_str(&item).map_err(ErrorInternalServerError)?;
+                results.push(LinkInfo {
+                    link,
+                    key: keys[i].clone(),
+                    expires: None,
+                });
+                i += 1;
+            }
+        }
+
+        Ok(results)
+    }
+}
+
+pub fn deserialize_option_ignore_error<'de, T, D>(d: D) -> Result<Option<T>, D::Error>
+where
+    T: de::Deserialize<'de>,
+    D: de::Deserializer<'de>,
+{
+    Ok(T::deserialize(d).ok())
 }

@@ -10,7 +10,7 @@ aws-config = "0.55.2"
 aws-sdk-s3 = "0.27.0"
 base64 = "0.21.0"
 chrono = "0.4.24"
-clap = { version = "4.4.0", features = ["derive", "env"] }
+clap = { workspace = true }
 futures = "0.3.28"
 hyper = { version = "0.14.27", features = ["tcp", "client", "http1", "http2", "runtime"] }
 hyper-rustls = { version = "0.24.1", features = ["http2"] }

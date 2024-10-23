@@ -5,6 +5,7 @@ use std::io::{self, ErrorKind};
 
 use mime::Mime;
 
+#[derive(Debug)]
 pub struct Accept(Vec<MimeItem>);
 
 impl FromRequest for Accept {
@@ -23,13 +24,24 @@ impl FromRequest for Accept {
     }
 }
 
+impl Default for Accept {
+    fn default() -> Self {
+        Self::from(MimeItem {
+            mime: Mime::any(),
+            q: 1.0,
+        })
+    }
+}
+
 impl From<&str> for Accept {
+    #[inline]
     fn from(v: &str) -> Self {
         Self::from_iter(v.split(',').map(|v| v.trim()))
     }
 }
 
 impl From<MimeItem> for Accept {
+    #[inline]
     fn from(v: MimeItem) -> Self {
         Self(vec![v])
     }
@@ -53,6 +65,15 @@ where
         Self::from_iter(v.iter().map(|v| v.clone()))
     }
 }
+
+// impl From<Accept> for &str {
+//     fn from(value: Accept) -> Self {
+//         let res = value.0.iter().map(|m| {
+//             let s: &str = m.mime.into();
+//         });
+//         ""
+//     }
+// }
 
 impl<M> FromIterator<M> for Accept
 where
@@ -194,5 +215,7 @@ mod tests {
         assert_eq!(values[4].mime.sub, mime::SubType::Any);
         assert_eq!(values[4].q, 0.8);
         println!("{:?}", values);
+        let a = Accept(values);
+        println!("{:?}", a);
     }
 }

@@ -16,6 +16,21 @@ impl From<&str> for Mime {
     }
 }
 
+impl ToString for Mime {
+    fn to_string(&self) -> String {
+        let tp: &str = self.typ.into();
+        let sb: String = self.sub.into();
+        format!("{tp}/{sb}")
+    }
+}
+
+impl From<Mime> for String {
+    #[inline]
+    fn from(value: Mime) -> Self {
+        value.to_string()
+    }
+}
+
 impl Default for Mime {
     fn default() -> Self {
         Self {
@@ -93,6 +108,29 @@ impl From<&str> for Type {
             "video" => Self::Video,
             _ => Self::None,
         }
+    }
+}
+
+impl From<Type> for &'static str {
+    fn from(value: Type) -> Self {
+        match value {
+            Type::Any | Type::None => "*",
+            Type::Font => "font",
+            Type::Text => "text",
+            Type::Audio => "audio",
+            Type::Video => "video",
+            Type::Image => "image",
+            Type::Multipart => "multipart",
+            Type::Application => "application",
+            Type::Message => "message",
+        }
+    }
+}
+
+impl ToString for Type {
+    fn to_string(&self) -> String {
+        let v: &str = (*self).into();
+        v.to_string()
     }
 }
 
@@ -186,6 +224,56 @@ impl From<&str> for SubType {
     #[inline]
     fn from(v: &str) -> Self {
         Self::parse(v)
+    }
+}
+
+impl From<SubType> for String {
+    fn from(v: SubType) -> Self {
+        use SubType::*;
+        macro_rules! x {
+            ($v:expr; $($a:ident),*) => {
+                match $v {
+                    $($a => stringify!($a).to_lowercase(),)*
+                    Atom => "atom+xml".to_string(),
+                    Bzip => "x-bzip".to_string(),
+                    Bzip2 => "x-bzip2".to_string(),
+                    DnsJson => "dns+json".to_string(),
+                    Epub => "epub+zip".to_string(),
+                    FormData => "form-data".to_string(),
+                    Icon => "x-icon".to_string(),
+                    Jsonld => "ld+json".to_string(),
+                    OctetStream => "octet-stream".to_string(),
+                    Rss => "rss+xml".to_string(),
+                    Tsv => "tab-separated-values".to_string(),
+                    UriList => "url-list".to_string(),
+                    UrlEncoded => "x-www-form-urlencoded".to_string(),
+                    Xhtml => "xhtml+xml".to_string(),
+                    None | Any => "*".to_string(),
+                }
+            };
+        }
+        x!(
+            v;
+            Ac3, Acc, Aiff, Avif,
+            Basic, Bmp, BytesRange,
+            Calendar, Css, Csv,
+            Digest, Dns, DnsMessage,
+            Encrypted, Example,
+            Flac,
+            Gif, Global, Gzip,
+            Html, Http,
+            Javascript, Jpeg, Json,
+            Markdown, Mathml, Midi, Mp4, Mpa, Mpeg, Msword,
+            Ogg, Opus, Otf,
+            Pdf, Plain, Png,
+            Raw, RichText, Rtf, Rtx,
+            Sgml, Signed, Sql, Svg,
+            Tiff, Troff, Ttf,
+            Wasm, Webm, Webp, Woff, Woff2,
+            Xml,
+            Yaml,
+            Zip
+        )
     }
 }
 
