@@ -39,7 +39,10 @@ impl Client {
         let res = self.client.request(req).await.map_err(convert_err)?;
         let (parts, body) = res.into_parts();
         if !parts.status.is_success() {
-            return Err(Error::new(ErrorKind::InvalidData, "bad status code"));
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("bad status code {}", parts.status),
+            ));
         }
         let body_bytes = hyper::body::to_bytes(body)
             .await
@@ -69,7 +72,10 @@ impl Client {
         let res = self.client.request(req).await.map_err(convert_err)?;
         let (parts, _) = res.into_parts();
         if !parts.status.is_redirection() && !parts.status.is_success() {
-            return Err(Error::new(ErrorKind::InvalidData, "bad status code"));
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("bad status code {}", parts.status),
+            ));
         }
         let loc = match parts.headers.get("Location") {
             Some(s) => Ok(String::from(s.to_str().map_err(convert_err)?)),
@@ -100,7 +106,10 @@ impl Client {
         let res = self.client.request(req).await.map_err(convert_err)?;
         let (parts, _) = res.into_parts();
         if !parts.status.is_success() {
-            return Err(Error::new(ErrorKind::InvalidData, "bad status code"));
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("bad status code {}", parts.status),
+            ));
         }
         Ok(())
     }

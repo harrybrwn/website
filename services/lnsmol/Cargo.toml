@@ -9,18 +9,28 @@ edition = "2021"
 actix-web = "4.3.1"
 actix-web-prom = "0.7.0"
 actixutil-headers = { version = "0.0.1", path = "../../lib/rust/actixutil-headers" }
+actix-request-logger = { workspace = true }
 askama = { version = "0.12.1", features = ["with-actix-web"] }
 askama_actix = "0.14.0"
 clap = { workspace = true }
 dns-lookup = "2.0.4"
 duration-str = "0.5.1"
 env_logger = "0.10.0"
+flog = { workspace = true }
 hyper = { version = "0.14.27", features = ["client", "http1", "http2", "runtime"] }
 hyper-rustls = { version = "0.24.1", features = ["http2"] }
 log = { workspace = true }
-rand = "0.8.5"
+rand = { version = "0.8.5", features = ["small_rng"] }
+rand_hc = "0.3.2"
 redis = { version = "0.23.2", default-features = false, features = ["tokio-comp", "connection-manager"] }
 serde = "1.0.188"
 serde_derive = "1.0.188"
 serde_json = "1.0.105"
 url = "2.4.1"
+
+[dev-dependencies]
+serial_test = "3.1.1"
+
+[features]
+default = []
+functional = []

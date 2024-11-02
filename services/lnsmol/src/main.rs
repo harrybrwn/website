@@ -1,8 +1,9 @@
 mod client;
 mod link;
+mod nanoid;
 
 use actix_web::{
-    web::{self, Json},
+    web::{self, Data, Form, Json, Path},
     HttpResponse,
 };
 use askama::Template;
@@ -10,9 +11,13 @@ use clap::{Args, Parser as CliParser, Subcommand};
 use redis::ConnectionInfo;
 use serde_derive::{Deserialize, Serialize};
 use std::io;
-use std::path;
 
 use actixutil_headers::Accept;
+
+#[cfg(debug_assertions)]
+const DEFAULT_CLIENT_URL: &'static str = "http://localhost:8088";
+#[cfg(not(debug_assertions))]
+const DEFAULT_CLIENT_URL: &'static str = "https://l.hrry.me";
 
 #[derive(CliParser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -31,6 +36,12 @@ struct Cli {
     redis_username: Option<String>,
     #[arg(long, env, default_value = "testbed01")]
     redis_password: Option<String>,
+    #[arg(long, env, default_value = DEFAULT_CLIENT_URL)]
+    client_url: String,
+    #[arg(long, short, env, default_value_t = log::Level::Info)]
+    pub(crate) log_level: log::Level,
+    #[arg(long, env, default_value_t = flog::Format::LogFmt)]
+    pub(crate) log_format: flog::Format,
     #[command(subcommand)]
     command: CliCommands,
 }
@@ -40,12 +51,11 @@ struct Server {
     /// Number of worker threads
     #[arg(short, long, default_value_t = 6, env = "SERVER_WORKERS")]
     workers: usize,
-    /// URL Prefix to serve all requests from.
-    #[arg(long, default_value = "l", env = "SERVER_URL_PREFIX")]
-    url_prefix: String,
     /// The domain name that this server will receive requests on.
     #[arg(long, default_value = "localhost", env = "SERVER_DOMAIN")]
     domain: String,
+    #[arg(long, default_value = "http://localhost:8088", env = "SERVER_BASE")]
+    base: String,
 }
 
 #[derive(Subcommand, Debug)]
@@ -70,7 +80,19 @@ enum CliCommands {
         #[arg()]
         id: String,
     },
+    /// List all the saved links by connecting to redis.
     List,
+    /// Open the url in a browser given the ID.
+    Open {
+        #[arg()]
+        id: String,
+    },
+    #[command(hide = true)]
+    Test,
+}
+
+struct ServerConfig {
+    base: String,
 }
 
 impl Cli {
@@ -90,7 +112,6 @@ impl Cli {
             }
         };
         let client = match redis::Client::open(redis::ConnectionInfo {
-            // addr: redis::ConnectionAddr::Tcp(self.redis_host.clone(), self.redis_port),
             addr: redis::ConnectionAddr::Tcp(addr, self.redis_port),
             redis: redis::RedisConnectionInfo {
                 db: self.redis_db,
@@ -123,10 +144,12 @@ struct NewLinkTemplate {
     title: String,
     id: String,
     url: String,
+    server: String,
 }
 
 async fn link_create_post(
-    store: web::Data<link::Store>,
+    store: Data<link::Store>,
+    sc: Data<ServerConfig>,
     Json(req): Json<link::CreateRequest>,
     accept: Accept,
 ) -> actix_web::Result<HttpResponse> {
@@ -140,6 +163,7 @@ async fn link_create_post(
                 title: "New Link".into(),
                 id,
                 url: req.url,
+                server: sc.base.clone(),
             };
             match tmpl.render() {
                 Err(e) => HttpResponse::InternalServerError().body(e.to_string()),
@@ -151,8 +175,9 @@ async fn link_create_post(
 }
 
 async fn link_create_form(
-    store: web::Data<link::Store>,
-    web::Form(form): web::Form<link::CreateRequest>,
+    store: Data<link::Store>,
+    sc: Data<ServerConfig>,
+    Form(form): Form<link::CreateRequest>,
     accept: Accept,
 ) -> actix_web::Result<NewLinkTemplate> {
     let id = store.create(&form).await?;
@@ -161,8 +186,24 @@ async fn link_create_form(
         title: "New Link".into(),
         id,
         url: form.url,
+        server: sc.base.clone(),
     };
     Ok(tmpl)
+}
+
+async fn link_info(
+    store: Data<link::Store>,
+    sc: Data<ServerConfig>,
+    _accept: Accept,
+    id: Path<String>,
+) -> actix_web::Result<NewLinkTemplate> {
+    let link = store.get(&id).await?;
+    Ok(NewLinkTemplate {
+        title: "New Link".into(),
+        id: id.to_string(),
+        url: link.url,
+        server: sc.base.clone(),
+    })
 }
 
 async fn create_link_page() -> actix_web::Result<HttpResponse> {
@@ -176,18 +217,18 @@ async fn create_link_page() -> actix_web::Result<HttpResponse> {
 }
 
 async fn link_get(
-    store: web::Data<link::Store>,
-    id: web::Path<String>,
+    store: Data<link::Store>,
+    id: Path<String>,
 ) -> actix_web::error::Result<HttpResponse> {
-    let link = store.get(id.into_inner()).await?;
+    let link = store.get(&id).await?;
     Ok(HttpResponse::TemporaryRedirect()
         .insert_header(("Location", link.url.clone()))
         .finish())
 }
 
 async fn link_del(
-    store: web::Data<link::Store>,
-    id: web::Path<String>,
+    store: Data<link::Store>,
+    id: Path<String>,
 ) -> Result<HttpResponse, actix_web::Error> {
     store.del(id.into_inner()).await?;
     Ok(HttpResponse::Ok().finish())
@@ -201,12 +242,22 @@ fn log_connection_info(info: &ConnectionInfo) {
     );
 }
 
+fn configure() -> impl Fn(&mut web::ServiceConfig) {
+    return |cfg| {
+        cfg.route("/new", web::post().to(link_create_form))
+            .route("/info/{id}", web::get().to(link_info))
+            .route("/", web::post().to(link_create_post))
+            .route("/", web::get().to(create_link_page))
+            .service(
+                web::resource("/{id}")
+                    .route(web::get().to(link_get))
+                    .route(web::delete().to(link_del)),
+            );
+    };
+}
+
 async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
     use actix_web::{App, HttpServer};
-
-    std::env::set_var("RUST_LOG", "debug");
-    env_logger::init();
-
     let prometheus = actix_web_prom::PrometheusMetricsBuilder::new("")
         .endpoint("/metrics")
         .build()
@@ -220,36 +271,22 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
         )
     })?;
     let store = link::Store::new(server.domain.clone(), rd);
+    let base = server.base.clone();
 
-    let mut path = path::PathBuf::from("/");
-    if !server.url_prefix.is_empty() && server.url_prefix != "/" {
-        path.push(server.url_prefix.clone());
-    }
-
-    log::info!(prefix = path.to_str().unwrap(); "starting server at {}:{}", args.host, args.port);
+    log::info!(host = args.host, port = args.port; "starting server at {}:{}", args.host, args.port);
     HttpServer::new(move || {
-        let prefix = path.to_str().unwrap();
-        log::info!("using url prefix \"{prefix}\"");
+        let base = base.clone();
         let app = App::new()
             // The prometheus client will record hits to the '/metrics' endpoint
             // as hits to '/{some_variable}' if these is no route for /metrics. Must
             // be added before all other routes.
             .service(web::resource("/metrics").to(HttpResponse::Ok))
             .wrap(prometheus.clone())
+            .wrap(actix_request_logger::RequestLogger)
             .wrap(actix_web::middleware::NormalizePath::trim());
-        app.app_data(web::Data::new(store.clone()))
-            .wrap(actix_web::middleware::Logger::default())
-            .route(prefix, web::post().to(link_create_post))
-            .route(prefix, web::get().to(create_link_page))
-            .route(
-                path.join("new").to_str().unwrap(),
-                web::post().to(link_create_form),
-            )
-            .service(
-                web::resource(path.join("{id}").to_str().unwrap())
-                    .route(web::get().to(link_get))
-                    .route(web::delete().to(link_del)),
-            )
+        app.app_data(Data::new(store.clone()))
+            .app_data(Data::new(ServerConfig { base }))
+            .configure(configure())
     })
     .workers(server.workers)
     .bind((args.host.clone(), args.port))?
@@ -260,12 +297,16 @@ async fn server(args: &Cli, server: &Server) -> Result<(), io::Error> {
 #[actix_web::main]
 async fn main() -> Result<(), io::Error> {
     let args = Cli::parse_from(std::env::args());
-    let mut client_url: url::Url = "http://localhost:8088"
+    flog::Config::new()
+        .format(args.log_format)
+        .level(args.log_level)
+        .load_env()
+        .init()
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    let client_url: url::Url = args
+        .client_url
         .parse()
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    if let Ok(mut path) = client_url.path_segments_mut() {
-        path.push("l");
-    }
 
     match &args.command {
         CliCommands::Server(s) => server(&args, s).await?,
@@ -312,6 +353,14 @@ async fn main() -> Result<(), io::Error> {
                 println!("{} -> {} {:?}", l.key, l.link.url, l.expires);
             }
         }
+        CliCommands::Open { id } => {
+            use std::os::unix::process::CommandExt;
+            let client = client::Client::new(client_url);
+            let (loc, _) = client.get(id.clone()).await?;
+            let err = std::process::Command::new("xdg-open").args([&loc]).exec();
+            println!("{:?}", err);
+        }
+        CliCommands::Test => {}
     };
     Ok(())
 }

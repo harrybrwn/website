@@ -1,6 +1,79 @@
 {% extends "base.html" %}
-{% block body %}
-  <h1>New Link</h1>
-  <p>id: {{ id }}</p>
-  <p>url: <a href="{{ url }}">{{ url }}</a></p>
+
+{% block style %}
+<style>
+  .web-button-tooltip {
+    width: 88px;
+    height: 31px;
+    cursor: pointer;
+  }
+
+  .tooltip {
+    /* making the .tooltip span a container for the tooltip text */
+    position: relative;
+    cursor: pointer;
+  }
+
+  .tooltip:before {
+    content: attr(data-text); /* here's the magic */
+    position: absolute;
+
+    /* vertically center */
+    top: 50%;
+    transform: translateY(50%);
+
+    /*left: -18%;*/
+    margin-left: 0px;
+
+    /* basic styles */
+    /*width: 120%;*/
+    width: 90%;
+    border-radius: 4px;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    font-size: 0.8em;
+    opacity: 0.8;
+
+    /* Hide by default */
+    display: none;
+  }
+
+  .tooltip:before {
+    background-color: #fff;
+    color: black;
+  }
+
+  .tooltip:hover:before {
+    display: block;
+  }
+</style>
 {% endblock %}
+
+{% block body %}
+  <a href="/">home</a>
+  <h1>New Link</h1>
+  <p>
+    id: <span id="cp-id" class="tooltip web-btn-tooltip">
+      <span>{{ id }}</span>
+    </span>
+  </p>
+  <p>
+    link: <span id="cp-link" class="tooltip web-btn-tooltip">
+      <span>{{ server }}/{{ id }}</span>
+    </span>
+  </p>
+  <p>url: <a href="{{ url }}" target="_blank">{{ url }}</a></p>
+  <span id="cp-id-tooltip" class="tooltip web-btn-tooltip">
+    <button id="cp-id-btn">Copy ID</button>
+  </span>
+  <button id="del-btn">Delete</button>
+{% endblock %}
+
+{% block script %}
+<script>
+  {% include "link.js" %}
+</script>
+{% endblock %}
+
+{# vim: ts=2 sts=2 sw=2 #}

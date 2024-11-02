@@ -18,9 +18,11 @@
         color: #88f;
       }
     </style>
+    {%- block style %}{% endblock -%}
     <title>{{ title }}</title>
   </head>
   <body>
     {%- block body %}{% endblock -%}
   </body>
+  {%- block script %}{% endblock -%}
 </html>
