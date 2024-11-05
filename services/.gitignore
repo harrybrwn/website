@@ -1,4 +1,2 @@
-lnsmol-axum/
-bookmarks/
-bookmarks-solidstart/
-_bookmarks/
+# Ignore all underscore prefixed folders
+/_*/

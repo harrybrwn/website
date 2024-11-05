@@ -23,7 +23,10 @@ apps:
       REDIS_DB: '6'
       SERVER_WORKERS: '6'
       SERVER_DOMAIN: 'l.hrry.me'
+      SERVER_BASE: 'https://l.hrry.me'
       SERVER_URL_PREFIX: '/'
+      LOG_FORMAT: json
+      LOG_LEVEL: info
     secrets:
       REDIS_PASSWORD: 'testbed01'
     metrics_path: /metrics

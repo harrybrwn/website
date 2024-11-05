@@ -14,7 +14,7 @@ This is the repo for my personal website.
 
 ## Build
 
-```
+```sh
 docker compose build
 ```
 
@@ -35,7 +35,7 @@ If you have the heroku cli, you can start the serer with `haroku local web`.
 
 ### Backend Unit Tests
 
-```
+```bash
 go test -tags ci ./...
 ```
 
@@ -55,7 +55,7 @@ yarn test
 
 ## Deployment
 
-```
+```bash
 docker context use harrybrwn # send docker commands to prod box
 docker network rm ingress
 docker network create --driver overlay --ingress --scope swarm --ipv6 harrybrwn-net

@@ -33,3 +33,5 @@ runs:
       run: go mod download
     - run: go generate ./...
       shell: sh
+
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json

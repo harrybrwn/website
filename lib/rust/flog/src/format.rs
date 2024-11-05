@@ -217,6 +217,7 @@ impl<'a, 'v, W: io::Write> log::kv::VisitValue<'v> for LogFmtVisitor<'a, W> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 struct KVCollector<'kvs> {
     kvs: Vec<(log::kv::Key<'kvs>, log::kv::Value<'kvs>)>,

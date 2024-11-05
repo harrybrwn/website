@@ -1,9 +1,12 @@
 apiVersion: v1
 data:
   HOST: 0.0.0.0
+  LOG_FORMAT: json
+  LOG_LEVEL: info
   PORT: "8088"
   REDIS_DB: "6"
   REDIS_HOST: redis
+  SERVER_BASE: https://l.hrry.me
   SERVER_DOMAIN: l.hrry.me
   SERVER_URL_PREFIX: /
   SERVER_WORKERS: "6"

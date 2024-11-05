@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "services/bk",
+    # "services/bk",
     "services/geoip",
     "services/geoipupdate",
     "services/gopkg",

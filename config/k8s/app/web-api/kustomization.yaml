@@ -2,3 +2,5 @@ resources:
   - deployment.yml
   - service.yml
   - secret.yml
+
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json

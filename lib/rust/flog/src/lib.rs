@@ -125,7 +125,6 @@ where
     F: Fmt + Sync + Send,
 {
     fn log(&self, record: &log::Record) {
-        _ = self.formatter;
         if self.enabled(record.metadata()) {
             let mut w = self.w.lock().unwrap();
             self.formatter.write(w.by_ref(), record).unwrap();

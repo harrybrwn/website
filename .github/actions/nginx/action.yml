@@ -68,3 +68,5 @@ runs:
     #       ./mainline/alpine-slim
     #   shell: bash
     #   working-directory: ./build/docker-nginx
+
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
