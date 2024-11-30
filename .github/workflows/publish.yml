@@ -50,14 +50,24 @@ jobs:
         GIT_COMMIT: ${{ github.sha }}
         GIT_BRANCH: ${{ github.ref_name }}
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
-      run: docker buildx bake --file config/docker/docker-bake.hcl rust --push
+      run: |
+        docker buildx bake \
+          --file config/docker/docker-bake.hcl   \
+          --set '*.cache-to=type=gha'            \
+          --set '*.cache-from=type=gha,mode=max' \
+          rust \
+          --push
     - name: Push Public Images
       env:
         GIT_COMMIT: ${{ github.sha }}
         GIT_BRANCH: ${{ github.ref_name }}
         SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
       run: |
-        docker buildx bake --file config/docker/docker-bake.hcl --push \
+        docker buildx bake \
+          --file config/docker/docker-bake.hcl   \
+          --push                                 \
+          --set '*.cache-to=type=gha'            \
+          --set '*.cache-from=type=gha,mode=max' \
           geoip-rs       \
           lnsmol         \
           geoipupdate    \

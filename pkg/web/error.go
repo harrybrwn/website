@@ -9,6 +9,7 @@ import (
 	"runtime"
 
 	"github.com/labstack/echo/v4"
+
 	"gopkg.hrry.dev/homelab/pkg/codes"
 	"gopkg.hrry.dev/homelab/pkg/log"
 )

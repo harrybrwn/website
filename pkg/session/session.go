@@ -113,7 +113,7 @@ func (m *Manager[T]) key(v string) string {
 
 func defaultIDGenerator() string {
 	var b [32]byte
-	rand.Read(b[:])
+	_, _ = rand.Read(b[:])
 	return hex.EncodeToString(b[:])
 }
 

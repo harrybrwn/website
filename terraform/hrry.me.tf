@@ -41,6 +41,8 @@ resource "cloudflare_record" "hrry_me_dns" {
     "api",
     "l",
     "blog",
+    "bsky",
+    "*.bsky",
   ])
   name    = each.key
   value   = var.gateway_ip
@@ -69,38 +71,6 @@ resource "cloudflare_record" "hrry_me_dns_staging" {
 resource "cloudflare_email_routing_settings" "hrry_me" {
   zone_id = local.zones.hrry_me
   enabled = true
-}
-
-resource "cloudflare_email_routing_address" "hrry_me" {
-  account_id = var.cf_account_id
-  email      = var.destination_email
-}
-
-resource "cloudflare_email_routing_rule" "hrry_me" {
-  for_each = toset([
-    "h",
-    "harry",
-    "admin",
-    "trash",
-    "trash0",
-    "trash1",
-    "trash2",
-    "trash3",
-    "trash4",
-    "trash5",
-  ])
-  zone_id = local.zones.hrry_me
-  enabled = true
-  name    = "cf email route '${each.key}'"
-  matcher {
-    type  = "literal"
-    field = "to"
-    value = "${each.key}@hrry.me"
-  }
-  action {
-    type  = "forward"
-    value = [var.destination_email]
-  }
 }
 
 #module "github_pages" {

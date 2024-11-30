@@ -17,3 +17,26 @@ resource "cloudflare_record" "minecraft_server_local" {
   comment = "Created by terraform."
   zone_id = local.zones.hrry_lol
 }
+
+# resource "cloudflare_email_routing_settings" "hrry_lol" {
+#   zone_id = local.zones.hrry_lol
+#   enabled = true
+# }
+
+# resource "cloudflare_email_routing_rule" "hrry_lol" {
+#   for_each = toset([
+#     "me",
+#   ])
+#   zone_id = local.zones.hrry_lol
+#   enabled = true
+#   name    = "cf email route '${each.key}'"
+#   matcher {
+#     type  = "literal"
+#     field = "to"
+#     value = "${each.key}@hrry.lol"
+#   }
+#   action {
+#     type  = "forward"
+#     value = [var.destination_email]
+#   }
+# }

@@ -23,28 +23,3 @@ resource "cloudflare_email_routing_settings" "h3y" {
   zone_id = cloudflare_zone.h3y_sh.id
   enabled = "true"
 }
-
-resource "cloudflare_email_routing_rule" "h3y" {
-  for_each = toset(concat(
-    [
-      "br3ie_+twitch0", # my twitch account lol
-      "oof",
-      "private",
-      "me",
-      "x+h6n",
-      "patreon",
-    ],
-  ))
-  zone_id = cloudflare_zone.h3y_sh.id
-  enabled = true
-  name    = "cf email route ${each.key}"
-  matcher {
-    type  = "literal"
-    field = "to"
-    value = "${each.key}@${cloudflare_zone.h3y_sh.zone}"
-  }
-  action {
-    type  = "forward"
-    value = [var.destination_email]
-  }
-}
