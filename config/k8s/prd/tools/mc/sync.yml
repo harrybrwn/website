@@ -1,0 +1,53 @@
+---
+# https://kubernetes.io/docs/concepts/workloads/controllers/job/
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sync-minio
+  namespace: default
+  labels:
+    app: sync-minio
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: kubernetes.io/arch, operator: In, values: [amd64] }
+          - { key: hrry.me/backup-host, operator: In, values: ['true'] }
+  template:
+    metadata:
+      name: sync-minio
+      labels:
+        app: sync-minio
+    spec:
+      containers:
+      - name: sync-minio
+        image: "quay.io/minio/minio:RELEASE.2024-04-18T19-09-19Z"
+        # copy the old data to the new one
+        command:
+          - mc
+          - mirror
+          - --exclude-bucket
+          - docker-registry
+          - --retry
+          - --md5
+          - --remove
+          - --json
+          - prd_old
+          - prd
+        env:
+        - name: MC_CONFIG_DIR
+          value: /tmp/mc
+        volumeMounts:
+        - name: config
+          mountPath: /tmp/mc/config.json
+          subPath: config.json
+      volumes:
+        - name: config
+          secret:
+            secretName: mc-config
+            optional: false
+      restartPolicy: OnFailure
+      dnsPolicy: ClusterFirst
+

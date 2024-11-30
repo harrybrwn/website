@@ -1,0 +1,8 @@
+resources:
+  - mc.yml
+
+secretGenerator:
+  - name: mc-config
+    behavior: create
+    files:
+      - config.json

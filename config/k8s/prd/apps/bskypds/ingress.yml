@@ -1,0 +1,18 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: bsky-hrry-me-routes
+spec:
+  entryPoints: [websecure, web]
+  routes:
+  - match: Host(`bsky.hrry.me`) || HostRegexp(`^[a-zA-Z0-9_-]{1,255}\.bsky\.hrry\.me$`)
+    kind: Rule
+    services:
+      - name: pds
+        namespace: bluesky
+        kind: Service
+        port: http
+        scheme: http
+  tls:
+    # Use an existing secret
+    secretName: bsky-hrry-me-tls

@@ -80,6 +80,15 @@ patches:
       - op: add
         path: /spec/set/environment.MINIO_BROWSER_REDIRECT_URL
         value: http://s3-console.hrry.dev
+  - target:
+      kind: Secret
+      name: mariadb-root
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value:
+          replicator.v1.mittwald.de/replication-allowed: "true"
+          replicator.v1.mittwald.de/replication-allowed-namespaces: ".*"
 
 secretGenerator:
   - name: db-env-secrets

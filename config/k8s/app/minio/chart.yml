@@ -166,6 +166,20 @@ spec:
               - "s3:AbortMultipartUpload"
             resources:
               - "arn:aws:s3:::wordpress/*"
+      - name: bsky
+        statements:
+          - effect: Allow
+            principal:
+              AWS: ["*"]
+            actions: ["s3:GetBucketLocation", "s3:ListBucket"]
+            resources: ["arn:aws:s3:::bsky-pds"]
+          - effect: Allow
+            principal:
+              AWS: ["*"]
+            actions:
+              - "s3:*"
+            resources:
+              - "arn:aws:s3:::bsky-pds/*"
 
     users:
       - accessKey: loki
@@ -203,6 +217,10 @@ spec:
         existingSecretKey: secret-key
         existingSecret: minio-user-wordpress
         policy: wordpress
+      - accessKey: bsky
+        existingSecretKey: secret-key
+        secistingSecret: minio-user-bsky
+        policy: bsky
 
     buckets:
       - name: geoip
@@ -218,6 +236,8 @@ spec:
         policy: private
       - name: data
       - name: wordpress
+        policy: private
+      - name: bsky-pds
         policy: private
 
     customCommands:

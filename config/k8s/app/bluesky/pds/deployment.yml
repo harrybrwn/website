@@ -1,0 +1,147 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/v1.22.4-standalone-strict/all.json
+
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pds
+  namespace: bluesky
+  labels:
+    app.kubernetes.io/name: pds
+    app.kubernetes.io/part-of: bluesky
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pds
+      app.kubernetes.io/part-of: bluesky
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container:  pds
+      labels:
+        app.kubernetes.io/name: pds
+        app.kubernetes.io/part-of: bluesky
+    spec:
+      containers:
+      - name: pds
+        image: ghcr.io/bluesky-social/pds:0.4.74
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 500m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+        ports:
+          - containerPort: 3000
+            name: http
+        livenessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /xrpc/_health
+            port: 3000
+          initialDelaySeconds: 5
+          timeoutSeconds: 2
+          successThreshold: 1
+          failureThreshold: 3
+          periodSeconds: 30
+        env:
+          - name: PDS_HOSTNAME
+            valueFrom:
+              configMapKeyRef:
+                name: pds
+                key: PDS_HOSTNAME
+          # Generate with: 'openssl rand --hex 16'
+          - name: PDS_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pds
+                key: PDS_ADMIN_PASSWORD
+          # Generate with: 'openssl rand --hex 16'
+          - name: PDS_JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: pds
+                key: PDS_JWT_SECRET
+          # Generate with:
+          # "openssl ecparam --name secp256k1 --genkey --noout --outform DER | tail --bytes=+8 | head --bytes=32 | xxd --plain --cols 32"
+          - name: PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX
+            valueFrom:
+              secretKeyRef:
+                name: pds
+                key: PDS_PLC_ROTATION_KEY_K256_PRIVATE_KEY_HEX
+          # Constants...
+          - name: PDS_DATA_DIRECTORY
+            value: /pds
+          - name: PDS_BLOB_UPLOAD_LIMIT
+            value: '52428800'
+          - name: PDS_DID_PLC_URL
+            value: https://plc.directory
+          - name: PDS_BSKY_APP_VIEW_URL
+            value: https://api.bsky.app
+          - name: PDS_BSKY_APP_VIEW_DID
+            value: did:web:api.bsky.app
+          - name: PDS_REPORT_SERVICE_URL
+            value: https://mod.bsky.app
+          - name: PDS_REPORT_SERVICE_DID
+            value: did:plc:ar7c4by46qjdydhdevvrndac
+          - name: PDS_PORT
+            value: '3000'
+          - name: PDS_CRAWLERS
+            value: https://bsky.network
+          - name: LOG_ENABLED
+            value: 'true'
+          # LOG_LEVEL can be one of:
+          # - trace  10
+          # - debug  20
+          # - info   30
+          # - warn   40
+          # - error  50
+          # - fatal  60
+          # - silent
+          # https://getpino.io/#/docs/api?id=logger-level
+          - name: LOG_LEVEL
+            value: 'trace'
+        envFrom:
+          # Use pds-env for other configuration like LOG_ENABLED
+          - configMapRef:
+              name: pds-env
+          # Use pds-env for other configuration like blob storage settings
+          - secretRef:
+              name: pds-env
+        volumeMounts:
+          - name: nfs
+            mountPath: /pds
+      volumes:
+        - name: nfs
+          nfs:
+            server: 10.0.0.13
+            path: /exports/nfs/hrry.dev/storage/bluesky-pds
+      restartPolicy: Always
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: In
+                values: ["amd64"]
+      tolerations:
+      - key: "arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
