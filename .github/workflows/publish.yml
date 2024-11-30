@@ -61,6 +61,48 @@ jobs:
           geoip-rs       \
           lnsmol         \
           geoipupdate    \
+          gopkg
+
+  images:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container
+        platforms: linux/amd64,linux/arm/v7,linux/arm/v6
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: harrybrwn
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Get source hash
+      id: api-source-hash
+      run: echo "source-hash=$(scripts/sourcehash.sh --lang go -e '*_test.go')" >> "$GITHUB_OUTPUT"
+
+    - name: Clone Bluesky PDS
+      uses: actions/checkout@v4
+      with:
+        repository: bluesky-social/pds
+        ref: "v0.4.74"
+        path: ./.build/docker/pds
+    - name: Build Bluesy PDS
+      env:
+        GIT_COMMIT: ${{ github.sha }}
+        GIT_BRANCH: ${{ github.ref_name }}
+        SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
+        PDS_VERSION_TAG: '0.4.74'
+      run:  |
+        docker buildx bake                       \
+          --file config/docker/docker-bake.hcl   \
+          --push                                 \
+          --set '*.cache-to=type=gha'            \
+          --set '*.cache-from=type=gha,mode=max' \
+          pds            \
           geoipupdate-go \
           provision
 

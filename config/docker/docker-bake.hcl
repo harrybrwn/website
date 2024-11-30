@@ -41,6 +41,8 @@ variable "FLUENTBIT_VERSION" {
     #default = "2.0.6"
 }
 
+variable "PDS_VERSION_TAG" { default = "latest" }
+
 variable "platforms" {
     default = [
         "linux/amd64",
@@ -148,7 +150,7 @@ target "base-service" {
     args = {
         ALPINE_VERSION = ALPINE_VERSION
         GO_VERSION     = GO_VERSION
-        RUST_VERSION   = "1.71.1"
+        RUST_VERSION   = "1.77.2"
     }
 }
 
@@ -240,6 +242,31 @@ target "vanity-imports" {
     target = "vanity-imports"
     tags = tags(REGISTRY, "vanity-imports", [])
     inherits = ["base-service"]
+}
+
+target "pdsctrl" {
+    target     = "pdsctrl"
+    context    = "cmd/pdsctrl"
+    dockerfile = "Dockerfile"
+    args       = {
+        GO_VERSION = "1.23.3"
+        ALPINE_VERSION = ALPINE_VERSION
+    }
+    tags       = tags("docker.io", "pdsctrl", [])
+    platforms  = platforms
+    labels     = {
+        "git.commit"      = "${GIT_COMMIT}"
+        "git.branch"      = "${GIT_BRANCH}"
+        "version"         = "${VERSION}"
+        "author"          = "Harry Brown"
+    }
+}
+
+target "pds" {
+    context    = ".build/docker/pds"
+    dockerfile = "Dockerfile"
+    tags       = tags("docker.io", "pds", [PDS_VERSION_TAG, "latest"])
+    platforms  = platforms
 }
 
 target "postgres" {
@@ -412,79 +439,63 @@ target "wait" {
     output = ["./.tmp/wait"]
 }
 
-group "rust" {
-    targets = [
-        for i in [
-            "68-0",
-            "69-0",
-            "70-0",
-            "71-1",
-            "75-0",
-            "77-2",
-        ]:
-        "rust_1-${i}"
+target "wp" {
+    dockerfile = "config/docker/Dockerfile.wp-cli"
+    labels = labels()
+    tags = tags("docker.io", "wp", [])
+    platforms = [
+        "linux/amd64",
+        "linux/arm/v7",
     ]
 }
 
-target "rust-base" {
-    context    = "config/docker/rust"
-    dockerfile = "Dockerfile"
-    labels     = labels()
-    platforms  = ["linux/amd64"]
-    args       = {RUST_BASE = RUST_BASE}
-}
+##################
+##     Rust     ##
+##################
 
 function "rust_tags" {
-    params = [version, latest]
+    params = [version, base, latest]
     result = [
         for t in compact(concat([
             version,
-            RUST_BASE == "" ? "" : "${version}-${RUST_BASE}",
+            RUST_BASE == "" ? "" : "${version}-${base}",
         ], latest ? ["latest", GIT_COMMIT] : [])) :
         "harrybrwn/rust:${t}"
     ]
 }
 
-target "rust_1-69-0" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.69.0", false)
-    args = {RUST_VERSION = "1.69.0"}
-}
-
-target "rust_1-68-0" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.68.0", false)
-    args = {RUST_VERSION = "1.68.0"}
-}
-
-target "rust_1-70-0" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.70.0", false)
-    args = {RUST_VERSION = "1.70.0"}
-}
-
-target "rust_1-71-1" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.71.1", false)
-    args = {RUST_VERSION = "1.71.1"}
-}
-
-target "rust_1-75-0" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.75.0", false)
-    args = {RUST_VERSION = "1.75.0", RUST_BASE = "alpine3.18"}
-}
-
-target "rust_1-77-2" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.77.2", false)
-    args = {RUST_VERSION = "1.77.2", RUST_BASE = "alpine3.18"}
-}
-
-target "rust_1-78-0" {
-    inherits = ["rust-base"]
-    tags = rust_tags("1.78.0", true)
-    args = {RUST_VERSION = "1.78.0", RUST_BASE = "alpine3.18"}
+target "rust" {
+    name = "rust_${replace(item.v, ".", "-")}_${replace(item.base, ".", "-")}"
+    matrix = {
+        item = [
+            { v = "1.68.0", base = "alpine3.17", latest = false },
+            { v = "1.69.0", base = "alpine3.17", latest = false },
+            { v = "1.70.0", base = "alpine3.17", latest = false },
+            { v = "1.71.1", base = "alpine3.17", latest = false },
+            { v = "1.75.0", base = "alpine3.18", latest = false },
+            { v = "1.77.2", base = "alpine3.18", latest = false },
+            { v = "1.78.0", base = "alpine3.18", latest = false },
+            { v = "1.82.0", base = "alpine3.20", latest = true },
+        ]
+    }
+    context = "config/docker/rust"
+    dockerfile = "Dockerfile"
+    tags = [
+        for t in compact(concat(
+            [item.v, "${item.v}-${item.base}"],
+            item.latest ? ["latest"] : []
+        )) :
+        "harrybrwn/rust:${t}"
+    ]
+    labels = labels()
+    platforms = [
+        "linux/amd64",
+        #"linux/arm/v7",
+    ]
+    args      = {
+        RUST_VERSION = item.v
+        RUST_BASE    = "${item.base}"
+    }
 }
 
 #

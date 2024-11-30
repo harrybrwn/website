@@ -40,7 +40,7 @@ runs:
       with:
         repository: nginxinc/docker-nginx
         ref: ${{ inputs.ref }}
-        path: ./build/docker-nginx
+        path: ./build/docker/docker-nginx
     - name: Build Modules Image
       run: |
         docker buildx build \
@@ -55,7 +55,7 @@ runs:
           --push \
         ./modules
       shell: bash
-      working-directory: ./build/docker-nginx
+      working-directory: ./build/docker/docker-nginx
 
     # - name: Build Basic Image
     #   run: |
@@ -67,6 +67,6 @@ runs:
     #       --push \
     #       ./mainline/alpine-slim
     #   shell: bash
-    #   working-directory: ./build/docker-nginx
+    #   working-directory: ./build/docker/docker-nginx
 
 # yaml-language-server: $schema=https://json.schemastore.org/github-action.json
