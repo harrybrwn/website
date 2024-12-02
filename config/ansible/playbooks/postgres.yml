@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook
+
 - name: Create and Configure a PostgresQL instance
   hosts: lenovo
   become: true
@@ -19,6 +21,7 @@
         package:
           - python3-docker
           - python3-psycopg2
+          - python3-pymysql
     - name: Created PostgreSQL Container
       community.docker.docker_container:
         name: postgres

@@ -1,0 +1,51 @@
+- name: Wordpress | MariaDB | Check Variables
+  ansible.builtin.debug:
+    msg: wp_database_password is required.
+  failed_when: wp_database_password is not defined
+
+- name: Wordpress | MariaDB | Create Container
+  community.docker.docker_container:
+    name: wp-mariadb
+    image: 'mariadb:{{ wp_mariadb_version | default("11.5.1-ubi9-rc") }}'
+    state: started
+    restart_policy: unless-stopped
+    restart: true
+    ports: "3306:3306"
+    volumes:
+      - '{{ wp_mariadb_volume_path | default("/opt/wordpress/mariadb/") }}:/var/lib/mysql/'
+    env:
+      MARIADB_ROOT_PASSWORD: '{{ wp_database_password }}'
+    comparisons:
+      env: strict
+      volumes: strict
+      image: strict
+  register: mariadb_container
+
+- name: Wordpress | MariaDB | Wait for Startup
+  ansible.builtin.wait_for:
+    host: '{{ ansible_host }}'
+    port: 3306
+
+- name: Wordpress | MariaDB | Setup databases
+  community.mysql.mysql_db:
+    name: '{{ item }}'
+    state: present
+    login_host: '{{ ansible_host }}'
+    login_port: '3306'
+    login_password: '{{ wp_database_password }}'
+  loop: '{{ wp_database_databases }}'
+  when: wp_database_databases is defined
+
+- name: Wordpress | MariaDB | Setup users
+  community.mysql.mysql_user:
+    name: '{{ item.username }}'
+    password: '{{ item.password }}'
+    priv: '{{ item.priv | default(item.username + ".*:ALL")}}'
+    state: present
+    login_host: '{{ ansible_host }}'
+    login_port: '3306'
+    login_password: '{{ wp_database_password }}'
+  loop: '{{ wp_database_users }}'
+  loop_control:
+    label: '{{ item.username }}'
+  when: wp_database_users is defined

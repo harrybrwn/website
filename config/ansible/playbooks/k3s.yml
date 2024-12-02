@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook
+
 - name: Setup Registry
   hosts: k3s_cluster
   become: true
@@ -15,6 +17,16 @@
         registry_ca_file_dest: /etc/rancher/k3s/registry-ca.pem
         registry_cert_file_dest: /etc/rancher/k3s/registry-key.pem
         registry_key_file_dest: /etc/rancher/k3s/registry-cert.pem
+        registries:
+          - host: "10.0.0.11:5000"
+            username: "{{ registry_username }}"
+            password: "{{ registry_password }}"
+            cert_file: /etc/rancher/k3s/registry-key.pem
+            key_file: /etc/rancher/k3s/registry-cert.pem
+            ca_file: /etc/rancher/k3s/registry-ca.pem
+          - host: "ghcr.io"
+            username: harrybrwn
+            password: "{{ ghcr_token }}"
 
 - name: Setup All k3s Cluster Nodes
   hosts: k3s_cluster

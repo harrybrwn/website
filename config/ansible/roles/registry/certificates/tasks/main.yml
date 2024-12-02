@@ -118,7 +118,8 @@
       ansible.builtin.copy:
         dest: "{{ registry_cert_dir }}/registry-server.crt"
         content: "{{ certificate.certificate }}"
-        mode: preserve
+        #mode: preserve
+        mode: '0644'
 
     - name: Registry | Certificates | Set Variables for k3s/registry role
       when: register_k3s_vars is defined and register_k3s_vars

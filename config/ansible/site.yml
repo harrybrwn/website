@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/playbook
+
 - name: Configure Router
   ansible.builtin.import_playbook: playbooks/router.yml
 
@@ -46,6 +48,19 @@
         path: /mnt/nfs/hrry.dev
         mode: '0755'
         state: directory
+
+    - name: Set journald storage to 'persistent'
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^(.*)Storage=(.*)$'
+        line: 'Storage=persistent'
+        backrefs: yes
+      register: journald_persistent
+    - name: Restart systemd-journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
+      when: journald_persistent.changed
 
     - name: Set timezone to America/Los_Angeles
       community.general.timezone:
@@ -149,6 +164,7 @@
         user: nobody
       - path: /exports/nfs/hrry.dev/storage/loki
       - path: /exports/nfs/hrry.dev/storage/filestash
+      - path: /exports/nfs/hrry.dev/storage/bluesky-pds
   pre_tasks:
     - name: Install NFS Server
       ansible.builtin.apt:
@@ -178,8 +194,8 @@
         minute: '0'
         hour: '0'
 
-- name: Configure PostgreSQL
-  ansible.builtin.import_playbook: playbooks/postgres.yml
+# - name: Configure PostgreSQL
+#   ansible.builtin.import_playbook: playbooks/postgres.yml
 
 - name: K3S
   ansible.builtin.import_playbook: playbooks/k3s.yml

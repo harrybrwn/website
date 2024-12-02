@@ -37,3 +37,5 @@
     owner: root
     group: root
     mode: "0644"
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json#/$defs/tasks

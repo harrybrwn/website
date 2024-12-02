@@ -1,3 +1,24 @@
+{% if registries is defined and registries|length > 0 %}
+mirrors:
+{% for reg in registries %}
+  "{{ reg.host }}":
+    endpoint:
+      - "https://{{ reg.host }}"
+{% endfor %}
+configs:
+{% for reg in registries %}
+  "{{ reg.host }}":
+    auth:
+      username: {{ reg.username }}
+      password: {{ reg.password }}
+    {%- if reg.ca_file is defined and reg.cert_file is defined and reg.key_file is defined +%}
+    tls:
+      cert_file: "{{ reg.cert_file }}"
+      key_file: "{{ reg.key_file }}"
+      ca_file: "{{ reg.ca_file }}"
+    {% endif +%}
+{% endfor %}
+{% else %}
 mirrors:
   "{{ registry }}":
     endpoint:
@@ -11,3 +32,4 @@ configs:
       cert_file: "{{ registry_cert_file_dest }}"
       key_file: "{{ registry_key_file_dest }}"
       ca_file: "{{ registry_ca_file_dest }}"
+{% endif %}
