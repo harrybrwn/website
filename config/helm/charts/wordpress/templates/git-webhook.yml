@@ -1,0 +1,7 @@
+{{- if .Values.wordpress.code.git }}
+{{/*
+  TODO add a git-webhook deployment
+  See https://github.com/bitpoke/stack/tree/master/deploy/charts/git-webhook
+*/}}
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

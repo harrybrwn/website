@@ -1,0 +1,42 @@
+{{- if and .Values.db.backup.create .Values.db.mariaDbRef }}
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Backup
+metadata:
+  name: {{ include "wordpress.fullname" . }}-backup
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  mariaDbRef:
+    {{- toYaml .Values.db.mariaDbRef | nindent 4 }}
+  databases:
+    - {{ include "wordpress.database" . }}
+  {{- if .Values.db.backup.cron }}
+  schedule:
+    cron: {{ .Values.db.backup.cron }}
+  {{- end }}
+  {{- if .Values.db.backup.maxRetention }}
+  maxRetention: {{ .Values.db.backup.maxRetention }}
+  {{- end }}
+  {{- if .Values.db.backup.s3 }}
+  storage:
+    s3:
+      {{- toYaml .Values.db.backup.s3 | nindent 6 }}
+  {{- end }}
+  {{- if .Values.db.backup.pvc }}
+  storage:
+    persistentVolumeClaim:
+      {{- toYaml .Values.db.backup.pvc | nindent 6 }}
+  {{- end }}
+  {{- if .Values.db.backup.affinity }}
+    {{- toYaml .Values.db.backup.affinity | nindent 2 }}
+  {{- else }}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+  {{- end }}
+  {{- include "wordpress.imagePullSecrets" . | nindent 2 }}
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

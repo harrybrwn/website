@@ -1,0 +1,27 @@
+namespace: wp-willmusic
+
+resources:
+  - namespace.yml
+  - wp.yml
+  - database.yml
+  - db-user.yml
+  - certificate.yml
+  - env-cm.yml
+  # - ingress.yml
+
+secretGenerator:
+  - name: will-wp-bootstrap
+    namespace: wp-willmusic
+    behavior: create
+    envs: [env/will-ws-bootstrap.env]
+    options: { disableNameSuffixHash: true }
+  - name: bootstrap
+    namespace: wp-willmusic
+    behavior: create
+    envs: [env/bootstrap.env]
+    options: { disableNameSuffixHash: true }
+  - name: will-wp-env
+    namespace: wp-willmusic
+    behavior: create
+    envs: [env/will-wp.env]
+    options: { disableNameSuffixHash: true }

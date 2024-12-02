@@ -1,0 +1,11 @@
+# https://kubernetes.io/docs/concepts/configuration/secret/
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-creds
+  namespace: wp-harryblog
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: minio/minio-user-wordpress
+type: Opaque
+data: {}
+

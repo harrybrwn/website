@@ -1,0 +1,14 @@
+resources:
+  - namespace.yml
+  - chart.yml
+  - tls.yml
+  - s3-creds.yml
+
+secretGenerator:
+  - name: passwords
+    namespace: wp-harryblog
+    envs: [env/passwords.env]
+    behavior: create
+    options: { disableNameSuffixHash: true }
+
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization.json

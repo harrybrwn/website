@@ -1,0 +1,21 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lightstream-tls
+spec:
+  secretName: lightstream-tls
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  commonName: lightstream.local
+  isCA: false
+  usages:
+    - server auth
+  dnsNames:
+    - lightstream.local
+    - '*.lightstream.local'
+  subject:
+    organizations:
+      - Lightstream Home Services

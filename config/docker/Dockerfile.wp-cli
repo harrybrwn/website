@@ -1,0 +1,4 @@
+FROM php:8.4.0alpha2-fpm-bookworm
+ADD --chmod=0755 https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar /usr/bin/wp
+RUN chmod +x /usr/bin/wp
+ENTRYPOINT [ "wp" ]

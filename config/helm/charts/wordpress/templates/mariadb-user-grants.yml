@@ -1,0 +1,17 @@
+{{- if .Values.db.mariaDbRef }}
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: {{ include "wordpress.dbuser" . }}-grant
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  mariaDbRef:
+    {{- toYaml .Values.db.mariaDbRef | nindent 4 }}
+  username: {{ include "wordpress.dbuser" . }}
+  database: {{ include "wordpress.database" . }}
+  table: '*'
+  privileges:
+    - ALL
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

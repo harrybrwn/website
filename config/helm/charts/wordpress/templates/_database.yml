@@ -1,0 +1,52 @@
+{{/*
+generates a mardiadb ref for mariadb-operator manifests
+*/}}
+{{- define "wordpress.mariaDbRef" -}}
+name: {{ .Values.db.mariaDbRef.name }}
+{{- if .Values.db.mariaDbRef.namespace }}
+namespace: {{ .Values.db.mariaDbRef.namespace }}
+{{- end }}
+{{- end }}
+
+{{/*
+*/}}
+{{- define "wordpress.dbuser" -}}
+{{- if .Values.db.user }}
+{{- .Values.db.user }}
+{{- else }}
+{{- include "wordpress.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+*/}}
+{{- define "wordpress.database" -}}
+{{- if .Values.db.database }}
+{{- .Values.db.database }}
+{{- else }}
+{{- include "wordpress.fullname" . }}
+{{- end }}
+{{- end }}
+
+{{/*
+Database environment variables for WordPress
+*/}}
+{{- define "wordpress.db_env_vars" -}}
+- name: DB_HOST
+  value: {{ .Values.db.host }}
+- name: DB_USER
+  value: {{ include "wordpress.dbuser" . }}
+- name: DB_NAME
+  value: {{ include "wordpress.database" . }}
+- name: DB_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ required "Database password secret not given. Set 'db.passwordSecret'." .Values.db.passwordSecret }}
+      key: DB_PASSWORD
+{{- if .Values.db.port }}
+- name: DB_PORT
+  value: {{ .Values.db.port }}
+{{- end }}
+{{- end -}}
+
+{{/* vim: ft=gotmpl */}}

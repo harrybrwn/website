@@ -1,0 +1,29 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: will
+  namespace: wordpress
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: wordpress
+  passwordSecretKeyRef:
+    name: will-wp-env
+    key: DB_PASSWORD
+
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: will-grants
+  namespace: wordpress
+spec:
+  username: will
+  database: will
+  table: '*'
+  privileges:
+    - ALL
+  mariaDbRef:
+    name: mariadb
+    namespace: wordpress

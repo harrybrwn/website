@@ -1,0 +1,23 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: willmusic-education-tls
+  namespace: wordpress
+spec:
+  secretName: willmusic-education-tls
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+  commonName: willmusic.education
+  subject:
+    organizations:
+      - Will's Music Education
+  dnsNames:
+    - willmusic.education
+    - '*.willmusic.education'
+  isCA: false
+  usages:
+    - server auth

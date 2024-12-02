@@ -1,0 +1,19 @@
+namespace: wp-lightstream
+
+resources:
+  - namespace.yml
+  - wp.yml
+  - db.yml
+  - db-user.yml
+  - certificate.yml
+  - ingress.yml
+
+secretGenerator:
+  - name: bootstrap
+    envs: [env/bootstrap.env]
+    behavior: create
+    options: { disableNameSuffixHash: true }
+  - name: wp-env
+    behavior: create
+    envs: [env/wp-env.env]
+    options: { disableNameSuffixHash: true }

@@ -85,6 +85,7 @@ scripts:
 		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 		ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 	done
+	ln -sf ../scripts/pdsadmin/pdsadmin.sh bin/pdsadmin
 
 tools: scripts bin/lab
 	@mkdir -p bin
@@ -114,6 +115,19 @@ helm:
 	make -C config/helm build
 
 .PHONY: k8s helm
+
+vpn:
+	pushd terraform/projects/vpn
+	tofu apply
+	./import.sh "$(shell tofu -chdir=terraform/projects/vpn output --raw config)"
+	popd
+
+vpn-destroy:
+	pushd terraform/projects/vpn
+	tofu destroy
+	popd
+
+.PHONY: vpn vpn-destroy
 
 dist:
 	mkdir dist

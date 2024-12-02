@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wp-env
+  namespace: wp-willmusic
+data:
+  DB_HOST: mariadb.wordpress.svc.cluster.local
+  DB_NAME: will
+  DB_USER: will
+  HTTPS: 'true'

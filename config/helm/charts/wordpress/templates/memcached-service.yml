@@ -1,0 +1,24 @@
+{{- if and .Values.memcached.enabled .Values.memcached.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wp.memcached.name" . }}
+  labels:
+    {{- include "wp.memcached.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: memcached
+      targetPort: memcached
+      port: {{ .Values.memcached.service.port | default 11211 }}
+      protocol: TCP
+  {{- if .Values.memcached.metrics.enabled }}
+    - name: prometheus
+      targetPort: prometheus
+      protocol: TCP
+      port: {{ .Values.memcached.metrics.port | default 9150 }}
+  {{- end }}
+  clusterIP: None
+  selector:
+    {{- include "wp.memcached.selectorLabels" . | nindent 4 }}
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

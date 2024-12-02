@@ -1,0 +1,185 @@
+# Default values for wordpress.
+
+replicas: 1
+fullnameOverride: ""
+nameOverride: ""
+
+domain: ""
+
+cert:
+  create: true
+  # Use an existing tls secret instead of generating a certificate.
+  existingSecretName: ""
+  organization: ""
+  issuerRef: {}
+    # name: ca-issuer
+    # kind: ClusterIssuer
+    # group: cert-manager.io
+  # Add annotations for replicating the tls secret to different namespaces.
+  replicate: false
+  duration: ""
+  renewBefore: ""
+  secretTemplate: {}
+    # labels:
+    #   mylabel: 'blahblah'
+    # annotations:
+    #   myannotation: 'blahblahblah'
+  subject: {}
+  usages: []
+  dnsNames: []
+  uris: []
+  emailAddresses: []
+  ipAddresses: []
+  otherNames: []
+
+db:
+  host: mariadb.mariadb.svc.clusterlocal
+  #port: 3306
+  uesr: ""
+  database: ""
+  # Secret with key 'DB_PASSWORD'
+  passwordSecret: ""
+  # Adding 'mariaDbRef' will generate manifests that depend on the
+  # mariadb-operator.
+  mariaDbRef: {}
+    # name: mariadb
+    # namespace: ""
+  backup:
+    create: false
+    # s3:
+    # backupRef:
+  restore:
+    create: false
+    # database: "database_name" # Optional
+    # s3:
+    # backupRef:
+
+wordpress:
+  image:
+    repository: docker.io/bitpoke/wordpress-runtime
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+  bootstrap:
+    user: admin
+    title: "Demo Site"
+    email: ""
+    passwordSecret: ""
+  bootstrapSecret: ""
+  # Corresponds with 'wordpressPathPrefix' in the wordpress-operator. Should
+  # start with "/".
+  pathPrefix: "" # default is /wp
+  code: {}
+    # contentSubPath: wp-content/
+    # hostPath:
+    #   type: Directory
+    #   path: /opt/wordpress/sites
+  envConfigMap: ""
+  envSecret: ""
+  # Install themes before starting WordPress.
+  themes: []
+    # - name: twentysixteen
+    # - name: twentytwentyfour
+    #   version: 1.2
+    # - url: https://public-api.wordpress.com/rest/v1/themes/download/hey.zip
+    #   activate: true
+  # Install plugins before starting WordPress.
+  plugins: []
+    # - name: wordpress-seo
+    #   version: 23.1
+    # - url: https://downloads.wordpress.org/plugin/contact-form-7.5.9.8.zip
+    #   activate: true
+
+  # Annotations added to the wordpress pod
+  podAnnotations: {}
+
+  # Labels added to the wordpress pod
+  podLabels: {}
+
+  replicas: 1
+
+  # Affinity
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+            - { key: "hrry.me/wordpress", operator: In, values: ["true"] }
+  tolerations: []
+    # - key: "arch"
+    #   operator: "Equal"
+    #   value: "arm64"
+    #   effect: "NoSchedule"
+  nodeSelector: {}
+  ingressAnnotations: {}
+  routes: {}
+    # - domain: extra.domain.local
+    #   path: /extra/path.html
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  initContainers: []
+  imagePullSecrets: []
+  sidecars: []
+
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
+
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: true
+    # Automatically mount a ServiceAccount's API credentials?
+    automount: true
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+
+  stack_mu_plugin_version: "v0.9.1"
+  metrics:
+    enabled: true
+
+# Job that installs themes and plugins. See 'wordpress.themes' and 'wordpress.plugins'.
+setupJob:
+  create: true
+  wait_timeout: '' # default is '60s'
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+            - { key: "hrry.me/wordpress", operator: In, values: ["true"] }
+
+memcached:
+  enabled: false
+  image:
+    repository: docker.io/library/memcached
+    pullPolicy: IfNotPresent
+    tag: "1.6.29"
+  port: 11211 # defaults to 11211
+  replicas: 1
+  metrics:
+    enabled: true
+    port: 9150
+    image:
+      repository: quay.io/prometheus/memcached-exporter
+      pullPolicy: IfNotPresent
+      tag: v0.14.4
+  service:
+    enabled: true
+    port: 11211

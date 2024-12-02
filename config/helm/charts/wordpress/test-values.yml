@@ -1,0 +1,93 @@
+# fullnameOverride: dummy-site-wordpress
+domain: dummy.local
+
+cert:
+  create: false
+  organization: Test Org
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+  usages:
+  - server auth
+  - client auth
+  dnsNames:
+  - helm.testing.dummy.local
+  subject:
+    organizations:
+      - Will's Music Education
+  uris:
+    - spiffe://cluster.local/ns/sandbox/sa/example
+  emailAddresses:
+    - john.doe@cert-manager.io
+  ipAddresses:
+    - 192.168.0.5
+  # Needs cert-manager 1.14+ and "OtherNames" feature flag
+  otherNames:
+    # Should only supply oid of ut8 valued types
+    - oid: 1.3.6.1.4.1.311.20.2.3 # User Principal Name "OID"
+      utf8Value: upn@example.local
+  duration: 2160h
+  renewBefore: 360h
+
+db:
+  host: mariadb.default.svc.clusterlocal
+  passwordSecret: db-pw
+  mariaDbRef:
+    name: mariadb
+    namespace: wordpress
+  restore:
+    create: true
+  backup:
+    create: true
+
+memcached:
+  enabled: false
+  resources:
+    requests: { cpu: 6m, memory: 64Mi }
+    limits: { cpu: 80m, memory: 256Mi }
+
+replicas: 1
+wordpress:
+  bootstrap:
+    title: "Test Site"
+    passwordSecret: bootstrap-pw
+  code:
+    readOnly: false
+    hostPath:
+      type: Directory
+      path: /opt/wordpress/sites
+  initContainers:
+    - name: testing
+      image: alpine:latest
+      command: ['ls', '-la']
+  plugins:
+    - name: wordpress-seo
+      version: '23.1'
+      activate: true
+    - url: https://downloads.wordpress.org/plugin/contact-form-7.5.9.8.zip
+      activate: false
+  themes:
+    - name: twentysixteen
+    - name: twentytwentyfour
+      version: 1.2
+    - url: https://public-api.wordpress.com/rest/v1/themes/download/hey.zip
+      activate: true
+  serviceAccount:
+    create: false
+  # podAnnotations:
+  #   hrry.me: 'test-annotation'
+  # podLabels:
+  #   hrry.me: 'test-label'
+  # resources:
+  #   requests: { cpu: 25m, memory: 128Mi }
+  #   limits: { cpu: 80m, memory: 256Mi }
+  metrics:
+    enabled: false
+
+setupJob:
+  create: false
+
+imagePullSecrets:
+  name: my-image-pull-secrets
+

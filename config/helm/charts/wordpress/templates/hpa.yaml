@@ -1,0 +1,33 @@
+{{- if .Values.wordpress.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "wordpress.fullname" . }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "wordpress.fullname" . }}
+  minReplicas: {{ .Values.wordpress.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.wordpress.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.wordpress.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.wordpress.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.wordpress.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.wordpress.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

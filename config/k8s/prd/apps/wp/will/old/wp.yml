@@ -1,0 +1,52 @@
+---
+apiVersion: wordpress.presslabs.org/v1alpha1
+kind: Wordpress
+metadata:
+  name: will-music
+  namespace: wp-willmusic
+spec:
+  replicas: 1
+  image: docker.io/bitpoke/wordpress-runtime:6.6.1
+  domains:
+    - willmusic.education
+  code:
+    readOnly: false
+    contentSubPath: wp-content/
+    hostPath:
+      type: Directory
+      path: /opt/wordpress/site
+  tlsSecretRef: willmusic-education-tls
+  bootstrap:
+    envFrom:
+    - secretRef:
+        name: bootstrap
+  envFrom:
+    - configMapRef: { name: wp-env }
+    - secretRef: { name: will-wp-env }
+
+  initContainers:
+    - name: testing-init
+      image: docker.io/bitpoke/wordpress-runtime:6.6.1
+      command:
+        - sh
+        - -c
+        - |-
+          ls -la /app/web/wp-content/
+          ls -la /app/web/wp-content/plugins
+          ls -la /app/web/wp-content/uploads
+          touch /app/web/wp-content/test.txt
+          # wp plugin status
+      volumeMounts:
+        - mountPath: /app/web/wp-content
+          name: code
+          readOnly: false
+          subPath: wp-content/
+
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+          - { key: "hrry.me/database-host", operator: In, values: ["true"] }
+

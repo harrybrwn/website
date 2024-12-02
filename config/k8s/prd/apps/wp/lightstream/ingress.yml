@@ -1,0 +1,39 @@
+# # https://kubernetes.io/docs/concepts/services-networking/ingress/
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: lightstream-ingress
+# spec:
+#   rules:
+#   - host: lightstream.local
+#     http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: lightstream
+#             port:
+#               number: 80
+
+# ---
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: IngressRouteTCP
+# metadata:
+#   name: lightstream
+# spec:
+#   entryPoints: [websecure]
+#   routes:
+#   - match: HostSNI(`lightstream.local`)
+#     services:
+#       - name: lightstream.local
+#         port: http
+#         namespace: wp-lightstream
+#   tls:
+#     passthrough: true
+
+# ---
+# apiVersion: traefik.containo.us/v1alpha1
+# kind: IngressRouteTCP
+# metadata:
+#   name: lightstream

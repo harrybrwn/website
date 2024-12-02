@@ -1,0 +1,31 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Backup
+metadata:
+  name: willmusic-backup-first
+  namespace: wp-willmusic
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: wordpress
+  databases:
+    - will
+  schedule:
+    # At 5:00pm on Tuesday.
+    cron: '0 17 * * 2'
+  storage:
+    s3:
+      endpoint: minio.minio.svc.cluster.local:9000
+      bucket: wordpress
+      prefix: backups/sites/willmusic/
+      accessKeyIdSecretKeyRef:
+        name: s3-creds
+        key: access-key-id
+      secretAccessKeySecretKeyRef:
+        name: s3-creds
+        key: secret-key
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }

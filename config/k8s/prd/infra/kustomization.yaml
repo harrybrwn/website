@@ -146,6 +146,9 @@ secretGenerator:
   - <<: *minio-user
     name: minio-user-wordpress
     envs: [env/minio-users/wordpress.env]
+  - <<: *minio-user
+    name: minio-user-bsky
+    envs: [env/minio-users/bsky.env]
 
   - name: hydra-env
     behavior: replace

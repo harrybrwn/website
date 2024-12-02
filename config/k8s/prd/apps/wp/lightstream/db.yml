@@ -1,0 +1,9 @@
+---
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: lightstream
+spec:
+  mariaDbRef:
+    name: mariadb
+    namespace: wordpress

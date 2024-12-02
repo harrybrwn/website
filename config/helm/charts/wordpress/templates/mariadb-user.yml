@@ -1,0 +1,15 @@
+{{- if .Values.db.mariaDbRef }}
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: {{ include "wordpress.dbuser" . }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  mariaDbRef:
+    {{- toYaml .Values.db.mariaDbRef | nindent 4 }}
+  passwordSecretKeyRef:
+    name: {{ .Values.db.passwordSecret }}
+    key: DB_PASSWORD
+{{- end }}
+{{- /* vim: ft=gotmpl */ -}}

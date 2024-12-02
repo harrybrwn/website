@@ -1,0 +1,82 @@
+{{- if and .Values.cert.create (not .Values.cert.existingSecretName) }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "wordpress.fullname" . }}-tls
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "wordpress.certSecret" . }}
+  issuerRef:
+    {{- required "Must have a certificate 'issuerRef'" .Values.cert.issuerRef | toYaml | nindent 4 }}
+  commonName: {{ required "A domain name is required. Use 'domain: ...'" .Values.domain }}
+  isCA: false
+  {{- if .Values.cert.usages }}
+  usages:
+  {{- toYaml .Values.cert.usages | nindent 2 }}
+  {{- else }}
+  usages:
+    - server auth
+  {{- end }}
+  {{- if .Values.cert.duration }}
+  duration: {{ .Values.cert.duration }}
+  {{- end }}
+  {{- if .Values.cert.renewBefore }}
+  renewBefore: {{ .Values.cert.renewBefore }}
+  {{- end }}
+  dnsNames:
+  - {{ .Values.domain }}
+  - '*.{{ .Values.domain }}'
+  {{- if .Values.cert.dnsNames }}
+  {{- toYaml .Values.cert.dnsNames | nindent 2 }}
+  {{- end }}
+  {{- if .Values.cert.subject }}
+  subject:
+    {{- toYaml .Values.cert.subject | nindent 4 }}
+  {{- else if .Values.cert.organization -}}
+  subject:
+    organizations:
+      - {{ .Values.cert.organization }}
+  {{- end }}
+  secretTemplate:
+    {{- if or .Values.cert.replicate .Values.cert.secretTemplate.annotations }}
+    annotations:
+      {{- if .Values.cert.replicate }}
+      replicator.v1.mittwald.de/replication-allowed: "true"
+      replicator.v1.mittwald.de/replication-allowed-namespaces: ".*"
+      {{- end }}
+      {{- with .Values.cert.secretTemplate.annotations }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+    {{- if .Values.cert.secretTemplate.labels }}
+    labels:
+      {{- toYaml .Values.cert.secretTemplate.labels | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- with .Values.cert.uris }}
+  uris:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.cert.emailAddresses }}
+  emailAddresses:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.cert.ipAddresses }}
+  ipAddresses:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.cert.otherNames }}
+  otherNames:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- if .Values.cert.additionalOutputFormats }}
+  additionalOutputFormats:
+    {{- toYaml .Values.cert.additionalOutputFormats | nindent 2 }}
+  {{- end }}
+  {{- if .Values.cert.nameConstraints }}
+  nameConstraints:
+    {{- toYaml .Values.cert.nameConstraints | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

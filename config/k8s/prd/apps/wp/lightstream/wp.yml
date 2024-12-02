@@ -1,0 +1,85 @@
+---
+apiVersion: wordpress.presslabs.org/v1alpha1
+kind: Wordpress
+metadata:
+  name: lightstream
+spec:
+  replicas: 1
+  image: docker.io/bitpoke/wordpress-runtime:6.6.1
+  domains:
+    - lightstream.local
+  tlsSecretRef: lightstream-tls
+  # code:
+  #   persistentVolumeClaim:
+  #     # accessModes: [ "ReadWriteOnce" ]
+  #     # resources:
+  #     #   requests:
+  #     #     storage: 100Mi
+  #     selector:
+  #       matchLabels:
+  #         app: lighstream-code
+  # default is /wp
+  wordpressPathPrefix: /wp
+  bootstrap:
+    envFrom:
+    - secretRef:
+        name: bootstrap
+  env:
+    - name: DB_HOST
+      value: mariadb.wordpress.svc.cluster.local
+    - name: DB_USER
+      value: lightstream
+    - name: DB_NAME
+      value: lightstream
+    - name: DB_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: wp-env
+          key: DB_PASSWORD
+  # initContainers:
+  #   - name: prepare-wp
+  #     image: harrybrwn/curl:latest
+  #     command:
+  #       - bash
+  #       - -c
+  #       - |-
+  #         set -euo pipefail
+  #         mkdir -p /opt/code/wp-content/themes/
+  #         curl -sSL -o '/tmp/bute.zip' 'https://public-api.wordpress.com/rest/v1/themes/download/bute.zip'
+  #         unzip /tmp/bute.zip -d /opt/code/wp-content/themes/
+  #     workingDir: /opt/code
+  #     volumeMounts:
+  #       - name: code
+  #         mountPath: /opt/code
+  # volumes:
+  #   - name: ls-code
+  #     persistentVolumeClaim:
+  #       claimName: lightstream-code
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+          - { key: "hrry.me/wordpress", operator: In, values: ["true"] }
+
+---
+# https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lightstream-code
+  labels:
+    app: lightstream-code
+spec:
+  # AKS: default,managed-premium
+  # GKE: standard
+  # EKS: gp2 (custom)
+  # Rook: rook-ceph-block,rook-ceph-fs
+  storageClassName: local-path
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+

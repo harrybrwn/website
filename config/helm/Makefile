@@ -18,7 +18,7 @@ test: build
 
 deploy: dist/index.yaml
 	AWS_REGION=wnam mc cp dist/index.yaml dist/*.tgz r2/helm
-	helm repo remove hrry
+	helm repo remove hrry || true
 	helm repo add hrry $(URL)
 
 clean:
@@ -26,7 +26,7 @@ clean:
 
 dist: charts/mastodon charts/minio
 	sed -i 's/"common\.names\.fullname"/"mastodon\.fullname"/g;' charts/mastodon/templates/_helpers.tpl
-	helm package --dependency-update --destination $@ charts/*
+	helm package --dependency-update --destination $@ charts/minio charts/wordpress
 
 dist/index.yaml: dist
 	helm repo index ./dist --url $(URL)

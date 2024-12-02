@@ -1,0 +1,19 @@
+{{- if and .Values.memcached.enabled .Values.memcached.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "wp.memcached.name" . }}
+  labels:
+    {{- include "wp.memcached.labels" . | nindent 4 }}
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      {{- include "wp.memcached.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: prometheus
+      path: /metrics
+  attachMetadata:
+    node: true
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

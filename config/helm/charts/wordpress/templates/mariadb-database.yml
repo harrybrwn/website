@@ -1,0 +1,12 @@
+{{- if .Values.db.mariaDbRef }}
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: {{ include "wordpress.database" . }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  mariaDbRef:
+    {{- toYaml .Values.db.mariaDbRef | nindent 4 }}
+{{- end }}
+{{- /* vim: ft=gotmpl */ -}}

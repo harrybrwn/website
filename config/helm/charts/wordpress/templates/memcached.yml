@@ -1,0 +1,53 @@
+{{- if .Values.memcached.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "wp.memcached.name" . }}
+  labels:
+    {{- include "wp.memcached.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.memcached.replicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "wp.memcached.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "wp.memcached.name" . }}
+  template:
+    metadata:
+      labels:
+        {{- include "wp.memcached.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: memcached
+        image: {{ .Values.memcached.image.repository }}:{{ .Values.memcached.image.tag | default "latest" }}
+        imagePullPolicy: {{ .Values.memcached.image.pullPolicy }}
+        command:
+          - memcached
+        args:
+          - "-m"
+          - "128"
+        ports:
+        - containerPort: {{ .Values.memcached.port | default 11211 }}
+          name: memcached
+        {{- with .Values.memcached.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- if .Values.memcached.metrics.enabled }}
+      {{- with .Values.memcached.metrics }}
+      - name: memcached-exporter
+        image: {{ .image.repository }}:{{ .image.tag }}
+        imagePullPolicy: {{ .image.pullPolicy }}
+        args:
+          - --web.listen-address=:{{ .port }}
+          - --log.format=json
+        ports:
+        - containerPort: {{ .port }}
+          name: prometheus
+        {{- with .resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- end }}
+{{- end }}
+{{- /* vim: ft=helm ts=2 sw=2 */ -}}

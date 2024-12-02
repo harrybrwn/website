@@ -1,0 +1,51 @@
+# This pod is just for debugging.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tmp
+  namespace: wp-harryblog
+  labels:
+    app: "tmp"
+  annotations:
+    kubectl.kubernetes.io/default-container: tmp
+spec:
+  containers:
+  - name: tmp
+    image: debian:latest
+    resources:
+      limits:
+        cpu: 200m
+        memory: 500Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
+    command: ['tail', '-f', '/dev/null']
+    volumeMounts:
+      - mountPath: /var/log
+        name: knative-var-log
+      - mountPath: /var/run/presslabs.org/code/src
+        name: code
+      - mountPath: /app/web/wp-content
+        name: code
+        subPath: wp-content
+      - mountPath: /app/config
+        name: code
+        readOnly: true
+        subPath: config
+  volumes:
+    - name: code
+      hostPath:
+        path: /opt/wordpress/sites/harryblog
+        type: DirectoryOrCreate
+    - name: knative-var-log
+      emptyDir:
+        sizeLimit: 1G
+  restartPolicy: Always
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+          - { key: "hrry.me/wordpress", operator: In, values: ["true"] }
+

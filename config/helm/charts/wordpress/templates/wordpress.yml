@@ -1,0 +1,198 @@
+apiVersion: wordpress.presslabs.org/v1alpha1
+kind: Wordpress
+metadata:
+  name: {{ include "wordpress.fullname" . }}
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+spec:
+  image: {{ include "wordpress.image" . }}
+  domains:
+    - {{ required "A domain name is required. Use 'domain: ...'." .Values.domain }}
+  {{- if or .Values.cert.create .Values.cert.existingSecretName }}
+  tlsSecretRef: {{ include "wordpress.certSecret" . }}
+  {{- end }}
+  replicas: {{ .Values.replicas }}
+  {{- if .Values.wordpress.pathPrefix }}
+  wordpressPathPrefix: {{ .Values.wordpress.pathPrefix }}
+  {{- end }}
+  {{- with .Values.wordpress.code }}
+  code:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if .Values.wordpress.media }}
+  media:
+    {{- toYaml .Values.wordpress.media | nindent 4 }}
+  {{- end }}
+  bootstrap:
+    {{- if .Values.wordpress.bootstrap }}
+    env:
+      {{- if .Values.wordpress.bootstrap.title }}
+      - name: WORDPRESS_BOOTSTRAP_TITLE
+        value: {{ .Values.wordpress.bootstrap.title }}
+      {{- end }}
+      {{- if .Values.wordpress.bootstrap.email }}
+      - name: WORDPRESS_BOOTSTRAP_EMAIL
+        value: {{ required "Must have an email for bootstrapping wordpress." .Values.wordpress.bootstrap.email }}
+      {{- end }}
+      - name: WORDPRESS_BOOTSTRAP_USER
+        value: {{ .Values.wordpress.bootstrap.user | default "admin" }}
+      - name: WORDPRESS_BOOTSTRAP_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: {{ required "bootstrap password secret needed, see .wordpress.bootstrap.passwordSecret" .Values.wordpress.bootstrap.passwordSecret }}
+            key: WORDPRESS_BOOTSTRAP_PASSWORD
+    {{- else if .Values.wordpress.bootstrapSecret }}
+    envFrom:
+    - secretRef:
+        name: {{ .Values.wordpress.bootstrapSecret }}
+    {{- end }}
+  env:
+    {{- include "wordpress.db_env_vars" . | nindent 4 }}
+    {{- if .Values.memcached.enabled }}
+    - name: MEMCACHED_DISCOVERY_HOST
+      value: {{ include "wp.memcached.name" . }}
+    {{- end }}
+  {{- if or .Values.wordpress.envSecret .Values.wordpress.envConfigMap }}
+  envFrom:
+  {{- if .Values.wordpress.envConfigMap }}
+    - configMapRef:
+        name: {{ .Values.wordpress.envConfigMap }}
+  {{- end }}
+  {{- if .Values.wordpress.envSecret }}
+    - secretRef:
+        name: {{ .Values.wordpress.envSecret }}
+  {{- end }}
+  {{- with .Values.wordpress.envFrom }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+  {{- if or .Values.wordpress.themes .Values.wordpress.plugins .Values.wordpress.initContainers }}
+  initContainers:
+    {{- /*
+    {{- if or .Values.wordpress.themes .Values.wordpress.plugins }}
+    - name: wp-plugins-install
+      image: {{ include "wordpress.image" . }}
+      imagePullPolicy: {{ .Values.wordpress.image.pullPolicy }}
+      command:
+      - bash
+      - -c
+      - |-
+        set -euo pipefail
+        stat /app/web
+        ls -la /app/web
+        ls -la /app/web/wp-content
+        {{- range .Values.wordpress.plugins }}
+        {{ include "wordpress.wp-plugin-install" . }}
+        {{- end }}
+        {{- range .Values.wordpress.themes }}
+        {{ include "wordpress.wp-theme-install" . }}
+        {{- end }}
+      volumeMounts:
+        - mountPath: /var/log
+          name: knative-var-log
+        - mountPath: /var/run/presslabs.org/code/src
+          name: code
+        - mountPath: /app/web/wp-content
+          name: code
+          subPath: wp-content/
+        - mountPath: /app/config
+          name: code
+          readOnly: true
+          subPath: config
+      env:
+        - name: WP_HOME
+          value: {{ include "wordpress.wp_home" . }}
+        - name: WP_SITEURL
+          value: {{ include "wordpress.wp_home" . }}{{ include "wordpress.pathPrefix" . }}
+        - name: WP_CORE_DIRECTORY
+          value: {{ include "wordpress.pathPrefix" . }}
+        - name: STACK_SITE_NAME
+          value: {{ include "wordpress.fullname" . }}
+        - name: STACK_SITE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        {{- include "wordpress.db_env_vars" . | nindent 8 }}
+        {{- if .Values.memcached.enabled }}
+        - name: MEMCACHED_DISCOVERY_HOST
+          value: {{ include "wp.memcached.name" . }}
+        {{- end }}
+      {{- with .Values.wordpress.resources }}
+      resources:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      envFrom:
+      - secretRef:
+          name: {{ include "wordpress.fullname" . }}-wp
+      securityContext:
+        procMount: Default
+        runAsUser: 33
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+    {{- end }}
+    */}}
+    {{- if .Values.wordpress.initContainers }}
+      {{- toYaml .Values.wordpress.initContainers | nindent 4 }}
+    {{- end }}
+  {{- end }}
+  imagePullPolicy: {{ .Values.wordpress.image.pullPolicy }}
+  {{- if or .Values.wordpress.podAnnotations .Values.wordpress.podLabels }}
+  podMetadata:
+    {{- with .Values.wordpress.podAnnotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.wordpress.podLabels }}
+    labels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- with .Values.wordpress.sidecars }}
+  sidecars:
+    {{- toYaml . | indent 4 }}
+  {{- end }}
+  {{- with .Values.wordpress.routes }}
+  routes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  serviceAccountName: {{ include "wordpress.serviceAccountName" . }}
+  {{- with .Values.wordpress.priorityClassName }}
+  priorityClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.wordpress.affinity }}
+  affinity:
+    {{- toYaml .Values.wordpress.affinity | nindent 4 }}
+  {{- else }}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - { key: "kubernetes.io/arch", operator: In, values: ["amd64"] }
+          - { key: "hrry.me/wordpress", operator: In, values: ["true"] }
+  {{- end }}
+  {{- with .Values.wordpress.tolerations }}
+  tolerations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.wordpress.ingressAnnotations }}
+  ingressAnnotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.wordpress.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.wordpress.deploymentStrategy }}
+  deploymentStrategy: {{ . }}
+  {{- end }}
+  {{- include "wordpress.imagePullSecrets" . | nindent 2 }}
+  {{- if .Values.wordpress.volumes }}
+  volumes:
+    {{- toYaml .Values.wordpress.volumes | nindent 4 }}
+  {{- end }}
+  {{- if .Values.wordpress.volumeMountss }}
+  volumeMounts:
+    {{- toYaml .Values.wordpress.volumeMounts | nindent 4 }}
+  {{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

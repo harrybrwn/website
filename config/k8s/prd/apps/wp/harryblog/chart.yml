@@ -1,0 +1,71 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: harryblog
+  namespace: kube-system
+spec:
+  chart: wordpress
+  version: 0.1.0
+  repo: https://helm.hrry.dev
+  targetNamespace: wp-harryblog
+  set:
+    domain: blog.hrry.me
+  valuesContent: |-
+    cert:
+      existingSecretName: hrry-me-tls
+
+    db:
+      host: mariadb.wordpress.svc.cluster.local
+      passwordSecret: passwords
+      mariaDbRef:
+        name: mariadb
+        namespace: wordpress
+
+    wordpress:
+      bootstrap:
+        title: Harry's Blog
+        email: trash@harrybrwn.com
+        passwordSecret: passwords
+      code:
+        hostPath:
+          type: DirectoryOrCreate
+          path: /opt/wordpress/sites/harryblog
+      env:
+        - name: CDN_HOST
+          value: blog.hrry.me
+      plugins:
+        - name: wordpress-seo
+          activate: true
+        - name: google-site-kit
+          activate: true
+        - name: elementor
+          activate: true
+        - name: contact-form-7
+          activate: true
+      themes:
+        - name: extendable
+          activate: true
+        - name: twentytwentyfour
+        - name: variations
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 175m
+          memory: 256Mi
+      metrics:
+        enabled: true
+
+    memcached:
+      enabled: true
+      metrics:
+        enabled: true
+      resources:
+        requests:
+          cpu: 6m
+          memory: 64Mi
+        limits:
+          cpu: 80m
+          memory: 256Mi
+

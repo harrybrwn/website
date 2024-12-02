@@ -15,8 +15,8 @@ spec:
   targetNamespace: minio
   set:
     replicas: 3
-    environment.MINIO_PROMETHEUS_AUTH_TYPE: public
     environment.MINIO_PROMETHEUS_URL: http://prometheus.prometheus.svc.cluster.local:9090
+    # environment.MINIO_PROMETHEUS_AUTH_TYPE: public
     environment.MINIO_PROMETHEUS_JOB_ID: minio-cluster
     environment.MINIO_LOGGER_WEBHOOK_ENABLE_PRIMARY: 'on'
     environment.MINIO_LOGGER_WEBHOOK_ENDPOINT_PRIMARY: http://hooks:8889/hooks/minio/logs
@@ -219,7 +219,7 @@ spec:
         policy: wordpress
       - accessKey: bsky
         existingSecretKey: secret-key
-        secistingSecret: minio-user-bsky
+        existingSecret: minio-user-bsky
         policy: bsky
 
     buckets:

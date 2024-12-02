@@ -1,0 +1,23 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-creds
+  namespace: wp-willmusic
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: minio/minio-user-wordpress
+type: Opaque
+data: {}
+stringData:
+  access-key-id: wordpress
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mariadb-root
+  namespace: wp-willmusic
+  annotations:
+    replicator.v1.mittwald.de/replicate-from: wordpress/mariadb-root
+type: Opaque
+data: {}

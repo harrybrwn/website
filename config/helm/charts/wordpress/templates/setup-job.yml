@@ -1,0 +1,175 @@
+{{- if
+  and
+    (.Values.setupJob.create)
+    (not .Values.wordpress.code.readOnly)
+    (not .Values.wordpress.code.git)
+    (or .Values.wordpress.themes .Values.wordpress.plugins)
+}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "wordpress.fullname" . }}-setup
+  labels:
+    {{- include "wordpress.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
+spec:
+  template:
+    metadata:
+      name: {{ include "wordpress.fullname" . }}-setup
+      labels:
+        {{- include "wordpress.labels" . | nindent 8 }}
+    spec:
+      affinity:
+      {{- if .Values.setupJob.affinity }}
+        {{- toYaml .Values.setupJob.affinity | nindent 8 }}
+      {{- else }}
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: "kubernetes.io/arch"
+                operator: In
+                values: ["amd64"]
+              - key: hrry.me/wordpress
+                operator: In
+                values: ["true"]
+      {{- end }}
+      restartPolicy: OnFailure
+      initContainers:
+      - name: wait
+        image: mariadb:11.4.2-ubi9
+        imagePullPolicy: Always
+        command: ['bash', '-c']
+        args:
+          - |-
+            #!/bin/bash
+            set -euo pipefail
+            HOST="{{ include "wordpress.fullname" . }}"
+            timeout 60s bash -c "$(cat <<EOF
+              until [[ "$(curl -sS http://$HOST/-/php-ping)" = 'pong' ]]; do
+                echo 'Waiting for wordpress...';
+                sleep 1;
+              done
+            EOF
+            )"
+            timeout 60s bash -c "$(cat <<EOF
+              until mariadb         \
+                  --ssl=false       \
+                  --host="$DB_HOST" \
+                  --user="$DB_USER" \
+                  --database="$DB_NAME" \
+                  --port={{ .Values.db.port | default 3306 }} \
+                  --password="$DB_PASSWORD" \
+                  --skip-column-names \
+                  -e 'select 1;'
+              do
+                echo 'Waiting for mysql...';
+                sleep 1
+              done
+            EOF
+            )"
+        env:
+          {{- include "wordpress.db_env_vars" . | nindent 10 }}
+          - name: WAIT_TIMEOUT
+            value: {{ .Values.setupJob.wait_timeout | default "60s" }}
+        {{- with .Values.wordpress.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      containers:
+      - name: setup
+        image: {{ include "wordpress.image" . }}
+        imagePullPolicy: {{ .Values.wordpress.image.pullPolicy }}
+        command: ['bash', '-c']
+        args:
+          - |-
+            set -euo pipefail
+            stat /app/web
+            ls -la /app/web
+            ls -la /app/web/wp-content
+
+            if [ ! -d /app/web/wp-content/mu-plugins/stack-mu-plugin ]; then
+              PLUGIN_URL="https://github.com/bitpoke/stack-mu-plugin/releases/download/${STACK_MU_PLUGIN_VERSION}/stack-mu-plugin.zip"
+              wp plugin install "${PLUGIN_URL}"
+              mv /app/web/wp-content/plugins/stack-mu-plugin /app/web/wp-content/mu-plugins/stack-mu-plugin
+            fi
+            if [ ! -f /app/web/wp-content/mu-plugins/stack-mu-plugin.php ]; then
+              cp /app/web/wp-content/mu-plugins/stack-mu-plugin/stack-mu-plugin.php /app/web/wp-content/mu-plugins/stack-mu-plugin.php
+              # TODO Do this for the object cache file.
+            fi
+
+            {{- range .Values.wordpress.plugins }}
+            {{ include "wordpress.wp-plugin-install" . }}
+            {{- end }}
+            {{- range .Values.wordpress.themes }}
+            {{ include "wordpress.wp-theme-install" . }}
+            {{- end }}
+
+        env:
+          - name: WP_HOME
+            value: {{ include "wordpress.wp_home" . }}
+          - name: WP_SITEURL
+            value: {{ include "wordpress.wp_home" . }}{{ include "wordpress.pathPrefix" . }}
+          - name: WP_CORE_DIRECTORY
+            value: {{ include "wordpress.pathPrefix" . }}
+          - name: STACK_SITE_NAME
+            value: {{ include "wordpress.fullname" . }}
+          - name: STACK_SITE_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          {{- include "wordpress.db_env_vars" . | nindent 10 }}
+          {{- if .Values.memcached.enabled }}
+          - name: MEMCACHED_DISCOVERY_HOST
+            value: {{ include "wp.memcached.name" . }}
+          {{- end }}
+          - name: STACK_MU_PLUGIN_VERSION
+            value: {{ .Values.wordpress.stack_mu_plugin_version }}
+        volumeMounts:
+          - mountPath: /var/log
+            name: knative-var-log
+          - mountPath: /var/run/presslabs.org/code/src
+            name: code
+          - mountPath: {{ .Values.wordpress.code.mountPath | default "/app/web/wp-content" }}
+            name: code
+            subPath: {{ .Values.wordpress.code.contentSubPath | default "wp-content" }}
+          - mountPath: /app/config
+            name: code
+            readOnly: true
+            subPath: {{ .Values.wordpress.code.configSubPath | default "config" }}
+        {{- with .Values.wordpress.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        envFrom:
+        - secretRef:
+            name: {{ include "wordpress.fullname" . }}-wp
+        securityContext:
+          procMount: Default
+          runAsUser: 33
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      volumes:
+      - emptyDir: {}
+        name: knative-internal
+      - name: knative-var-log
+        emptyDir:
+          sizeLimit: 1G
+      {{- if .Values.wordpress.code.hostPath }}
+      - name: code
+        hostPath:
+          {{- toYaml .Values.wordpress.code.hostPath | nindent 10 }}
+      {{- else if .Values.wordpress.code.emptyDir }}
+      - name: code
+        emptyDir:
+          {{- toYaml .Values.wordpress.code.emptyDir | nindent 10 }}
+      {{- else if .Values.wordpress.code.persistentVolumeClaim }}
+      - name: code
+        persistentVolumeClaim:
+          {{ toYaml .Values.wordpress.code.persistentVolumeClaim | nindent 10 }}
+      {{- end }}
+      dnsPolicy: ClusterFirst
+{{- end }}
+{{- /* vim: ft=gotmpl ts=2 sw=2 */ -}}

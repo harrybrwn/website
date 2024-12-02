@@ -42,6 +42,7 @@ spec:
         ports:
           - containerPort: 3000
             name: http
+
         livenessProbe:
           tcpSocket:
             port: 3000
@@ -59,6 +60,7 @@ spec:
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 30
+
         env:
           - name: PDS_HOSTNAME
             valueFrom:
@@ -124,14 +126,21 @@ spec:
           - secretRef:
               name: pds-env
         volumeMounts:
-          - name: nfs
+          - name: pds-data
             mountPath: /pds
+
       volumes:
-        - name: nfs
-          nfs:
-            server: 10.0.0.13
-            path: /exports/nfs/hrry.dev/storage/bluesky-pds
+        # HostPath is quite a bit faster than NFS volumes.
+        - name: pds-data
+          hostPath:
+            type: DirectoryOrCreate
+            path: /opt/bsky/pds/data
+        #- name: nfs
+        #  nfs:
+        #    server: 10.0.0.13
+        #    path: /exports/nfs/hrry.dev/storage/bluesky-pds
       restartPolicy: Always
+
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -140,6 +149,9 @@ spec:
               - key: "kubernetes.io/arch"
                 operator: In
                 values: ["amd64"]
+              - key: "hrry.me/bsky-pds"
+                operator: In
+                values: ["true"]
       tolerations:
       - key: "arch"
         operator: "Equal"

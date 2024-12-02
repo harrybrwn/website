@@ -1,0 +1,16 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: willmusic-route-tcp
+  namespace: wordpress
+spec:
+  entryPoints: [websecure]
+  routes:
+  - match: HostSNI(`willmusic.education`)
+    services:
+      - name: will-music
+        port: http
+        namespace: wordpress
+  tls:
+    passthrough: true
