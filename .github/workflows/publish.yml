@@ -112,20 +112,8 @@ jobs:
           --push                                 \
           --set '*.cache-to=type=gha'            \
           --set '*.cache-from=type=gha,mode=max' \
+          pds            \
           geoipupdate-go \
           provision
-    # - name: Build Bluesy PDS
-    #   env:
-    #     GIT_COMMIT: ${{ github.sha }}
-    #     GIT_BRANCH: ${{ github.ref_name }}
-    #     SOURCE_HASH: ${{ steps.api-source-hash.outputs.source-hash }}
-    #     PDS_VERSION_TAG: '0.4.74'
-    #   run: |
-    #     docker buildx bake                       \
-    #       --file config/docker/docker-bake.hcl   \
-    #       --push                                 \
-    #       --set '*.cache-to=type=gha'            \
-    #       --set '*.cache-from=type=gha,mode=max' \
-    #       pds
 
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json

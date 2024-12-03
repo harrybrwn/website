@@ -266,7 +266,9 @@ target "pds" {
     context    = ".build/docker/pds"
     dockerfile = "Dockerfile"
     tags       = tags("docker.io", "pds", [PDS_VERSION_TAG, "latest"])
-    platforms  = platforms
+    platforms = [
+        "linux/amd64",
+    ]
 }
 
 target "postgres" {
@@ -468,14 +470,15 @@ target "rust" {
     name = "rust_${replace(item.v, ".", "-")}_${replace(item.base, ".", "-")}"
     matrix = {
         item = [
-            { v = "1.68.0", base = "alpine3.17", latest = false },
-            { v = "1.69.0", base = "alpine3.17", latest = false },
-            { v = "1.70.0", base = "alpine3.17", latest = false },
-            { v = "1.71.1", base = "alpine3.17", latest = false },
-            { v = "1.75.0", base = "alpine3.18", latest = false },
-            { v = "1.77.2", base = "alpine3.18", latest = false },
-            { v = "1.78.0", base = "alpine3.18", latest = false },
-            { v = "1.82.0", base = "alpine3.20", latest = true },
+            #{ v = "1.68.0", base = "alpine3.17", latest = false },
+            #{ v = "1.69.0", base = "alpine3.17", latest = false },
+            #{ v = "1.70.0", base = "alpine3.17", latest = false },
+            #{ v = "1.71.1", base = "alpine3.17", latest = false },
+            #{ v = "1.75.0", base = "alpine3.18", latest = false },
+            #{ v = "1.77.2", base = "alpine3.18", latest = false },
+            #{ v = "1.78.0", base = "alpine3.18", latest = false },
+            { v = "1.82.0", base = "alpine3.20", latest = false },
+            { v = "1.83.0", base = "alpine3.20", latest = true },
         ]
     }
     context = "config/docker/rust"
@@ -492,7 +495,7 @@ target "rust" {
         "linux/amd64",
         #"linux/arm/v7",
     ]
-    args      = {
+    args = {
         RUST_VERSION = item.v
         RUST_BASE    = "${item.base}"
     }
