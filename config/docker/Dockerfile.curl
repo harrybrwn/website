@@ -1,8 +1,10 @@
 ARG ALPINE_VERSION=3.16
 FROM alpine:${ALPINE_VERSION}
 RUN apk update && apk upgrade && \
-    apk add -l -U \
-        curl \
+    apk add -l -U  \
+        curl       \
+        bash       \
+        openssl    \
         bind-tools \
-        jq \
-        bash
+        util-linux \
+        jq

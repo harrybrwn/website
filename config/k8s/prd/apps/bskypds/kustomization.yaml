@@ -1,3 +1,37 @@
 resources:
   - ingress.yml
   - certificate.yml
+  - ../../../app/bluesky/pds
+
+patches:
+  - target:
+      kind: Deployment
+      name: pds
+      namespace: bluesky
+    patch: |-
+      - op: add
+        path: /spec/template/metadata/labels/app
+        value: pds
+
+secretGenerator:
+  - name: pds
+    namespace: bluesky
+    behavior: create
+    envs: [env/bluesky-pds.env]
+  - name: pds-env
+    namespace: bluesky
+    behavior: create
+    envs:
+      - env/bluesky-pds-s3.env
+
+configMapGenerator:
+  - name: pds
+    behavior: create
+    namespace: bluesky
+    literals:
+      - PDS_HOSTNAME=bsky.hrry.me
+  - name: pds-env
+    behavior: create
+    namespace: bluesky
+    literals:
+      - LOG_ENABLED=true

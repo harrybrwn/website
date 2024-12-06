@@ -15,7 +15,6 @@ resources:
   - geoip
   - ../../app/bluesky
   - bskypds
-  - ../../app/bluesky/pds
 
 images:
   - name: 10.0.0.11:5000/harrybrwn/grafana:latest
@@ -57,14 +56,6 @@ secretGenerator:
   - name: lnsmol-env
     behavior: replace
     envs: [env/lnsmol.env]
-  - name: pds
-    namespace: bluesky
-    behavior: create
-    envs: [env/bluesky-pds.env]
-  - name: pds-env
-    namespace: bluesky
-    behavior: create
-    envs: [env/bluesky-pds-s3.env]
 
 configMapGenerator:
   - name: environment-config
@@ -126,15 +117,5 @@ configMapGenerator:
       - SERVER_DOMAIN=l.hrry.me
       - SERVER_URL_PREFIX=/
       - SERVER_WORKERS=6
-  - name: pds
-    behavior: create
-    namespace: bluesky
-    literals:
-      - PDS_HOSTNAME=bsky.hrry.me
-  - name: pds-env
-    behavior: create
-    namespace: bluesky
-    literals:
-      - LOG_ENABLED=true
 
 # yaml-language-server: $schema=https://json.schemastore.org/kustomization.json

@@ -113,6 +113,7 @@ jobs:
           --set '*.cache-to=type=gha'            \
           --set '*.cache-from=type=gha,mode=max' \
           pds            \
+          curl           \
           geoipupdate-go \
           provision
 

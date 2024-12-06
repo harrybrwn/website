@@ -34,9 +34,7 @@ get_platform() {
 }
 
 pds_version() {
-  pushd .build/docker/pds 2>&1 >/dev/null
-  git describe --tag | sed 's/^v//' | tr -d '\n'
-  popd 2>&1 >/dev/null
+  jq -r '.dependencies."@atproto/pds"' services/pds/package.json | sed -e 's/\^//g'
 }
 
 usage() {
@@ -48,6 +46,7 @@ usage() {
   echo "     --registry <uri>    change the registry (default \"$REG\")"
   echo "     --platform <s>      target a spesific platform"
   echo "     --prune             delete all the images and their tags (default: false)"
+  echo "     --list              list the available targets"
   echo "  -v --verbose           run verbose logging"
 }
 
@@ -57,6 +56,7 @@ prune=false
 verbose=false
 platform=""
 push=false
+list=false
 while [ $# -gt 0 ]; do
   case $1 in
   	-h|--help)
@@ -84,6 +84,10 @@ while [ $# -gt 0 ]; do
       ;;
     --prune)
       prune=true
+      shift 1
+      ;;
+    --list|--ls)
+      list=true
       shift 1
       ;;
     --verbose|-v)
@@ -117,6 +121,9 @@ elif ${prune}; then
   docker image ls | grep "${REG}" #| awk '{print $3}'
   docker image rm -f "$(docker image ls | grep "${REG}" | awk '{print $3}')"
   exit 0
+elif ${list}; then
+  docker buildx bake -f config/docker/docker-bake.hcl "${args[@]}" --print | jq -r '.target | keys[]'
+  exit 0
 fi
 
 if [ -n "${platform}" ]; then
@@ -125,7 +132,6 @@ fi
 
 if [ -z "${PDS_VERSION_TAG:-}" ]; then
   PDS_VERSION_TAG=$(pds_version)
-  echo "Using pds version \"${PDS_VERSION_TAG}\"" 1>&2
 fi
 export PDS_VERSION_TAG
 

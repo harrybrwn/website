@@ -28,7 +28,7 @@ elif [ -z "${PDS_ADMIN_PASSWORD}" ]; then
   exit 1
 fi
 
-set -- "${ARGS[@]}"
+# set -- "${ARGS[@]}"
 
 case "${SUBCOMMAND}" in
   #
@@ -48,6 +48,18 @@ case "${SUBCOMMAND}" in
     done
     OUTPUT="${OUTPUT}]"
     echo "${OUTPUT}" | jq --raw-output '.[] | [.handle, .email, .did] | @tsv' | column --table
+    ;;
+
+  #
+  # account list-dids
+  #
+  list-dids)
+    DIDS="$(curl_cmd_get \
+      "https://${PDS_HOSTNAME}/xrpc/com.atproto.sync.listRepos?limit=100" | jq --raw-output '.repos[].did'
+    )"
+    for did in ${DIDS}; do
+      echo "$did"
+    done
     ;;
 
   #

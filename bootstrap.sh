@@ -209,16 +209,19 @@ elif ${USE_K8s}; then
   info bootstrap "Starting helm charts"
   #do_kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
   #do_kubectl apply -k config/k8s/common/crds
+  do_kubectl create -k config/k8s/system/crds
   do_kubectl apply -k config/k8s/dev/system
   #do_kubectl apply -k config/k8s/common/helm-charts # get the CRDs first
   #wait_for_k8s_cert_manager # wait for cert manager to start...
-  do_kubectl apply -k config/k8s/dev | grep -Ev 'unchanged$'
-  do_kubectl wait pods -l 'app=db' --for condition=Ready
-  do_kubectl wait pods -l 'app=s3' --for condition=Ready
-  # Expose databases to localhost
-  kubectl port-forward svc/s3 9000:9000 &
-  kubectl port-forward svc/db 5432:5432 &
-  trap stop_all EXIT
+  #do_kubectl apply -k config/k8s/dev | grep -Ev 'unchanged$'
+
+  ## Expose databases to localhost
+  #do_kubectl wait pods -l 'app=db' --for condition=Ready
+  #do_kubectl wait pods -l 'app=s3' --for condition=Ready
+  #kubectl port-forward svc/s3 9000:9000 &
+  #kubectl port-forward svc/db 5432:5432 &
+  #trap stop_all EXIT
+
   # Create an admin user for mastodon
   # TODO make this idempotent
   #kubectl -n mastodon wait pods -l 'app.kubernetes.io/name=mastodon' --for condition=Ready
@@ -230,10 +233,10 @@ elif ${USE_K8s}; then
   #   --confirmed
 fi
 
-wait_on_dbs
-provision
-setup_mc
-upload_mmdb
+# wait_on_dbs
+# provision
+# setup_mc
+# upload_mmdb
 
 if ${USE_COMPOSE} && [ ${#services[@]} -gt 0 ]; then
 	echo "Starting services \"${services[@]}\"."

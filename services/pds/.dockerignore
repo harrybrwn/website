@@ -1,0 +1,7 @@
+/node_modules/
+/testdata/
+Dockerfile
+README.md
+docker-compose.yml
+.dockerignore
+.gitignore

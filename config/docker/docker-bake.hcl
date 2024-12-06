@@ -263,10 +263,10 @@ target "pdsctrl" {
 }
 
 target "pds" {
-    context    = ".build/docker/pds"
+    context    = "services/pds"
     dockerfile = "Dockerfile"
     tags       = tags("docker.io", "pds", [PDS_VERSION_TAG, "latest"])
-    platforms = [
+    platforms  = [
         "linux/amd64",
     ]
 }
@@ -395,12 +395,26 @@ target "nomad" {
 #
 
 target "curl" {
+    name = "curl_${replace(item.v, ".", "-")}"
+    matrix = {
+        item = [
+            { v = "3.16", latest = false },
+            { v = "3.18", latest = false },
+            { v = "3.20", latest = true },
+        ]
+    }
     dockerfile = "config/docker/Dockerfile.curl"
     labels = labels()
     args = {
-        ALPINE_VERSION = ALPINE_VERSION
+        ALPINE_VERSION = item.v
     }
-    tags = tags("docker.io", "curl", [ALPINE_VERSION])
+    tags = [
+        for t in compact(concat(
+            [item.v],
+            item.latest ? ["latest"] : []
+        )) :
+        "docker.io/harrybrwn/curl:${t}"
+    ]
     platforms = [
         "linux/amd64",
         "linux/arm/v7",

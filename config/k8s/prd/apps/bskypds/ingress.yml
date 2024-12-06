@@ -5,7 +5,9 @@ metadata:
 spec:
   entryPoints: [websecure, web]
   routes:
-  - match: Host(`bsky.hrry.me`) || HostRegexp(`^[a-zA-Z0-9_-]{1,255}\.bsky\.hrry\.me$`)
+  - match: >-
+      Host(`bsky.hrry.me`)
+      || HostRegexp(`^[a-zA-Z0-9_-]{1,255}\.bsky\.hrry\.me$`)
     kind: Rule
     services:
       - name: pds

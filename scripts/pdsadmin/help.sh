@@ -10,6 +10,7 @@ Usage:
 
 Options:
   -h, --help              Print this help message
+  -v, --verbose           Print verbose output
       --env <file>        Get variables from an .env file (default is "config/env/pdsadmin.env")
       --hostname <host>   Set the PDS_HOSTNAME
       --admin-password    Set the PDS_ADMIN_PASSWORD

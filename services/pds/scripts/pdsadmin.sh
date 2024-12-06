@@ -1,10 +1,9 @@
 #!/bin/bash
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-useage() {
+usage() {
   cat <<HELP
 Usage:
   pdsadmin [option...] <command>
@@ -56,6 +55,7 @@ HELP
 }
 
 VERBOSE=false
+SCHEME="${PDSADMIN_SCHEME:-https}"
 
 guard_hostname() {
   if [ -z "${PDS_HOSTNAME:-}" ]; then
@@ -89,7 +89,7 @@ function curl_cmd_post_nofail {
 cmd_health() {
   guard_hostname
   guard_pw
-  local URL="https://${PDS_HOSTNAME}/xrpc/_health"
+  local URL="${SCHEME}://${PDS_HOSTNAME}/xrpc/_health"
   echo "GET ${URL}"
   echo
   curl -i -XGET "${URL}"
@@ -107,7 +107,7 @@ cmd_create_invite_code() {
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --header "Content-Type: application/json" \
     --data '{"useCount": 1}' \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.server.createInviteCode" | jq --raw-output '.code'
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.server.createInviteCode" | jq --raw-output '.code'
 }
 
 cmd_request_crawl() {
@@ -140,13 +140,13 @@ cmd_account_list() {
   guard_hostname
   guard_pw
   local DIDS="$(curl_cmd_get \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.sync.listRepos?limit=100" | jq --raw-output '.repos[].did'
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.sync.listRepos?limit=100" | jq --raw-output '.repos[].did'
   )"
   local OUTPUT='[{"handle":"Handle","email":"Email","did":"DID"}'
   for did in ${DIDS}; do
     local ITEM="$(curl_cmd_get \
       --user "admin:${PDS_ADMIN_PASSWORD}" \
-      "https://${PDS_HOSTNAME}/xrpc/com.atproto.admin.getAccountInfo?did=${did}"
+      "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.admin.getAccountInfo?did=${did}"
     )"
     OUTPUT="${OUTPUT},${ITEM}"
   done
@@ -160,8 +160,8 @@ cmd_account_list() {
 
 cmd_account_list_dids() {
   guard_hostname
-  DIDS="$(curl_cmd_get \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.sync.listRepos?limit=100" | jq --raw-output '.repos[].did'
+  local DIDS="$(curl_cmd_get \
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.sync.listRepos?limit=100" | jq --raw-output '.repos[].did'
   )"
   for did in ${DIDS}; do
     echo "$did"
@@ -171,8 +171,8 @@ cmd_account_list_dids() {
 cmd_account_create() {
   guard_hostname
   guard_pw
-  EMAIL="${2:-}"
-  HANDLE="${3:-}"
+  local EMAIL="${2:-}"
+  local HANDLE="${3:-}"
   if [[ "${EMAIL}" == "" ]]; then
     read -p "Enter an email address (e.g. alice@${PDS_HOSTNAME}): " EMAIL
   fi
@@ -183,21 +183,20 @@ cmd_account_create() {
     echo "ERROR: missing EMAIL and/or HANDLE parameters." >/dev/stderr
     exit 1
   fi
-  PASSWORD="$(openssl rand -base64 30 | tr -d "=+/" | cut -c1-24)"
-  INVITE_CODE="$(curl_cmd_post \
+  local PASSWORD="$(openssl rand -base64 30 | tr -d "=+/" | cut -c1-24)"
+  local INVITE_CODE="$(curl_cmd_post \
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --data '{"useCount": 1}' \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.server.createInviteCode" | jq --raw-output '.code'
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.server.createInviteCode" | jq --raw-output '.code'
   )"
-  RESULT="$(curl_cmd_post_nofail \
+  local RESULT="$(curl_cmd_post_nofail \
     --data "{\"email\":\"${EMAIL}\", \"handle\":\"${HANDLE}\", \"password\":\"${PASSWORD}\", \"inviteCode\":\"${INVITE_CODE}\"}" \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.server.createAccount"
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.server.createAccount"
   )"
-  DID="$(echo $RESULT | jq --raw-output '.did')"
+  local DID="$(echo $RESULT | jq --raw-output '.did')"
   if [[ "${DID}" != did:* ]]; then
-    ERR="$(echo ${RESULT} | jq --raw-output '.message')"
-    echo "ERROR: ${ERR}" >/dev/stderr
-    echo "Usage: $0 ${SUBCOMMAND} <EMAIL> <HANDLE>" >/dev/stderr
+    local ERR="$(echo ${RESULT} | jq --raw-output '.message')"
+    echo "Error: ${ERR}" 1>&2
     exit 1
   fi
   echo
@@ -231,7 +230,7 @@ cmd_account_delete() {
   curl_cmd_post \
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --data "{\"did\": \"${DID}\"}" \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.admin.deleteAccount" >/dev/null
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.admin.deleteAccount" >/dev/null
   echo "${DID} deleted"
 }
 
@@ -264,7 +263,7 @@ EOF
   curl_cmd_post \
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --data "${PAYLOAD}" \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateSubjectStatus" >/dev/null
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateSubjectStatus" >/dev/null
   echo "${DID} taken down"
 }
 
@@ -295,7 +294,7 @@ EOF
   curl_cmd_post \
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --data "${PAYLOAD}" \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateSubjectStatus" >/dev/null
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateSubjectStatus" >/dev/null
   echo "${DID} untaken down"
 }
 
@@ -315,7 +314,7 @@ cmd_account_reset_password() {
   curl_cmd_post \
     --user "admin:${PDS_ADMIN_PASSWORD}" \
     --data "{ \"did\": \"${DID}\", \"password\": \"${PASSWORD}\" }" \
-    "https://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateAccountPassword" >/dev/null
+    "${SCHEME}://${PDS_HOSTNAME}/xrpc/com.atproto.admin.updateAccountPassword" >/dev/null
   echo
   echo "Password reset for ${DID}"
   echo "New password: ${PASSWORD}"
@@ -328,7 +327,9 @@ COMMAND=""
 HELP=false
 
 PDS_ENV_FILE="config/env/pdsadmin.env"
-ENV_FILES+=("${PDS_ENV_FILE}")
+if [ -f "${PDS_ENV_FILE}" ]; then
+  ENV_FILES+=("${PDS_ENV_FILE}")
+fi
 
 # Ensure the user is root, since it's required for most commands.
 #if [[ "${EUID}" -ne 0 ]]; then
@@ -346,6 +347,10 @@ while [ $# -gt 0 ]; do
     -v|--verbose)
       VERBOSE=true
       shift
+      ;;
+    --scheme)
+      SCHEME="$2"
+      shift 2
       ;;
     -env|--env)
       ENV_FILES+=("${2}")
@@ -473,10 +478,22 @@ EOF
       esac
     done
     ;;
-  help)
+  config)
+    if [[ "${PDS_ADMIN_PASSWORD:-}" = testlab* ]]; then
+      echo "admin password: \"${PDS_ADMIN_PASSWORD:-}\""
+    else
+      echo "admin password: \"$(echo "${PDS_ADMIN_PASSWORD:-}" | sed 's/./*/g')\""
+    fi
+    echo "hostname:       \"${PDS_HOSTNAME}\""
+    exit 0
+    ;;
+  help|-h|-help|--help)
     usage
     exit 0
+    ;;
   *)
-    "scripts/pdsadmin/${COMMAND}.sh" "$@"
+    echo "Error: unknown command \"${COMMAND}\""
+    exit 1
+    # "scripts/pdsadmin/${COMMAND}.sh" "$@"
     ;;
 esac

@@ -17,6 +17,7 @@
   "author": "Harry Brown",
   "license": "UNLICENSED",
   "workspaces": [
+    "./services/pds",
     "./frontend/legacy/api",
     "./frontend/legacy"
   ]
