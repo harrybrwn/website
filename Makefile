@@ -85,7 +85,7 @@ scripts:
 		echo ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 		ln -sf ../scripts/infra/ansible bin/ansible-$$s; \
 	done
-	ln -sf ../scripts/pdsadmin/pdsadmin.sh bin/pdsadmin
+	ln -sf $$HOME/dev/bluesky/pds/scripts/pdsadmin.sh bin/pdsadmin
 
 tools: scripts bin/lab
 	@mkdir -p bin

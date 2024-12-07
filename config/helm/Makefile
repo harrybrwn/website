@@ -24,9 +24,9 @@ deploy: dist/index.yaml
 clean:
 	$(RM) -r dist/ $(shell find . -type f -name '*.tgz')
 
-dist: charts/mastodon charts/minio
+dist: charts/mastodon charts/minio charts/pds
 	sed -i 's/"common\.names\.fullname"/"mastodon\.fullname"/g;' charts/mastodon/templates/_helpers.tpl
-	helm package --dependency-update --destination $@ charts/minio charts/wordpress
+	helm package --dependency-update --destination $@ charts/minio charts/wordpress charts/pds
 
 dist/index.yaml: dist
 	helm repo index ./dist --url $(URL)
@@ -43,6 +43,10 @@ charts/minio:
 		rm -rf charts/minio/; \
 	fi
 	cp -r $(TMP)/minio/helm/minio charts/minio
+
+.PHONY: charts/pds
+charts/pds:
+	@if [ ! -L charts/pds ]; then ln -s "$$HOME/dev/bluesky/pds/chart" charts/pds; fi
 
 clone:
 	@if [ ! -d charts/mastodon ]; then \

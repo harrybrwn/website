@@ -262,15 +262,6 @@ target "pdsctrl" {
     }
 }
 
-target "pds" {
-    context    = "services/pds"
-    dockerfile = "Dockerfile"
-    tags       = tags("docker.io", "pds", [PDS_VERSION_TAG, "latest"])
-    platforms  = [
-        "linux/amd64",
-    ]
-}
-
 target "postgres" {
     context = "config/docker/postgres"
     args = {

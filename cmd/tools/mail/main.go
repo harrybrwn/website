@@ -5,16 +5,18 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"gopkg.in/gomail.v2"
 )
-
-var apikey string
 
 func main() {
 	var (
@@ -30,17 +32,41 @@ func main() {
 		log.Fatal(err)
 	}
 
-	apikey = os.Getenv("SENDGRID_API_KEY")
-	if len(apikey) == 0 {
-		log.Fatal("could not find api key")
-	}
-	err = run(to)
+	err = runAhasend("bsky@mail.hrry.me", to)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(to string) error {
+func runAhasend(from, to string) error {
+	email := gomail.NewMessage()
+	email.SetAddressHeader("From", from, "Bluesky PDS Admin")
+	email.SetAddressHeader("To", to, "PDS User")
+	email.SetHeader("Subject", "Sample email test")
+	plainTextContent := "This is a testing email, please disregard its contents."
+	htmlContent := `<div>Hi ` + "PDS User" +
+		`,<br><br>This is a testing email, please disregard its contents.` +
+		`<br><br>Thank you for you patience.<br><br>Harry</div>`
+	email.SetBody("text/plain", plainTextContent)
+	email.SetBody("text/html", htmlContent)
+	u, err := url.Parse(os.Getenv("SMTP_URL"))
+	if err != nil {
+		return err
+	}
+	host, portStr, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return err
+	}
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		return err
+	}
+	pw, _ := u.User.Password()
+	d := gomail.NewDialer(host, int(port), u.User.Username(), pw)
+	return d.DialAndSend(email)
+}
+
+func runSendgrid(to, apikey string) error {
 	from := mail.NewEmail("harrybrwn", "noreply@hrry.io")
 	toEmail := mail.NewEmail(emailName(to), to)
 	subject := "Testing Out Our System"

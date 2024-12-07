@@ -46,8 +46,8 @@ runs:
         docker buildx build \
           --build-arg "ENABLED_MODULES=${{ inputs.modules }}" \
           --build-arg "NGINX_FROM_IMAGE=nginx:${{ inputs.version }}-alpine" \
-          --set '*.cache-to=type=gha'            \
-          --set '*.cache-from=type=gha,mode=max' \
+          --cache-to 'type=gha'            \
+          --cache-from 'type=gha,mode=max' \
           --file modules/Dockerfile.alpine \
           --platform linux/amd64,linux/arm/v7 \
           --tag "${{ inputs.image }}:latest" \

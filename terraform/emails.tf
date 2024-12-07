@@ -58,3 +58,32 @@ resource "cloudflare_email_routing_rule" "hrry_me" {
     value = [var.destination_email]
   }
 }
+
+# ahasend mail setup
+resource "cloudflare_record" "ahasend_mail_hrry_me_cname" {
+  for_each = {
+    "t.mail"                   = "2de58.setup.ahasend.com"
+    "psrp.mail"                = "2d7d9.setup.ahasend.com"
+    "ahasend._domainkey.mail"  = "2da0f.setup.ahasend.com"
+    "ahasend2._domainkey.mail" = "2de02.setup.ahasend.com"
+    mail                       = "2d612.setup.ahasend.com"
+  }
+  type    = "CNAME"
+  name    = each.key
+  value   = each.value
+  proxied = false
+  ttl     = 60
+  comment = "Created by terraform."
+  zone_id = local.zones.hrry_me
+}
+
+resource "cloudflare_record" "ahasend_mail_hrry_me_txt" {
+  type    = "TXT"
+  name    = "_dmarc.mail"
+  value   = "v=DMARC1; p=reject; sp=none; adkim=r; aspf=r;"
+  proxied = false
+  ttl     = 60
+  comment = "Created by terraform."
+  zone_id = local.zones.hrry_me
+}
+
